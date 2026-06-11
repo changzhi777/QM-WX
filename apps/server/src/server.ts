@@ -30,6 +30,9 @@ import { adminRoutes } from './modules/admin/admin.routes.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { uploadRoutes } from './modules/upload/upload.routes.js';
 import { weeklyReportRoutes } from './modules/weekly-report/weekly-report.routes.js';
+import { deviceRoutes } from './modules/device/device.routes.js';
+import { recipeRoutes } from './modules/recipe/recipe.routes.js';
+import { ludongRoutes } from './modules/ludong/ludong.routes.js';
 import { BusinessError } from './common/errors.js';
 
 const app = Fastify({
@@ -78,6 +81,9 @@ await app.register(mallRoutes, { prefix: '/api/mall' });
 await app.register(contentRoutes, { prefix: '/api/content' });
 await app.register(walletRoutes, { prefix: '/api/wallet' });
 await app.register(weeklyReportRoutes, { prefix: '/api/weekly-report' });
+await app.register(deviceRoutes, { prefix: '/api/device' });   // Phase 6
+await app.register(recipeRoutes, { prefix: '/api/recipe' });   // Phase 7
+await app.register(ludongRoutes, { prefix: '/api/ludong' });   // Phase 7+
 await app.register(adminRoutes, { prefix: '/api/admin' });
 
 // ===== 统一错误处理 =====

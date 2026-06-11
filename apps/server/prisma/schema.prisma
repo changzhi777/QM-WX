@@ -26,11 +26,14 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  checkins     Checkin[]
-  orders       Order[]
-  wallet       Wallet?
-  groupMembers GroupMember[]
-  ownedGroups  Group[]      @relation("GroupOwner")
+  checkins       Checkin[]
+  orders         Order[]
+  wallet         Wallet?
+  groupMembers   GroupMember[]
+  ownedGroups    Group[]      @relation("GroupOwner")
+  deviceBindings DeviceBinding[]
+  meals          Meal[]
+  idMapping      IdMapping?
 
   @@index([openid])
 }
@@ -234,4 +237,133 @@ model GroupReport {
   createdAt DateTime @default(now())
 
   @@unique([groupId, period])
+}
+
+// ===== V2 · 设备绑定（一人多厂商）=====
+model DeviceBinding {
+  id              String    @id @default(cuid())
+  userId          String
+  vendor          String    // werun | garmin | huawei | xiaomi | honor | coros | zepp
+  accessTokenEnc  String?   // AES 加密
+  refreshTokenEnc String?
+  expireAt        DateTime?
+  vendorUserId    String?
+  scopes          String[]
+  status          String    @default("active") // active | expired | revoked
+  lastSyncAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, vendor])
+  @@index([status])
+}
+
+// ===== V2 · 设备原始活动（留底可追溯）=====
+model RawActivity {
+  id               String   @id @default(cuid())
+  userId           String
+  vendor           String
+  vendorActivityId String   // vendor + vendorActivityId 唯一防重
+  type             String   // running | walking | cycling
+  startTime        DateTime
+  durationSec      Int?
+  distanceMeters   Float?
+  avgHr            Int?
+  maxHr            Int?
+  cadence          Int?
+  raw              Json
+  ingestedAt       DateTime @default(now())
+  normalizedAt     DateTime?
+
+  @@unique([vendor, vendorActivityId])
+  @@index([userId, startTime])
+}
+
+// ===== V2 · 菜谱 =====
+model Recipe {
+  id          String   @id @default(cuid())
+  title       String
+  coverFileId String?
+  category    String   // breakfast | prerun | postrun | lowcal | homedish
+  tags        String[]
+  ingredients Json     // [{name, amount, isMain}]
+  steps       Json     // [{order, text, imageFileId}]
+  nutrition   Json?    // {calorie, protein, fat, carb, per}
+  durationMin Int?
+  difficulty  Int?
+  servings    Int?
+  source      Json     // {type, vendor, vendorId, license}
+  audit       Json     // {status, reviewer, reviewedAt}
+  stats       Json     @default("{\"views\":0,\"favorites\":0}")
+  fingerprint String?  @unique // 去重指纹
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category, status(updatedAt)])
+}
+
+// ===== V2 · 营养缓存 =====
+model FoodCache {
+  id        String   @id @default(cuid())
+  keyword   String
+  source    String   // juhe | tianapi | baidu
+  payload   Json
+  hitCount  Int      @default(0)
+  expiredAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([keyword, source])
+  @@index([expiredAt])
+}
+
+// ===== V2 · 饮食日记 =====
+model Meal {
+  id        String   @id @default(cuid())
+  userId    String
+  mealType  String   // breakfast | lunch | dinner | snack
+  items     Json     // [{name, calorie, qty}]
+  totalCalorie Int
+  date      String   // YYYY-MM-DD
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, date])
+}
+
+// ===== V2 · 律动账号映射 =====
+model IdMapping {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  ludongUserId  String   @unique
+  boundAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// ===== V2 · 出站队列（小程序 → 律动）=====
+model SyncOutbox {
+  id          String    @id @default(cuid())
+  eventType   String    // user.upsert | checkin.batch | order.sync | points.sync
+  path        String    // /open/v1/...
+  payload     Json
+  status      String    @default("pending") // pending | done | dead
+  retryCount  Int       @default(0)
+  nextRetryAt DateTime  @default(now())
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  doneAt      DateTime?
+
+  @@index([status, nextRetryAt])
+}
+
+// ===== V2 · 入站幂等（律动 → 小程序 webhook）=====
+model InboundEvent {
+  id        String   @id // 律动 eventId
+  type      String
+  receivedAt DateTime @default(now())
+
+  @@index([receivedAt])
 }
