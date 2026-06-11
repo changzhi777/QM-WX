@@ -26,35 +26,45 @@ cd ../.. && pnpm install
 #    或在 app.ts onLaunch 里改 $apiBase
 ```
 
-> 后端未启动时，开发者工具控制台会报网络错误是正常的（Phase 0 阶段）。
+> 后端未启动时，开发者工具控制台会报网络错误是正常的。
 
 ---
 
-## 📂 目录约定
+## 📂 目录结构
 
 ```
 miniprogram/
-├── app.{ts, json, wxss}            # 应用入口（**app.wxss 限 300 行内**）
-├── sitemap.json                    # 搜索接入配置（必须）
+├── app.ts                          # 应用入口（静默登录 + 全局 $apiBase/$token）
+├── app.json                        # 页面路由 + tabBar + 全局窗口配置
+├── app.wxss                        # 全局样式（--brand: #0FAF8E，限 300 行内）
+├── sitemap.json                    # 搜索接入配置
 ├── config/
 │   └── env.ts                      # baseUrl / 品牌常量
 ├── utils/
 │   ├── auth.ts                     # ensureLogin / logout
-│   ├── format.ts                   # 配速/距离/日期
-│   └── constants.ts
+│   └── format.ts                   # 配速/距离/日期格式化
 ├── services/
-│   └── api.ts                      # **唯一**调后端的地方
+│   └── api.ts                      # **唯一**调后端的地方（含 refresh 一次重试）
 ├── components/
-│   ├── ranking-list/
-│   ├── product-card/
-│   ├── cell/
-│   ├── empty-state/
-│   └── feature-gate/               # 功能开关守卫组件
-└── pages/
-    ├── index/      sport/      group-detail/
-    ├── mall/       product-detail/  order-confirm/  order-list/
-    ├── mine/       profile/    bind-app/  wallet/  membership/
-    └── content-list/  content-detail/
+│   ├── feature-gate/               # 功能开关守卫组件（读取远程 feature_flags）
+│   ├── privacy-popup/              # 隐私协议弹窗
+│   └── profile-popup/              # 用户资料弹窗
+├── pages/
+│   ├── index/                      # 首页（tabBar）
+│   ├── sport/                      # 运动打卡（tabBar）
+│   ├── mall/                       # 商城（tabBar）
+│   ├── mine/                       # 我的（tabBar）
+│   ├── profile/                    # 个人资料
+│   ├── group-detail/               # 跑群详情
+│   ├── weekly-report/              # 周报战报
+│   ├── content-list/               # 内容列表（赛事/酒店/景区等）
+│   ├── content-detail/             # 内容详情
+│   ├── product-detail/             # 商品详情
+│   ├── order-confirm/              # 订单确认
+│   ├── order-list/                 # 订单列表
+│   └── agreement/                  # 用户协议
+└── images/
+    └── tabbar/                     # 8 个 tabBar 图标（4 普通 + 4 选中）
 ```
 
 ---
@@ -83,7 +93,7 @@ wx.request({ url: 'https://...' });
 
 - **品牌色**：`#0FAF8E`（青沐绿），定义在 `app.wxss` 的 `--brand` 变量
 - **页面级 wxss**：必须独立文件；`app.wxss` 只放变量和通用类
-- **目录命名**：`kebab-case`，沿用 02 §3 改名（`statistics→mall` / `group→sport` / `settings→mine`）
+- **目录命名**：`kebab-case`
 - **废弃 API**：`getUserProfile` / `getUserInfo` 全部禁止使用；改 `button open-type="chooseAvatar"` + `input type="nickname"`
 
 ---
@@ -106,15 +116,15 @@ wx.request({ url: 'https://...' });
 
 ## 📌 当前状态
 
-- ✅ 4 个 tabBar 页面骨架（index / sport / mall / mine）
+- ✅ 13 个页面全部就位（4 tabBar + 9 子页面）
+- ✅ 3 个组件（feature-gate / privacy-popup / profile-popup）
 - ✅ `app.ts` 静默登录逻辑
 - ✅ `services/api.ts` 统一封装（含 refresh 一次重试）
-- ✅ `utils/auth.ts` / `format.ts`
-- ✅ `components/feature-gate` 组件
-- ✅ `sitemap.json`（T0-1 已完成）
-- ✅ `project.config.json` + `project.private.config.json`
-- 🚧 `pages/sport` / `pages/mall` / `pages/mine` / 等页面待 Phase 1+ 实施
-- 🚧 `images/tabbar/*.png` 8 个图标待设计（先放空，开发者工具会 warn 但不阻塞）
+- ✅ `utils/auth.ts` / `format.ts` / `config/env.ts`
+- ✅ `sitemap.json` + `project.config.json`
+- ✅ 品牌色 #0FAF8E 全局应用
+- 🚧 tabBar 图标待设计替换（当前占位图）
+- 🚧 各页面 UI 待按 Phase 推进完善
 
 ---
 

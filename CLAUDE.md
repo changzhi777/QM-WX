@@ -8,6 +8,10 @@
 
 ## 变更记录 (Changelog)
 
+- **2026-06-11 23:30** — 🔧 **P0 验证 + AppID 修 3 bug + Phase 3 补全**：(1) 确认 P0 全 7 项已在 V2 重写中修复；(2) 小程序端修 `process.env`→`getAccountInfoSync`、login 跳转路径、`silentLogin` 补全 `me` 调用；(3) 后端加 admin 订单管理（listOrders/updateOrderStatus）、mall 分类列表（listCategories）、feature flag 缓存失效机制。typecheck + 30 测试全绿。
+- **2026-06-11 23:30** — 🧹 **小程序 typecheck 16 错全清**：(1) `ApiResponse` 加 `data?:never`/`msg?:never` 编译提示；(2) `services/api.ts` 改用断言收窄；(3) `mine` 加 `FeatureFlagsConfig` import；(4) `sport` 补全占位项字段；(5) `weekly-report` 改用 `weeklyReport` 键 + `WechatMiniprogram.CanvasRenderingContext.CanvasRenderingContext2D` 类型；(6) ENDPOINTS 加 `weeklyReport` 键。全栈 typecheck 通过、30 测试全绿。
+- **2026-06-11 23:30** — 🔄 **`/zcf:init-project` 增量刷新**：159 源文件全仓扫描（4/4 模块覆盖）。修正 Prisma 表数 20→22、sport 单元测试 10→12。全部 8 个 CLAUDE.md 验证一致，Mermaid 结构图确认准确。
+- **2026-06-11 22:00** — 🔄 **`/zcf:init-project` 全量刷新**：Phase 0~2 + CI/CD + Staging 全完成后，更新全部 CLAUDE.md。后端 13 module（10 有 service）、22 张表、30 单元 + 5 e2e 测试、GitHub Actions CI + staging deploy、小程序 13 页面 + 3 组件。新建 `packages/shared/CLAUDE.md`。
 - **2026-06-11 11:35** — ⚠️ **架构转向**：用户拍板**放弃 02 架构的"微信云开发"方案**，改用 **Node.js + TypeScript 自建后端**。原因：团队希望掌握完整后端控制权（自定义鉴权、跨端 API、admin 后台、长连接、对接其他系统）。新建 `docs/ARCHITECTURE-V2.md` 详述新方案；`reviews/running-group-stats/02-architecture.md` 标记为"已废弃，作为业务规则参考保留"。
 - **2026-06-11 11:21** — 心跳式重跑：用户未新增文件，状态稳定；无内容变更。
 - **2026-06-11 11:18** — 增量更新：识别到 `reviews/running-group-stats/` 8 篇评审文档，**业务方向从"待定"落实为「青沐生命科技·大健康生活方式平台」**（运动社群 + 健康/运动商城 + 赛事与本地服务）。更新"项目愿景"、模块索引、Mermaid 结构图与未决事项。新建 `reviews/CLAUDE.md`。
@@ -30,18 +34,18 @@
   （战报图转发回微信群=零成本裂变）
 ```
 
-**当前阶段**：仓库为"可演示原型"阶段（约 80% 业务为 mock，不可直接上线），`reviews/` 下的 8 篇文档是基于旧代码的全量重构方案。
+**当前阶段**：V1.0 后端核心模块 + V2 stub + CI/CD + Staging + **P0 全修** + **Phase 3 核心补全**。Phase 0~3 已完成，Phase 4（支付接入）待推进。
 
-**下一步**：按 `04-task-breakdown.md` 的 Phase 0 → 5 推进重构，**Phase 0 地基不打完不开新业务**。
+**下一步**：真实微信 AppID 端到端验证（需真机）/ 真实云环境部署 / Phase 4 支付接入 / admin Web 后台（二期）。
 
-**P0 致命问题**（来自 `01-code-review.md`，必须先修）：
-1. 钱包余额客户端可篡改 → 服务端权威化 + 功能开关
-2. 所有云函数信任前端 openid → 一律 `cloud.getWXContext().OPENID`
-3. `'test_openid'` 兜底 → 全员数据混写
-4. 登录链路断裂（未调 `wx.login`）
-5. 调用不存在的云函数
-6. "自动统计微信群消息"前提不成立 → 改为 `shareTicket` + 打卡 + 订阅消息
-7. 基础配置占位符 / `sitemap.json` 缺失
+**P0 致命问题**（来自 `01-code-review.md`）：
+1. ✅ 钱包余额客户端可篡改 → V2 已修：服务端权威 + 功能开关
+2. ✅ 所有云函数信任前端 openid → V2 已修：JWT + code2Session
+3. ✅ `'test_openid'` 兜底 → V2 已修：新代码无 test_openid
+4. ✅ 登录链路断裂 → V2 已修：wx.login → code2Session → JWT
+5. ✅ 调用不存在的云函数 → V2 已修：全走 HTTP API
+6. ✅ "自动统计微信群消息"前提不成立 → V2 已修：checkin + BullMQ 周报
+7. ✅ 基础配置占位符 / `sitemap.json` 缺失 → V2 已修：env.ts Zod 校验 + sitemap.json
 
 详细见 [reviews/CLAUDE.md](reviews/CLAUDE.md)。
 
@@ -61,20 +65,20 @@
 | --- | --- | --- | --- |
 | Monorepo | **pnpm workspaces** | 已定 | 复用 pnpm，零额外依赖 |
 | 小程序 | 微信原生（TS） | 已定 | 不上 Taro/uni-app，避免跨端复杂度 |
-| 后端框架 | **Fastify 4.x** | 待确认 | 比 Express 快、原生 TS、schema 驱动；或 NestJS（更重，结构化） |
+| 后端框架 | **Fastify 4.x** | ✅ 已确认 | 比 Express 快、原生 TS、schema 驱动 |
 | 语言 | **TypeScript 5.x** | 已定 | 全栈 TS |
-| ORM | **Prisma** | 待确认 | 成熟、迁移友好；或 Drizzle（更轻、原生 SQL） |
-| 主数据库 | **PostgreSQL 16** | 待确认 | JSONB 灵活，事务强 |
+| ORM | **Prisma** | ✅ 已确认 | 成熟、迁移友好，22 张表 + 迁移历史 |
+| 主数据库 | **PostgreSQL 16** | ✅ 已确认 | JSONB 灵活，事务强 |
 | 缓存 | **Redis 7** | 已定 | 会话 / 限流 / 排行榜 |
 | 鉴权 | **JWT（access + refresh）** + 微信 `code2Session` | 已定 | 不用云开发，靠 wx.login → 自家后端换 openid |
 | 验证 | **Zod** | 已定 | Fastify schema 首选 |
-| 队列 | **BullMQ**（Redis 驱动） | 待定 | 周报聚合、定时任务、邮件 |
+| 队列 | **BullMQ**（Redis 驱动） | ✅ 已接入 | 周报聚合定时器（每周日 20:00） |
 | 日志 | **Pino**（Fastify 内置） | 已定 | 性能好 |
 | 监控 | Sentry / OpenTelemetry | 待定 | |
 | 测试 | **Vitest** | 已定 | 全栈通用 |
 | Lint | ESLint + Prettier | 已定 | |
-| 部署 | Docker + 阿里云/腾讯云 ECS | 待定 | 需要域名备案、SSL、CI/CD |
-| 品牌色 | 青绿色系（建议 #0FAF8E） | 已建议 | 取代微信绿 #1aad19 |
+| 部署 | Docker + 阿里云/腾讯云 ECS | ✅ 流程就位 | ci.yml + deploy-staging.yml + staging.sh |
+| 品牌色 | **#0FAF8E**（青沐绿） | ✅ 已确认 | 全局应用，取代微信绿 #1aad19 |
 
 ### 设计原则（必须遵守）
 
@@ -108,21 +112,22 @@ QM-WX/
 | 路径 | 职责 | 状态 | 本地 CLAUDE.md |
 | --- | --- | --- | --- |
 | `apps/miniprogram/` | 微信小程序前端（13 页面 + 3 组件） | ✅ V1.0 完成 | [→ apps/miniprogram/CLAUDE.md](apps/miniprogram/CLAUDE.md) |
-| `apps/server/` | Node + TS 后端（**9 module** + BullMQ jobs） | ✅ V1.0 完成 + V2 stub | [→ apps/server/CLAUDE.md](apps/server/CLAUDE.md) |
+| `apps/server/` | Node + TS 后端（**13 module** + BullMQ jobs） | ✅ V1.0 完成 + V2 stub | [→ apps/server/CLAUDE.md](apps/server/CLAUDE.md) |
 | `apps/admin/` | 运营管理后台（二期） | ⏳ 暂缓 | — |
-| `packages/shared/` | 前后端共享（类型 / Zod / 端点常量） | ✅ V1.0 完成 | 待建 CLAUDE.md |
-| `docs/` | 设计文档（ARCHITECTURE-V2 / PHASE-0 / PHASE-V2 / SUBMIT-CHECKLIST / CHANGELOG） | ✅ 5 份齐全 | [→ docs/CLAUDE.md](docs/CLAUDE.md) |
+| `packages/shared/` | 前后端共享（类型 / Zod / 端点常量 / 积分规则） | ✅ V1.0 完成 | [→ packages/shared/CLAUDE.md](packages/shared/CLAUDE.md) |
+| `docs/` | 设计文档（ARCHITECTURE-V2 / CI / STAGING_DEPLOY / PHASE 计划等） | ✅ 6 份齐全 | [→ docs/CLAUDE.md](docs/CLAUDE.md) |
 | `tests/` | 跨包 E2E（暂用 supertest，V1.0 没起来） | 🚧 空 | [→ tests/CLAUDE.md](tests/CLAUDE.md) |
 | `reviews/` | 历史评审（02 已废弃，业务规则参考） | ✅ 已建 | [→ reviews/CLAUDE.md](reviews/CLAUDE.md) |
 | `reviews/running-group-stats/` | 8 篇 review 文档 + 1 构建脚本 | ✅ 已建 | 父级覆盖 |
 | `scripts/` | 工具脚本（smoke test 等） | ✅ smoke.sh | — |
-| `.github/workflows/` | CI（lint + typecheck + test + build） | ✅ ci.yml | — |
+| `deploy/` | 部署脚本（staging.sh） | ✅ staging.sh | — |
+| `.github/workflows/` | CI + Staging 部署（lint + typecheck + test + build + deploy） | ✅ ci.yml + deploy-staging.yml | — |
 | `docker-compose.yml` | 1 键起开发环境（PG + Redis + server） | ✅ | — |
 | `src/` | **已废弃** | ⚠️ 废弃 | — |
 | `.vscode/` | 编辑器配置 | 🚧 空 | — |
 
-**9 个后端 module 清单**（V1.0 全完成；V2 后 3 个 stub）：
-`auth` / `user` / `sport` / `mall` / `content` / `wallet` / `weekly-report` / `upload` / `admin` + **V2 stub**: `device` / `recipe` / `ludong`
+**13 个后端 module 清单**（V1 10 个实现 + V2 3 个 stub）：
+`auth` / `user` / `sport` / `mall` / `content` / `wallet` / `weekly-report` / `upload` / `admin` / `app-config` + **V2 stub**: `device` / `recipe` / `ludong`
 
 **BullMQ Jobs**：`apps/server/src/jobs/` — `queue.ts` + `scheduler.ts` + `weekly-report.job.ts`（每周日 20:00 自动跑）
 
@@ -140,8 +145,9 @@ graph TD
     Root --> Docs["docs/"]
     Root --> Tests["tests/"]
     Root --> Reviews["reviews/ (历史)"]
-    Root --> VSCode[".vscode/"]
-    Root --> Config["pnpm-workspace.yaml + .gitignore + README.md"]
+    Root --> Deploy["deploy/"]
+    Root --> GH[".github/workflows/"]
+    Root --> Config["pnpm-workspace.yaml + docker-compose.yml"]
 
     Apps --> Mp["apps/miniprogram/ 微信小程序"]
     Apps --> Srv["apps/server/ Fastify+TS+BullMQ"]
@@ -158,15 +164,29 @@ graph TD
     Srv --> Auth["auth/"]
     Srv --> Upload["upload/"]
     Srv --> Wr["weekly-report/"]
+    Srv --> AppConfig["app-config/"]
     Srv -. V2 .-> Device["device/ (stub)"]
     Srv -. V2 .-> Recipe["recipe/ (stub)"]
     Srv -. V2 .-> Ludong["ludong/ (stub)"]
     Srv --> Jobs["jobs/ (BullMQ)"]
 
-    Mp --> MpPages["pages/"]
-    Mp --> MpComps["components/"]
+    Mp --> MpPages["pages/ (13)"]
+    Mp --> MpComps["components/ (3)"]
     Mp --> MpSvc["services/api.ts"]
-    Mp --> MpUtils["utils/"]
+    Mp --> MpUtils["utils/ + config/"]
+
+    Shared --> ShTypes["types/"]
+    Shared --> ShConst["constants/"]
+    Shared --> ShApi["api-contracts/"]
+
+    Docs --> ArchDoc["ARCHITECTURE-V2"]
+    Docs --> CiDoc["CI + STAGING_DEPLOY"]
+    Docs --> PhaseDoc["PHASE-0 + PHASE-V2"]
+
+    GH --> CiWf["ci.yml"]
+    GH --> DepWf["deploy-staging.yml"]
+
+    Deploy --> StgSh["staging.sh"]
 
     Reviews --> RGS["running-group-stats/"]
     RGS --> RGS01["01-code-review"]
@@ -183,7 +203,6 @@ graph TD
     click Mp "./apps/miniprogram/CLAUDE.md" "查看小程序文档"
     click Docs "./docs/CLAUDE.md" "查看 docs 文档"
     click Reviews "./reviews/CLAUDE.md" "查看 reviews 文档"
-    click RGS02 "./reviews/running-group-stats/02-architecture.md" "查看 02-architecture (已废弃)"
 
     style Root fill:#1e1e1e,stroke:#888,stroke-width:2px,color:#fff
     style Apps fill:#0d47a1,color:#fff
@@ -195,6 +214,8 @@ graph TD
     style Tests fill:#c62828,color:#fff
     style Reviews fill:#6a1b9a,color:#fff
     style RGS fill:#4a148c,color:#fff
+    style GH fill:#555,color:#fff
+    style Deploy fill:#e65100,color:#fff
     style Config fill:#555,color:#fff
     style User fill:#1565c0,color:#bbb
     style Sport fill:#1565c0,color:#bbb
@@ -205,6 +226,7 @@ graph TD
     style Auth fill:#1565c0,color:#bbb
     style Upload fill:#1565c0,color:#bbb
     style Wr fill:#1565c0,color:#bbb
+    style AppConfig fill:#1565c0,color:#bbb
     style Device fill:#1565c0,color:#888,stroke-dasharray: 4 4
     style Recipe fill:#1565c0,color:#888,stroke-dasharray: 4 4
     style Ludong fill:#1565c0,color:#888,stroke-dasharray: 4 4
@@ -213,7 +235,16 @@ graph TD
     style MpComps fill:#283593,color:#bbb
     style MpSvc fill:#283593,color:#bbb
     style MpUtils fill:#283593,color:#bbb
+    style ShTypes fill:#00695c,color:#bbb
+    style ShConst fill:#00695c,color:#bbb
+    style ShApi fill:#00695c,color:#bbb
     style Adm fill:#0d47a1,color:#bbb,stroke-dasharray: 4 4
+    style CiWf fill:#555,color:#bbb
+    style DepWf fill:#e65100,color:#bbb
+    style StgSh fill:#e65100,color:#bbb
+    style ArchDoc fill:#2e7d32,color:#bbb
+    style CiDoc fill:#2e7d32,color:#bbb
+    style PhaseDoc fill:#2e7d32,color:#bbb
 ```
 
 - 🟦 `apps/` — 可独立部署的工程（miniprogram / server / admin）
@@ -255,7 +286,7 @@ graph TD
 ### 工作流钩子
 
 - **新增 `/zcf:feat` 任务前**：先读 [docs/ARCHITECTURE-V2.md](docs/ARCHITECTURE-V2.md) + `reviews/running-group-stats/04-task-breakdown.md`（业务规则仍可参考）。**02-architecture 已废弃**，别再按云开发写代码。
-- **新增后端 route 前**：必须确认遵循 ARCHITECTURE-V2 §3 的 6 个 module（user/sport/mall/content/wallet/admin），不私自建新 module。
+- **新增后端 route 前**：必须确认遵循 ARCHITECTURE-V2 §3 的 module 范围（当前 13 个：auth/user/sport/mall/content/wallet/weekly-report/upload/admin/app-config + V2: device/recipe/ludong），不私自建新 module。
 - **新增 API endpoint 前**：先在 `packages/shared` 里定义 Zod schema + TS 类型，前后端共用。
 - **涉及支付/钱包/会员**：先查后端 `app_config.feature_flags` 当前值，关闭时按钮文案应为"敬请期待"而非"立即开通"。
 
@@ -265,12 +296,15 @@ graph TD
 
 1. ✅ **业务方向** — 青沐·大健康生活方式平台（已确认）
 2. ✅ **后端选型** — Node.js + TypeScript（已确认 2026-06-11）
-3. ⏳ **后端细分选型** — Fastify vs NestJS / Prisma vs Drizzle / 部署云厂商（待用户定）
-4. ⏳ **真实云环境 / 备案** — 服务器、域名 ICP 备案、SSL、CDN（等部署方案定）
-5. ⏳ **微信商户号 + 实名认证** — 申请中
-6. ⏳ **CI / 部署流程** — GitHub Actions / GitLab CI（待定）
-7. ⏳ **测试覆盖率阈值**（建议参考 04 任务的 AC 走最小验收）
-8. ⏳ **品牌色定稿**（建议 #0FAF8E 待设计确认）
+3. ✅ **后端细分选型** — Fastify 4 + Prisma + BullMQ（已确认）
+4. ✅ **P0 致命问题** — 全 7 项已在 V2 重写中修复（2026-06-11 验证）
+5. ⏳ **真实微信 AppID 端到端验证** — 代码链路就绪，需微信开发者工具真机测试
+6. ⏳ **真实云环境 / 备案** — 服务器、域名 ICP 备案、SSL、CDN（等常智定）
+7. ⏳ **微信商户号 + 实名认证** — 申请中（Phase 4 支付前置条件）
+8. ✅ **CI / 部署流程** — GitHub Actions ci.yml + deploy-staging.yml（已完成）
+9. ✅ **Phase 3 核心** — mall 分类列表 + admin 订单管理 + feature flag 缓存失效（已完成）
+10. ⏳ **测试覆盖率阈值**（建议参考 04 任务的 AC 走最小验收）
+11. ✅ **品牌色定稿** — #0FAF8E（青沐绿，已全局应用）
 
 ---
 
