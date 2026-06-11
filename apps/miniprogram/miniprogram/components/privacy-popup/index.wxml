@@ -1,0 +1,11 @@
+<view class="mask" wx:if="{{visible}}">
+  <view class="card">
+    <view class="title">服务协议与隐私政策</view>
+    <view class="content">
+      欢迎使用青沐。请仔细阅读
+      <text class="link" bindtap="onOpenAgreement">《用户协议与隐私政策》</text>
+      后再继续使用。我们仅在为您提供运动打卡、社群、商城等服务所必需的范围内收集信息。
+    </view>
+    <button class="btn-primary" bindtap="onAgree">同意并继续</button>
+  </view>
+</view>

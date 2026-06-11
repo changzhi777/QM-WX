@@ -1,0 +1,21 @@
+.page { padding-bottom: 40rpx; }
+.empty { padding: 80rpx 0; text-align: center; color: var(--text-tertiary); font-size: 26rpx; }
+
+.card .head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16rpx; border-bottom: 1rpx solid var(--border); }
+.card .order-id { font-size: 22rpx; color: var(--text-tertiary); }
+.card .status { font-size: 26rpx; font-weight: 600; }
+
+.card .items { padding: 16rpx 0; }
+.card .item { display: flex; justify-content: space-between; padding: 8rpx 0; font-size: 26rpx; }
+.card .item .qty { color: var(--text-tertiary); }
+
+.card .footer-row { display: flex; justify-content: space-between; align-items: center; padding-top: 16rpx; border-top: 1rpx solid var(--border); }
+.card .amount { font-size: 26rpx; color: var(--text-secondary); }
+.card .amount .num { color: var(--danger); font-size: 32rpx; font-weight: 600; margin: 0 4rpx; }
+.card .amount .points { color: var(--brand); font-size: 22rpx; }
+.card .btn-cancel {
+  font-size: 24rpx; color: var(--text-secondary);
+  background: transparent; border: 1rpx solid var(--border);
+  padding: 8rpx 24rpx; border-radius: 4rpx; line-height: 1.4;
+}
+.card .btn-cancel::after { border: none; }

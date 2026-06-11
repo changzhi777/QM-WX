@@ -1,0 +1,102 @@
+<view class="page">
+  <!-- 头部：用户信息 -->
+  <view class="header">
+    <block wx:if="{{user}}">
+      <view class="user-row" bindtap="goProfile">
+        <image class="avatar" src="{{user.avatarUrl || 'images/default-avatar.png'}}" mode="aspectFill" />
+        <view class="info">
+          <view class="nickname">{{user.nickname || '未设置昵称'}}</view>
+          <view class="member">{{memberLabel}} · {{user.points}} 积分</view>
+        </view>
+        <view class="arrow">›</view>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="user-row" bindtap="onTapLogin">
+        <image class="avatar" src="images/default-avatar.png" mode="aspectFill" />
+        <view class="info">
+          <view class="nickname">点击登录</view>
+          <view class="member">登录后享受更多服务</view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 数据概览 -->
+  <view class="stats bg-white" wx:if="{{user}}">
+    <view class="stat">
+      <view class="num">{{user.stats.totalDistance || 0}}</view>
+      <view class="lbl">总公里</view>
+    </view>
+    <view class="stat">
+      <view class="num">{{user.stats.totalCheckins || 0}}</view>
+      <view class="lbl">打卡</view>
+    </view>
+    <view class="stat">
+      <view class="num">{{user.points || 0}}</view>
+      <view class="lbl">积分</view>
+    </view>
+  </view>
+
+  <!-- 功能列表 -->
+  <view class="list bg-white mt-2">
+    <feature-gate flag="wallet">
+      <view class="list-item" bindtap="goWallet">
+        <view class="lbl">我的钱包</view>
+        <view class="arrow">›</view>
+      </view>
+    </feature-gate>
+
+    <feature-gate flag="membershipPurchase">
+      <view class="list-item" bindtap="goMembership">
+        <view class="lbl">会员中心</view>
+        <view class="arrow">›</view>
+      </view>
+    </feature-gate>
+
+    <view class="list-item" bindtap="goProfile">
+      <view class="lbl">个人资料</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goOrderList">
+      <view class="lbl">我的订单</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goContent">
+      <view class="lbl">赛事 / 本地服务</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goWeeklyReport">
+      <view class="lbl">跑群周报</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <feature-gate flag="bindApp">
+      <view class="list-item" bindtap="goBindApp">
+        <view class="lbl">绑定运动 APP</view>
+        <view class="arrow">›</view>
+      </view>
+    </feature-gate>
+
+    <button
+      class="list-item contact"
+      open-type="contact"
+      session-from="mine_page"
+    >
+      <view class="lbl">联系客服</view>
+      <view class="arrow">›</view>
+    </button>
+
+    <view class="list-item" bindtap="goAgreement">
+      <view class="lbl">用户协议与隐私政策</view>
+      <view class="arrow">›</view>
+    </view>
+  </view>
+
+  <view class="logout" wx:if="{{user}}" bindtap="onTapLogout">
+    退出登录
+  </view>
+</view>

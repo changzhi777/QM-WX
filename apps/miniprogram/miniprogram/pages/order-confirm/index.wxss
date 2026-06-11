@@ -1,0 +1,30 @@
+.page { padding-bottom: 180rpx; }
+
+.goods .cover { width: 160rpx; height: 160rpx; border-radius: 8rpx; flex-shrink: 0; }
+.goods .info { flex: 1; margin-left: 16rpx; }
+.goods .name { font-size: 28rpx; line-height: 1.4; }
+.goods .price-row { margin-top: 16rpx; display: flex; align-items: baseline; gap: 8rpx; }
+.goods .price-row .num { color: var(--danger); font-size: 32rpx; font-weight: 600; }
+.goods .price-row .unit { color: var(--text-secondary); font-size: 24rpx; }
+
+.section-title { font-size: 28rpx; font-weight: 600; margin-bottom: 16rpx; }
+.section .row { display: flex; justify-content: space-between; align-items: center; }
+.section .lbl { font-size: 28rpx; }
+.section .points-input { text-align: right; font-size: 28rpx; }
+.section .tip { font-size: 22rpx; color: var(--text-tertiary); margin-top: 8rpx; }
+
+.section .field { display: flex; align-items: center; margin-top: 16rpx; }
+.section .field .lbl { width: 120rpx; }
+.section .addr-input { flex: 1; font-size: 28rpx; padding: 8rpx 0; }
+
+.footer-placeholder { height: 180rpx; }
+.footer {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  padding: 16rpx 32rpx; display: flex; align-items: center; gap: 16rpx;
+  box-shadow: 0 -2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+.footer .amount { flex: 1; }
+.footer .total { font-size: 26rpx; color: var(--text-secondary); }
+.footer .total .num { color: var(--danger); font-size: 36rpx; font-weight: 600; margin: 0 4rpx; }
+.footer .points { font-size: 22rpx; color: var(--brand); margin-top: 4rpx; }
+.footer .btn-primary { width: 280rpx; height: 88rpx; line-height: 88rpx; }

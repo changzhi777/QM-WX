@@ -1,0 +1,38 @@
+.page { min-height: 100vh; }
+
+.header {
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-light) 100%);
+  padding: 80rpx 32rpx 48rpx;
+}
+.user-row { display: flex; align-items: center; color: #fff; }
+.avatar { width: 128rpx; height: 128rpx; border-radius: 50%; border: 4rpx solid rgba(255, 255, 255, 0.3); }
+.info { flex: 1; margin-left: 24rpx; }
+.nickname { font-size: 36rpx; font-weight: 600; }
+.member { font-size: 24rpx; opacity: 0.85; margin-top: 8rpx; }
+.arrow { color: rgba(255, 255, 255, 0.6); font-size: 36rpx; }
+
+.stats {
+  margin: -32rpx 32rpx 0; padding: 32rpx 0; border-radius: 16rpx;
+  display: flex; box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+}
+.stat { flex: 1; text-align: center; }
+.stat .num { font-size: 36rpx; font-weight: 600; color: var(--brand); }
+.stat .lbl { font-size: 24rpx; color: var(--text-secondary); margin-top: 4rpx; }
+
+.list { padding: 0 32rpx; }
+.list-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 32rpx 0; border-bottom: 1rpx solid var(--border);
+  font-size: 30rpx;
+}
+.list-item:last-child { border-bottom: none; }
+.list-item .lbl { color: var(--text-primary); }
+.list-item .arrow { color: var(--text-tertiary); }
+
+.list-item.contact { background: #fff; }
+.list-item.contact::after { border: none; }
+
+.logout {
+  margin: 60rpx 32rpx 0; padding: 28rpx 0; text-align: center;
+  background: #fff; color: var(--danger); border-radius: 8rpx; font-size: 30rpx;
+}

@@ -1,0 +1,59 @@
+<view class="page">
+  <!-- Hero -->
+  <view class="hero bg-white p-4 m-2 rounded-lg shadow">
+    <view class="text-xl">欢迎来到青沐</view>
+    <view class="text-sm text-secondary mt-2">运动 · 社群 · 商城</view>
+    <view class="hero-actions" wx:if="{{!isLogin}}">
+      <view class="link" bindtap="goMine">登录享更多 →</view>
+    </view>
+  </view>
+
+  <!-- 数据概览（真实） -->
+  <view class="stats bg-white p-4 m-2 rounded-lg shadow">
+    <view class="text-secondary text-sm">本周数据</view>
+    <view class="flex mt-2" bindtap="goSport">
+      <view class="flex-1 text-center">
+        <view class="text-xl text-brand">{{userStats.totalDistance}}</view>
+        <view class="text-sm text-secondary">公里</view>
+      </view>
+      <view class="flex-1 text-center">
+        <view class="text-xl text-brand">{{userStats.totalCheckins}}</view>
+        <view class="text-sm text-secondary">打卡</view>
+      </view>
+      <view class="flex-1 text-center">
+        <view class="text-xl text-brand">{{userStats.totalPoints}}</view>
+        <view class="text-sm text-secondary">积分</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 快捷入口 -->
+  <view class="quick bg-white m-2 p-4 rounded-lg shadow">
+    <view class="text-secondary text-sm mb-2">快捷</view>
+    <view class="quick-grid">
+      <view class="quick-item" bindtap="goSport">
+        <view class="q-icon">🏃</view>
+        <view class="q-text">去打卡</view>
+      </view>
+      <view class="quick-item" bindtap="goMine">
+        <view class="q-icon">👥</view>
+        <view class="q-text">我的群</view>
+      </view>
+      <view class="quick-item" wx:if="{{isLogin}}" bindtap="goProfile">
+        <view class="q-icon">👤</view>
+        <view class="q-text">资料</view>
+      </view>
+    </view>
+  </view>
+
+  <feature-gate flag="wallet">
+    <view class="m-2 p-4 bg-white rounded-lg shadow" bindtap="goMine">
+      <view class="flex justify-between">
+        <view>我的钱包</view>
+        <view class="text-secondary">›</view>
+      </view>
+    </view>
+  </feature-gate>
+
+  <privacy-popup visible="{{showPrivacy}}" bind:agree="onPrivacyAgree" />
+</view>

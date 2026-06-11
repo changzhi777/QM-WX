@@ -1,0 +1,34 @@
+<view class="page p-4">
+  <view class="title">用户协议</view>
+  <view class="text mt-2">
+    欢迎使用「青沐」（以下简称"本服务"）。在使用前请仔细阅读本协议，使用即视为同意。
+    本服务由青沐生命科技提供，仅供合法、非商业目的的个人健身与社交用途。
+  </view>
+
+  <view class="title mt-4">隐私政策</view>
+  <view class="text mt-2">
+    我们非常重视您的隐私。本服务收集的信息包括：
+  </view>
+  <view class="text mt-2">
+    1. <text class="bold">微信授权信息</text>：openid、unionid、昵称、头像（用于账号登录与展示）
+  </view>
+  <view class="text mt-2">
+    2. <text class="bold">运动数据</text>：距离、时长、配速、心率、步频（您主动提交的打卡数据）
+  </view>
+  <view class="text mt-2">
+    3. <text class="bold">设备信息</text>：设备型号、操作系统版本（用于问题排查）
+  </view>
+  <view class="text mt-4">
+    上述信息仅用于为您提供核心功能，<text class="bold">不会用于商业广告或出售给第三方</text>。
+    您可随时通过「我的-退出登录」删除账号及关联数据。
+  </view>
+
+  <view class="title mt-4">联系我们</view>
+  <view class="text mt-2">
+    如有疑问，请在「我的-联系客服」中留言，或发送邮件至 support@qingmu.example
+  </view>
+
+  <view class="text mt-4 text-secondary text-sm">
+    最后更新：2026-06-11
+  </view>
+</view>

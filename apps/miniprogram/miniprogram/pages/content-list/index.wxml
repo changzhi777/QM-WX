@@ -1,0 +1,50 @@
+<view class="page">
+  <!-- 5 类 tab -->
+  <view class="tabs bg-white">
+    <view
+      class="tab {{tabIndex === index ? 'tab-active' : ''}}"
+      wx:for="{{tabs}}"
+      wx:key="type"
+      data-idx="{{index}}"
+      bindtap="onTabChange"
+    >
+      {{item.label}}
+    </view>
+  </view>
+
+  <view class="list">
+    <view
+      class="card bg-white m-2 p-4 rounded-lg shadow"
+      wx:for="{{list}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="goDetail"
+    >
+      <view class="cover-wrap">
+        <image class="cover" src="{{item.cover || 'images/default-cover.png'}}" mode="aspectFill" />
+        <view class="type-badge">{{item.type}}</view>
+      </view>
+      <view class="info">
+        <view class="title">{{item.title}}</view>
+        <view class="summary text-secondary text-sm mt-2" wx:if="{{item.summary}}">{{item.summary}}</view>
+        <view class="meta text-sm text-secondary mt-2">
+          <text wx:if="{{item.date}}">📅 {{item.date}}</text>
+          <text wx:if="{{item.location}}" class="ml">📍 {{item.location}}</text>
+        </view>
+        <view class="footer">
+          <view class="price" wx:if="{{item.price || item.fee}}">
+            <text class="num">{{item.price || item.fee}}</text>
+            <text class="unit">元</text>
+          </view>
+          <view class="tags">
+            <text class="tag" wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this">{{t}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:if="{{loading}}" class="loading">加载中...</view>
+    <view wx:elif="{{!hasMore && list.length > 0}}" class="end">— 没有更多了 —</view>
+    <view wx:elif="{{!loading && list.length === 0}}" class="empty">暂无内容</view>
+  </view>
+</view>

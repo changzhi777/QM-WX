@@ -1,0 +1,74 @@
+# docker-compose.yml — 1 键起开发环境
+#
+# 用法：
+#   # 仅起数据库
+#   docker compose up -d
+#
+#   # 起数据库 + 后端容器（生产模式）
+#   docker compose --profile prod up -d --build
+#
+#   # 停 + 删数据
+#   docker compose down -v
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: qmwx-pg
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: qmwx_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: qmwx-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ===== 后端服务（可选：用 --profile prod 启动）=====
+  server:
+    profiles: ["prod"]
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    container_name: qmwx-server
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/qmwx_dev
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change-me-32-chars-min-please}
+      JWT_ACCESS_TTL: 2h
+      JWT_REFRESH_TTL: 30d
+      WX_APPID: ${WX_APPID:-wx426885831a05f18e}
+      WX_SECRET: ${WX_SECRET:-}
+      CORS_ORIGINS: "*"
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  pg_data:
+  redis_data:

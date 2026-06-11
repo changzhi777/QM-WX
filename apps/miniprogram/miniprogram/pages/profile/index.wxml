@@ -1,0 +1,65 @@
+<view class="page">
+  <!-- 头像 + 昵称 -->
+  <view class="header bg-white p-4">
+    <view class="row" bindtap="onTapEditName">
+      <view class="key">头像</view>
+      <image class="avatar" src="{{user.avatarUrl || 'images/default-avatar.png'}}" mode="aspectFill" />
+      <view class="arrow">›</view>
+    </view>
+    <view class="divider" />
+    <view class="row" bindtap="onTapEditName">
+      <view class="key">昵称</view>
+      <view class="value">{{user.nickname || '未设置'}}</view>
+      <view class="arrow">›</view>
+    </view>
+  </view>
+
+  <!-- 资料表单 -->
+  <view class="form bg-white p-4 mt-2">
+    <view class="field">
+      <text class="label">性别</text>
+      <picker mode="selector" range="{{['男','女','不填']}}" bindchange="onPickerGender">
+        <view class="picker">
+          {{form.gender === 'male' ? '男' : form.gender === 'female' ? '女' : '不填'}}
+          <text class="arrow-sm">›</text>
+        </view>
+      </picker>
+    </view>
+    <view class="field">
+      <text class="label">生日</text>
+      <picker mode="date" value="{{form.birthday}}" bindchange="onPickerBirthday">
+        <view class="picker">{{form.birthday || '请选择'}} <text class="arrow-sm">›</text></view>
+      </picker>
+    </view>
+    <view class="field">
+      <text class="label">地区</text>
+      <input class="input" placeholder="如：北京" value="{{form.region}}" bindinput="onInputRegion" />
+    </view>
+    <view class="field">
+      <text class="label">身高 (cm)</text>
+      <input class="input" type="number" placeholder="如：170" value="{{form.height}}" bindinput="onInputHeight" />
+    </view>
+    <view class="field">
+      <text class="label">体重 (kg)</text>
+      <input class="input" type="digit" placeholder="如：60" value="{{form.weight}}" bindinput="onInputWeight" />
+    </view>
+  </view>
+
+  <view class="p-4">
+    <button
+      class="btn-primary {{saving ? 'btn-disabled' : ''}}"
+      bindtap="onSave"
+      disabled="{{saving}}"
+    >
+      {{saving ? '保存中...' : '保存资料'}}
+    </button>
+  </view>
+
+  <profile-popup
+    visible="{{showPopup}}"
+    initial-nickname="{{user.nickname}}"
+    initial-avatar-url="{{user.avatarUrl}}"
+    bind:close="onPopupClose"
+    bind:success="onProfileUpdated"
+  />
+</view>

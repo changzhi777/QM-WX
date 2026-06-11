@@ -1,0 +1,59 @@
+# ===== 依赖 =====
+node_modules/
+.pnpm-store/
+pnpm-lock.yaml.bak
+
+# ===== 构建产物 =====
+dist/
+build/
+out/
+*.min.js
+*.min.css
+*.map
+
+# ===== 环境与密钥 =====
+.env
+.env.local
+.env.*.local
+*.pem
+secrets.json
+
+# ===== 编辑器 =====
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ===== 日志与缓存 =====
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.cache/
+.turbo/
+coverage/
+
+# ===== 微信小程序特有 =====
+miniprogram_npm/
+project.private.config.json
+project.config.json.bak
+
+# ===== 测试 =====
+.nyc_output/
+junit.xml
+test-results/
+
+# ===== Docker =====
+.docker-data/
+
+# ===== 本地上传（开发期） =====
+apps/server/uploads/
+
+# ===== 编辑器 =====
+.history/

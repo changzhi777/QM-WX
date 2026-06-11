@@ -1,0 +1,2812 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>青沐生命科技小程序 · 审查与重构设计文档</title><style>
+@page { size: A4; margin: 18mm 15mm; @bottom-center { content: counter(page) " / " counter(pages); font-size: 9px; color:#999; } }
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+       "Droid Sans Fallback", sans-serif; color:#1f2937; line-height:1.7; font-size:14px;
+       max-width: 920px; margin: 0 auto; padding: 24px; }
+h1 { color:#0B8C72; border-bottom:3px solid #0FAF8E; padding-bottom:8px; font-size:26px; margin-top:48px; page-break-before: always; }
+h1:first-of-type { page-break-before: avoid; margin-top:0; }
+h2 { color:#0B8C72; border-left:4px solid #0FAF8E; padding-left:10px; font-size:20px; margin-top:32px; }
+h3 { font-size:16px; color:#111827; margin-top:24px; }
+table { border-collapse:collapse; width:100%; margin:14px 0; font-size:12.5px; }
+th { background:#E6F7F3; color:#0B8C72; text-align:left; }
+th,td { border:1px solid #d1d5db; padding:6px 9px; vertical-align:top; }
+tr:nth-child(even) td { background:#fafafa; }
+code { background:#f3f4f6; padding:1px 5px; border-radius:4px; font-size:12.5px;
+       font-family:"SF Mono",Menlo,Consolas,"Droid Sans Fallback",monospace; }
+pre { background:#0f172a; color:#e2e8f0; padding:14px; border-radius:8px; overflow-x:auto;
+      font-size:12px; line-height:1.5; }
+pre code { background:none; color:inherit; padding:0; }
+blockquote { border-left:4px solid #0FAF8E; background:#E6F7F3; margin:14px 0;
+             padding:10px 14px; border-radius:0 8px 8px 0; color:#374151; }
+blockquote p { margin:4px 0; }
+a { color:#0B8C72; }
+hr { border:none; border-top:1px dashed #cbd5e1; margin:28px 0; }
+.cover { text-align:center; padding:120px 0 60px; page-break-after: always; }
+.cover h1 { border:none; font-size:34px; page-break-before: avoid; }
+.cover p { color:#6b7280; }
+.toc-note { color:#6b7280; font-size:12px; }
+</style></head><body>
+<div class="cover"><h1>青沐生命科技微信小程序<br>代码审查与重构设计文档</h1>
+<p>代码审查报告 · 重构架构设计 · 产品原型与业务建议 · 开发任务拆解</p>
+<p class="toc-note">生成日期 2026-06-10 · 基于 running-group-stats 全量代码审查</p></div>
+<section data-src="README.md"><h1 id="_1">青沐生命科技小程序 · 重构文档包</h1>
+<blockquote>
+<p>生成日期：2026-06-10　|　基于代码库 running-group-stats 全量审查（15 页面 / 13 云函数 / ~8800 行）</p>
+</blockquote>
+<h2 id="_2">文档导航</h2>
+<table>
+<thead>
+<tr>
+<th>文档</th>
+<th>内容</th>
+<th>读者</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="01-code-review.md">01-code-review.md</a></td>
+<td>代码审查报告：P0/P1/P2 问题清单、各文件速查表</td>
+<td>全体开发</td>
+</tr>
+<tr>
+<td><a href="02-architecture.md">02-architecture.md</a></td>
+<td>重构架构：目录结构、数据库集合、云函数 API 契约、登录/群/支付流程</td>
+<td>开发（实现依据）</td>
+</tr>
+<tr>
+<td><a href="03-product-prototype.md">03-product-prototype.md</a></td>
+<td>产品原型与业务建议：业务闭环、竞品参考、逐页交互说明</td>
+<td>产品 + 开发</td>
+</tr>
+<tr>
+<td><a href="04-task-breakdown.md">04-task-breakdown.md</a></td>
+<td>任务拆解：5 个 Phase、验收标准、里程碑、风险登记</td>
+<td>项目负责人 + 开发</td>
+</tr>
+<tr>
+<td><a href="05-payment.md">05-payment.md</a></td>
+<td>支付接入：微信支付/支付宝申请方法与材料、开发细则、参考代码、积分内部化规则</td>
+<td>负责人（申请）+ 开发</td>
+</tr>
+<tr>
+<td><a href="06-device-integration.md">06-device-integration.md</a></td>
+<td>手表/手环对接：蓝牙 BLE 实时心率 + 各厂商平台 OAuth 授权数据采集（Phase 6 任务表）</td>
+<td>开发</td>
+</tr>
+<tr>
+<td><a href="07-food-nutrition-apis.md">07-food-nutrition-apis.md</a></td>
+<td>国内菜谱/营养 API 选型：菜谱内容、营养成分、AI 菜品识别、缓存代理设计</td>
+<td>产品 + 开发</td>
+</tr>
+<tr>
+<td><a href="08-recipe-ingestion-and-ludong.md">08-recipe-ingestion-and-ludong.md</a></td>
+<td>菜谱采集 ETL 管道（统一 Schema/去重/审核）+ 内部律动平台双向对接规范（Phase 7）</td>
+<td>开发 + 律动团队</td>
+</tr>
+<tr>
+<td>review-package.html</td>
+<td>以上四份的网页汇总版（可浏览器打开/打印）</td>
+<td>任何人</td>
+</tr>
+<tr>
+<td>review-package.pdf</td>
+<td>PDF 版（可打印/分发）</td>
+<td>任何人</td>
+</tr>
+</tbody>
+</table>
+<h2 id="30">30 秒结论</h2>
+<ol>
+<li>现状是<strong>可演示原型</strong>：约 80% 功能为模拟实现，不可直接上线。</li>
+<li><strong>三个致命问题必须先修</strong>：钱包余额客户端可篡改（P0-1）、云函数信任前端 openid（P0-2/3）、"自动统计微信群消息"无微信开放能力支撑（P0-6，需按 02 §5.2 的 shareTicket+打卡方案重做）。</li>
+<li>支付依赖商户号审批，<strong>钱包/会员购买/支付全部挂功能开关</strong>，V1.0 用"积分兑换 + 意向单"先行上线。</li>
+<li>重构总量约 <strong>28–35 人天</strong>，按 04 文档 Phase 0→5 执行，Phase 0 地基不完成不开发业务。</li>
+</ol></section><section data-src="01-code-review.md"><h1 id="01">01 代码审查报告</h1>
+<blockquote>
+<p>项目：青沐生命科技微信小程序（running-group-stats）
+审查日期：2026-06-10　|　审查范围：15 个页面、13 个云函数、全局配置，共约 8800 行
+结论：<strong>当前代码是「可演示的原型」，不是「可上线的产品」。约 80% 的业务逻辑为模拟实现（mock），且存在多个安全级别的致命缺陷，不建议在现有代码上直接补功能，应按 02 号文档的架构做受控重构。</strong></p>
+</blockquote>
+<hr />
+<h2 id="1">1. 总体评估</h2>
+<table>
+<thead>
+<tr>
+<th>维度</th>
+<th>评分 (满分5)</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>可运行性</td>
+<td>★★☆☆☆</td>
+<td>云环境 ID 为占位符、sitemap.json 缺失、3 个被调用的云函数不存在</td>
+</tr>
+<tr>
+<td>安全性</td>
+<td>★☆☆☆☆</td>
+<td>openid 由前端传入可伪造；钱包余额前端计算可任意篡改</td>
+</tr>
+<tr>
+<td>技术可行性</td>
+<td>★★☆☆☆</td>
+<td>核心卖点「自动统计微信群聊消息」无对应微信开放能力，前提不成立</td>
+</tr>
+<tr>
+<td>代码质量</td>
+<td>★★☆☆☆</td>
+<td>大量 mock 数据硬编码、重复逻辑、3565 行单文件样式、无封装</td>
+</tr>
+<tr>
+<td>产品完整度</td>
+<td>★★★☆☆</td>
+<td>页面骨架和信息架构基本齐全，UI 结构清晰，可作为原型参考</td>
+</tr>
+</tbody>
+</table>
+<p><strong>模拟实现占比统计</strong>（"假功能"清单）：</p>
+<table>
+<thead>
+<tr>
+<th>模块</th>
+<th>真实程度</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>登录</td>
+<td>假 — 未调用 <code>wx.login</code>，拿不到 openid，全靠 <code>'test_openid'</code> 兜底</td>
+</tr>
+<tr>
+<td>群绑定/自动统计</td>
+<td>假 — <code>bindToGroup</code> 用 <code>Math.random()</code> 生成假群名（group.js:120-148）</td>
+</tr>
+<tr>
+<td>群成员排名/周月年汇总</td>
+<td>假 — 张三李四王五硬编码（group.js:3-50, 380-657）</td>
+</tr>
+<tr>
+<td>商城（statistics 页）</td>
+<td>假 — 8 个商品硬编码，下单只弹 Toast（statistics.js:148-160）</td>
+</tr>
+<tr>
+<td>会员购买</td>
+<td>假 — 确认弹窗后直接写本地缓存，无支付（settings.js:152-178）</td>
+</tr>
+<tr>
+<td>钱包充值</td>
+<td>假 — <code>setTimeout</code> 1 秒后本地加余额（wallet.js:96-140）</td>
+</tr>
+<tr>
+<td>马拉松报名/酒店预订/马博会购买</td>
+<td>假 — 调用了<strong>不存在</strong>的云函数</td>
+</tr>
+<tr>
+<td>AI 机器人/智能体</td>
+<td>假 — KIMI、即梦、抖音发布全部为 console.log 模拟</td>
+</tr>
+<tr>
+<td>用户资料、运动APP绑定、打卡入库</td>
+<td>半真 — 云函数有真实数据库读写，但 openid 链路是断的</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-p0">2. P0 问题（安全/阻断，必须修复才能上线）</h2>
+<h3 id="p0-1">P0-1 钱包余额由前端计算并整体覆盖写库 —— 可任意篡改资金</h3>
+<ul>
+<li>位置：<code>pages/wallet/wallet.js:96-140</code>（doRecharge）、<code>cloudfunctions/save-wallet-data/index.js</code></li>
+<li>现状：前端 <code>balance + amount</code> 后调用 <code>save-wallet-data</code> 把 balance、transactions 整体写入数据库；云函数不做任何校验。</li>
+<li>风险：任何用户用调试工具调用云函数即可把自己余额改成任意数字。<strong>涉及资金的字段绝不允许客户端直写。</strong></li>
+<li>修复方向：余额只能由服务端在支付回调/消费扣减中变更（见 02 文档 §6 钱包设计）。当前支付商户号未下来，整个钱包模块应挂功能开关隐藏。</li>
+</ul>
+<h3 id="p0-2-openid">P0-2 所有云函数信任前端传入的 openid —— 身份可伪造</h3>
+<ul>
+<li>位置：全部 13 个云函数（如 <code>save-checkin/index.js:11</code>、<code>get-wallet-data/index.js:11</code>）</li>
+<li>现状：<code>const { openid } = event</code>，前端传什么就是谁。任何人可读写他人的资料、钱包、打卡记录。</li>
+<li>修复方向：云函数内一律使用 <code>cloud.getWXContext().OPENID</code>，<strong>删除 event 中的 openid 参数</strong>。这是云开发的标准做法，一行代码的事。</li>
+</ul>
+<h3 id="p0-3-test_openid">P0-3 <code>'test_openid'</code> 兜底导致全部用户数据混写</h3>
+<ul>
+<li>位置：10 个页面文件共 14 处，如 <code>index.js:88</code>、<code>group.js:573</code>、<code>wallet.js:48</code> 的 <code>userInfo.openId || 'test_openid'</code></li>
+<li>现状：<code>getUserProfile</code> 返回的 userInfo 根本没有 openId 字段，所以<strong>所有真实用户都会落到 'test_openid'</strong>，全员共享同一份资料/钱包/打卡数据。</li>
+<li>修复方向：随 P0-2 一并消灭；openid 永远不从前端传。</li>
+</ul>
+<h3 id="p0-4-wxlogin">P0-4 登录链路断裂：从未调用 <code>wx.login</code></h3>
+<ul>
+<li>位置：<code>pages/login/login.js</code>、<code>app.js</code></li>
+<li>现状：登录页只调 <code>getUserProfile</code> 拿头像昵称就跳首页；没有 code → <code>code2Session</code>/云函数换取 openid 的步骤；无登录态、无路由守卫，未登录也能用全部功能。</li>
+<li>附带问题：<code>getUserProfile</code> 自 2022-10-25 起已回收，返回匿名头像昵称；<code>getUserInfo</code>（app.js:18、login.js:33）同样废弃。需改用 <code>button open-type="chooseAvatar"</code> + <code>input type="nickname"</code> 方案。</li>
+</ul>
+<h3 id="p0-5">P0-5 调用不存在的云函数（运行时必然报错）</h3>
+<ul>
+<li><code>save-marathon-registration</code>（marathon.js:118）</li>
+<li><code>save-hotel-booking</code>（hotel.js:97）</li>
+<li><code>save-purchase</code>（marathon-expo.js:191）</li>
+<li>三个页面的"成功" Toast 都在云函数调用之外提前弹出，用户看到"报名成功"但什么都没发生。</li>
+</ul>
+<h3 id="p0-6">P0-6 「自动统计微信群聊消息」技术前提不成立</h3>
+<ul>
+<li>位置：<code>group.js</code>（startAutoStats/checkGroupMessages）、<code>cloudfunctions/ai-robot</code>、<code>get-group-data</code>、<code>send-summary</code></li>
+<li>事实：<strong>微信不向小程序/云函数开放任何读取群聊消息的 API</strong>，也不能主动向微信群发消息。<code>ai-robot</code> 的 <code>getGroupMessages()</code> 和 <code>send-summary</code> 的 <code>sendMessageToGroup()</code> 永远只能是 mock。</li>
+<li>可行替代（见 02 文档 §5）：</li>
+<li>群身份识别：群内转发小程序卡片 → <code>wx.getGroupEnterInfo</code> 拿 <code>opengid</code>，实现"同群成员看同一份榜单"；</li>
+<li>数据来源：成员在小程序内打卡（已有 save-checkin），而非抓群消息；</li>
+<li>周报触达：订阅消息（subscribe message）推给个人 + 生成战报图片让群主转发到群。</li>
+</ul>
+<h3 id="p0-7">P0-7 基础配置占位符 / 缺失文件</h3>
+<ul>
+<li><code>app.js:8</code>：<code>env: 'your-cloud-env-id'</code> → 所有 <code>wx.cloud.callFunction</code> 失败。</li>
+<li><code>app.js:35</code>：<code>baseUrl: 'https://your-backend-api.com'</code>（实际无人使用，删除）。</li>
+<li><code>index.js:46</code>：百度地图 AK 为占位符 <code>'您的百度地图AK'</code>；且百度 geocoder <strong>v2 已停服</strong>，request 合法域名也未配置。建议改用腾讯位置服务（微信系，有官方小程序 SDK）。</li>
+<li><code>app.json:55</code> 引用 <code>sitemap.json</code>，<strong>文件不存在</strong>，构建报错。</li>
+<li>13 个云函数目录均<strong>无 package.json</strong>，<code>wx-server-sdk</code> 依赖未声明，无法部署。</li>
+<li><code>app.json:54</code>：<code>"debug": true</code> 上线前必须关闭。</li>
+</ul>
+<hr />
+<h2 id="3-p1">3. P1 问题（功能缺陷）</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>问题</th>
+<th>位置</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P1-1</td>
+<td>积分由前端计算并上传，可作弊</td>
+<td>group.js:530、update-user-points</td>
+<td><code>Math.floor(distance)</code> 在前端算好传给云函数；应服务端按打卡记录计算，并加防作弊上限（如单日 ≤50km）</td>
+</tr>
+<tr>
+<td>P1-2</td>
+<td>打卡无任何数据校验</td>
+<td>group.js:516、save-checkin</td>
+<td>距离可为负数/9999，配速格式不校验，可重复提交刷分</td>
+</tr>
+<tr>
+<td>P1-3</td>
+<td><code>setInterval</code> 自动统计无意义且泄漏</td>
+<td>group.js:170-176</td>
+<td>小程序切后台即挂起，定时器不可靠；switch 反复开关会注册多个 interval 且从不清理</td>
+</tr>
+<tr>
+<td>P1-4</td>
+<td><code>wx.openUrl</code> 不存在</td>
+<td>smart-agent.js:78</td>
+<td>小程序无此 API，打开外链需 web-view 或复制链接</td>
+</tr>
+<tr>
+<td>P1-5</td>
+<td>onPullDownRefresh 永不触发</td>
+<td>index.js:104</td>
+<td>页面未配置 <code>enablePullDownRefresh</code>（项目里根本没有任何页面级 .json 文件）；且用 <code>this.onLoad()</code> 模拟刷新是反模式</td>
+</tr>
+<tr>
+<td>P1-6</td>
+<td>钱包流水存在单文档数组里</td>
+<td>save-wallet-data</td>
+<td>云数据库单文档上限 1MB，流水必须独立集合</td>
+</tr>
+<tr>
+<td>P1-7</td>
+<td>退出登录逻辑无效</td>
+<td>settings.js:130-145</td>
+<td>删除的 <code>userInfo</code> storage 从未被写入过；且 navigateTo 到 login 后用户按返回又回来了，应 reLaunch</td>
+</tr>
+<tr>
+<td>P1-8</td>
+<td>首页/我的页数据全部硬编码</td>
+<td>index.wxml:60-80、settings.wxml:18-35</td>
+<td>"128 次打卡 / 365 公里 / 1234 积分"为写死数字，与数据库无关；首页"平均配速 42"语义错误</td>
+</tr>
+<tr>
+<td>P1-9</td>
+<td>会员等级规则双处重复且不一致风险</td>
+<td>group.js:155-168、settings.js:33-60</td>
+<td>等级→权益映射各写一份，改一处漏一处</td>
+</tr>
+<tr>
+<td>P1-10</td>
+<td>图片资源缺失</td>
+<td>get-group-data 等引用 /images/avatar.png</td>
+<td>项目无 images 目录</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="4-p2">4. P2 问题（代码质量/工程规范）</h2>
+<ol>
+<li><strong>页面命名与功能不符</strong>：<code>statistics</code> 实为商城、<code>group</code> 实为运动中心、<code>settings</code> 实为"我的"。tabBar 文案（首页/运动/商城/我的）与目录名对不上，新人接手必然踩坑。重构时目录改名为 <code>mall</code>、<code>sport</code>、<code>mine</code>。</li>
+<li><strong>app.wxss 3565 行单文件</strong>，无页面级 wxss、无设计变量（主色 #1aad19 是微信绿，与"青沐"品牌无关，需定品牌色）。</li>
+<li><strong>无任何封装</strong>：<code>wx.cloud.callFunction</code> 散落 20+ 处，success/fail 回调风格混杂 async/await；无统一 loading、错误提示、重试。</li>
+<li><strong>无组件化</strong>：排行榜项、商品卡片、功能列表项等重复结构应抽 component。</li>
+<li><strong>无 .gitignore</strong>：<code>project.private.config.json</code>、<code>.DS_Store</code> 已入库。</li>
+<li><strong>statistics.wxml 528 行</strong>：分类/品牌/详情三层视图挤在一页靠 wx:if 切换，应拆页面或组件。</li>
+<li><strong>console.log 残留 40+ 处</strong>；注释里大量"实际项目中这里应该…"——这些就是本报告的待办清单。</li>
+<li><strong>smart-agent 模块定位存疑</strong>：在 C 端小程序里放"AI 生成视频并发布抖音"的运营工具，且抖音发布无合规 API，建议移出小程序（见 03 文档 §7）。</li>
+</ol>
+<hr />
+<h2 id="5">5. 各文件问题速查表</h2>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>P0</th>
+<th>P1</th>
+<th>P2</th>
+<th>重构动作</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>app.js</td>
+<td>环境ID占位、废弃API</td>
+<td>—</td>
+<td>baseUrl 无用</td>
+<td>重写（登录态管理）</td>
+</tr>
+<tr>
+<td>app.json</td>
+<td>sitemap 缺失</td>
+<td>debug:true</td>
+<td>tabBar 无图标</td>
+<td>修正</td>
+</tr>
+<tr>
+<td>app.wxss</td>
+<td>—</td>
+<td>—</td>
+<td>3565行</td>
+<td>拆分到页面/组件</td>
+</tr>
+<tr>
+<td>pages/login</td>
+<td>无 wx.login</td>
+<td>废弃 getUserProfile</td>
+<td>—</td>
+<td>重写</td>
+</tr>
+<tr>
+<td>pages/index</td>
+<td>百度AK/已停服API</td>
+<td>假数据、下拉刷新失效</td>
+<td>—</td>
+<td>重写数据层，UI 保留</td>
+</tr>
+<tr>
+<td>pages/group</td>
+<td>群消息前提不成立、test_openid</td>
+<td>定时器泄漏、打卡无校验、积分作弊</td>
+<td>657行混3个职责</td>
+<td>拆为 sport + group 两页，按新群方案重写</td>
+</tr>
+<tr>
+<td>pages/statistics</td>
+<td>—</td>
+<td>假商品、假下单</td>
+<td>528行wxml</td>
+<td>改名 mall，接数据库</td>
+</tr>
+<tr>
+<td>pages/settings</td>
+<td>假会员购买</td>
+<td>退出登录无效、假数据</td>
+<td>等级规则重复</td>
+<td>改名 mine，会员购买挂支付开关</td>
+</tr>
+<tr>
+<td>pages/wallet</td>
+<td>余额可篡改</td>
+<td>流水单文档</td>
+<td>—</td>
+<td>服务端重写 + 功能开关</td>
+</tr>
+<tr>
+<td>pages/profile</td>
+<td>test_openid</td>
+<td>实名认证为假</td>
+<td>showModal 编辑体验差</td>
+<td>数据链路修复，认证接微信实名能力或暂下线</td>
+</tr>
+<tr>
+<td>pages/bind-app</td>
+<td>test_openid</td>
+<td>绑定为假（无 OAuth）</td>
+<td>—</td>
+<td>暂改为"敬请期待"或仅记录意向</td>
+</tr>
+<tr>
+<td>pages/marathon、hotel、food、scenic、rural-support、marathon-expo</td>
+<td>云函数不存在</td>
+<td>全假数据</td>
+<td>结构雷同</td>
+<td>统一为"内容/服务"模块，数据进数据库（见 02 §7）</td>
+</tr>
+<tr>
+<td>pages/smart-agent</td>
+<td>抖音发布不可行</td>
+<td>wx.openUrl 不存在</td>
+<td>—</td>
+<td>移出 C 端，独立评估</td>
+</tr>
+<tr>
+<td>cloudfunctions/*</td>
+<td>openid 信任前端、无 package.json</td>
+<td>—</td>
+<td>init 风格不一</td>
+<td>按 02 §8 合并重写为 6 个函数</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6">6. 做得对的地方（保留）</h2>
+<ul>
+<li>选择微信云开发（免运维、免域名备案），适合当前团队规模，<strong>继续沿用</strong>。</li>
+<li>页面信息架构完整，四个 tab 的产品骨架（首页/运动/商城/我的）方向正确。</li>
+<li>wxml 结构和 class 命名整洁一致，UI 层可大量复用。</li>
+<li><code>update-user-points</code> 用了 <code>db.command.inc</code> 原子自增，写法正确。</li>
+<li>save 类云函数普遍有"查询→存在则更新否则新建"的 upsert 意识。</li>
+</ul>
+<blockquote>
+<p>下一步请阅读：<strong>02-architecture.md</strong>（目标架构与数据库/API 设计）→ <strong>04-task-breakdown.md</strong>（按此分配开发任务）。</p>
+</blockquote></section><section data-src="02-architecture.md"><h1 id="02">02 重构架构设计</h1>
+<blockquote>
+<p>项目：青沐生命科技微信小程序
+本文档是重构的<strong>唯一技术依据</strong>，开发同学按本文实现，遇到与旧代码冲突处一律以本文为准。
+产品定位（已确认）：大健康生活方式平台 = <strong>运动社群 + 健康/运动商城 + 赛事与本地服务</strong>。钱包/支付因商户号申请中，<strong>全部挂功能开关</strong>。</p>
+</blockquote>
+<hr />
+<h2 id="1">1. 设计原则</h2>
+<ol>
+<li><strong>服务端权威</strong>：身份（openid）、积分、余额、订单状态只能由云函数产生和变更，前端永远只是展示与发起。</li>
+<li><strong>能力边界内设计</strong>：不依赖微信未开放的能力（读群消息、向群发消息、抖音发布）。</li>
+<li><strong>功能开关</strong>：未就绪的模块（钱包、支付、会员购买、智能体）通过远程配置隐藏，不删代码不堵路。</li>
+<li><strong>渐进式重构</strong>：保留云开发技术栈与现有 UI 骨架，按模块逐个替换数据层，避免推倒重来。</li>
+<li><strong>单一数据源</strong>：每条业务规则（会员权益、积分规则）只在一处定义（服务端配置 + 前端 constants 镜像）。</li>
+</ol>
+<h2 id="2">2. 总体架构</h2>
+<pre><code>┌─────────────────────────── 微信小程序（前端） ───────────────────────────┐
+│  pages/                    components/              services/           │
+│  index 首页                ranking-list 排行榜       api.js  调用封装     │
+│  sport 运动(打卡/我的群)    product-card 商品卡       user.js sport.js    │
+│  group-detail 群详情       cell 列表项               mall.js content.js  │
+│  mall 商城 / product 详情  empty/loading 状态        wallet.js           │
+│  mine 我的 / profile 资料  └── utils/ auth.js format.js constants.js    │
+│  wallet 钱包(开关) 等       └── config/ env.js                           │
+└──────────────────────────────────┬───────────────────────────────────────┘
+                                   │ wx.cloud.callFunction
+┌──────────────────────────────────▼───────────────────────────────────────┐
+│  云函数（6 个，action 路由模式）                                           │
+│  user      登录/资料/实名/绑定APP                                          │
+│  sport     打卡/统计/积分/群(创建/加入/榜单/周报)                            │
+│  mall      商品/购物车/订单                                                │
+│  content   赛事/酒店/景区/餐饮/乡村振兴 内容查询与报名意向                    │
+│  wallet    余额/流水/支付(开关关闭时全部拒绝)                                │
+│  admin     内容管理/配置下发(仅管理员openid白名单)                           │
+├──────────────────────────────────────────────────────────────────────────┤
+│  云数据库（集合见 §4） │ 云存储（商品图/头像/战报图） │ 定时触发器(周报聚合)   │
+└──────────────────────────────────────────────────────────────────────────┘
+</code></pre>
+<p><strong>为什么合并成 6 个云函数</strong>：13 个零散函数 → 每个函数冷启动、部署、权限都要单独管。按领域合并 + <code>event.action</code> 路由，是云开发社区的成熟实践，也方便共用鉴权与校验中间层。</p>
+<h2 id="3">3. 前端目录结构（目标）</h2>
+<pre><code>miniprogram/
+├── app.js / app.json / app.wxss(仅设计变量+通用类&lt;300行)
+├── sitemap.json                ← 必须补建
+├── config/
+│   └── env.js                  // 云环境ID、版本号
+├── utils/
+│   ├── auth.js                 // 登录态：ensureLogin()、getUser()、logout()
+│   ├── format.js               // 配速/距离/日期格式化
+│   └── constants.js            // 会员等级、商品分类等枚举（与服务端配置对齐）
+├── services/                   // 唯一允许出现 callFunction 的地方
+│   ├── api.js                  // call(name, action, data) 统一封装：loading/错误toast/登录态过期重试
+│   ├── user.js  sport.js  mall.js  content.js  wallet.js
+├── components/
+│   ├── ranking-list/  product-card/  cell/  empty-state/  feature-gate/
+├── pages/
+│   ├── index/                  // 首页（tab1）
+│   ├── sport/                  // 运动中心（tab2，原 group 改名拆分）
+│   ├── group-detail/           // 群榜单详情
+│   ├── mall/                   // 商城（tab3，原 statistics 改名）
+│   ├── product-detail/         // 商品详情（从 528 行 wxml 中拆出）
+│   ├── order-confirm/ order-list/
+│   ├── mine/                   // 我的（tab4，原 settings 改名）
+│   ├── profile/  bind-app/  wallet/  membership/
+│   └── content-list/ content-detail/   // 赛事/酒店/景区/餐饮/乡村 五合一模板页
+└── images/tabbar/*.png         // tabBar 图标（当前缺失）
+</code></pre>
+<blockquote>
+<p>改名映射：<code>statistics→mall</code>、<code>group→sport</code>、<code>settings→mine</code>。马拉松/酒店/美食/景区/乡村振兴五个页面<strong>合并为 content-list + content-detail 模板页</strong>，用 <code>type</code> 参数区分，消灭五份雷同代码。</p>
+</blockquote>
+<h2 id="4">4. 数据库设计（云数据库集合）</h2>
+<p>所有集合权限设为「仅创建者可读写」或「所有用户不可读写（仅云函数）」，<strong>禁止前端直连写库</strong>。</p>
+<h3 id="usersmerge-usersuser_details">users（用户，merge 现 users/user_details）</h3>
+<pre><code class="language-js">{
+  _openid, nickname, avatarFileID,
+  profile: { name, phone, gender, birthday, region, height, weight },
+  certified: false,            // 实名认证（二期）
+  memberLevel: 'free|monthly|quarterly|yearly',
+  memberExpireAt: Date|null,   // 会员到期时间（服务端写）
+  points: 0,                   // 积分余额（仅云函数 inc）
+  boundApps: { garmin:false, huawei:false, ... },
+  stats: { totalDistance, totalCheckins, totalPoints },  // 冗余汇总，打卡时 inc
+  createdAt, updatedAt
+}
+</code></pre>
+<h3 id="checkins">checkins（打卡记录）</h3>
+<pre><code class="language-js">{
+  _openid, groupId|null,
+  distance: Number,            // km，服务端校验 0.5~50
+  durationSec: Number|null,    // 建议新增：时长，可反推配速防伪造
+  pace: 'mm:ss', heartRate, cadence,
+  points: Number,              // 服务端计算
+  date: 'YYYY-MM-DD',          // 用于&quot;当日重复打卡&quot;约束（同日同群最多1次计积分）
+  createdAt
+}
+</code></pre>
+<h3 id="groups-group_members">groups / group_members（跑群）</h3>
+<pre><code class="language-js">// groups
+{ _id, opengid|null, name, ownerOpenid, memberCount, createdAt }
+// group_members
+{ groupId, _openid, nickname, avatarFileID, joinedAt, role:'owner|member' }
+</code></pre>
+<h3 id="products-orders">products / orders（商城）</h3>
+<pre><code class="language-js">// products
+{ _id, name, category, brand, price, originalPrice, memberDiscount,
+  images:[fileID], description, stock, status:'on|off', sort }
+// orders
+{ _id, _openid, items:[{productId,name,price,qty}], totalAmount,
+  pointsUsed, payAmount,
+  status:'pending_pay|paid|shipped|done|cancelled',   // 支付开关关闭时只允许 pending_pay→cancelled
+  payment:{ transactionId, paidAt }|null, address, createdAt }
+</code></pre>
+<h3 id="points_records">points_records（积分流水，只增不改）</h3>
+<pre><code class="language-js">{ _openid, change:+10|-100, type:'checkin|signup_bonus|order_deduct|member_gift',
+  refId, balance:Number, createdAt }
+</code></pre>
+<h3 id="wallets-wallet_transactions">wallets / wallet_transactions（钱包，开关关闭期仍建好结构）</h3>
+<pre><code class="language-js">// wallets：{ _openid, balance:0, status:'active|frozen', updatedAt }
+// wallet_transactions：{ _openid, type:'recharge|consume|refund', amount,
+//   orderId|null, wxTransactionId|null, status:'success|pending|failed', createdAt }
+</code></pre>
+<p><strong>铁律</strong>：balance 只由 wallet 云函数在「微信支付回调验证成功」或「订单扣减」时变更；任何来自 event 的 balance 字段直接拒绝。</p>
+<h3 id="contents">contents（赛事/酒店/景区/餐饮/乡村振兴 统一内容表）</h3>
+<pre><code class="language-js">{ _id, type:'marathon|hotel|scenic|food|rural',
+  title, cover:fileID, summary, detail(富文本),
+  price|fee, date|validRange, location, tags:[],
+  actionType:'enroll|book|link|none',   // 报名/预订/外链/纯展示
+  status:'on|off', sort, createdAt }
+</code></pre>
+<h3 id="enrollments">enrollments（报名/预订意向）</h3>
+<pre><code class="language-js">{ _openid, contentId, type, formData:{name,phone,...}, status:'submitted|confirmed|cancelled', createdAt }
+</code></pre>
+<blockquote>
+<p>支付未开通前，马拉松报名/酒店预订一律走「意向登记 + 客服跟进」，不收钱。</p>
+</blockquote>
+<h3 id="app_config">app_config（远程配置/功能开关，所有用户只读）</h3>
+<pre><code class="language-js">{ _id:'feature_flags',
+  wallet:false, payment:false, membershipPurchase:false,
+  smartAgent:false, bindApp:false,
+  noticeBar:'', minVersion:'1.0.0' }
+{ _id:'member_levels', free:{maxGroups:2,discount:1}, monthly:{price:29.9,maxGroups:5,discount:0.9,monthlyGiftPoints:100}, ... }
+{ _id:'points_rules', perKm:1, dailyMaxKm:50, dailyMaxCheckins:1, signupBonus:50 }
+</code></pre>
+<h2 id="5">5. 关键流程设计</h2>
+<h3 id="51">5.1 登录（替换现有假登录）</h3>
+<pre><code>小程序启动 app.onLaunch
+  └─ wx.login() → code（其实云函数不需要code，云开发自动注入openid）
+  └─ call user.login {}
+       云函数: openid = cloud.getWXContext().OPENID
+               users 中无记录 → 创建(送 signupBonus 积分) ；有 → 返回用户+config
+  └─ 本地缓存 user + featureFlags；globalData.user 就绪
+首次完善资料（可跳过）：
+  button open-type=&quot;chooseAvatar&quot; → 头像临时文件 → 上传云存储
+  input type=&quot;nickname&quot; → 昵称
+  call user.updateProfile
+</code></pre>
+<ul>
+<li>登录页不再是闸口：游客可浏览首页/商城/内容，<strong>打卡、下单、进群时</strong> <code>auth.ensureLogin()</code> 拦截补登录。</li>
+<li>废弃 <code>getUserProfile/getUserInfo</code> 全部删除。</li>
+</ul>
+<h3 id="52">5.2 跑群（替代「读取微信群消息」的可行方案）</h3>
+<pre><code>创建群：群主在 sport 页点「创建跑群」→ call sport.createGroup → 得 groupId
+入群：  群主点「邀请」→ wx.shareAppMessage 转发到微信群（携带 groupId）
+        成员点卡片进入 → 若由群聊打开，wx.getGroupEnterInfo 可取 opengid
+        （opengid 用于绑定&quot;小程序群↔微信群&quot;，同一微信群只允许建一个跑群）
+        call sport.joinGroup {groupId}
+打卡：  成员在小程序内填距离/配速（或后续接微信运动步数）→ call sport.checkin
+        服务端：校验范围/当日次数 → 写 checkins → inc 用户积分 → inc 群统计
+榜单：  call sport.groupRanking {groupId, period:'week|month|year'}
+        聚合 checkins（按 date 范围 group by openid）
+周报：  云函数定时触发器(每周日20:00) 聚合各群数据 → 写 group_reports
+        → 订阅消息推给已订阅成员 + 生成战报分享图，群主一键转发回微信群
+</code></pre>
+<ul>
+<li>会员等级决定可加入/创建群数量（free 2 / monthly 5 / quarterly 8 / yearly 15，读 app_config）。</li>
+<li><code>setInterval</code>、<code>ai-robot</code>、<code>send-summary</code>、<code>get-group-data</code> 全部删除。</li>
+</ul>
+<h3 id="53">5.3 打卡积分（防作弊）</h3>
+<p>服务端规则（points_rules 配置）：distance ∈ [0.5, 50]；每日计分打卡 ≤1 次；积分 = floor(distance × perKm)；流水写 points_records，余额 <code>db.command.inc</code>。前端只展示结果，不上传 points 字段——<strong>云函数收到 points 字段直接忽略</strong>。</p>
+<h3 id="54">5.4 下单（支付开关两态）</h3>
+<pre><code>payment=false（现阶段）：
+  商品页可加购物车、可生成订单(pending_pay) → 提示「支付功能开通中，可用积分全额兑换或联系客服」
+  积分兑换：payAmount==0 且 pointsUsed 足够 → 直接 paid（服务端扣积分）
+payment=true（商户号下来后）：
+  mall.createOrder → wallet.unifiedOrder（云开发 cloudPay.unifiedOrder）
+  → 前端 wx.requestPayment → 支付回调云函数验签 → 订单 paid + 写流水
+</code></pre>
+<h3 id="55">5.5 会员购买</h3>
+<p>同 5.4：开关关闭时「立即开通」按钮显示「敬请期待」；开通后走微信支付，服务端写 memberLevel + memberExpireAt，<strong>删除现在写 localStorage 的假购买</strong>。</p>
+<h2 id="6">6. 钱包与微信支付接入（给负责人看的申请清单）</h2>
+<ol>
+<li>在「微信公众平台 → 微信支付」申请<strong>商户号</strong>（需营业执照、对公账户，约 1-5 个工作日）。</li>
+<li>关联 AppID <code>wx426885831a05f18e</code>，开通 JSAPI 支付。</li>
+<li>云开发控制台绑定商户号后即可用 <code>cloud.cloudPay.unifiedOrder</code>（免证书、免回调域名，最省事）。</li>
+<li>上线顺序建议：先开「商品直接支付」，<strong>缓上「余额充值」</strong>——余额充值涉及预付卡资质（单用途预付卡需备案），合规成本高。如无强需求，砍掉"充值余额"，保留"积分 + 微信支付"双轨即可。</li>
+<li>开关切换：管理员改 app_config.feature_flags.payment=true，前端无需发版。</li>
+</ol>
+<h2 id="7-api">7. 云函数 API 契约（前后端对齐用）</h2>
+<p>统一调用：<code>wx.cloud.callFunction({ name, data: { action, payload } })</code>
+统一返回：<code>{ code: 0, data } | { code: 4xx/5xx, msg }</code>（前端 api.js 统一弹错）</p>
+<table>
+<thead>
+<tr>
+<th>函数</th>
+<th>action</th>
+<th>payload</th>
+<th>返回 data</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>user</td>
+<td>login</td>
+<td>—</td>
+<td>{ user, config }</td>
+<td>首次自动注册</td>
+</tr>
+<tr>
+<td>user</td>
+<td>updateProfile</td>
+<td>{ nickname?, avatarFileID?, profile? }</td>
+<td>{ user }</td>
+<td>字段白名单过滤</td>
+</tr>
+<tr>
+<td>user</td>
+<td>bindApps</td>
+<td>{ boundApps }</td>
+<td>{ boundApps }</td>
+<td>flag bindApp 关闭时返回 403</td>
+</tr>
+<tr>
+<td>sport</td>
+<td>checkin</td>
+<td>{ distance, durationSec?, pace?, heartRate?, cadence?, groupId? }</td>
+<td>{ points, todayDone }</td>
+<td>服务端算分</td>
+</tr>
+<tr>
+<td>sport</td>
+<td>myStats</td>
+<td>{ period }</td>
+<td>{ totalDistance, count, avgPace }</td>
+<td>聚合 checkins</td>
+</tr>
+<tr>
+<td>sport</td>
+<td>createGroup / joinGroup / quitGroup</td>
+<td>{ name } / { groupId, opengid? }</td>
+<td>{ group }</td>
+<td>数量上限按会员级</td>
+</tr>
+<tr>
+<td>sport</td>
+<td>groupRanking</td>
+<td>{ groupId, period }</td>
+<td>{ members:[...], totals }</td>
+<td></td>
+</tr>
+<tr>
+<td>mall</td>
+<td>listProducts</td>
+<td>{ category?, brand?, keyword?, page }</td>
+<td>{ list, total }</td>
+<td></td>
+</tr>
+<tr>
+<td>mall</td>
+<td>productDetail</td>
+<td>{ id }</td>
+<td>{ product }</td>
+<td></td>
+</tr>
+<tr>
+<td>mall</td>
+<td>createOrder</td>
+<td>{ items, address, pointsUsed }</td>
+<td>{ orderId, payAmount }</td>
+<td></td>
+</tr>
+<tr>
+<td>mall</td>
+<td>myOrders / cancelOrder</td>
+<td>{ page } / { orderId }</td>
+<td>{ list } / {}</td>
+<td></td>
+</tr>
+<tr>
+<td>content</td>
+<td>list</td>
+<td>{ type, page }</td>
+<td>{ list }</td>
+<td>五类内容统一</td>
+</tr>
+<tr>
+<td>content</td>
+<td>detail / enroll</td>
+<td>{ id } / { id, formData }</td>
+<td>{ content } / { enrollmentId }</td>
+<td>enroll 仅登记意向</td>
+</tr>
+<tr>
+<td>wallet</td>
+<td>get / unifiedOrder / transactions</td>
+<td>…</td>
+<td>…</td>
+<td>flags.wallet=false 时一律 <code>{code:403,msg:'功能开通中'}</code></td>
+</tr>
+<tr>
+<td>admin</td>
+<td>upsertContent / upsertProduct / setConfig</td>
+<td>…</td>
+<td>…</td>
+<td>openid 白名单校验</td>
+</tr>
+</tbody>
+</table>
+<p><strong>每个云函数目录必须有 package.json</strong>（<code>"wx-server-sdk": "~2.6.3"</code> 或最新），入口统一模板：</p>
+<pre><code class="language-js">const cloud = require('wx-server-sdk')
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
+exports.main = async (event) =&gt; {
+  const { OPENID } = cloud.getWXContext()        // 唯一身份来源
+  const { action, payload = {} } = event
+  try { return { code: 0, data: await handlers[action]({ OPENID, payload }) } }
+  catch (e) { return { code: e.code || 500, msg: e.message } }
+}
+</code></pre>
+<h2 id="8">8. 工程规范</h2>
+<ul>
+<li><strong>app.json</strong>：补 sitemap.json；<code>debug</code> 删除；tabBar 配图标（iconPath/selectedIconPath）；新增页面按 §3 注册；考虑分包（mall 相关页一个分包，content 一个分包）。</li>
+<li><strong>品牌</strong>：主色不再用微信绿 #1aad19，建议青沐品牌青绿色系（如 #0FAF8E，由设计定稿），在 app.wxss 顶部定义 <code>page { --brand: ...; --brand-light: ...; }</code> 全局变量。</li>
+<li><strong>.gitignore</strong>：<code>project.private.config.json</code>、<code>.DS_Store</code>、<code>node_modules/</code>、<code>cloudfunctions/**/package-lock.json</code>。</li>
+<li><strong>错误处理</strong>：services/api.js 统一 <code>showLoading/hideLoading</code>、code!==0 时 toast msg、网络失败重试一次。</li>
+<li><strong>日志</strong>：删除全部 console.log，云函数保留 console.error（云开发有日志检索）。</li>
+</ul>
+<h2 id="9-04">9. 渐进式迁移步骤（与 04 文档任务对应）</h2>
+<ol>
+<li><strong>打地基</strong>：补 sitemap/.gitignore/package.json、真实云环境 ID、api.js 封装、app_config 集合 + feature-gate 组件。</li>
+<li><strong>换身份</strong>：user 云函数 + 新登录流，删除一切 <code>test_openid</code> 与 event.openid。</li>
+<li><strong>运动闭环</strong>：checkin 服务端化 → 群创建/加入/榜单 → 周报订阅消息。</li>
+<li><strong>商城真数据</strong>：products/orders 集合 + admin 录入 + 积分兑换通路。</li>
+<li><strong>内容五合一</strong>：contents 集合迁移五个静态页 + 意向登记。</li>
+<li><strong>支付接入</strong>（等商户号）：打开开关，会员购买 + 订单支付 + 钱包。</li>
+<li><strong>暂缓</strong>：smart-agent 移出小程序、bind-app 等第三方 OAuth、实名认证。</li>
+</ol></section><section data-src="03-product-prototype.md"><h1 id="03">03 产品原型说明与业务建议</h1>
+<blockquote>
+<p>项目：青沐生命科技微信小程序
+定位（已确认）：<strong>大健康生活方式平台</strong> —— 运动社群（跑群打卡）+ 健康/运动商城 + 赛事与本地服务。
+本文回答三件事：业务怎么跑（含竞品参考，应负责人要求给出建议）、页面长什么样、每页交互规则。</p>
+</blockquote>
+<hr />
+<h2 id="1">1. 业务模型建议</h2>
+<h3 id="11">1.1 核心闭环：运动 → 积分 → 消费</h3>
+<pre><code>        ┌──────────── 运动社群（流量与留存） ────────────┐
+        │  跑群打卡 / 排行榜 / 周报战报（转发回微信群拉新） │
+        └──────────────────┬───────────────────────────┘
+                           │ 产生积分
+                           ▼
+        ┌──────────── 积分体系（连接器） ────────────────┐
+        │  打卡得分 · 会员月赠 · 新人礼 → 商城抵扣/兑换    │
+        └──────────────────┬───────────────────────────┘
+                           │ 引导消费
+                           ▼
+        ┌──────────── 商业化（收入） ────────────────────┐
+        │  商城（健康食品/运动装备） · 会员订阅            │
+        │  赛事报名 · 酒店/景区/餐饮分销佣金（本地服务）    │
+        └───────────────────────────────────────────────┘
+</code></pre>
+<p>为什么这样设计：跑群打卡是高频行为（日活抓手），商城和服务是低频高价值行为（变现），积分是把高频导向低频的桥。微信群战报转发是零成本获客渠道——每周一张带小程序码的群战报图，就是裂变素材。</p>
+<h3 id="12">1.2 竞品参考（建议研究对象）</h3>
+<table>
+<thead>
+<tr>
+<th>竞品</th>
+<th>可借鉴点</th>
+<th>与我们的差异</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Keep</td>
+<td>会员订阅 + 自营商城 + 课程内容的变现组合；勋章/等级激励</td>
+<td>它是独立 App 重内容，我们是微信生态轻社群</td>
+</tr>
+<tr>
+<td>悦跑圈</td>
+<td><strong>跑团</strong>运营、线上马拉松（报名费+完赛奖牌电商）模式</td>
+<td>线上马拉松是成熟的"赛事+电商"变现，强烈建议二期做</td>
+</tr>
+<tr>
+<td>咕咚</td>
+<td>运动数据接硬件/第三方 App 的生态打法</td>
+<td>对应我们的 bind-app 模块（建议二期）</td>
+</tr>
+<tr>
+<td>马拉马拉 / 最酷</td>
+<td>马拉松赛事报名聚合 + 周边服务（酒店、火车票）</td>
+<td>正是 content 模块（赛事+酒店+景区）的对标</td>
+</tr>
+<tr>
+<td>薄荷健康</td>
+<td>大健康商城选品（代餐、营养补剂）+ 健康档案</td>
+<td>青沐"生命科技"背景可向健康品类发力，毛利高于运动装备</td>
+</tr>
+</tbody>
+</table>
+<p>差异化定位建议：<strong>"微信群里的跑团助手 + 大健康严选"</strong>。不做大而全的运动 App，吃透两点：① 微信群是中国跑团的真实组织形态，工具长在群里；② 依托青沐供应链做健康品类商城（运动营养、康养产品），避开与 Keep 拼装备。</p>
+<h3 id="13">1.3 分期上线建议</h3>
+<table>
+<thead>
+<tr>
+<th>阶段</th>
+<th>内容</th>
+<th>商业目标</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>V1.0（先上）</td>
+<td>登录 + 打卡 + 跑群榜单/周报 + 商城（积分兑换/意向单）+ 内容展示</td>
+<td>跑通日活，积累用户</td>
+</tr>
+<tr>
+<td>V1.5（商户号下来）</td>
+<td>微信支付：商品购买、会员订阅、赛事报名收费</td>
+<td>开始收入</td>
+</tr>
+<tr>
+<td>V2.0</td>
+<td>线上马拉松、微信运动步数接入、订阅消息运营、分销佣金</td>
+<td>规模化</td>
+</tr>
+<tr>
+<td>暂缓/独立</td>
+<td>smart-agent（AI 生成抖音内容是运营内部工具，不该放在 C 端小程序，且抖音无合规自动发布 API）、第三方运动 App OAuth、实名认证</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="2-ia">2. 信息架构（IA）</h2>
+<pre><code>TabBar
+├── 首页 index          快捷入口 + 我的数据概览 + 活动banner + 公告
+├── 运动 sport          今日打卡 | 我的跑群列表 → 群详情(榜单/周报/邀请)
+├── 商城 mall           分类/搜索 → 商品列表 → 商品详情 → 下单
+└── 我的 mine           资料/会员/积分/订单/钱包(开关)/绑定/客服/设置
+二级页
+├── group-detail        群榜单(周/月/年) · 成员 · 邀请 · 群设置(群主)
+├── product-detail / order-confirm / order-list
+├── membership          会员对比与开通(开关)
+├── wallet              余额/流水(开关，默认隐藏)
+├── profile             资料编辑 · bind-app 运动APP绑定(开关)
+└── content-list / content-detail   赛事·酒店·景区·餐饮·乡村振兴(type参数)
+</code></pre>
+<h2 id="3">3. 关键流程图</h2>
+<h3 id="31">3.1 登录与游客模式</h3>
+<pre><code>启动 ──► user.login(静默,云端openid) ──► 拉取 feature_flags
+   游客可：逛首页/商城/内容
+   需登录动作(打卡/下单/进群/会员)
+        └─► ensureLogin() ──未完善资料──► 弹窗: 微信头像昵称授权(新接口) ──► 继续原动作
+</code></pre>
+<h3 id="32">3.2 跑群生命周期</h3>
+<pre><code>群主: 运动页[创建跑群] ─► 填群名 ─► 生成群卡片 ─► 转发到微信群
+成员: 点击卡片(群聊场景) ─► getGroupEnterInfo→opengid ─► [加入跑群] ─► 进入群详情
+打卡: 运动页填 距离/时长(配速自动算) ─► 服务端校验+记分 ─► 榜单实时更新
+周报: 每周日20:00 定时聚合 ─► 订阅消息通知成员 ─► 群主[生成战报图]转发回微信群
+退群/解散: 成员可退；群主解散需二次确认
+</code></pre>
+<h3 id="33">3.3 购买流程（双态）</h3>
+<pre><code>商品详情 ─► [加入购物车]/[立即购买] ─► 订单确认(地址/积分抵扣)
+  payment=OFF: 仅当 积分可全额抵扣 → 兑换成功
+               否则 → 「支付开通中」意向单 + 客服企微二维码
+  payment=ON : wx.requestPayment ─► 回调验签 ─► 已支付 ─► 我的订单跟踪
+</code></pre>
+<hr />
+<h2 id="4">4. 页面原型说明</h2>
+<blockquote>
+<p>标注规则：【保留】沿用现有 UI；【改】调整；【新】新增。数据来源一律为 §02 文档 API，不再硬编码。</p>
+</blockquote>
+<h3 id="41-index">4.1 首页 index【改】</h3>
+<ul>
+<li>顶部：问候 + 头像昵称（未登录显示"点击登录"）+ 公告条（app_config.noticeBar，可关闭）。</li>
+<li>服务推荐宫格【保留6宫格】：马拉松、赛事权益、酒店、景区、餐饮、乡村振兴 → content-list?type=x。图标用真实 icon 替换 emoji。</li>
+<li>数据概览【改】：改为<strong>我的</strong>真实数据（本周跑量、连续打卡天数、积分余额、所在群数），来自 sport.myStats + user；未登录显示引导卡片。删除"平均配速42"这类无意义占位。</li>
+<li>最新活动【改】：读 contents 中 status=on 按 sort 取 2 条；「查看更多」→ content-list。</li>
+<li>移除：进入即获取定位并入库（改为内容页需要城市筛选时再申请定位，减少授权打扰与隐私审查风险）。</li>
+</ul>
+<h3 id="42-sporttab-group">4.2 运动 sport（tab，原 group 页拆分）【改】</h3>
+<ul>
+<li>区块1 今日打卡：距离(必填)、时长(必填，自动算配速)、心率/步频(选填)。提交后按钮变"今日已打卡 ✓"（服务端 todayDone）。表单校验：0.5–50km。</li>
+<li>区块2 我的跑群：群卡片列表（群名、人数、我的本周名次）→ 点击进 group-detail；底部「创建跑群」「加入跑群(输入邀请码/通过卡片)」；显示 "已加入 n/上限 m（会员可提升）"。</li>
+<li>删除：原页面的成员排名/汇总/群设置/发送汇总（全部移入 group-detail），原 657 行一页三职责的问题随之解决。</li>
+</ul>
+<h3 id="43-group-detail">4.3 群详情 group-detail【新】</h3>
+<ul>
+<li>头部：群名、人数、（群主）编辑/邀请按钮（shareAppMessage 带 groupId）。</li>
+<li>Tab：周榜 | 月榜 | 年榜。榜单项：名次(前三高亮)、头像、昵称、公里数、次数、平均配速。</li>
+<li>周报卡片：最近一期战报摘要 +「生成战报图」（canvas 绘制带小程序码长图，引导转发）。</li>
+<li>群主管理：改名、移除成员、解散群。订阅消息开关（引导 requestSubscribeMessage）。</li>
+</ul>
+<h3 id="44-malltab-statistics">4.4 商城 mall（tab，原 statistics 改名）【改】</h3>
+<ul>
+<li>搜索框（关键词→ mall.listProducts）+ 分类 chips（健康食品/运动营养/装备/周边…分类从 app_config 下发）。</li>
+<li>商品卡片：图(云存储)、名称、价格、会员价标签、积分可抵标识。</li>
+<li>悬浮购物车入口（角标数量）。</li>
+<li>商品详情 product-detail【新，从 528 行 wxml 拆出】：轮播图、价格区（划线价/会员价）、详情/评价 tab（评价二期）、底部栏[客服][购物车][立即购买]。</li>
+<li>下单 order-confirm【新】：地址(profile.address，无则填写)、积分抵扣滑块（上限=可用积分与订单额取小）、支付按钮按 payment 开关两态（见 3.3）。</li>
+</ul>
+<h3 id="45-minetab-settings">4.5 我的 mine（tab，原 settings 改名）【改】</h3>
+<ul>
+<li>头部：头像昵称 → profile；数据条：累计跑量/打卡/积分（真实数据）。</li>
+<li>会员卡片：当前等级+到期日；「开通/续费」→ membership 页（payment=OFF 时按钮文案"敬请期待"）。权益对比表数据来自 app_config.member_levels，<strong>不再前端写死</strong>。</li>
+<li>功能列表：我的订单、我的报名、积分明细【新】、收货地址、运动APP绑定(开关)、钱包(开关，默认隐藏入口)、联系客服(open-type="contact" 接微信客服，替换写死的400电话)、设置。</li>
+<li>退出登录：清 storage + reLaunch 到首页（游客态），修复现有无效逻辑。</li>
+</ul>
+<h3 id="46-wallet">4.6 钱包 wallet【改，默认隐藏】</h3>
+<ul>
+<li>feature_flags.wallet=false：mine 页不显示入口；直达路径显示「钱包功能正在申请开通，敬请期待」占位页（feature-gate 组件统一处理）。</li>
+<li>开通后：余额（只读，服务端值）、流水分页列表（wallet_transactions）、充值按钮视合规决定是否提供（见 02 §6 第4条——建议砍掉充值，保留支付+积分）。</li>
+<li>删除：现有"绑定支付宝/储蓄卡/信用卡"假绑定 UI（小程序内不可能绑这些，误导用户）。</li>
+</ul>
+<h3 id="47-content-list-content-detail">4.7 内容页 content-list / content-detail【新，五合一】</h3>
+<ul>
+<li>list：按 type 渲染（marathon/hotel/scenic/food/rural），卡片含封面、标题、标签、价格/日期；城市筛选（此时才申请定位）。</li>
+<li>detail：富文本详情 + 底部动作按钮按 actionType：报名/预订(意向表单：姓名+手机号) | 外链(复制链接) | 纯展示。</li>
+<li>提交意向 → 「已收到，工作人员将联系您」+（可选）客服企微二维码。</li>
+</ul>
+<h3 id="48-loginprofile">4.8 登录/资料 login·profile【改】</h3>
+<ul>
+<li>不再有独立"登录闸口页"；login 页改造为"完善资料"半屏弹窗组件：chooseAvatar 按钮 + nickname 输入框 + 手机号(可选，button open-type="getPhoneNumber" 需认证主体)。</li>
+<li>profile：列表式编辑（姓名/性别/生日/地区/身高/体重/地址），用 picker 和表单页替代现在的 showModal 输入（showModal editable 体验差且不支持 picker 类型）。实名认证入口隐藏（二期）。</li>
+</ul>
+<hr />
+<h2 id="5">5. 设计规范要点</h2>
+<ul>
+<li>品牌色：弃用微信绿 #1aad19，改青沐青绿系（建议主色 #0FAF8E / 深 #0B8C72 / 浅底 #E6F7F3，最终以 VI 为准）；全局 CSS 变量管理。</li>
+<li>tabBar：补 4 组图标（普通/选中），文案：首页 · 运动 · 商城 · 我的。</li>
+<li>空态/加载/错误三态组件全局统一（empty-state 组件）。</li>
+<li>所有 emoji 图标替换为 iconfont 或切图（emoji 在不同机型渲染不一致）。</li>
+<li>合规：隐私协议弹窗（首启）、《用户协议》《隐私政策》链接进 mine-设置；商城类目需在小程序后台开通「百货/食品」类目，健康食品需相应资质。</li>
+</ul>
+<h2 id="6">6. 订阅消息模板申请清单（提前在小程序后台申请）</h2>
+<table>
+<thead>
+<tr>
+<th>用途</th>
+<th>模板类型</th>
+<th>触达时机</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>周报通知</td>
+<td>数据统计提醒</td>
+<td>每周日 20:00</td>
+</tr>
+<tr>
+<td>打卡提醒</td>
+<td>运动提醒</td>
+<td>用户自选时间（二期）</td>
+</tr>
+<tr>
+<td>订单发货通知</td>
+<td>物流提醒</td>
+<td>发货时</td>
+</tr>
+<tr>
+<td>报名结果通知</td>
+<td>报名审核结果</td>
+<td>客服确认后</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7">7. 明确不做 / 暂缓清单（避免开发资源浪费）</h2>
+<ol>
+<li><strong>读取/监听微信群聊天记录</strong> —— 微信无此能力，永远不做（用打卡+战报替代）。</li>
+<li><strong>小程序内主动向微信群发消息</strong> —— 同上，用「生成战报图引导转发」替代。</li>
+<li><strong>smart-agent AI 发抖音</strong> —— 移出小程序；若运营确需 AI 内容工具，做内部 Web 工具单独立项。</li>
+<li><strong>余额充值</strong> —— 涉及预付资质合规，V1.5 不做，用「积分 + 微信支付直付」覆盖场景。</li>
+<li><strong>第三方运动 App OAuth（佳明/华为等）</strong> —— 各家开放平台申请周期长，V2 评估；V1 入口挂"敬请期待"。</li>
+<li><strong>实名认证</strong> —— 等有强场景（线上马拉松领奖）再接。</li>
+</ol></section><section data-src="04-task-breakdown.md"><h1 id="04">04 开发任务拆解</h1>
+<blockquote>
+<p>项目：青沐生命科技微信小程序重构
+用法：按 Phase 顺序执行；每条任务含验收标准（AC），完成即勾选。工作量单位：人天（1 名熟悉小程序的开发）。
+依赖文档：01 审查报告（问题编号 P0-x/P1-x 对应）、02 架构（§ 引用）、03 原型。
+总量估算：V1.0 约 <strong>28–35 人天</strong>（不含 UI 切图与商品/内容素材准备）。</p>
+</blockquote>
+<hr />
+<h2 id="phase-0-3">Phase 0 地基修复（约 3 天）—— 不做完不允许开发任何业务</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>任务</th>
+<th>对应问题</th>
+<th>工作量</th>
+<th>验收标准 (AC)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T0-1</td>
+<td>创建 sitemap.json；app.json 删除 <code>"debug": true</code></td>
+<td>P0-7</td>
+<td>0.5</td>
+<td>开发者工具编译 0 报错 0 警告（资源类除外）</td>
+</tr>
+<tr>
+<td>T0-2</td>
+<td>开通/确认云开发环境，<code>app.js</code> 填真实 env ID；删除无用 baseUrl</td>
+<td>P0-7</td>
+<td>0.5</td>
+<td>任一云函数可调通并返回</td>
+</tr>
+<tr>
+<td>T0-3</td>
+<td>每个云函数补 package.json（wx-server-sdk），init 统一 <code>DYNAMIC_CURRENT_ENV</code></td>
+<td>P0-7</td>
+<td>0.5</td>
+<td>全部云函数可一键部署成功</td>
+</tr>
+<tr>
+<td>T0-4</td>
+<td>新增 .gitignore（project.private.config.json/.DS_Store/node_modules），并从 git 移除已入库文件</td>
+<td>P2-5</td>
+<td>0.5</td>
+<td>git status 干净</td>
+</tr>
+<tr>
+<td>T0-5</td>
+<td>建 <code>services/api.js</code> 统一封装（action 路由、loading、错误 toast、code 约定见 02 §7）</td>
+<td>P2-3</td>
+<td>1</td>
+<td>任意页面 3 行代码完成一次云函数调用并自动处理错误</td>
+</tr>
+<tr>
+<td>T0-6</td>
+<td>建 <code>app_config</code> 集合 + feature_flags 文档 + <code>components/feature-gate</code> 组件</td>
+<td>02 §4</td>
+<td>1</td>
+<td>改库里 wallet=false，钱包入口即消失（无需发版）</td>
+</tr>
+</tbody>
+</table>
+<h2 id="phase-1-4">Phase 1 身份与用户（约 4 天）</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>任务</th>
+<th>对应</th>
+<th>工作量</th>
+<th>AC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T1-1</td>
+<td><code>user</code> 云函数：login（getWXContext 取 openid，首登建档+注册积分）、updateProfile、字段白名单</td>
+<td>P0-2/3/4，02 §5.1</td>
+<td>1.5</td>
+<td>① event 传入伪造 openid 不生效 ② 新用户首登 users 集合自动建档 ③ 全库无 'test_openid' 写入</td>
+</tr>
+<tr>
+<td>T1-2</td>
+<td>前端 <code>utils/auth.js</code>：ensureLogin、登录态缓存、游客模式拦截</td>
+<td>02 §5.1</td>
+<td>1</td>
+<td>游客可浏览；点打卡/下单弹出完善资料流程</td>
+</tr>
+<tr>
+<td>T1-3</td>
+<td>资料弹窗组件：chooseAvatar + nickname 新接口；<strong>删除全部 getUserProfile/getUserInfo</strong></td>
+<td>P0-4</td>
+<td>1</td>
+<td>真机可设置头像昵称；代码 grep 无废弃 API</td>
+</tr>
+<tr>
+<td>T1-4</td>
+<td>profile 页改造：picker/表单页编辑，对接 user.updateProfile；实名认证入口隐藏</td>
+<td>03 §4.8</td>
+<td>0.5</td>
+<td>各字段可编辑保存、刷新后仍在</td>
+</tr>
+<tr>
+<td>T1-5</td>
+<td>mine 页（settings 改名）：真实数据头部、退出登录改 reLaunch、客服改 open-type="contact"</td>
+<td>P1-7/8</td>
+<td>0.5</td>
+<td>退出后回首页游客态；数据来自接口</td>
+</tr>
+</tbody>
+</table>
+<h2 id="phase-2-8">Phase 2 运动闭环（约 8 天）★ 产品核心</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>任务</th>
+<th>对应</th>
+<th>工作量</th>
+<th>AC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T2-1</td>
+<td><code>sport.checkin</code>：服务端校验（0.5–50km、当日 1 次计分）、算积分、写 checkins + points_records、inc users.points/stats</td>
+<td>P1-1/2，02 §5.3</td>
+<td>1.5</td>
+<td>① 传 points 字段被忽略 ② 距离 -1/999 被拒 ③ 当日第 2 次打卡不加分</td>
+</tr>
+<tr>
+<td>T2-2</td>
+<td>sport 页（group 改名重做）：打卡表单（时长→自动配速）、今日已打卡态、我的群列表；<strong>删除 setInterval/发送汇总/假成员</strong></td>
+<td>P0-6，P1-3，03 §4.2</td>
+<td>1.5</td>
+<td>打卡后立即见积分增长；页面无任何写死人名</td>
+</tr>
+<tr>
+<td>T2-3</td>
+<td><code>sport.createGroup/joinGroup/quitGroup</code>：上限按 app_config.member_levels；shareAppMessage 邀请卡；群聊场景 getGroupEnterInfo 绑定 opengid</td>
+<td>02 §5.2</td>
+<td>2</td>
+<td>两个真机账号可建群、经卡片入群；超上限被拦截并提示升级会员</td>
+</tr>
+<tr>
+<td>T2-4</td>
+<td>group-detail 页：周/月/年榜（sport.groupRanking 聚合）、成员管理（群主）</td>
+<td>03 §4.3</td>
+<td>1.5</td>
+<td>榜单数字与 checkins 手工核对一致</td>
+</tr>
+<tr>
+<td>T2-5</td>
+<td>周报：定时触发器聚合 group_reports + 订阅消息推送 + 战报分享图（canvas 含小程序码）</td>
+<td>02 §5.2，03 §6</td>
+<td>1.5</td>
+<td>周日 20:00 收到订阅消息；战报图可保存转发</td>
+</tr>
+<tr>
+<td>T2-6</td>
+<td>index 首页数据化：myStats 概览、公告条、活动位读 contents；移除启动定位</td>
+<td>P1-5/8，03 §4.1</td>
+<td>1</td>
+<td>首页无硬编码数字；启动不再弹定位授权</td>
+</tr>
+</tbody>
+</table>
+<h2 id="phase-3-8">Phase 3 商城与内容（约 8 天）</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>任务</th>
+<th>对应</th>
+<th>工作量</th>
+<th>AC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T3-1</td>
+<td>products 集合 + <code>admin.upsertProduct</code>（openid 白名单）+ 商品图传云存储</td>
+<td>02 §4/§7</td>
+<td>1</td>
+<td>管理员可增改商品并即时生效</td>
+</tr>
+<tr>
+<td>T3-2</td>
+<td>mall 页（statistics 改名重做）：分类/搜索/列表分页（mall.listProducts）</td>
+<td>03 §4.4</td>
+<td>1.5</td>
+<td>8 个 mock 商品删除；搜索分类可用</td>
+</tr>
+<tr>
+<td>T3-3</td>
+<td>product-detail 独立页（拆 528 行 wxml）</td>
+<td>P2-6</td>
+<td>1</td>
+<td>详情页可分享、可加购</td>
+</tr>
+<tr>
+<td>T3-4</td>
+<td>购物车（本地 storage）+ order-confirm + <code>mall.createOrder</code>（积分抵扣，payment=OFF 双态逻辑见 02 §5.4）</td>
+<td>03 §3.3</td>
+<td>2</td>
+<td>① 积分足额可 0 元兑换成功且服务端扣分 ② 不足时显示"支付开通中"意向单</td>
+</tr>
+<tr>
+<td>T3-5</td>
+<td>order-list 我的订单 + cancelOrder</td>
+<td>02 §7</td>
+<td>0.5</td>
+<td>订单状态流转正确</td>
+</tr>
+<tr>
+<td>T3-6</td>
+<td>contents 集合 + content-list/content-detail 五合一模板页；<strong>删除 marathon/hotel/food/scenic/rural-support/marathon-expo 六个旧页</strong>及其对不存在云函数的调用</td>
+<td>P0-5，03 §4.7</td>
+<td>2</td>
+<td>五类内容同一套页面渲染；报名意向落 enrollments 表</td>
+</tr>
+</tbody>
+</table>
+<h2 id="phase-4-5">Phase 4 支付与钱包（约 5 天，前置条件：商户号审批通过）</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>任务</th>
+<th>前置</th>
+<th>工作量</th>
+<th>AC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T4-1</td>
+<td>商户号关联 AppID + 云开发绑定（负责人办理，见 02 §6）</td>
+<td>营业执照</td>
+<td>—</td>
+<td>cloudPay 沙箱可下单</td>
+</tr>
+<tr>
+<td>T4-2</td>
+<td><code>wallet.unifiedOrder</code> + 支付回调验签 + 订单置 paid + 流水落库；<strong>重写 save/get-wallet-data，余额禁止客户端写</strong>（删除现有实现）</td>
+<td>P0-1</td>
+<td>2</td>
+<td>篡改回调/伪造金额被拒；账实一致</td>
+</tr>
+<tr>
+<td>T4-3</td>
+<td>membership 页 + 会员购买支付化，<strong>删除 settings.js 写 storage 的假购买</strong>；服务端写 memberLevel/到期/月赠积分定时任务</td>
+<td>P0-4 相关</td>
+<td>1.5</td>
+<td>购买后等级、群上限、商城折扣即时生效；到期自动降级</td>
+</tr>
+<tr>
+<td>T4-4</td>
+<td>打开 payment/wallet/membershipPurchase 开关，回归测试 3.3 双态</td>
+<td>T4-2/3</td>
+<td>1</td>
+<td>开关 ON/OFF 两态均通过验收用例</td>
+</tr>
+<tr>
+<td>T4-5</td>
+<td>钱包页重做：余额只读 + 流水分页；删除"绑定支付宝/银行卡"假 UI</td>
+<td>P1-6，03 §4.6</td>
+<td>0.5</td>
+<td>流水来自 wallet_transactions 集合</td>
+</tr>
+</tbody>
+</table>
+<h2 id="phase-5-3">Phase 5 收尾与上线（约 3 天）</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>任务</th>
+<th>工作量</th>
+<th>AC</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T5-1</td>
+<td>品牌换色 + tabBar 图标 + emoji→iconfont + 空态/加载组件统一</td>
+<td>1</td>
+<td>设计走查通过</td>
+</tr>
+<tr>
+<td>T5-2</td>
+<td>隐私协议弹窗 + 用户协议/隐私政策页 + 小程序后台类目与资质（食品类目）</td>
+<td>0.5</td>
+<td>审核要求项齐备</td>
+</tr>
+<tr>
+<td>T5-3</td>
+<td>数据库权限复查：所有集合「仅云函数可写」；admin 白名单配置</td>
+<td>0.5</td>
+<td>控制台直接写库被拒</td>
+</tr>
+<tr>
+<td>T5-4</td>
+<td>删除遗留：smart-agent 页面与云函数、ai-robot、get-group-data、send-summary（被 T2-5 替代）、save-user-location、全部 console.log</td>
+<td>0.5</td>
+<td>grep 无 console.log；云函数仅剩 02 §7 的 6 个</td>
+</tr>
+<tr>
+<td>T5-5</td>
+<td>体验版全流程回归（用例：游客浏览/注册/打卡/建群入群/榜单/兑换/意向单/退出）+ 提审</td>
+<td>0.5</td>
+<td>用例全过，提审通过</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="_1">里程碑与并行建议</h2>
+<pre><code>周1      周2        周3        周4        周5(等商户号)
+Phase0─►Phase1 ─► Phase2 ──────► Phase3 ─► Phase4 ─► Phase5上线
+         └ 前后端可并行：A同学做云函数(T1-1,T2-1,T2-3)，B同学做页面(T1-2~5,T2-2)
+Phase4 与 Phase3 之间无强依赖，商户号何时下来何时插入。
+</code></pre>
+<h2 id="_2">风险登记</h2>
+<table>
+<thead>
+<tr>
+<th>风险</th>
+<th>影响</th>
+<th>缓解</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>商户号审批延期</td>
+<td>会员/支付收入延后</td>
+<td>V1.0 以积分兑换 + 意向单先行，不阻塞上线</td>
+</tr>
+<tr>
+<td>群聊场景 opengid 需用户授权且仅群聊打开有效</td>
+<td>群绑定体验有门槛</td>
+<td>兜底"邀请码入群"路径（T2-3 已含）</td>
+</tr>
+<tr>
+<td>订阅消息一次性授权限制</td>
+<td>周报触达率低</td>
+<td>打卡成功页顺势请求订阅授权；战报图转发兜底</td>
+</tr>
+<tr>
+<td>食品类商品资质</td>
+<td>商城审核被拒</td>
+<td>提前在后台开通类目并备齐资质（T5-2 前置办理）</td>
+</tr>
+<tr>
+<td>旧体验版已有测试数据</td>
+<td>脏数据混入</td>
+<td>上线前清空 checkins/users 等集合</td>
+</tr>
+</tbody>
+</table></section><section data-src="05-payment.md"><h1 id="05">05 支付接入设计：申请指南 + 开发细则 + 参考代码</h1>
+<blockquote>
+<p>项目：青沐生命科技微信小程序
+本文档供：负责人（办理申请）+ 开发（按细则实现）。参考代码仅为文档内容，不直接入库，实现时以 02 文档 API 契约为骨架。
+<strong>积分定位（已确认）：积分是纯内部虚拟激励，仅由系统内部计算发放与抵扣，不充值、不提现、不转赠、不与人民币双向兑换，不涉及任何实际结算交易。</strong></p>
+</blockquote>
+<hr />
+<h2 id="0">0. 先说结论（决定申请什么）</h2>
+<table>
+<thead>
+<tr>
+<th>渠道</th>
+<th>能否用在微信小程序内</th>
+<th>结论</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>微信支付</td>
+<td>✔ 唯一选择</td>
+<td><strong>必须申请</strong>，本项目全部线上收款走它</td>
+</tr>
+<tr>
+<td>支付宝支付</td>
+<td>✘ 不能</td>
+<td>微信与支付宝生态互相隔离，微信小程序内无法调起支付宝（包括内嵌 H5、二维码等变通方式均被支付协议限制）。<strong>支付宝申请仅在未来做支付宝小程序 / 自有 App / 独立 H5 商城时才需要</strong>，本文 §3 仍给出完整申请方法备用</td>
+</tr>
+<tr>
+<td>积分</td>
+<td>—</td>
+<td>内部记账，不是支付渠道，见 §5</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1">1. 微信支付申请（负责人办理清单）</h2>
+<h3 id="11">1.1 前置条件</h3>
+<ol>
+<li>小程序主体必须是<strong>企业或个体工商户</strong>（个人主体永远开不了支付）。</li>
+<li>小程序已完成<strong>微信认证</strong>（微信公众平台提交企业资料，认证费 300 元/年）。</li>
+<li>有<strong>对公银行账户</strong>（企业必须对公；个体工商户可用经营者银行卡）。账户名称必须与营业执照主体名称一致。</li>
+</ol>
+<h3 id="12">1.2 所需材料清单</h3>
+<table>
+<thead>
+<tr>
+<th>材料</th>
+<th>要求</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>营业执照</td>
+<td>有效期内，照片/扫描件清晰，统一社会信用代码</td>
+</tr>
+<tr>
+<td>法定代表人身份证</td>
+<td>正反面照片；非法人办理另需经办人身份证+授权函</td>
+</tr>
+<tr>
+<td>对公账户信息</td>
+<td>开户行全称、开户支行、账号（用于打款验证）</td>
+</tr>
+<tr>
+<td>联系信息</td>
+<td>经办人手机号、邮箱（接收审核通知）</td>
+</tr>
+<tr>
+<td>经营信息</td>
+<td>商户简称（会显示在用户账单）、客服电话、经营类目、门店/网站/小程序截图</td>
+</tr>
+<tr>
+<td>特殊类目资质</td>
+<td>商城卖<strong>食品/保健品</strong>需《食品经营许可证》等；卖医疗器械需相应许可。青沐若上架健康食品，提前备好</td>
+</tr>
+</tbody>
+</table>
+<h3 id="13-1-5">1.3 申请步骤（线上全流程，约 1-5 个工作日）</h3>
+<ol>
+<li>登录 <a href="https://pay.weixin.qq.com">微信支付商户平台</a> → 「接入微信支付」→ 选择「小程序支付」场景进件。</li>
+<li>填写主体信息、上传材料 → 提交审核（1-2 个工作日）。</li>
+<li>审核通过后：<strong>账户验证</strong>（微信向对公账户打一笔随机金额，回填确认）+ 法人/经办人签约。</li>
+<li>拿到 <strong>商户号（mch_id）</strong> 后，在商户平台「产品中心 → AppID 账号管理」<strong>绑定小程序 AppID</strong>（wx426885831a05f18e），小程序管理员扫码确认授权。</li>
+<li>商户平台「API 安全」：设置 <strong>APIv3 密钥</strong>、下载/申请 <strong>API 证书</strong>（云开发 cloudPay 模式可跳过证书，见 §4.1）。</li>
+<li>（本项目推荐）云开发控制台 →「微信支付」→ 绑定该商户号，之后云函数可免证书调用支付。</li>
+</ol>
+<h3 id="14">1.4 费率与到账</h3>
+<ul>
+<li>标准费率 <strong>0.6%</strong>（按经营类目 0.6%–1% 不等，民生类目可能更低）；T+1 自动结算到对公账户。</li>
+<li>申请下来后：管理员把 <code>app_config.feature_flags.payment</code> 改为 <code>true</code>，前端无需发版即可放开支付（见 02 文档 §6）。</li>
+</ul>
+<hr />
+<h2 id="2">2. 支付宝申请（备用，未来多端使用）</h2>
+<blockquote>
+<p>再次强调：这些能力<strong>用不到微信小程序里</strong>，适用对象是未来的支付宝小程序、自有 App、独立 H5 商城、线下收款码。</p>
+</blockquote>
+<h3 id="21">2.1 所需材料</h3>
+<p>与微信支付高度一致：营业执照、法人身份证、对公账户（或个体户经营者支付宝账户）、经营类目说明、网站/App/小程序信息；食品类目同样需要许可证。另需一个<strong>企业支付宝账户</strong>（用营业执照注册，收款入账用）。</p>
+<h3 id="22">2.2 申请步骤</h3>
+<ol>
+<li>注册 <a href="https://open.alipay.com">支付宝开放平台</a> 开发者账号（用企业支付宝登录）→ 完成<strong>企业实名认证</strong>。</li>
+<li>开放平台控制台创建应用：未来做支付宝小程序则「创建小程序」；做 App/H5 则「创建网页/移动应用」，拿到 <strong>APPID</strong>。</li>
+<li>「产品绑定」按场景开通支付产品并签约（审核约 1-3 个工作日）：</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>产品</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>小程序支付（JSAPI）</td>
+<td>支付宝小程序内收款</td>
+</tr>
+<tr>
+<td>手机网站支付（WAP）</td>
+<td>独立 H5 商城</td>
+</tr>
+<tr>
+<td>APP 支付</td>
+<td>自有 App</td>
+</tr>
+<tr>
+<td>当面付</td>
+<td>线下扫码/收款码（活动现场收报名费可用）</td>
+</tr>
+</tbody>
+</table>
+<ol start="4">
+<li>配置密钥：开放平台「开发设置」生成 <strong>应用公私钥（RSA2）</strong>，上传应用公钥、保存支付宝公钥（或用证书模式）。</li>
+<li>费率：一般 <strong>0.38%–0.6%</strong>（当面付低、线上标准 0.6%，类目和活动期有浮动），T+1 结算。</li>
+</ol>
+<h3 id="23">2.3 本项目的建议</h3>
+<p>V1.x 阶段<strong>不投入支付宝开发</strong>；待商城在微信端验证跑通、确有多端需求（如线下马拉松现场收费）再启动，优先级排在 V2 之后。</p>
+<hr />
+<h2 id="3">3. 支付总体设计（两渠道统一抽象）</h2>
+<pre><code>                 ┌────────────── pay 抽象层（云函数 wallet/pay） ──────────────┐
+ 业务方           │  createPayment(orderId, channel)   ← channel: wechat|alipay │
+ mall 订单 ──────►│  统一订单状态机 / 幂等 / 金额校验（一律以「分」为单位整数）      │
+ membership 会员──►│  回调统一入口 verify→记账→改单→发通知                        │
+                 └──────┬──────────────────────────────┬───────────────────────┘
+                        ▼ 现在实现                       ▼ 未来多端再实现
+                  微信支付(cloudPay/APIv3)          支付宝 SDK(alipay-sdk)
+</code></pre>
+<p><strong>订单状态机</strong>（orders.status，只允许如下迁移，其余一律拒绝）：</p>
+<pre><code>pending_pay ──支付成功回调──► paid ──发货──► shipped ──确认──► done
+     │                        │
+     └──超时30min/用户取消──► cancelled   └──退款──► refunding ──► refunded
+</code></pre>
+<p>开发细则（两渠道通用，逐条验收）：
+1. <strong>金额</strong>：全链路用整数「分」，禁止浮点；客户端传来的金额只作展示，<strong>服务端按商品表现价重算</strong>，不一致即拒单。
+2. <strong>幂等</strong>：<code>outTradeNo = 订单ID</code>，回调按 outTradeNo 加锁处理；重复回调直接返回成功不重复记账。
+3. <strong>验签</strong>：回调必须验签（cloudPay 模式由平台代验：仅信任云开发投递的回调；APIv3 模式验证 Wechatpay-Signature 头）。<strong>严禁以前端回报的"支付成功"作为发货依据</strong>，唯一依据是服务端回调/主动查单。
+4. <strong>超时</strong>：下单时记 expireAt=30min，定时函数将过期 pending_pay 置 cancelled 并释放库存。
+5. <strong>对账</strong>：每日定时函数拉取账单（cloudPay downloadBill / 支付宝对账单接口），与 orders 比对，差异写告警表。
+6. <strong>退款</strong>：仅管理员白名单可发起，按原路退回，记 refund 流水，先退积分抵扣部分→再退现金部分。
+7. <strong>日志</strong>：支付链路每一步落 pay_logs 集合（脱敏，不存证书/密钥）。</p>
+<hr />
+<h2 id="4-cloudpay">4. 微信支付参考代码（云开发 cloudPay 方案，本项目首选）</h2>
+<blockquote>
+<p>选 cloudPay 的理由：免 API 证书、免回调域名备案、回调直接投递到指定云函数，最适合云开发架构。若未来迁出云开发，再换 APIv3 直连（§4.4）。</p>
+</blockquote>
+<h3 id="41-walletactionunifiedorder">4.1 下单（云函数 wallet，action=unifiedOrder）</h3>
+<pre><code class="language-js">// cloudfunctions/wallet/pay.js
+const cloud = require('wx-server-sdk')
+cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV })
+const db = cloud.database()
+
+async function unifiedOrder({ OPENID, payload }) {
+  const { orderId } = payload
+  const flags = (await db.collection('app_config').doc('feature_flags').get()).data
+  if (!flags.payment) throw { code: 403, message: '支付功能开通中' }
+
+  const order = (await db.collection('orders').doc(orderId).get()).data
+  if (order._openid !== OPENID) throw { code: 403, message: '无权操作' }
+  if (order.status !== 'pending_pay') throw { code: 409, message: '订单状态不可支付' }
+
+  // 服务端重算金额（分），绝不信任前端
+  const payAmount = await recalcAmount(order)   // 商品现价×数量 - 积分抵扣
+  if (payAmount !== order.payAmount) throw { code: 409, message: '价格已变动，请重新下单' }
+
+  const res = await cloud.cloudPay.unifiedOrder({
+    body: '青沐商城-订单' + orderId.slice(-6),
+    outTradeNo: orderId,                  // 幂等键
+    spbillCreateIp: '127.0.0.1',
+    subMchId: process.env.MCH_ID,         // 商户号放环境变量，不写死
+    totalFee: payAmount,                  // 单位：分
+    envId: cloud.DYNAMIC_CURRENT_ENV,
+    functionName: 'payCallback'           // 回调云函数
+  })
+  return res.payment                       // 含 timeStamp/nonceStr/package/paySign
+}
+</code></pre>
+<h3 id="42-paycallback">4.2 支付回调（云函数 payCallback，唯一记账入口）</h3>
+<pre><code class="language-js">// cloudfunctions/payCallback/index.js
+exports.main = async (event) =&gt; {
+  // cloudPay 投递的 event 含 returnCode/resultCode/outTradeNo/totalFee/transactionId
+  if (event.returnCode !== 'SUCCESS' || event.resultCode !== 'SUCCESS')
+    return { errcode: 0, errmsg: 'OK' }            // 失败回调也要应答，避免重投
+
+  const orderId = event.outTradeNo
+  await db.runTransaction(async t =&gt; {
+    const order = (await t.collection('orders').doc(orderId).get()).data
+    if (order.status === 'paid') return            // 幂等：重复回调直接放过
+    if (order.status !== 'pending_pay') throw new Error('状态异常')
+    if (event.totalFee !== order.payAmount) throw new Error('金额不符')  // 防篡改
+
+    await t.collection('orders').doc(orderId).update({ data: {
+      status: 'paid',
+      payment: { transactionId: event.transactionId, paidAt: new Date() }
+    }})
+    await t.collection('wallet_transactions').add({ data: {
+      _openid: order._openid, type: 'consume', amount: event.totalFee,
+      orderId, wxTransactionId: event.transactionId, status: 'success', createdAt: new Date()
+    }})
+  })
+  // 会员订单：在此处写 memberLevel/memberExpireAt（服务端唯一入口）
+  return { errcode: 0, errmsg: 'OK' }              // 必须按此格式应答
+}
+</code></pre>
+<h3 id="43-serviceswalletjs">4.3 前端调起（services/wallet.js + 页面）</h3>
+<pre><code class="language-js">// services/wallet.js
+import { call } from './api'
+export async function payOrder(orderId) {
+  const payment = await call('wallet', 'unifiedOrder', { orderId })
+  await wx.requestPayment(payment)        // 用户输密码/指纹
+  // 注意：requestPayment 成功 ≠ 入账成功，最终状态以轮询订单为准
+  return pollOrderStatus(orderId)          // 轮询 3 次×2s 查 orders.status === 'paid'
+}
+</code></pre>
+<h3 id="44-apiv3">4.4 备选：APIv3 直连要点（迁出云开发时再用）</h3>
+<p>商户平台下载证书 + 设置 APIv3 密钥 → 服务端用官方 SDK（如 wechatpay-node-v3）调 <code>JSAPI 下单</code> 接口拿 prepay_id → 自行用商户私钥生成 paySign 返回前端 → 回调接口验证 <code>Wechatpay-Signature</code> + AES-256-GCM 解密报文。其余状态机/幂等/对账细则与 §3 完全一致。</p>
+<h3 id="45-h5">4.5 支付宝参考代码骨架（未来 H5/支付宝小程序用）</h3>
+<pre><code class="language-js">// 服务端（Node）：alipay-sdk
+const AlipaySdk = require('alipay-sdk').default
+const alipay = new AlipaySdk({ appId, privateKey, alipayPublicKey })
+// 下单（H5 手机网站支付）
+const url = alipay.pageExec('alipay.trade.wap.pay', {
+  bizContent: { out_trade_no: orderId, total_amount: '29.90',
+                subject: '青沐商城订单', product_code: 'QUICK_WAP_WAY' },
+  notify_url: 'https://api.xxx.com/alipay/notify'
+})
+// 回调：alipay.checkNotifySign(postData) 验签 → 同 §4.2 的幂等记账逻辑
+</code></pre>
+<hr />
+<h2 id="5">5. 积分规则（内部计算，零结算风险）</h2>
+<p><strong>定性</strong>：积分是运营激励工具，等同"虚拟勋章+优惠抵扣额度"，不是预付卡、不是虚拟货币。守住四条合规红线：</p>
+<ol>
+<li><strong>只进不提</strong>：积分可获得、可抵扣（最多抵订单的 X%，建议 50%，或全额兑换指定"积分专区"商品），<strong>不可充值购买、不可提现、不可转赠、不可兑换现金</strong>。</li>
+<li><strong>单向折算</strong>：仅在抵扣瞬间按固定比率折算（如 100 积分 = 1 元抵扣额），系统内不存在"人民币→积分"的购买通道（会员月赠积分是权益赠送，不是购买）。</li>
+<li><strong>服务端唯一记账</strong>：发放/扣减只发生在云函数（打卡、注册、月赠、订单抵扣、退款返还），全部写 <code>points_records</code> 流水（02 文档 §4），余额用 <code>inc</code> 原子变更；前端任何积分参数一律忽略。</li>
+<li><strong>可审计、可过期</strong>：每笔流水含 type/refId/变更后余额；建议积分 24 个月滚动过期（提前 30 天订阅消息提醒），过期也走流水（type:'expire'）。</li>
+</ol>
+<p>发放规则（读 app_config.points_rules，运营可调）：</p>
+<table>
+<thead>
+<tr>
+<th>行为</th>
+<th>积分</th>
+<th>防滥用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>注册</td>
+<td>+50</td>
+<td>一次性</td>
+</tr>
+<tr>
+<td>每日打卡</td>
+<td>+1/km，单日上限 50</td>
+<td>每日仅 1 次计分（02 §5.3）</td>
+</tr>
+<tr>
+<td>会员月赠</td>
+<td>月100/季150/年200</td>
+<td>定时函数发放，伴随会员有效期</td>
+</tr>
+<tr>
+<td>订单抵扣</td>
+<td>−100/元</td>
+<td>抵扣上限 50%；退款时原路返还积分</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-04-phase-4">6. 落地时间线（并入 04 文档 Phase 4）</h2>
+<table>
+<thead>
+<tr>
+<th>步骤</th>
+<th>责任人</th>
+<th>耗时</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>备齐 §1.2 材料 + 商户平台进件</td>
+<td>负责人</td>
+<td>0.5 天（审核 1-5 工作日）</td>
+</tr>
+<tr>
+<td>打款验证 + 签约 + 绑定 AppID + 云开发绑定商户号</td>
+<td>负责人+开发</td>
+<td>0.5 天</td>
+</tr>
+<tr>
+<td>wallet 云函数（unifiedOrder + payCallback + 查单/关单/退款）</td>
+<td>开发</td>
+<td>2 天</td>
+</tr>
+<tr>
+<td>订单超时关单 + 每日对账定时函数</td>
+<td>开发</td>
+<td>1 天</td>
+</tr>
+<tr>
+<td>会员购买接支付 + 开关切换回归（02 §5.4 双态）</td>
+<td>开发</td>
+<td>1.5 天</td>
+</tr>
+<tr>
+<td>沙箱/小额真实支付全链路验收（含重复回调、金额篡改用例）</td>
+<td>开发+负责人</td>
+<td>0.5 天</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Sources:</strong>
+- <a href="https://pay.weixin.qq.com/static/applyment_guide/applyment_detail_miniapp.shtml">微信支付商户平台 · 小程序接入指引</a>
+- <a href="https://pay.weixin.qq.com/static/help_guide/business_registration.shtml">微信支付商户开户意愿指引</a>
+- <a href="https://developers.weixin.qq.com/miniprogram/dev/wxcloudservice/wxcloud/reference-sdk-api/open/pay/CloudPay.unifiedOrder.html">CloudPay.unifiedOrder 官方文档</a>
+- <a href="https://docs.cloudbase.net/en/practices/use-wechat-pay">腾讯云开发：云函数接入微信支付实践</a>
+- <a href="https://open.alipay.com/">支付宝开放平台</a> · <a href="https://opendocs.alipay.com/open/204/105297/">支付宝小程序接入准备</a>
+- <a href="https://developers.weixin.qq.com/community/develop/doc/000006c39d852839ed8be49f05bc00">微信开放社区：小程序能否使用支付宝支付</a></p></section><section data-src="06-device-integration.md"><h1 id="06">06 手表/手环对接设计：蓝牙直连 + 平台授权数据采集</h1>
+<blockquote>
+<p>项目：青沐生命科技微信小程序
+目标：① 小程序通过蓝牙(BLE)直连手表/心率设备，跑步时实时采集心率并随打卡入库；② 通过各厂商开放平台的 OAuth 授权（扫码/跳转授权），开通历史运动数据自动采集，替代手动打卡。
+参考代码仅为文档内容，实现时挂到 02 文档的 <code>sport</code>/<code>user</code> 云函数与 services 层。</p>
+</blockquote>
+<hr />
+<h2 id="0">0. 方案总览：两条路线，解决两类问题</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>路线 A：蓝牙 BLE 直连</th>
+<th>路线 B：平台 API 授权采集</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>解决什么</td>
+<td><strong>实时</strong>数据：跑步现场心率/实时联动打卡</td>
+<td><strong>历史/全量</strong>数据：跑步记录、距离、配速、睡眠、步数自动同步</td>
+</tr>
+<tr>
+<td>原理</td>
+<td>小程序蓝牙 API 订阅标准心率服务 (0x180D)</td>
+<td>用户授权我方访问厂商云端数据（OAuth 2.0），服务器拉取/订阅推送</td>
+</tr>
+<tr>
+<td>不需要</td>
+<td>厂商合作、服务器</td>
+<td>现场连接设备</td>
+</tr>
+<tr>
+<td>局限</td>
+<td>多数品牌手表默认<strong>不</strong>对第三方广播心率，需开"心率广播"模式；手环基本是私有协议连不上</td>
+<td>各厂商要逐家申请，审核周期数天~数周；个别平台不对外开放</td>
+</tr>
+<tr>
+<td>上线节奏</td>
+<td>V2.0 可直接开发，无外部依赖</td>
+<td>微信运动可立即做；华为/佳明并行申请</td>
+</tr>
+</tbody>
+</table>
+<p><strong>兼容矩阵（指导用户预期，也写进产品 FAQ）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>设备</th>
+<th>路线A 实时心率</th>
+<th>路线B 数据同步</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>标准蓝牙心率带/臂带（魔顿、迈金、Polar H10、佳明HRM等）</td>
+<td>✔ 标准 0x180D，直连最稳</td>
+<td>—</td>
+</tr>
+<tr>
+<td>佳明 Garmin 手表</td>
+<td>✔ 开启"心率广播"后可连</td>
+<td>✔ Garmin Connect Developer Program（Health/Activity API，详见 §2.3③）</td>
+</tr>
+<tr>
+<td>华为手表</td>
+<td>部分型号支持心率广播</td>
+<td>✔ 华为 Health Kit（REST API + 订阅）</td>
+</tr>
+<tr>
+<td>荣耀手表（2021 后新款）</td>
+<td>部分型号支持心率广播</td>
+<td>△ 荣耀开发者服务平台（详见 §2.3⑤）；2020 前老款荣耀穿戴仍走华为运动健康，被 Health Kit 覆盖</td>
+</tr>
+<tr>
+<td>高驰 COROS</td>
+<td>✔ 开启心率广播</td>
+<td>△ 有开放 API（对接 Strava/悦跑圈等），需商务接洽</td>
+</tr>
+<tr>
+<td>小米手环/手表</td>
+<td>✘ 私有协议</td>
+<td>△ 小米开放平台可申请运动健康数据接口（详见 §2.3④），政策以审核为准；Zepp Open Platform 需合作申请</td>
+</tr>
+<tr>
+<td>Apple Watch</td>
+<td>✘ 不广播</td>
+<td>✘ HealthKit 数据不出端（无云端 API），引导用户经微信运动间接同步</td>
+</tr>
+<tr>
+<td>微信运动（兜底，所有用户）</td>
+<td>—</td>
+<td>✔ <code>wx.getWeRunData</code> 拿 30 天步数，零申请成本</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1-a-ble">1. 路线 A：蓝牙 BLE 直连（实时心率）</h2>
+<h3 id="11">1.1 前置配置</h3>
+<ul>
+<li><code>app.json</code> 权限声明 + 隐私接口声明（<code>wx.openBluetoothAdapter</code> 等已列入隐私 API，需在「小程序后台→设置→服务内容声明→用户隐私保护指引」勾选蓝牙、并在 app.json <code>requiredPrivateInfos</code>/隐私弹窗中覆盖）。</li>
+<li>Android 上搜索 BLE 需要系统定位开关打开（微信底层限制），iOS 需要系统蓝牙打开——两个失败分支都要给用户可操作的提示文案。</li>
+</ul>
+<h3 id="12">1.2 标准协议要点（开发必读）</h3>
+<ul>
+<li>心率服务 Service UUID：<code>0x180D</code>；心率测量特征值 Characteristic：<code>0x2A37</code>（notify）。</li>
+<li><code>0x2A37</code> 报文解析：第 1 字节为 flags，flags 最低位 = 0 → 心率为第 2 字节 uint8；= 1 → 心率为第 2-3 字节 uint16 小端。</li>
+<li>扫描时用 <code>services: ['180D']</code> 过滤，只发现广播了心率服务的设备，列表干净且省电。</li>
+</ul>
+<h3 id="13">1.3 连接状态机与流程</h3>
+<pre><code>[未连接] → openBluetoothAdapter → startBluetoothDevicesDiscovery(180D)
+   → onBluetoothDeviceFound(设备列表页) → 用户点选 → createBLEConnection
+   → getBLEDeviceServices → getBLEDeviceCharacteristics(180D)
+   → notifyBLECharacteristicValueChange(2A37, true)
+   → [已连接·接收中] onBLECharacteristicValueChange 持续回调心率
+   ├─ onBLEConnectionStateChange(connected=false) → [断线] → 自动重连≤3次 → 失败提示
+   └─ 页面卸载/打卡结束 → closeBLEConnection → closeBluetoothAdapter
+</code></pre>
+<h3 id="14-utilsble-hrmjs">1.4 参考代码（utils/ble-hrm.js 心率连接管理器）</h3>
+<pre><code class="language-js">// utils/ble-hrm.js —— 心率设备管理器（页面只调 start/stop/onHeartRate）
+const HR_SERVICE = '0000180D-0000-1000-8000-00805F9B34FB'
+const HR_MEASURE = '00002A37-0000-1000-8000-00805F9B34FB'
+
+class HrmManager {
+  constructor() { this.deviceId = null; this.listeners = []; this.samples = [] }
+
+  async start() {
+    await wx.openBluetoothAdapter().catch(e =&gt; {
+      throw new Error(e.errCode === 10001 ? '请先打开手机蓝牙' : '蓝牙初始化失败')
+    })
+    await wx.startBluetoothDevicesDiscovery({
+      services: [HR_SERVICE], allowDuplicatesKey: false
+    })
+    wx.onBluetoothDeviceFound(res =&gt; this.emit('found', res.devices)) // 渲染设备列表
+  }
+
+  async connect(deviceId) {
+    this.deviceId = deviceId
+    await wx.stopBluetoothDevicesDiscovery()
+    await wx.createBLEConnection({ deviceId, timeout: 10000 })
+    wx.onBLEConnectionStateChange(s =&gt; {            // 断线自动重连
+      if (!s.connected &amp;&amp; this.deviceId) this.reconnect()
+    })
+    await wx.getBLEDeviceServices({ deviceId })      // 部分安卓需先枚举
+    await wx.getBLEDeviceCharacteristics({ deviceId, serviceId: HR_SERVICE })
+    await wx.notifyBLECharacteristicValueChange({
+      deviceId, serviceId: HR_SERVICE, characteristicId: HR_MEASURE, state: true
+    })
+    wx.onBLECharacteristicValueChange(res =&gt; {
+      const hr = parseHeartRate(res.value)
+      this.samples.push({ hr, t: Date.now() })
+      this.emit('heartRate', hr)                     // 页面实时显示
+    })
+  }
+
+  summary() {                                        // 打卡结束时取统计值
+    const list = this.samples.map(s =&gt; s.hr)
+    return list.length ? {
+      avgHr: Math.round(list.reduce((a, b) =&gt; a + b) / list.length),
+      maxHr: Math.max(...list), sampleCount: list.length
+    } : null
+  }
+
+  async stop() {
+    this.deviceId &amp;&amp; await wx.closeBLEConnection({ deviceId: this.deviceId }).catch(() =&gt; {})
+    await wx.closeBluetoothAdapter().catch(() =&gt; {})
+    this.deviceId = null
+  }
+}
+
+function parseHeartRate(buffer) {                    // 0x2A37 标准解析
+  const dv = new DataView(buffer)
+  const flags = dv.getUint8(0)
+  return (flags &amp; 0x01) ? dv.getUint16(1, true) : dv.getUint8(1)
+}
+module.exports = new HrmManager()
+</code></pre>
+<h3 id="15-sport">1.5 与打卡联动（sport 页）</h3>
+<ul>
+<li>打卡表单新增「连接心率设备」入口 → 设备列表弹层（信号强度排序）→ 连接成功后表单顶部实时显示心率（每秒刷新，&gt;180 bpm 标红提醒）。</li>
+<li>提交打卡时把 <code>hrm.summary()</code> 的 avgHr/maxHr/sampleCount 一并传给 <code>sport.checkin</code>；<strong>服务端把带设备采样的打卡标记 <code>source:'ble'</code></strong>，榜单可展示"真实心率"徽标（防作弊的正向激励）。</li>
+<li>页面 <code>onUnload</code> 必须调 <code>hrm.stop()</code> 释放蓝牙。</li>
+</ul>
+<hr />
+<h2 id="2-b-api">2. 路线 B：平台 API 授权采集（自动同步运动数据）</h2>
+<h3 id="21">2.1 统一授权与采集架构（各厂商共用）</h3>
+<pre><code>小程序 bind-app 页                我方服务端(云函数HTTP触发/云托管)            厂商开放平台
+┌──────────────┐   ①点&quot;绑定佳明&quot; ┌───────────────────────────┐
+│ 设备绑定列表    │ ──────────────► │ GET /oauth/start?vendor=garmin│
+│ (含绑定状态)    │   ②返回授权页URL │   生成 state(防CSRF,绑openid) │
+└──────────────┘ ◄────────────── └───────────────────────────┘
+   ③小程序展示该 URL 的二维码（canvas 生成）或复制链接
+   ④用户手机浏览器/厂商App 打开 → 登录厂商账号 → 同意授权 ──────► 授权服务器
+   ⑤厂商回调 /oauth/callback?code=..&amp;state=..  ◄──────────────────┘
+       └─ 服务端：code 换 access_token + refresh_token → 存 device_bindings
+   ⑥数据进入：厂商主动推送(webhook，佳明/华为订阅) 或 定时函数轮询拉取
+       └─ 原始数据落 raw_activities → 归一化 → 自动生成 checkins(source:'platform')
+   ⑦小程序 bind-app 页轮询绑定状态 → 显示&quot;已绑定·今晨已同步 5.2km&quot;
+</code></pre>
+<blockquote>
+<p>为什么要"扫码/外跳"：厂商 OAuth 授权页是网页，微信小程序 web-view 只能打开<strong>业务域名</strong>内页面，无法直接内嵌厂商授权页。标准做法即上图：生成授权链接 → 二维码/复制链接到浏览器完成授权 → 回调进我方服务器。回调地址需要一个 HTTPS 域名（用云开发「云函数 HTTP 触发」或云托管 + 已备案域名）。</p>
+</blockquote>
+<h3 id="22">2.2 数据模型（新增集合）</h3>
+<pre><code class="language-js">// device_bindings（一人多厂商）
+{ _openid, vendor:'garmin|huawei|coros|zepp|werun',
+  accessToken, refreshToken, expireAt,      // 加密存储（云函数内 AES，密钥放环境变量）
+  vendorUserId, scopes:[], status:'active|expired|revoked',
+  lastSyncAt, createdAt }
+
+// raw_activities（厂商原始数据，留底可追溯）
+{ _openid, vendor, vendorActivityId,        // vendor+vendorActivityId 唯一索引防重
+  type:'running|walking|cycling', startTime, durationSec,
+  distanceMeters, avgHr, maxHr, cadence, raw:{...}, createdAt }
+</code></pre>
+<p><strong>归一化与防双计</strong>：raw_activities 写入后触发归一化——type=running 且 distance≥500m 自动生成 checkin(source:'platform')；若同一用户当日已有手动打卡且时段重叠（开始时间差 &lt; 2h），只保留设备数据并退回手动那笔的积分差额。积分上限规则与手动打卡一致（02 §5.3）。</p>
+<h3 id="23">2.3 各平台申请方法与材料</h3>
+<h4 id="1-werun">① 微信运动 weRun —— 零申请，先上线</h4>
+<ul>
+<li>无需任何申请。前端 <code>wx.getWeRunData()</code> 拿加密包 → 云函数用 <code>cloud.getOpenData</code> 解密，得最近 30 天每日步数。</li>
+<li>局限：只有步数（无距离/心率），适合做"步数榜"和兜底活跃数据。</li>
+<li>参考代码：</li>
+</ul>
+<pre><code class="language-js">// 前端
+const { encryptedData, iv, cloudID } = await wx.getWeRunData()
+await call('sport', 'syncWeRun', { weRunData: wx.cloud.CloudID(cloudID) })
+// 云函数（cloudID 自动解密）
+async function syncWeRun({ OPENID, payload }) {
+  const stepList = payload.weRunData.data.stepInfoList   // [{timestamp, step} × 30]
+  // upsert 到 raw_activities(vendor:'werun')，步数榜直接聚合此表
+}
+</code></pre>
+<h4 id="2-health-kit">② 华为 Health Kit（覆盖华为/荣耀手表手环，国内占比最高，优先申请）</h4>
+<ul>
+<li>申请材料：华为开发者联盟<strong>企业实名</strong>账号（营业执照+法人信息，审核约 1-3 工作日）、应用信息、隐私政策 URL、数据使用说明（申请每一项读权限都要说明用途）。</li>
+<li>步骤：开发者联盟创建应用 → 开通「Account Kit 账号服务」→ 申请「Health Kit」并勾选数据权限 scope（跑步记录、心率、步数等，<strong>权限审核按项过</strong>）→ 拿 client_id/client_secret → 实现 OAuth（授权页 → code → token）→ 调 REST API 拉数据，或注册<strong>数据订阅</strong>（数据变化时华为推送到我方回调）。</li>
+<li>注意：用户须安装华为运动健康 App 且同意授权；申请到的 scope 与实际调用必须一致，多申会被驳回。</li>
+</ul>
+<h4 id="3-garmin-connect-developer-program">③ 佳明 Garmin Connect Developer Program（跑步人群浓度高，接入手册级细节）</h4>
+<p><strong>申请</strong>：填写官方 Access Request Form，需提供<strong>法人实体</strong>信息（公司名称、官网、业务说明、预计用户量、数据用途），审核通过后签 API 协议（免费，周期约 1-2 周）。国内用户多在 Garmin Connect 中国区（佳明中国），申请时注明面向中国市场。</p>
+<p><strong>授权协议</strong>：OAuth 2.0 <strong>PKCE</strong> 模式——
+1. 我方服务端生成 <code>code_verifier</code>（43-128 位随机串）并算出 <code>code_challenge</code>；
+2. 用户访问授权 URL（带 challenge）登录 Garmin 账号、勾选权限（用户可多选权限如 Activity Export，授权后变更会经 User Permission webhook 通知我方）；
+3. 回调拿 code → 用 verifier 换 access_token / refresh_token。</p>
+<p><strong>数据获取（Push 模型，基本不用轮询）</strong>：在开发者门户为每类数据<strong>分别注册回调 URL</strong>——activities（运动记录）、dailies（每日汇总）、epochs（分钟级片段）、sleep、stress、userMetrics（VO2Max）、hrv 等；用户手表一同步，Garmin 就把数据 POST 到对应 webhook。两种通知模式：<strong>Push</strong>（POST body 直接带完整数据，推荐）和 <strong>Ping</strong>（只给回执 URL，需再回调拉取）。历史数据用 <strong>Backfill</strong> 接口补拉（异步返 202，数据走 webhook 送达）。</p>
+<p><strong>开发要点</strong>：webhook 必须 2 秒内应答 200（先落库后异步处理）；按 vendorActivityId 去重；活动明细可取 FIT/GPX 轨迹（二期做轨迹地图再用）。</p>
+<h4 id="4">④ 小米（小米手环/手表，国内出货量最大，值得专项申请）</h4>
+<p><strong>现状</strong>：小米健康云历史上主要面向<strong>生态链企业</strong>开放；目前可走 <a href="https://dev.mi.com/">小米开放平台</a> 自助申请通道，政策以实际审核为准，建议"申请 + 兜底"双轨推进。</p>
+<p><strong>申请路径</strong>：
+1. 小米开放平台注册<strong>企业开发者</strong>（营业执照等企业资料，免费，审核约 2-4 个工作日）；
+2. 申请「运动健康数据接口」权限：填写应用信息、数据使用说明、隐私政策 URL（审核约 3-5 个工作日），通过后获得 AppID/API 密钥；
+3. 实现 OAuth 授权（小米账号登录授权，纳入 §2.1 通用框架，新增 vendors/xiaomi.js 适配器）；
+4. 可同步数据：步数、睡眠、心率、运动记录/轨迹（视权限审批范围）。</p>
+<p><strong>兜底</strong>：审核不通过或周期过长时——小米用户引导开启「小米运动健康 → 第三方数据共享 → 微信运动」，我方经 weRun 拿到步数（①已覆盖）；bind-app 页小米项显示"预约登记"收集需求量，作为与小米商务谈判的筹码。</p>
+<h4 id="5">⑤ 荣耀（与华为分家后独立生态，单独申请）</h4>
+<p><strong>关键事实</strong>：荣耀 2020 年从华为独立后自建账号与健康生态——<strong>2021 年前的老款荣耀手环/手表仍绑定华为运动健康 App</strong>（数据走华为 Health Kit，②已覆盖，无需额外开发）；<strong>新款荣耀手表绑定「荣耀运动健康」App</strong>，数据在荣耀云，需单独接入。</p>
+<p><strong>申请路径</strong>：
+1. <a href="https://developer.honor.com">荣耀开发者服务平台</a> 注册企业开发者（营业执照实名，流程类似华为）；
+2. 申请荣耀账号服务（Honor Account Kit，OAuth 用）+ 运动健康相关 Kit 权限；荣耀对穿戴生态提供 Fitness-Wear Kit 等能力，<strong>云端健康数据 REST 开放范围目前不如华为 Health Kit 完整</strong>，若所需 scope 未开放则提交商务合作申请；
+3. 接入纳入 §2.1 通用框架（vendors/honor.js 适配器），授权/回调/同步逻辑与华为同构。</p>
+<p><strong>建议</strong>：优先级排华为/佳明之后；先上"老款走华为 Health Kit + 新款预约登记"，待荣耀云端数据开放确认后再开发适配器。</p>
+<h4 id="6-coros-zepp">⑥ 高驰 COROS / Zepp（华米）—— 商务接洽通道</h4>
+<ul>
+<li>COROS：有开放 API（已对接 Strava、悦跑圈等），无公开自助申请入口，走 <strong>商务邮件接洽</strong>（提供公司资质与合作方案）。</li>
+<li>Zepp Open Platform（dev.zepp.com）：面向合作伙伴开放数据能力，同样需合作申请。</li>
+<li>产品策略：bind-app 页对未打通的厂商显示"敬请期待 + 预约登记"，统计预约量反向决定接入优先级。</li>
+</ul>
+<h3 id="23-api">2.3+ 健康数据 API 开放平台全景（备查）</h3>
+<blockquote>
+<p>回答"还有哪些健康数据开放平台"：按对本项目（微信小程序、中国市场）的可用性分层。</p>
+</blockquote>
+<p><strong>第一梯队（本项目已规划）</strong>：微信运动 weRun、华为 Health Kit、Garmin Connect Developer Program、小米开放平台、荣耀开发者平台。</p>
+<p><strong>第二梯队（国内可谈/可扩展）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>平台</th>
+<th>数据能力</th>
+<th>接入方式</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Zepp Open Platform（华米）</td>
+<td>手环手表运动/睡眠/心率</td>
+<td>合作申请</td>
+<td>dev.zepp.com</td>
+</tr>
+<tr>
+<td>高驰 COROS 开放 API</td>
+<td>运动记录（FIT）</td>
+<td>商务接洽</td>
+<td>已对接 Strava/悦跑圈</td>
+</tr>
+<tr>
+<td>OPPO 健康（OHealth）</td>
+<td>手表运动健康数据</td>
+<td>开发者平台/商务</td>
+<td>开放度有限，按需接洽</td>
+</tr>
+<tr>
+<td>vivo 健康</td>
+<td>手表手环数据</td>
+<td>商务接洽</td>
+<td>无公开自助 API</td>
+</tr>
+<tr>
+<td>Keep / 咕咚 / 悦跑圈</td>
+<td>App 运动记录</td>
+<td>开放平台/商务</td>
+<td>偏 App 互联跳转，数据回流受限</td>
+</tr>
+</tbody>
+</table>
+<p><strong>第三梯队（国际平台，做出海或 App 版再考虑）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>平台</th>
+<th>数据能力</th>
+<th>授权</th>
+<th>备注</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Fitbit Web API（Google）</td>
+<td>活动/睡眠/心率</td>
+<td>OAuth2</td>
+<td>正迁移整合至 Google 健康体系</td>
+</tr>
+<tr>
+<td>Polar AccessLink</td>
+<td>训练/HRV/睡眠</td>
+<td>OAuth2</td>
+<td>token 长期有效，接入简单</td>
+</tr>
+<tr>
+<td>Suunto Cloud API</td>
+<td>运动记录/步数/睡眠</td>
+<td>OAuth2</td>
+<td>需正式申请与 onboarding</td>
+</tr>
+<tr>
+<td>Withings / Oura / WHOOP</td>
+<td>体征（体重/血压/睡眠/恢复）</td>
+<td>OAuth2</td>
+<td>体征类数据丰富</td>
+</tr>
+<tr>
+<td>Strava API</td>
+<td>运动社交/活动流</td>
+<td>OAuth2</td>
+<td>国内跑表用户常双同步到 Strava，可作曲线数据源</td>
+</tr>
+<tr>
+<td>Samsung Health / Health Connect</td>
+<td>端侧聚合（Android）</td>
+<td>端侧 SDK</td>
+<td>需自有 App，云端 API 有限</td>
+</tr>
+<tr>
+<td>Apple HealthKit</td>
+<td>iPhone/Apple Watch 全量</td>
+<td>端侧（无云 API）</td>
+<td>数据不出端，必须有自有 iOS App</td>
+</tr>
+<tr>
+<td>Google Fit → Health Connect</td>
+<td>Android 聚合</td>
+<td>端侧为主</td>
+<td>Google Fit API 退役中，向 Health Connect 迁移</td>
+</tr>
+</tbody>
+</table>
+<p><strong>聚合服务（一接全有，按量付费）</strong>：Terra API（500+ 设备/应用源）、Thryve 等商业聚合；Open Wearables（开源自托管聚合）。优点是一次接入覆盖 Garmin/Polar/Suunto/Fitbit 等众多平台，缺点是境外服务（数据出境合规需评估）、按用户/调用收费、对国内华为/小米覆盖差。<strong>本项目结论：国内厂商直连为主，聚合服务仅在未来出海版本评估。</strong></p>
+<h3 id="24-oauth">2.4 服务端参考代码（OAuth 回调 + 定时同步）</h3>
+<pre><code class="language-js">// 云函数 device-oauth（HTTP 触发）/oauth/callback
+async function callback(query) {
+  const { code, state } = query
+  const { openid, vendor } = await verifyState(state)          // state 一次性、5分钟有效
+  const token = await exchangeToken(vendor, code)              // code→access_token
+  await upsert('device_bindings', { _openid: openid, vendor }, {
+    accessToken: encrypt(token.access_token),
+    refreshToken: encrypt(token.refresh_token),
+    expireAt: Date.now() + token.expires_in * 1000, status: 'active'
+  })
+  return htmlPage('绑定成功，请返回小程序')                      // 回调落地页
+}
+
+// 云函数 device-sync（定时触发器：每小时；佳明走 push 则此函数只兜底）
+async function syncAll() {
+  const bindings = await db.collection('device_bindings')
+    .where({ status: 'active' }).get()
+  for (const b of bindings.data) {
+    if (b.expireAt &lt; Date.now()) await refreshToken(b)          // 过期先刷新
+    const acts = await fetchActivities(b, b.lastSyncAt)         // 各厂商适配器
+    for (const a of acts) await saveRawActivity(b._openid, b.vendor, normalize(a))
+    await markSynced(b)
+  }
+}
+// vendors/garmin.js、vendors/huawei.js 实现 fetchActivities/exchangeToken 适配器，
+// 新增厂商只加一个适配器文件，主流程不动。
+</code></pre>
+<h3 id="25-bind-app">2.5 bind-app 页改造（替换现在的假绑定）</h3>
+<ul>
+<li>列表项三态：未绑定（按钮"去授权"→ 弹二维码/复制链接）｜已绑定（显示最近同步时间 + "立即同步" + "解绑"）｜敬请期待（预约登记）。</li>
+<li>解绑：删 token、status→revoked，并调厂商 revoke 接口（有则调）。</li>
+<li>全模块受 <code>feature_flags.bindApp</code> 开关控制，厂商逐个开（flags 细化为 <code>bindApp: {werun:true, huawei:false, garmin:false}</code>）。</li>
+</ul>
+<hr />
+<h2 id="3-04-phase-6">3. 任务拆解（并入 04 文档，作为 Phase 6）</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>任务</th>
+<th>前置</th>
+<th>工作量</th>
+<th>验收标准</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T6-1</td>
+<td>微信运动接入（getWeRunData + 解密入库 + 步数榜）</td>
+<td>Phase 2</td>
+<td>1.5 天</td>
+<td>30 天步数入库；同账号重复同步不重复计</td>
+</tr>
+<tr>
+<td>T6-2</td>
+<td>BLE 心率管理器（utils/ble-hrm.js）+ 设备列表弹层</td>
+<td>—</td>
+<td>2 天</td>
+<td>心率带真机连接、断线重连、页面退出释放</td>
+</tr>
+<tr>
+<td>T6-3</td>
+<td>打卡联动心率（source:'ble'，avg/max 入库与展示）</td>
+<td>T6-2</td>
+<td>1 天</td>
+<td>带心率打卡在榜单显示徽标</td>
+</tr>
+<tr>
+<td>T6-4</td>
+<td>OAuth 通用框架（HTTP 触发 + state 防伪 + token 加密存储 + 适配器模式）</td>
+<td>备案域名</td>
+<td>2 天</td>
+<td>模拟厂商完成全流程</td>
+</tr>
+<tr>
+<td>T6-5</td>
+<td>华为 Health Kit 申请（负责人）+ 适配器 + 数据订阅</td>
+<td>T6-4、华为审核</td>
+<td>2.5 天</td>
+<td>华为手表跑步记录自动生成打卡</td>
+</tr>
+<tr>
+<td>T6-6</td>
+<td>佳明申请（负责人）+ 适配器 + 分类型 webhook + Backfill 补拉</td>
+<td>T6-4、佳明审核</td>
+<td>2.5 天</td>
+<td>佳明新活动 10 分钟内入库；历史 30 天可补拉</td>
+</tr>
+<tr>
+<td>T6-7</td>
+<td>归一化与防双计（手动打卡 vs 设备数据去重退分）</td>
+<td>T6-5/6</td>
+<td>1 天</td>
+<td>重叠时段不重复计分</td>
+</tr>
+<tr>
+<td>T6-8</td>
+<td>bind-app 页重做（三态 + 预约登记 + 分厂商开关）</td>
+<td>T6-4</td>
+<td>1 天</td>
+<td>假绑定代码全部删除</td>
+</tr>
+<tr>
+<td>T6-9</td>
+<td>小米开放平台申请（负责人，企业入驻+数据权限）+ vendors/xiaomi.js 适配器</td>
+<td>T6-4、小米审核</td>
+<td>2 天</td>
+<td>小米手环运动记录自动生成打卡；审核被拒则走微信运动兜底</td>
+</tr>
+<tr>
+<td>T6-10</td>
+<td>荣耀接入：老款确认走华为 Health Kit；荣耀开发者平台入驻 + 新款数据开放评估（视开放范围决定是否开发 vendors/honor.js）</td>
+<td>T6-5</td>
+<td>1 天（评估）+2 天（若开发）</td>
+<td>老款荣耀手表数据经华为链路入库；新款给出可/不可接结论</td>
+</tr>
+</tbody>
+</table>
+<p>风险：① 厂商审核周期不可控（华为权限逐项审、佳明 1-2 周）→ 提前由负责人发起申请，与开发并行；② 蓝牙在部分安卓机型兼容性差 → 准备 3+ 真机回归清单；③ token 泄漏风险 → 加密存储 + 集合权限"仅云函数可读写" + 定期轮换密钥。</p>
+<p><strong>Sources:</strong>
+- <a href="https://developers.weixin.qq.com/miniprogram/dev/framework/device/bluetooth.html">微信开放文档 · 蓝牙 (Bluetooth)</a>
+- <a href="https://developer.huawei.com/consumer/cn/hms/huaweihealth/">华为 Health Kit 服务介绍</a> · <a href="https://developer.huawei.com/consumer/cn/doc/atomic-guides/health-application-access-as">接入流程</a>
+- <a href="https://developerportal.garmin.com/developer-programs/connect-developer-api">Garmin Connect Developer Program</a> · <a href="https://developer.garmin.com/gc-developer-program/health-api/">Health API</a> · <a href="https://developer.garmin.com/gc-developer-program/activity-api/">Activity API</a> · <a href="https://developerportal.garmin.com/sites/default/files/OAuth2PKCE_1.pdf">OAuth2 PKCE 规范</a> · <a href="https://www.garmin.com/en-US/forms/GarminConnectDeveloperAccess/">Access Request Form</a>
+- <a href="https://dev.mi.com/">小米开放平台</a> · <a href="https://dev.mi.com/docs/micloud/health/android_sdk/">小米健康云 SDK 文档</a>
+- <a href="https://developer.honor.com">荣耀开发者服务平台</a> · <a href="https://developer.honor.com/cn/kitdoc?kitId=11006&amp;navigation=sdk">荣耀 Fitness-Wear Kit</a>
+- <a href="https://dev.zepp.com/">Zepp Open Platform</a>
+- 聚合服务：<a href="https://tryterra.co/integrations">Terra API</a> · <a href="https://github.com/the-momentum/open-wearables">Open Wearables</a> · <a href="https://openwearables.io/blog/polar-api-training-hrv-nightly-recharge-data">Polar AccessLink 解析</a></p></section><section data-src="07-food-nutrition-apis.md"><h1 id="07-api">07 国内菜谱与饮食营养 API 选型</h1>
+<blockquote>
+<p>项目：青沐生命科技微信小程序
+用途：为「餐饮/健康饮食」模块（03 文档 content type=food）和未来"运动 + 饮食管理"闭环提供数据源。本文盘点国内可用的菜谱/营养/识别类 API，给出选型建议、缓存落地设计与参考代码。</p>
+</blockquote>
+<hr />
+<h2 id="1-api">1. 业务场景 → 需要什么 API</h2>
+<table>
+<thead>
+<tr>
+<th>产品场景</th>
+<th>需要的能力</th>
+<th>对应 §2 分类</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>食谱内容（跑前/跑后怎么吃、健康食谱推荐）</td>
+<td>菜谱大全（菜名、食材、步骤、图片）</td>
+<td>A 菜谱内容</td>
+</tr>
+<tr>
+<td>食物热量/营养查询（"一碗米饭多少大卡"）</td>
+<td>营养成分数据库</td>
+<td>B 营养成分</td>
+</tr>
+<tr>
+<td>拍照识别菜品记饮食（进阶玩法）</td>
+<td>AI 菜品图像识别</td>
+<td>C AI 识别</td>
+</tr>
+<tr>
+<td>扫包装条码看配料/热量</td>
+<td>条码→商品/配料</td>
+<td>D 条码查询</td>
+</tr>
+<tr>
+<td>专业营养内容/品牌联名</td>
+<td>内容商务合作</td>
+<td>E 合作通道</td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-api">2. 国内可用 API 盘点</h2>
+<h3 id="a-api">A. 菜谱内容 API（按成熟度排序）</h3>
+<table>
+<thead>
+<tr>
+<th>平台</th>
+<th>数据规模</th>
+<th>能力</th>
+<th>计费</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://www.juhe.cn/docs/api/id/46">聚合数据·菜谱大全</a></td>
+<td>10 万+ 道，按蛋/奶/面/蔬果/肉/水产等分类</td>
+<td>关键词/分类查询，含图文步骤</td>
+<td>免费额度 + 按次付费</td>
+</tr>
+<tr>
+<td><a href="https://www.jisuapi.com/api/recipe/">极速数据·菜谱</a></td>
+<td>1 万+ 道</td>
+<td>分类树、关键词搜索、主料辅料、做法步骤</td>
+<td>免费额度 + 套餐</td>
+</tr>
+<tr>
+<td><a href="https://www.tianapi.com/apiview/23">天行数据 TianAPI·菜谱查询</a></td>
+<td>数万道</td>
+<td>随机菜谱、按分类检索</td>
+<td>会员套餐制，单价低</td>
+</tr>
+<tr>
+<td>免费 API 聚合站（free-api 等收录的菜谱接口）</td>
+<td>不稳定</td>
+<td>仅原型期临时用</td>
+<td>免费</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>三家正规商用平台（聚合/极速/天行）均为标准 HTTPS+JSON、需注册企业账号申请 AppKey。<strong>菜谱属于内容数据，注意版权条款</strong>——选购时确认"允许商用展示"，页面保留来源标注。</p>
+</blockquote>
+<h3 id="b-api">B. 食物营养成分 / 热量 API</h3>
+<table>
+<thead>
+<tr>
+<th>平台</th>
+<th>数据规模</th>
+<th>能力</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://www.tianapi.com/apiview/121">天行·营养成分表</a></td>
+<td>约 2000 种常见食物</td>
+<td>每 100g 营养成分与微量元素、按成分排序检索</td>
+</tr>
+<tr>
+<td>RollTools 等食物热量 API</td>
+<td>数千种</td>
+<td>食物分类/列表/搜索/详情四接口</td>
+</tr>
+<tr>
+<td>《中国食物成分表》（标准版/全国代表值）</td>
+<td>权威纸质/数据授权</td>
+<td>无公开 API；可购买数据授权后<strong>自建库</strong>（量大且需权威性时的正解）</td>
+</tr>
+<tr>
+<td>薄荷健康食物库</td>
+<td>50 万+ 种（含包装食品）</td>
+<td>国内最全，但<strong>无公开 API</strong>，走 E 类商务合作</td>
+</tr>
+<tr>
+<td>FatSecret API（国际）</td>
+<td>全球库，有中文数据</td>
+<td>OAuth 接入，免费层可用；国内访问稳定性与合规需评估</td>
+</tr>
+</tbody>
+</table>
+<h3 id="c-ai">C. AI 菜品/食材识别</h3>
+<table>
+<thead>
+<tr>
+<th>平台</th>
+<th>能力</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="https://ai.baidu.com/tech/imagerecognition/dish">百度 AI·菜品识别</a></td>
+<td>识别 9000+ 菜品，返回菜名、置信度、<strong>卡路里</strong>、百科信息；支持自建菜品图库</td>
+<td>国内最成熟，有免费测试额度，之后次数包/按量付费；接口 <code>image-classify/v2/dish</code></td>
+</tr>
+<tr>
+<td><a href="https://www.tianapi.com/apiview/248">天行·食物营养识别</a></td>
+<td>传图识别近 2000 种食物并返回营养成分</td>
+<td>识别+营养一步到位，规模小于百度</td>
+</tr>
+<tr>
+<td>腾讯云/阿里云通用图像识别</td>
+<td>通用标签含菜品类目</td>
+<td>无专门菜品接口，准确率不如百度专项</td>
+</tr>
+</tbody>
+</table>
+<h3 id="d">D. 食品条码查询</h3>
+<ul>
+<li>聚合数据、阿里云云市场等有「商品条码查询」API（条码→商品名/厂商/规格，部分含配料表）；数据完整度参差，<strong>包装食品营养以实拍营养成分表为准</strong>，条码 API 只做辅助填充。</li>
+</ul>
+<h3 id="e-api">E. 内容/数据商务合作（API 之外的正路）</h3>
+<ul>
+<li><strong>薄荷健康</strong>：50 万食物库 + 营养师内容，国内健康饮食数据第一梯队，走商务授权（青沐"生命科技"定位与其调性契合，建议接洽）。</li>
+<li><strong>下厨房 / 豆果美食</strong>：菜谱内容头部，无公开自助 API，内容授权/联合运营需商务谈。</li>
+<li><strong>中国营养学会</strong>：权威膳食指南内容授权，适合做"科学背书"型内容。</li>
+</ul>
+<h2 id="3">3. 选型建议（结合本项目）</h2>
+<ol>
+<li><strong>V1（content food 模块上线即用）</strong>：不接 API。食谱/饮食内容由运营在 <code>contents</code>(type=food) 录入 10-30 篇精选图文（跑者餐单、赛前碳水攻略），成本为零、可控、无版权风险。</li>
+<li><strong>V2（饮食查询功能）</strong>：接<strong>一家</strong>菜谱 API（推荐聚合数据，规模最大）+ <strong>天行营养成分表</strong>（热量查询），均经云函数代理并缓存（§4），月成本预计百元级。</li>
+<li><strong>V2.5（拍照记饮食，差异化亮点）</strong>：百度菜品识别 + 营养库联动——拍照→菜名+卡路里→写入用户饮食日记，与运动消耗对比形成"摄入 vs 消耗"闭环（大健康产品的核心粘性功能）。</li>
+<li><strong>V3（数据自主化）</strong>：若饮食功能被验证为核心，购买《中国食物成分表》数据授权自建营养库 + 接洽薄荷健康，摆脱按次计费与第三方依赖。</li>
+</ol>
+<h2 id="4">4. 落地设计：云函数代理 + 缓存（控制成本的关键）</h2>
+<pre><code>小程序 ──► content 云函数(action=foodSearch) ──► ① 查 food_cache 集合命中即返回
+                                              └─ ② 未命中→调第三方API→写缓存→返回
+</code></pre>
+<ul>
+<li>第三方 API 按次计费，<strong>绝不允许小程序直连</strong>（AppKey 会泄漏，也无法缓存）。AppKey 存云函数环境变量。</li>
+<li>缓存集合 <code>food_cache</code>：<code>{ keyword, source:'juhe|tianapi|baidu', payload, hitCount, expiredAt }</code>，菜谱类缓存 30 天、营养成分缓存 180 天（基本不变）、识别结果按图片 hash 缓存。</li>
+<li>限流：每用户每日查询/识别次数上限（如 20 次）写在 app_config，防止恶意刷量刷爆 API 账单。</li>
+</ul>
+<p>参考代码（content 云函数新增两个 action）：</p>
+<pre><code class="language-js">// foodNutrition：营养成分查询（带缓存）
+async function foodNutrition({ payload }) {
+  const { keyword } = payload
+  const hit = await db.collection('food_cache')
+    .where({ keyword, source: 'tianapi', expiredAt: _.gt(Date.now()) }).get()
+  if (hit.data.length) return hit.data[0].payload
+
+  const res = await axios.get('https://apis.tianapi.com/nutrient/index', {
+    params: { key: process.env.TIANAPI_KEY, word: keyword }
+  })
+  if (res.data.code !== 200) throw { code: 502, message: '营养库查询失败' }
+  await db.collection('food_cache').add({ data: {
+    keyword, source: 'tianapi', payload: res.data.result,
+    expiredAt: Date.now() + 180 * 864e5, createdAt: new Date()
+  }})
+  return res.data.result
+}
+
+// dishRecognize：百度菜品识别（图片先传云存储，云函数取临时链接转 base64）
+async function dishRecognize({ OPENID, payload }) {
+  await checkDailyQuota(OPENID, 'dishRecognize', 20)          // 限流
+  const token = await getBaiduToken()                          // access_token 缓存30天
+  const res = await axios.post(
+    'https://aip.baidubce.com/rest/2.0/image-classify/v2/dish',
+    qs.stringify({ image: payload.imageBase64, top_num: 3 }),
+    { params: { access_token: token } })
+  const best = res.data.result?.[0]
+  if (!best) throw { code: 404, message: '未识别出菜品' }
+  return { name: best.name, calorie: best.calorie, probability: best.probability }
+}
+</code></pre>
+<h2 id="5">5. 任务与风险</h2>
+<table>
+<thead>
+<tr>
+<th>任务</th>
+<th>工作量</th>
+<th>验收</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T7-1 V2：聚合菜谱 + 天行营养接入（云函数代理+缓存+限流）</td>
+<td>2 天</td>
+<td>同一关键词第二次查询不产生外部调用</td>
+</tr>
+<tr>
+<td>T7-2 V2：food 页加"热量查询"入口</td>
+<td>1 天</td>
+<td>查询"米饭"返回每100g营养成分</td>
+</tr>
+<tr>
+<td>T7-3 V2.5：百度菜品识别 + 饮食日记（meals 集合）+ 摄入/消耗对比卡片</td>
+<td>3 天</td>
+<td>拍照→菜名卡路里入日记；首页显示今日摄入vs运动消耗</td>
+</tr>
+</tbody>
+</table>
+<p>风险：① 第三方 API 停服/涨价 → 缓存层让切换供应商只改适配器；② 内容版权 → 商用条款留档，页面标注来源；③ 健康声明合规 → 营养建议类文案加"仅供参考，不构成医疗建议"，避免医疗化表述（小程序审核红线）。</p>
+<p><strong>Sources:</strong>
+- <a href="https://www.juhe.cn/docs/api/id/46">聚合数据·菜谱大全 API</a> · <a href="https://www.jisuapi.com/api/recipe/">极速数据·菜谱 API</a>
+- <a href="https://www.tianapi.com/apiview/23">天行数据·菜谱查询</a> · <a href="https://www.tianapi.com/apiview/121">天行·营养成分表</a> · <a href="https://www.tianapi.com/apiview/248">天行·食物营养识别</a>
+- <a href="https://ai.baidu.com/tech/imagerecognition/dish">百度 AI 菜品识别</a> · <a href="https://ai.baidu.com/ai-doc/IMAGERECOGNITION/tk3bcxbb0">接口文档</a>
+- <a href="https://www.jianshu.com/p/f3344a834dca">FatSecret API 实践参考</a></p></section><section data-src="08-recipe-ingestion-and-ludong.md"><h1 id="08">08 菜谱数据接入采集方案 + 律动平台对接设计</h1>
+<blockquote>
+<p>项目：青沐生命科技微信小程序
+前提（已确认）：律动平台 = 公司<strong>内部运营/管理后台</strong>，已有 HTTP API；对接为双向——小程序→律动（用户与运动数据、订单/积分），律动→小程序（内容下发），并做用户账号打通。
+本文承接 07 文档（API 盘点），回答"数据怎么进来、怎么管、怎么和律动互通"。</p>
+</blockquote>
+<hr />
+<h2 id="part-1">Part 1 菜谱数据接入采集综合分析</h2>
+<h3 id="11">1.1 核心结论：不做"实时透传"，做"采集入库制"</h3>
+<p>第三方菜谱 API 按次计费、格式互不相同、随时可能停服。正确姿势是把它们当作<strong>一次性/周期性的数据源</strong>，采集进自己的库，小程序只读自己的库：</p>
+<pre><code>   数据源(可多个、可替换)                  我方数据资产                     消费端
+┌─────────────────────┐      ┌──────────────────────────────┐
+│ A 商用API(聚合/极速/天行)│──┐  │ recipes 集合(统一Schema)        │   小程序 food 模块
+│ B 数据授权采购(成分表等) │──┼─►│ 采集→清洗→去重→转存图片→草稿     │──► 律动后台(审核/编辑)
+│ C 运营人工录入(律动后台) │──┤  │ →人工审核→发布(status=on)       │   未来App/H5复用
+│ D 用户UGC投稿(远期)     │──┘  └──────────────────────────────┘
+└─────────────────────┘   ✘ E 爬虫(下厨房/豆果等)——侵权+反爬+审核风险，明确不做
+</code></pre>
+<p>四种来源对比与采用策略：</p>
+<table>
+<thead>
+<tr>
+<th>来源</th>
+<th>成本</th>
+<th>质量</th>
+<th>版权</th>
+<th>策略</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A 商用 API 批量采集</td>
+<td>按次付费，万级数据约数百元</td>
+<td>中，需清洗</td>
+<td>按购买条款商用，留源标注</td>
+<td><strong>主力</strong>：V2 一次性采集建库 + 每月增量</td>
+</tr>
+<tr>
+<td>B 数据授权采购</td>
+<td>一次性数千~数万元</td>
+<td>高（权威）</td>
+<td>清晰</td>
+<td>营养成分表走这条（07 §3.4）</td>
+</tr>
+<tr>
+<td>C 运营录入（律动后台）</td>
+<td>人力</td>
+<td>最高（品牌调性）</td>
+<td>自有</td>
+<td><strong>精选内容</strong>：跑者餐单等 30-50 篇自产</td>
+</tr>
+<tr>
+<td>D 用户投稿</td>
+<td>低</td>
+<td>不稳，需审核</td>
+<td>用户授权协议</td>
+<td>远期社区化再开</td>
+</tr>
+</tbody>
+</table>
+<h3 id="12-recipes">1.2 统一数据模型（recipes 集合）</h3>
+<p>所有来源归一到一个 Schema，消费端与来源解耦：</p>
+<pre><code class="language-js">{
+  _id, title, coverFileID,                  // 图片一律转存云存储（防外链失效/盗链限制）
+  category: 'breakfast|prerun|postrun|lowcal|homedish|...',  // 我方业务分类（非源分类）
+  tags: ['高蛋白','补碳','减脂'],
+  ingredients: [{ name:'鸡胸肉', amount:'200g', isMain:true }],
+  steps: [{ order:1, text:'...', imageFileID }],
+  nutrition: { calorie, protein, fat, carb, per:'100g'|'serving' } | null,  // 关联营养库
+  durationMin, difficulty: 1-5, servings,
+  source: { type:'api|licensed|editorial|ugc', vendor:'juhe', vendorId:'8512', license:'商用授权-留源' },
+  audit: { status:'draft|reviewing|on|off', reviewer, reviewedAt },
+  stats: { views, favorites },
+  fingerprint,                              // 去重指纹（见1.3）
+  createdAt, updatedAt
+}
+</code></pre>
+<h3 id="13-etl">1.3 采集管道（ETL，云函数实现）</h3>
+<pre><code>recipe-ingest 云函数（手动触发批量 / 定时增量）
+ ① 拉取：按分类遍历源 API（限速 ≤2 req/s，断点续采：记录游标到 ingest_jobs）
+ ② 映射：vendors/juhe-recipe.js 等适配器 → 统一 Schema（字段映射表见下）
+ ③ 清洗：
+    - 单位标准化（&quot;适量/少许&quot;保留原文；克/毫升统一）
+    - 文本过滤：敏感词、医疗化表述（&quot;治疗&quot;&quot;降血压&quot;→ 拦截人工处理）
+    - 步骤完整性校验（无步骤/无主料的丢弃，记入 ingest_rejects）
+ ④ 去重：fingerprint = sha1(normalize(title) + '|' + 主料排序拼接)
+    命中已有 → 跳过或按 updatedAt 更新；跨源重复以先入库者为准
+ ⑤ 图片转存：源图 URL 下载 → 压缩(≤300KB) → 云存储 → 替换为 fileID
+ ⑥ 落库：audit.status = 'draft'
+ ⑦ 审核发布：运营在律动后台改分类/标签/排版 → status='on' 后小程序可见
+</code></pre>
+<p>字段映射表（开发对照用，节选）：</p>
+<table>
+<thead>
+<tr>
+<th>统一字段</th>
+<th>聚合数据</th>
+<th>极速数据</th>
+<th>天行</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>title</td>
+<td>title</td>
+<td>name</td>
+<td>cp_name</td>
+</tr>
+<tr>
+<td>ingredients</td>
+<td>yuanliao/tiaoliao</td>
+<td>material[]</td>
+<td>yuanliao</td>
+</tr>
+<tr>
+<td>steps</td>
+<td>zuofa(分步)</td>
+<td>process[].pcontent</td>
+<td>zuofa</td>
+</tr>
+<tr>
+<td>coverFileID</td>
+<td>albums[0]</td>
+<td>pic</td>
+<td>—</td>
+</tr>
+</tbody>
+</table>
+<h3 id="14">1.4 运营与质量闭环</h3>
+<ul>
+<li><strong>量级建议</strong>：V2 首批采集 3000-5000 道（覆盖常见家常+运动餐分类即可，不求十万级——没人翻得完，审核也审不完）；精选 50 篇编辑内容置顶。</li>
+<li><strong>增量</strong>：每月增量采集一次新分类；用户搜索无结果的关键词记录到 search_misses，作为下批采集清单（按需采集，最省钱）。</li>
+<li><strong>下线机制</strong>：用户举报/审核抽查 → status='off'，保留数据可追溯。</li>
+<li><strong>合规</strong>：详情页尾部固定"内容来源：XX数据，仅供参考，不构成医疗建议"。</li>
+</ul>
+<hr />
+<h2 id="part-2">Part 2 律动平台对接设计</h2>
+<h3 id="21">2.1 总体拓扑与原则</h3>
+<pre><code>微信小程序 ──callFunction──► 云函数层（唯一对接点） ◄──HTTPS──► 律动平台 HTTP API
+                              │  sync_outbox 出站队列(上报：用户/运动/订单/积分)
+                              │  webhook 入站接收(下发：菜谱/内容/商品/活动)
+                              │  id_mappings 账号映射(openid ↔ ludongUserId)
+                              └  每日对账任务
+</code></pre>
+<p>原则：
+1. <strong>小程序永不直连律动</strong>——所有交互经云函数，律动地址/密钥放云函数环境变量。
+2. <strong>双向都走事件 + 幂等</strong>：每条数据带全局唯一 <code>eventId</code>，重发不重复入账（at-least-once 投递）。
+3. <strong>各自数据库为各自主权</strong>：运动明细以小程序侧为准（source of truth），内容以律动侧为准，订单以小程序侧为准、律动只读镜像；<strong>不做双写同一业务</strong>，避免脑裂。</p>
+<h3 id="22">2.2 服务间认证（与律动后端约定）</h3>
+<ul>
+<li>传输：HTTPS；如律动在内网，经公司网关暴露专用域名 + IP 白名单（云函数出口 IP 段在云开发控制台可查）。</li>
+<li>签名：HMAC-SHA256。请求头 <code>X-App-Id</code>、<code>X-Timestamp</code>、<code>X-Nonce</code>、<code>X-Signature = HMAC(secret, method+path+timestamp+nonce+sha256(body))</code>；时间窗 ±5 分钟防重放。双向调用各发一对 AppId/Secret。</li>
+<li>敏感字段（手机号）传输前脱敏或字段级加密，按最小必要原则给。</li>
+</ul>
+<h3 id="23-id_mappings">2.3 账号打通（id_mappings）</h3>
+<pre><code>绑定流程（一次性）：
+小程序「我的→绑定律动账号」→ 输入手机号 → 律动 API 发短信验证码 → 校验通过
+→ 律动返回 ludongUserId → 写 id_mappings { _openid, ludongUserId, boundAt }
+→ 此后所有上报/下发都带双方 ID
+未绑定用户：运动数据照常上报（只带 openid），律动侧建影子账号，待绑定后合并
+</code></pre>
+<h3 id="24">2.4 接口清单（与律动后端对齐的契约草案）</h3>
+<p><strong>方向 A：小程序 → 律动（云函数出站，批量+实时结合）</strong></p>
+<table>
+<thead>
+<tr>
+<th>接口</th>
+<th>触发</th>
+<th>载荷要点</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST /open/v1/users/upsert</td>
+<td>注册/资料变更（实时）</td>
+<td>eventId, openid, ludongUserId?, profile 脱敏字段</td>
+</tr>
+<tr>
+<td>POST /open/v1/checkins/batch</td>
+<td>定时 5 分钟批量</td>
+<td>events[]：打卡/设备同步记录（distance、avgHr、source）</td>
+</tr>
+<tr>
+<td>POST /open/v1/orders/sync</td>
+<td>订单状态变更（实时）</td>
+<td>eventId, orderId, status, items, payAmount</td>
+</tr>
+<tr>
+<td>POST /open/v1/points/sync</td>
+<td>积分流水（定时批量）</td>
+<td>points_records 增量（游标=createdAt）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>方向 B：律动 → 小程序（内容下发）</strong></p>
+<table>
+<thead>
+<tr>
+<th>接口</th>
+<th>模式</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POST &lt;云函数HTTP触发&gt;/webhook/ludong</td>
+<td>律动有变更即推</td>
+<td>type: recipe/content/product/banner + 数据体；验签后 upsert 到 recipes/contents/products，status 直接进 'on'（律动后台已审核）</td>
+</tr>
+<tr>
+<td>GET /open/v1/contents/changes?cursor=</td>
+<td>每小时定时拉（兜底）</td>
+<td>webhook 丢失时按 updatedAt 游标补拉，保证最终一致</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p>菜谱采集管道（Part 1）与律动的关系：<strong>采集入库后 audit 流转放在律动后台做</strong>——律动加"菜谱审核"模块读写 recipes 集合（经方向 B 同样的 API 通道），运营在熟悉的后台完成审核/编辑/上下架，小程序侧零运营界面。</p>
+</blockquote>
+<h3 id="25">2.5 可靠性设计</h3>
+<ul>
+<li><strong>出站队列 sync_outbox</strong>：业务写库成功时同事务写一条 outbox 记录（pending）→ 定时函数批量投递 → 律动应答 200 + ackEventId 置 done；失败指数退避重试（1/5/30 分钟），超 24h 转 dead 并告警。<strong>业务永不因律动宕机而失败</strong>。</li>
+<li><strong>入站幂等</strong>：webhook 按 eventId 查重表 inbound_events，处理过直接 200。</li>
+<li><strong>对账</strong>：每日 03:00 双方交换前一日计数摘要（用户数/打卡数/订单数/积分净额），不一致触发明细比对任务并告警到企业微信。</li>
+<li><strong>监控</strong>：outbox 积压量、webhook 失败率写入 app_config 可视化（律动后台展示）。</li>
+</ul>
+<h3 id="26">2.6 参考代码（云函数侧）</h3>
+<pre><code class="language-js">// utils/ludong-client.js —— 出站签名客户端
+const crypto = require('crypto')
+async function callLudong(method, path, body) {
+  const ts = Date.now().toString(), nonce = crypto.randomUUID()
+  const bodyHash = crypto.createHash('sha256').update(JSON.stringify(body || {})).digest('hex')
+  const sign = crypto.createHmac('sha256', process.env.LUDONG_SECRET)
+    .update([method, path, ts, nonce, bodyHash].join('\n')).digest('hex')
+  return axios({ method, url: process.env.LUDONG_BASE + path, data: body,
+    headers: { 'X-App-Id': process.env.LUDONG_APPID, 'X-Timestamp': ts,
+               'X-Nonce': nonce, 'X-Signature': sign }, timeout: 8000 })
+}
+
+// 云函数 sync-outbox（定时触发：每5分钟）
+async function flushOutbox() {
+  const batch = await db.collection('sync_outbox')
+    .where({ status: 'pending', nextRetryAt: _.lte(Date.now()) })
+    .orderBy('createdAt', 'asc').limit(50).get()
+  for (const e of batch.data) {
+    try {
+      await callLudong('POST', e.path, { eventId: e._id, ...e.payload })
+      await db.collection('sync_outbox').doc(e._id).update({ data: { status: 'done' } })
+    } catch (err) {
+      const retry = (e.retryCount || 0) + 1
+      await db.collection('sync_outbox').doc(e._id).update({ data: {
+        retryCount: retry, status: retry &gt;= 6 ? 'dead' : 'pending',
+        nextRetryAt: Date.now() + Math.min(retry * retry, 36) * 5 * 60e3, lastError: err.message
+      }})
+    }
+  }
+}
+
+// 云函数 webhook-ludong（HTTP 触发）—— 内容下发接收
+exports.main = async (event) =&gt; {
+  const req = parseHttp(event)
+  if (!verifyHmac(req)) return { statusCode: 401 }
+  const { eventId, type, data } = JSON.parse(req.body)
+  if (await seen(eventId)) return { statusCode: 200 }            // 幂等
+  const handler = { recipe: upsertRecipe, content: upsertContent,
+                    product: upsertProduct }[type]
+  if (!handler) return { statusCode: 400 }
+  await handler(data); await markSeen(eventId)
+  return { statusCode: 200, body: JSON.stringify({ ack: eventId }) }
+}
+</code></pre>
+<h3 id="27-phase-7">2.7 任务拆解（Phase 7）</h3>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>任务</th>
+<th>前置</th>
+<th>工作量</th>
+<th>验收</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>T8-1</td>
+<td>与律动后端联合定稿 §2.4 接口契约 + 密钥交换</td>
+<td>律动团队</td>
+<td>1 天（会议+文档）</td>
+<td>双方签认契约文档</td>
+</tr>
+<tr>
+<td>T8-2</td>
+<td>ludong-client 签名客户端 + sync_outbox 队列 + 定时投递</td>
+<td>T8-1</td>
+<td>2 天</td>
+<td>律动停机 1 小时后恢复，数据零丢失自动补投</td>
+</tr>
+<tr>
+<td>T8-3</td>
+<td>webhook 接收 + 内容/菜谱/商品 upsert + 兜底拉取</td>
+<td>T8-1</td>
+<td>1.5 天</td>
+<td>律动改一篇菜谱，小程序 1 分钟内可见</td>
+</tr>
+<tr>
+<td>T8-4</td>
+<td>账号绑定流程（手机号验证 + id_mappings + 影子账号合并）</td>
+<td>T8-1</td>
+<td>1.5 天</td>
+<td>绑定后历史打卡在律动侧归到正确用户</td>
+</tr>
+<tr>
+<td>T8-5</td>
+<td>菜谱采集管道（recipe-ingest + 三源适配器 + 去重清洗 + 图片转存）</td>
+<td>07 文档选型</td>
+<td>3 天</td>
+<td>首批 3000 道入库为 draft，重复率 &lt;1%</td>
+</tr>
+<tr>
+<td>T8-6</td>
+<td>律动后台菜谱审核模块（律动团队开发，我方提供 API）</td>
+<td>T8-3/5</td>
+<td>律动侧</td>
+<td>审核→发布→小程序可见全链路通</td>
+</tr>
+<tr>
+<td>T8-7</td>
+<td>每日对账 + 积压告警</td>
+<td>T8-2</td>
+<td>1 天</td>
+<td>人为制造差异能在次日告警</td>
+</tr>
+</tbody>
+</table>
+<p>风险：① 律动 API 变更无版本管理 → 契约文档 + /v1 路径版本化；② 手机号绑定涉及个人信息共享 → 隐私政策列明"与公司内部系统共享"，绑定页单独勾选同意；③ 采集图片转存量大 → 云存储费用预估（5000 道 ×2 图 ×300KB ≈ 3GB，费用可忽略）。</p></section></body></html>

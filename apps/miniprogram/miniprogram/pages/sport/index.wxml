@@ -1,0 +1,101 @@
+<view class="page">
+  <!-- 今日打卡卡 -->
+  <view class="checkin-card bg-white m-2 p-4 rounded-lg shadow">
+    <view class="title-row">
+      <view class="title">今日打卡</view>
+      <view class="date">{{today}}</view>
+    </view>
+
+    <block wx:if="{{todayDone}}">
+      <view class="done">
+        <view class="check-icon">✓</view>
+        <view>已打卡 +{{todayPoints}} 积分</view>
+        <view class="tip">明天再来吧！</view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="form">
+        <view class="field">
+          <text class="label">距离 (km) *</text>
+          <input class="input" type="digit" placeholder="0.5 ~ 50" value="{{form.distance}}" bindinput="onInputDistance" />
+        </view>
+        <view class="field">
+          <text class="label">时长 (分钟)</text>
+          <input class="input" type="digit" placeholder="选填，自动算配速" value="{{form.durationMin}}" bindinput="onInputDuration" />
+        </view>
+        <view class="field">
+          <text class="label">配速 (mm:ss)</text>
+          <view class="pace">{{form.pace || '—'}}</view>
+        </view>
+        <view class="row">
+          <view class="field-half">
+            <text class="label">心率</text>
+            <input class="input" type="number" placeholder="选填" value="{{form.heartRate}}" bindinput="onInputHeartRate" />
+          </view>
+          <view class="field-half">
+            <text class="label">步频</text>
+            <input class="input" type="number" placeholder="选填" value="{{form.cadence}}" bindinput="onInputCadence" />
+          </view>
+        </view>
+        <view class="field" wx:if="{{groups.length > 1}}">
+          <text class="label">归属群</text>
+          <picker mode="selector" range="{{groups}}" range-key="name" value="{{groupIndex}}" bindchange="onGroupChange">
+            <view class="picker">{{groups[groupIndex].name}} <text class="arrow-sm">›</text></view>
+          </picker>
+        </view>
+        <button
+          class="btn-primary {{submitting ? 'btn-disabled' : ''}} mt-2"
+          bindtap="onSubmitCheckin"
+          disabled="{{submitting}}"
+        >
+          {{submitting ? '提交中...' : '打卡'}}
+        </button>
+      </view>
+    </block>
+  </view>
+
+  <!-- 我的群 -->
+  <view class="groups bg-white m-2 p-4 rounded-lg shadow">
+    <view class="title-row">
+      <view class="title">我的群</view>
+      <view class="actions">
+        <view class="link" bindtap="onTapJoinGroup">加入</view>
+        <view class="link" bindtap="onTapCreateGroup">创建</view>
+      </view>
+    </view>
+
+    <block wx:if="{{groups.length <= 1}}">
+      <view class="empty">还没有群，去创建或加入一个吧</view>
+    </block>
+    <block wx:else>
+      <view
+        class="group-item"
+        wx:for="{{groups}}"
+        wx:key="id"
+        wx:for-index="idx"
+        data-id="{{item.id}}"
+        bindtap="goGroup"
+        wx:if="{{idx > 0}}"
+      >
+        <view class="g-info">
+          <view class="g-name">{{item.name}}</view>
+          <view class="g-meta">{{item.memberCount}} 人 · {{item.role === 'owner' ? '群主' : '成员'}}</view>
+        </view>
+        <view class="arrow">›</view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 创建群弹窗 -->
+  <view class="mask" wx:if="{{showCreateGroup}}" bindtap="onCancelCreate">
+    <view class="card" catchtap="">
+      <view class="title">创建跑群</view>
+      <input class="input mt-2" placeholder="群名（最多 32 字）" value="{{newGroupName}}" maxlength="32" bindinput="onInputGroupName" />
+      <view class="actions mt-2">
+        <button class="btn-cancel" bindtap="onCancelCreate">取消</button>
+        <button class="btn-primary" bindtap="onConfirmCreate">创建</button>
+      </view>
+    </view>
+  </view>
+</view>

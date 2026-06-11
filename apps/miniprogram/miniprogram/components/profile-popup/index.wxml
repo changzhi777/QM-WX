@@ -1,0 +1,44 @@
+<view class="mask" wx:if="{{visible}}" bindtap="onClose">
+  <view class="card" catchtap="onContentTap">
+    <view class="title">完善资料</view>
+    <view class="desc">补全后即可使用打卡、下单等功能</view>
+
+    <view class="avatar-wrap">
+      <button
+        class="avatar-btn"
+        open-type="chooseAvatar"
+        bindchooseavatar="onChooseAvatar"
+      >
+        <image
+          class="avatar"
+          src="{{avatarUrl || 'images/default-avatar.png'}}"
+          mode="aspectFill"
+        />
+        <view class="avatar-tip">点击选择头像</view>
+      </button>
+    </view>
+
+    <view class="field">
+      <text class="label">昵称</text>
+      <input
+        class="input"
+        type="nickname"
+        placeholder="请输入昵称"
+        value="{{nickname}}"
+        bindinput="onNicknameInput"
+        bindblur="onNicknameInput"
+      />
+    </view>
+
+    <view class="actions">
+      <button class="btn-cancel" bindtap="onClose">取消</button>
+      <button
+        class="btn-primary {{saving ? 'btn-disabled' : ''}}"
+        bindtap="onSave"
+        disabled="{{saving}}"
+      >
+        {{saving ? '保存中...' : '保存'}}
+      </button>
+    </view>
+  </view>
+</view>

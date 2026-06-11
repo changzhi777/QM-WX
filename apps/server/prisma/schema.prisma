@@ -1,0 +1,237 @@
+// QM-WX PostgreSQL schema
+// 详细字段移植自 reviews/running-group-stats/02-architecture.md §4
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===== 用户 =====
+model User {
+  id            String    @id @default(cuid())
+  openid        String    @unique
+  unionid       String?   @unique
+  nickname      String?
+  avatarUrl     String?
+  phone         String?
+  memberLevel   String    @default("free") // free | monthly | quarterly | yearly
+  memberExpireAt DateTime?
+  points        Int       @default(0)
+  certified     Boolean   @default(false)
+  stats         Json      @default("{\"totalDistance\":0,\"totalCheckins\":0,\"totalPoints\":0}")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  checkins     Checkin[]
+  orders       Order[]
+  wallet       Wallet?
+  groupMembers GroupMember[]
+  ownedGroups  Group[]      @relation("GroupOwner")
+
+  @@index([openid])
+}
+
+// ===== 打卡 =====
+model Checkin {
+  id          String   @id @default(cuid())
+  userId      String
+  groupId     String?
+  distance    Float    // km
+  durationSec Int?
+  pace        String?  // mm:ss
+  heartRate   Int?
+  cadence     Int?
+  points      Int      @default(0)
+  date        String   // YYYY-MM-DD
+  createdAt   DateTime @default(now())
+
+  user  User   @relation(fields: [userId], references: [id])
+  group Group? @relation(fields: [groupId], references: [id])
+
+  @@index([userId, date])
+  @@index([groupId, date])
+}
+
+// ===== 跑群 =====
+model Group {
+  id          String   @id @default(cuid())
+  opengid     String?  @unique
+  name        String
+  ownerId     String
+  memberCount Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  owner   User          @relation("GroupOwner", fields: [ownerId], references: [id])
+  members GroupMember[]
+  checkins Checkin[]
+}
+
+model GroupMember {
+  groupId    String
+  userId     String
+  nickname   String
+  avatarUrl  String?
+  role       String   @default("member") // owner | member
+  joinedAt   DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@id([groupId, userId])
+  @@index([userId])
+}
+
+// ===== 商城 =====
+model Product {
+  id             String   @id @default(cuid())
+  name           String
+  category       String
+  brand          String?
+  price          Decimal  @db.Decimal(10, 2)
+  originalPrice  Decimal? @db.Decimal(10, 2)
+  memberDiscount Float?
+  images         String[]
+  description    String?
+  stock          Int      @default(0)
+  status         String   @default("on") // on | off
+  sort           Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  orderItems OrderItem[]
+
+  @@index([category, status])
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  userId      String
+  items       OrderItem[]
+  totalAmount Decimal     @db.Decimal(10, 2)
+  pointsUsed  Int         @default(0)
+  payAmount   Decimal     @db.Decimal(10, 2)
+  status      String      @default("pending_pay") // pending_pay | paid | shipped | done | cancelled
+  payment     Json?
+  address     Json?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  productId String
+  name      String
+  price     Decimal @db.Decimal(10, 2)
+  qty       Int
+
+  order   Order   @relation(fields: [orderId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+}
+
+// ===== 积分流水 =====
+model PointsRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  change    Int
+  type      String   // checkin | signup_bonus | order_deduct | member_gift
+  refId     String?
+  balance   Int
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// ===== 钱包 =====
+model Wallet {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  balance   Decimal  @default(0) @db.Decimal(10, 2)
+  status    String   @default("active") // active | frozen
+  updatedAt DateTime @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id])
+  transactions WalletTransaction[]
+}
+
+model WalletTransaction {
+  id              String   @id @default(cuid())
+  userId          String
+  walletId        String
+  type            String   // recharge | consume | refund
+  amount          Decimal  @db.Decimal(10, 2)
+  orderId         String?
+  wxTransactionId String?
+  status          String   @default("success") // success | pending | failed
+  createdAt       DateTime @default(now())
+
+  wallet Wallet @relation(fields: [walletId], references: [id])
+
+  @@index([userId, createdAt])
+}
+
+// ===== 内容（赛事/酒店/景区/餐饮/乡村振兴 统一）=====
+model Content {
+  id          String   @id @default(cuid())
+  type        String   // marathon | hotel | scenic | food | rural
+  title       String
+  cover       String?
+  summary     String?
+  detail      Json?
+  price       Decimal? @db.Decimal(10, 2)
+  fee         Decimal? @db.Decimal(10, 2)
+  date        String?
+  validRange  Json?
+  location    String?
+  tags        String[]
+  actionType  String   @default("none") // enroll | book | link | none
+  status      String   @default("on") // on | off
+  sort        Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  enrollments Enrollment[]
+
+  @@index([type, status, sort])
+}
+
+model Enrollment {
+  id        String   @id @default(cuid())
+  userId    String
+  contentId String
+  type      String
+  formData  Json
+  status    String   @default("submitted") // submitted | confirmed | cancelled
+  createdAt DateTime @default(now())
+
+  content Content @relation(fields: [contentId], references: [id])
+
+  @@index([userId, contentId])
+}
+
+// ===== 远程配置 / 功能开关 =====
+model AppConfig {
+  id    String @id // feature_flags | member_levels | points_rules | admin_whitelist ...
+  value Json
+  updatedAt DateTime @updatedAt
+}
+
+// ===== 周报 =====
+model GroupReport {
+  id        String   @id @default(cuid())
+  groupId   String
+  period    String   // YYYY-WW
+  summary   Json
+  imageUrl  String?
+  createdAt DateTime @default(now())
+
+  @@unique([groupId, period])
+}

@@ -1,0 +1,40 @@
+<view class="page">
+  <view class="header bg-white m-2 p-4 rounded-lg shadow">
+    <view class="row">
+      <view class="text-secondary text-sm">本群 · {{totals.memberCount}} 人</view>
+      <view class="text-secondary text-sm">累计 {{totals.totalDistance}} km</view>
+    </view>
+    <picker mode="selector" range="{{['本周','本月','本年']}}" value="{{periodIndex}}" bindchange="onPeriodChange">
+      <view class="picker mt-2">{{['本周','本月','本年'][periodIndex]}} 榜单 <text class="arrow-sm">›</text></view>
+    </picker>
+  </view>
+
+  <view class="list bg-white m-2 rounded-lg shadow">
+    <view wx:if="{{loading}}" class="loading">加载中...</view>
+    <view wx:elif="{{members.length === 0}}" class="empty">暂无打卡数据</view>
+    <view
+      class="rank-item"
+      wx:for="{{members}}"
+      wx:key="userId"
+    >
+      <view class="rank rank-{{item.rank <= 3 ? 'top' : 'normal'}}">{{item.rank}}</view>
+      <image class="avatar" src="{{item.avatarUrl || 'images/default-avatar.png'}}" mode="aspectFill" />
+      <view class="info">
+        <view class="name">{{item.nickname}}</view>
+        <view class="meta">{{item.count}} 次打卡</view>
+      </view>
+      <view class="stats">
+        <view class="distance">{{item.distance}} km</view>
+        <view class="points">+{{item.points}} 积分</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="p-4">
+    <button class="btn-cancel" bindtap="onTapQuit">退出群</button>
+  </view>
+
+  <view class="p-4">
+    <button class="btn-primary" bindtap="goWeeklyReport">查看本周周报</button>
+  </view>
+</view>

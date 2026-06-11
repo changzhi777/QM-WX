@@ -1,0 +1,299 @@
+/**
+ * sport module business logic
+ *
+ * 关键防作弊点（来自 01 审查 P1-1/P1-2 + 02 §5.3）：
+ * - distance 服务端校验 [0.5, 50]
+ * - 传 points 字段直接忽略
+ * - 同日同 user 限 1 次计分（看 checkins.date）
+ * - 积分 = floor(distance × perKm)
+ * - 写流水 + inc user.points/stats
+ */
+import { prisma } from '../../infra/prisma.js';
+import { Errors } from '../../common/errors.js';
+import { sportRepo } from './sport.repository.js';
+import { userRepo } from '../user/user.repository.js';
+import { configRepo } from '../app-config/app-config.repository.js';
+import { POINTS_RULES_DEFAULT, POINTS_RULES, type MemberLevel } from '@qm-wx/shared';
+import type {
+  CheckinInput,
+  CreateGroupInput,
+  GroupRankingInput,
+  JoinGroupInput,
+  MyStatsInput,
+  QuitGroupInput,
+} from './sport.schema.js';
+
+// ===== 时区辅助：取"今天"用东八区 =====
+function todayCN(): string {
+  const now = new Date();
+  const cn = new Date(now.getTime() + 8 * 3600 * 1000);
+  return cn.toISOString().slice(0, 10);
+}
+
+function periodSince(period: 'week' | 'month' | 'year' | 'all'): Date {
+  if (period === 'all') return new Date(0);
+  const now = new Date();
+  const d = new Date(now);
+  if (period === 'week') d.setDate(d.getDate() - 7);
+  if (period === 'month') d.setMonth(d.getMonth() - 1);
+  if (period === 'year') d.setFullYear(d.getFullYear() - 1);
+  return d;
+}
+
+export const sportService = {
+  /**
+   * 今日打卡状态
+   */
+  async today(userId: string) {
+    const date = todayCN();
+    const checkin = await sportRepo.findTodayCheckin(userId, date);
+    return {
+      date,
+      done: !!checkin,
+      checkin: checkin
+        ? {
+            distance: checkin.distance,
+            durationSec: checkin.durationSec,
+            pace: checkin.pace,
+            points: checkin.points,
+            createdAt: checkin.createdAt.toISOString(),
+          }
+        : null,
+    };
+  },
+
+  /**
+   * 打卡
+   */
+  async checkin(userId: string, input: CheckinInput) {
+    // ⚠️ 防作弊：忽略前端传的 points
+    const { points: _ignored, ...clean } = input;
+
+    const date = todayCN();
+
+    // 1. 校验：今日已打卡
+    const existing = await sportRepo.findTodayCheckin(userId, date);
+    if (existing) {
+      throw Errors.conflict('今日已打卡，请明天再来');
+    }
+
+    // 2. 校验：群上限（如果传 groupId，要确认是 member）
+    if (clean.groupId) {
+      const member = await sportRepo.isMember(clean.groupId, userId);
+      if (!member) throw Errors.forbidden('你不在该群中');
+    }
+
+    // 3. 算积分
+    const { pointsRules } = await configRepo.getLoginConfig();
+    const perKm = pointsRules.perKm ?? POINTS_RULES_DEFAULT.perKm;
+    const points = Math.floor(clean.distance * perKm);
+
+    // 4. 事务：写 checkin + 写流水 + 加积分 + 加 stats
+    await prisma.$transaction(async (tx) => {
+      await sportRepo.checkinInTx(tx, {
+        userId,
+        groupId: clean.groupId ?? null,
+        distance: clean.distance,
+        durationSec: clean.durationSec ?? null,
+        pace: clean.pace ?? null,
+        heartRate: clean.heartRate ?? null,
+        cadence: clean.cadence ?? null,
+        points,
+        date,
+      });
+      await userRepo.addPoints(tx, userId, points, 'checkin');
+    });
+
+    return { points, todayDone: true, date };
+  },
+
+  /**
+   * 我的统计
+   */
+  async myStats(userId: string, input: MyStatsInput) {
+    const checkins = await sportRepo.findMyCheckins(userId, periodSince(input.period));
+    const totalDistance = checkins.reduce((s, c) => s + c.distance, 0);
+    const count = checkins.length;
+
+    // 平均配速：从 durationSec / distance 反推
+    let avgPace: number | null = null;
+    const withDur = checkins.filter((c) => c.durationSec && c.distance > 0);
+    if (withDur.length > 0) {
+      const totalSec = withDur.reduce((s, c) => s + (c.durationSec ?? 0), 0);
+      const totalKm = withDur.reduce((s, c) => s + c.distance, 0);
+      avgPace = totalKm > 0 ? totalSec / totalKm : null;
+    }
+
+    return {
+      totalDistance: round(totalDistance, 2),
+      count,
+      avgPace: avgPace ? round(avgPace, 1) : null,
+      period: input.period,
+    };
+  },
+
+  /**
+   * 我的群
+   */
+  async myGroups(userId: string) {
+    const list = await sportRepo.myGroups(userId);
+    return list.map((m) => ({
+      id: m.group.id,
+      name: m.group.name,
+      memberCount: m.group.memberCount,
+      role: m.role,
+      joinedAt: m.joinedAt.toISOString(),
+    }));
+  },
+
+  /**
+   * 创建群（群主 = 创建者）
+   */
+  async createGroup(userId: string, input: CreateGroupInput, userNickname: string) {
+    // 上限校验：会员等级
+    const { memberLevels } = await configRepo.getLoginConfig();
+    const user = await userRepo.findById(userId);
+    if (!user) throw Errors.notFound('user not found');
+    const myCount = await sportRepo.countMyGroups(userId);
+    const cfg = (memberLevels as Record<string, { maxGroups: number }>)[user.memberLevel as MemberLevel] ?? { maxGroups: 2 };
+    if (myCount >= cfg.maxGroups) {
+      throw Errors.forbidden(`你当前可加入/创建 ${cfg.maxGroups} 个群，升级会员可加更多`);
+    }
+
+    // 事务
+    const group = await prisma.$transaction(async (tx) => {
+      const g = await tx.group.create({
+        data: { name: input.name, ownerId: userId, memberCount: 1 },
+      });
+      await tx.groupMember.create({
+        data: { groupId: g.id, userId, nickname: userNickname, role: 'owner' },
+      });
+      return g;
+    });
+
+    return {
+      id: group.id,
+      name: group.name,
+      memberCount: group.memberCount,
+      role: 'owner' as const,
+      joinedAt: group.createdAt.toISOString(),
+    };
+  },
+
+  /**
+   * 加入群（按邀请 ID）
+   */
+  async joinGroup(userId: string, input: JoinGroupInput, userNickname: string, avatarUrl: string | null) {
+    const group = await sportRepo.findGroup(input.groupId);
+    if (!group) throw Errors.notFound('群不存在');
+
+    const isAlready = await sportRepo.isMember(input.groupId, userId);
+    if (isAlready) throw Errors.conflict('你已在该群中');
+
+    // 上限校验
+    const { memberLevels } = await configRepo.getLoginConfig();
+    const user = await userRepo.findById(userId);
+    if (!user) throw Errors.notFound('user not found');
+    const myCount = await sportRepo.countMyGroups(userId);
+    const cfg = (memberLevels as Record<string, { maxGroups: number }>)[user.memberLevel as MemberLevel] ?? { maxGroups: 2 };
+    if (myCount >= cfg.maxGroups) {
+      throw Errors.forbidden(`你当前可加入/创建 ${cfg.maxGroups} 个群，升级会员可加更多`);
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.groupMember.create({
+        data: { groupId: input.groupId, userId, nickname: userNickname, avatarUrl, role: 'member' },
+      });
+      await tx.group.update({
+        where: { id: input.groupId },
+        data: { memberCount: { increment: 1 } },
+      });
+      // opengid 绑定（仅第一次）
+      if (input.opengid && !group.opengid) {
+        await tx.group.update({
+          where: { id: input.groupId },
+          data: { opengid: input.opengid },
+        });
+      }
+    });
+
+    return { ok: true };
+  },
+
+  /**
+   * 退出群（群主不可退）
+   */
+  async quitGroup(userId: string, input: QuitGroupInput) {
+    const member = await sportRepo.isMember(input.groupId, userId);
+    if (!member) throw Errors.notFound('你不在该群中');
+    if (member.role === 'owner') throw Errors.forbidden('群主不可退出，请先转让');
+
+    await prisma.$transaction(async (tx) => {
+      await tx.groupMember.delete({
+        where: { groupId_userId: { groupId: input.groupId, userId } },
+      });
+      await tx.group.update({
+        where: { id: input.groupId },
+        data: { memberCount: { decrement: 1 } },
+      });
+    });
+
+    return { ok: true };
+  },
+
+  /**
+   * 群榜单
+   */
+  async groupRanking(userId: string, input: GroupRankingInput) {
+    // 鉴权：必须是群成员
+    const member = await sportRepo.isMember(input.groupId, userId);
+    if (!member) throw Errors.forbidden('你不在该群中');
+
+    const since = periodSince(input.period);
+    const checkins = await sportRepo.findGroupCheckins(input.groupId, since);
+
+    // 按 userId 聚合
+    const map = new Map<
+      string,
+      { userId: string; nickname: string; avatarUrl: string | null; distance: number; count: number; points: number }
+    >();
+
+    for (const c of checkins) {
+      const cur = map.get(c.userId) ?? {
+        userId: c.userId,
+        nickname: c.user.nickname ?? '匿名',
+        avatarUrl: c.user.avatarUrl,
+        distance: 0,
+        count: 0,
+        points: 0,
+      };
+      cur.distance += c.distance;
+      cur.count += 1;
+      cur.points += c.points;
+      map.set(c.userId, cur);
+    }
+
+    const members = Array.from(map.values())
+      .map((m) => ({ ...m, distance: round(m.distance, 2) }))
+      .sort((a, b) => b.distance - a.distance)
+      .slice(0, 50);
+
+    return {
+      groupId: input.groupId,
+      period: input.period,
+      members,
+      totals: {
+        memberCount: members.length,
+        totalDistance: round(members.reduce((s, m) => s + m.distance, 0), 2),
+      },
+    };
+  },
+};
+
+function round(n: number, p: number): number {
+  const f = 10 ** p;
+  return Math.round(n * f) / f;
+}
+
+// 避免 lint warning
+void POINTS_RULES;

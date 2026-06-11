@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2020"],
+    "types": ["miniprogram-api-typings"],
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "paths": {
+      "@qm-wx/shared": ["../../packages/shared/src/index.ts"]
+    }
+  },
+  "include": ["miniprogram/**/*.ts"],
+  "exclude": ["node_modules", "miniprogram_npm"]
+}

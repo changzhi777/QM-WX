@@ -1,0 +1,59 @@
+/* app.wxss — 全局样式（仅设计变量 + 通用类，< 300 行） */
+
+page {
+  /* ===== 设计变量（青沐品牌色） ===== */
+  --brand: #0FAF8E;
+  --brand-light: #4FC3A1;
+  --brand-dark: #0A8A6E;
+  --text-primary: #1a1a1a;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --border: #eeeeee;
+  --danger: #ff4d4f;
+  --warning: #faad14;
+  --success: #52c41a;
+
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 28rpx;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+}
+
+/* ===== 通用类 ===== */
+.flex { display: flex; }
+.flex-col { display: flex; flex-direction: column; }
+.flex-1 { flex: 1; }
+.items-center { align-items: center; }
+.justify-center { justify-content: center; }
+.justify-between { justify-content: space-between; }
+.text-center { text-align: center; }
+.text-sm { font-size: 24rpx; }
+.text-lg { font-size: 32rpx; }
+.text-xl { font-size: 36rpx; }
+.text-secondary { color: var(--text-secondary); }
+.text-brand { color: var(--brand); }
+.bg-white { background: var(--bg-primary); }
+.rounded { border-radius: 8rpx; }
+.rounded-lg { border-radius: 16rpx; }
+.shadow { box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05); }
+.p-2 { padding: 16rpx; }
+.p-4 { padding: 32rpx; }
+.m-2 { margin: 16rpx; }
+.mt-2 { margin-top: 16rpx; }
+.mb-2 { margin-bottom: 16rpx; }
+
+/* 按钮风格 */
+.btn-primary {
+  background: var(--brand);
+  color: #fff;
+  border-radius: 8rpx;
+  padding: 24rpx 0;
+  text-align: center;
+  font-size: 30rpx;
+}
+.btn-disabled {
+  background: var(--text-tertiary);
+  color: #fff;
+}

@@ -1,0 +1,83 @@
+// pages/index/index.ts
+import { api } from '../../services/api';
+import { ensureLogin } from '../../utils/auth';
+
+Page({
+  data: {
+    loading: true,
+    userStats: {
+      totalDistance: 0,
+      totalCheckins: 0,
+      totalPoints: 0,
+      avgPace: null as number | null,
+    },
+    user: null as null | { nickname: string; avatarUrl: string | null; points: number },
+    isLogin: false,
+    showPrivacy: false,
+  },
+
+  onShow() {
+    // 1. 检查隐私协议
+    if (getApp().globalData.needPrivacyAgree) {
+      this.setData({ showPrivacy: true });
+    } else {
+      this.loadData();
+    }
+  },
+
+  onPrivacyAgree() {
+    getApp().globalData.needPrivacyAgree = false;
+    this.setData({ showPrivacy: false });
+    this.loadData();
+  },
+
+  onPullDownRefresh() {
+    this.loadData().finally(() => wx.stopPullDownRefresh());
+  },
+
+  async loadData() {
+    this.setData({ loading: true });
+    try {
+      // 1. 确保登录（不强制）
+      try {
+        await ensureLogin();
+        const app = getApp();
+        const u = app.globalData.user as null | { nickname: string; avatarUrl: string | null; points: number };
+        this.setData({ user: u, isLogin: !!u });
+      } catch {
+        this.setData({ user: null, isLogin: false });
+      }
+
+      // 2. 真实数据：本周统计
+      const stats = await api.call<{
+        totalDistance: number;
+        count: number;
+        avgPace: number | null;
+      }>('sport', 'myStats', { period: 'week' });
+
+      this.setData({
+        userStats: {
+          totalDistance: stats.totalDistance,
+          totalCheckins: stats.count,
+          totalPoints: ((this.data.user as { points?: number } | null)?.points ?? 0) as number,
+          avgPace: stats.avgPace,
+        },
+        loading: false,
+      });
+    } catch {
+      this.setData({ loading: false });
+    }
+  },
+
+  goSport() {
+    wx.switchTab({ url: '/pages/sport/index' });
+  },
+
+  goMine() {
+    wx.switchTab({ url: '/pages/mine/index' });
+  },
+
+  goProfile() {
+    wx.navigateTo({ url: '/pages/profile/index' });
+  },
+});

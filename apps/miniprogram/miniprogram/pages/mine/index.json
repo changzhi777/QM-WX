@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "我的",
+  "usingComponents": {
+    "feature-gate": "/components/feature-gate/index"
+  }
+}

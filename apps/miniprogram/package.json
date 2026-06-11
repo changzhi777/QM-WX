@@ -1,0 +1,21 @@
+{
+  "name": "@qm-wx/miniprogram",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "echo \"用微信开发者工具打开 apps/miniprogram/ 即可\"",
+    "build": "echo \"用微信开发者工具上传\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "echo \"TODO: 接入 eslint\""
+  },
+  "dependencies": {
+    "@qm-wx/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/miniprogram-api-typings": "^3.0.0",
+    "miniprogram-api-typings": "^3.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}

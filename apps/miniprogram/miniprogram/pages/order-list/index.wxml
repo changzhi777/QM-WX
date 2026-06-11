@@ -1,0 +1,31 @@
+<view class="page">
+  <view class="empty" wx:if="{{!loading && list.length === 0}}">暂无订单</view>
+  <view
+    class="card bg-white m-2 p-4 rounded-lg shadow"
+    wx:for="{{list}}"
+    wx:key="id"
+  >
+    <view class="head">
+      <view class="order-id">订单号：{{item.id}}</view>
+      <view class="status" style="color: {{item.statusColor}}">{{item.statusLabel}}</view>
+    </view>
+    <view class="items">
+      <view class="item" wx:for="{{item.items}}" wx:key="id" wx:for-item="it">
+        <text class="name">{{it.name}}</text>
+        <text class="qty">× {{it.qty}}</text>
+      </view>
+    </view>
+    <view class="footer-row">
+      <view class="amount">
+        合计 <text class="num">{{item.payAmount}}</text> 元
+        <text class="points" wx:if="{{item.pointsUsed > 0}}">（{{item.pointsUsed}} 积分）</text>
+      </view>
+      <button
+        class="btn-cancel"
+        wx:if="{{item.status === 'pending_pay' || item.status === 'paid'}}"
+        data-id="{{item.id}}"
+        bindtap="onCancel"
+      >取消订单</button>
+    </view>
+  </view>
+</view>

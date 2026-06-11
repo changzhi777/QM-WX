@@ -1,0 +1,23 @@
+.page { padding-bottom: 60rpx; }
+
+.header .row {
+  display: flex; align-items: center; padding: 24rpx 0;
+}
+.header .key { width: 120rpx; font-size: 28rpx; color: var(--text-secondary); }
+.header .value { flex: 1; font-size: 28rpx; }
+.header .avatar { width: 96rpx; height: 96rpx; border-radius: 50%; }
+.header .arrow { color: var(--text-tertiary); font-size: 32rpx; }
+.divider { height: 1rpx; background: var(--border); }
+
+.form .field {
+  display: flex; align-items: center; padding: 28rpx 0;
+  border-bottom: 1rpx solid var(--border);
+}
+.form .field:last-child { border-bottom: none; }
+.form .label { width: 160rpx; font-size: 28rpx; color: var(--text-secondary); }
+.form .picker { flex: 1; font-size: 28rpx; display: flex; justify-content: space-between; align-items: center; }
+.form .arrow-sm { color: var(--text-tertiary); }
+.form .input {
+  flex: 1; height: 56rpx; font-size: 28rpx; padding: 0 12rpx;
+  background: transparent;
+}

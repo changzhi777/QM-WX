@@ -1,0 +1,8 @@
+{
+  "navigationBarTitleText": "青沐",
+  "enablePullDownRefresh": true,
+  "usingComponents": {
+    "feature-gate": "/components/feature-gate/index",
+    "privacy-popup": "/components/privacy-popup/index"
+  }
+}
