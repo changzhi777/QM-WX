@@ -1,4 +1,15 @@
 {
-  "extends": "./tsconfig.json",
-  "exclude": ["**/*.test.ts", "**/*.spec.ts", "tests/**", "dist"]
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "baseUrl": ".",
+    "types": ["node"],
+    "paths": {
+      "@qm-wx/shared": ["../../packages/shared/dist/index.d.ts"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["**/*.test.ts", "**/*.spec.ts", "tests/**", "dist", "node_modules"],
+  "references": [{ "path": "../../packages/shared" }]
 }

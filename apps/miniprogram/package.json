@@ -13,7 +13,6 @@
     "@qm-wx/shared": "workspace:*"
   },
   "devDependencies": {
-    "@types/miniprogram-api-typings": "^3.0.0",
     "miniprogram-api-typings": "^3.0.0",
     "typescript": "^5.4.0",
     "vitest": "^1.6.0"

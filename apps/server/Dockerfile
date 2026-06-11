@@ -6,7 +6,7 @@ RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 # ===== 依赖安装层 =====
 FROM base AS deps
 WORKDIR /repo
-COPY pnpm-workspace.yaml package.json ./
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY apps/server/package.json ./apps/server/
 COPY packages/shared/package.json ./packages/shared/
 RUN pnpm install --frozen-lockfile
@@ -18,8 +18,8 @@ COPY tsconfig.base.json ./
 COPY packages/shared ./packages/shared
 COPY apps/server ./apps/server
 RUN pnpm --filter @qm-wx/shared build
-RUN pnpm --filter @qm-wx/server build
 RUN cd apps/server && pnpm prisma generate
+RUN pnpm --filter @qm-wx/server build
 
 # ===== 运行层 =====
 FROM base AS runner

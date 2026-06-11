@@ -7,7 +7,7 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./schemas/*": "./src/schemas/*.ts",
+
     "./types": "./src/types/index.ts",
     "./constants/*": "./src/constants/*.ts",
     "./api-contracts": "./src/api-contracts/endpoints.ts"

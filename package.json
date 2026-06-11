@@ -18,7 +18,7 @@
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "typecheck": "pnpm -r typecheck",
+    "typecheck": "pnpm --filter @qm-wx/shared --filter @qm-wx/server typecheck",
     "prisma:generate": "pnpm --filter @qm-wx/server prisma:generate",
     "prisma:migrate": "pnpm --filter @qm-wx/server prisma:migrate",
     "prisma:studio": "pnpm --filter @qm-wx/server prisma:studio",

@@ -2,13 +2,14 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
+    "rootDir": ".",
+    "baseUrl": ".",
     "types": ["node"],
     "paths": {
       "@/*": ["./src/*"],
       "@qm-wx/shared": ["../../packages/shared/src/index.ts"]
     }
   },
-  "include": ["src/**/*", "prisma/seed.ts"],
+  "include": ["src/**/*", "vitest.config.ts", "prisma/**/*"],
   "references": [{ "path": "../../packages/shared" }]
 }

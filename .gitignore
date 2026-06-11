@@ -57,3 +57,11 @@ apps/server/uploads/
 
 # ===== 编辑器 =====
 .history/
+
+# ===== TypeScript 构建产物（tsc -b / project references） =====
+# shared 包开启 composite: true，会在 src/ 同级产出 .d.ts/.js 增量文件
+packages/shared/src/**/*.d.ts
+packages/shared/src/**/*.d.ts.map
+packages/shared/src/**/*.js
+packages/shared/src/**/*.js.map
+*.tsbuildinfo
