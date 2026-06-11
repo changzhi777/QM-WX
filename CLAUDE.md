@@ -107,16 +107,24 @@ QM-WX/
 
 | 路径 | 职责 | 状态 | 本地 CLAUDE.md |
 | --- | --- | --- | --- |
-| `apps/miniprogram/` | 微信小程序前端 | 🚧 待建 | 待建 |
-| `apps/server/` | Node + TS 后端（Fastify + Prisma + PostgreSQL） | 🚧 待建 | 待建 |
+| `apps/miniprogram/` | 微信小程序前端（13 页面 + 3 组件） | ✅ V1.0 完成 | [→ apps/miniprogram/CLAUDE.md](apps/miniprogram/CLAUDE.md) |
+| `apps/server/` | Node + TS 后端（**9 module** + BullMQ jobs） | ✅ V1.0 完成 + V2 stub | [→ apps/server/CLAUDE.md](apps/server/CLAUDE.md) |
 | `apps/admin/` | 运营管理后台（二期） | ⏳ 暂缓 | — |
-| `packages/shared/` | 前后端共享类型 / Zod schema / API 契约 | 🚧 待建 | 待建 |
-| `docs/` | 设计文档（ARCHITECTURE-V2.md 等） | ✅ 已有 V2 计划 | [→ docs/CLAUDE.md](docs/CLAUDE.md) |
-| `tests/` | 跨包 E2E / 集成测试 | 🚧 空 | [→ tests/CLAUDE.md](tests/CLAUDE.md) |
-| `reviews/` | 历史评审资料（02 架构已废弃，业务规则参考保留） | ✅ 已建 | [→ reviews/CLAUDE.md](reviews/CLAUDE.md) |
-| `reviews/running-group-stats/` | 青沐小程序全量重构文档包（8 篇 + 1 构建脚本） | ✅ 已建 | 父级覆盖 |
-| `src/` | **已废弃** — 旧代码存放位，新代码走 `apps/` | ⚠️ 废弃 | — |
+| `packages/shared/` | 前后端共享（类型 / Zod / 端点常量） | ✅ V1.0 完成 | 待建 CLAUDE.md |
+| `docs/` | 设计文档（ARCHITECTURE-V2 / PHASE-0 / PHASE-V2 / SUBMIT-CHECKLIST / CHANGELOG） | ✅ 5 份齐全 | [→ docs/CLAUDE.md](docs/CLAUDE.md) |
+| `tests/` | 跨包 E2E（暂用 supertest，V1.0 没起来） | 🚧 空 | [→ tests/CLAUDE.md](tests/CLAUDE.md) |
+| `reviews/` | 历史评审（02 已废弃，业务规则参考） | ✅ 已建 | [→ reviews/CLAUDE.md](reviews/CLAUDE.md) |
+| `reviews/running-group-stats/` | 8 篇 review 文档 + 1 构建脚本 | ✅ 已建 | 父级覆盖 |
+| `scripts/` | 工具脚本（smoke test 等） | ✅ smoke.sh | — |
+| `.github/workflows/` | CI（lint + typecheck + test + build） | ✅ ci.yml | — |
+| `docker-compose.yml` | 1 键起开发环境（PG + Redis + server） | ✅ | — |
+| `src/` | **已废弃** | ⚠️ 废弃 | — |
 | `.vscode/` | 编辑器配置 | 🚧 空 | — |
+
+**9 个后端 module 清单**（V1.0 全完成；V2 后 3 个 stub）：
+`auth` / `user` / `sport` / `mall` / `content` / `wallet` / `weekly-report` / `upload` / `admin` + **V2 stub**: `device` / `recipe` / `ludong`
+
+**BullMQ Jobs**：`apps/server/src/jobs/` — `queue.ts` + `scheduler.ts` + `weekly-report.job.ts`（每周日 20:00 自动跑）
 
 > 💡 **约定**：每个新模块目录都必须有自己的 `CLAUDE.md`，并在根目录索引表里登记一行。
 
@@ -136,7 +144,7 @@ graph TD
     Root --> Config["pnpm-workspace.yaml + .gitignore + README.md"]
 
     Apps --> Mp["apps/miniprogram/ 微信小程序"]
-    Apps --> Srv["apps/server/ Fastify+TS"]
+    Apps --> Srv["apps/server/ Fastify+TS+BullMQ"]
     Apps -. 二期 .-> Adm["apps/admin/ 管理后台"]
 
     Pkgs --> Shared["packages/shared/ 共享类型+Zod"]
@@ -147,6 +155,13 @@ graph TD
     Srv --> Content["content/"]
     Srv --> Wallet["wallet/"]
     Srv --> AdminMod["admin/"]
+    Srv --> Auth["auth/"]
+    Srv --> Upload["upload/"]
+    Srv --> Wr["weekly-report/"]
+    Srv -. V2 .-> Device["device/ (stub)"]
+    Srv -. V2 .-> Recipe["recipe/ (stub)"]
+    Srv -. V2 .-> Ludong["ludong/ (stub)"]
+    Srv --> Jobs["jobs/ (BullMQ)"]
 
     Mp --> MpPages["pages/"]
     Mp --> MpComps["components/"]
@@ -187,6 +202,13 @@ graph TD
     style Content fill:#1565c0,color:#bbb
     style Wallet fill:#1565c0,color:#bbb
     style AdminMod fill:#1565c0,color:#bbb
+    style Auth fill:#1565c0,color:#bbb
+    style Upload fill:#1565c0,color:#bbb
+    style Wr fill:#1565c0,color:#bbb
+    style Device fill:#1565c0,color:#888,stroke-dasharray: 4 4
+    style Recipe fill:#1565c0,color:#888,stroke-dasharray: 4 4
+    style Ludong fill:#1565c0,color:#888,stroke-dasharray: 4 4
+    style Jobs fill:#ff6f00,color:#fff
     style MpPages fill:#283593,color:#bbb
     style MpComps fill:#283593,color:#bbb
     style MpSvc fill:#283593,color:#bbb
