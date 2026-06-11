@@ -1,3 +1,13 @@
+/**
+ * CI 工作流 — lint + typecheck + test（含 e2e）+ build
+ *
+ * 改动点（vs 旧版）：
+ * 1. test:run → test（package.json 实际名）
+ * 2. RUN_E2E=1 启用 e2e
+ * 3. prisma migrate deploy 先于 generate（确保 schema 一致）
+ * 4. shared build 先于 server typecheck（server tsconfig 用 reference）
+ * 5. main 分支加 docker image build 验证
+ */
 name: CI
 
 on:
@@ -5,13 +15,16 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  workflow_call:    # 允许 deploy-staging.yml 复用
+  workflow_dispatch: # 手动重跑
 
 env:
-  TURBO_CACHE_DIR: .turbo
+  # 阿里云容器镜像服务（留空则只本地构建不推）
+  ACR_REGISTRY: ${{ secrets.ACR_REGISTRY }}
 
 jobs:
   lint-typecheck-test:
-    name: Lint · Typecheck · Test
+    name: Lint · Typecheck · Test (含 e2e)
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -37,6 +50,16 @@ jobs:
           --health-timeout 5s
           --health-retries 10
 
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qmwx_test
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: ci-test-secret-32-chars-min-please
+      JWT_ACCESS_TTL: 2h
+      WX_APPID: wx-test-appid
+      WX_SECRET: wx-test-secret
+      NODE_ENV: test
+      RUN_E2E: '1'
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -55,25 +78,23 @@ jobs:
       - name: Install deps
         run: pnpm install --frozen-lockfile
 
+      - name: Build shared
+        run: pnpm --filter @qm-wx/shared build
+
       - name: Lint
         run: pnpm lint
 
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Generate Prisma client
-        run: pnpm --filter @qm-wx/server prisma:generate
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qmwx_test
+      - name: Prisma migrate deploy
+        run: pnpm --filter @qm-wx/server exec prisma migrate deploy
 
-      - name: Test
-        run: pnpm --filter @qm-wx/server test:run
-        env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qmwx_test
-          REDIS_URL: redis://localhost:6379
-          JWT_SECRET: ci-test-secret-32-chars-min-please
-          WX_APPID: wx-test-appid
-          WX_SECRET: wx-test-secret
+      - name: Prisma generate
+        run: pnpm --filter @qm-wx/server prisma:generate
+
+      - name: Test（含 e2e 真 DB）
+        run: pnpm --filter @qm-wx/server test
 
   build-server:
     name: Build Server
@@ -100,3 +121,41 @@ jobs:
             apps/server/dist
             apps/server/prisma
           retention-days: 7
+
+  docker-image:
+    name: Docker Image
+    runs-on: ubuntu-latest
+    needs: build-server
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Aliyun ACR
+        if: env.ACR_REGISTRY != ''
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ACR_REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: |
+            ${{ env.ACR_REGISTRY != '' && format('{0}/qm-wx/qm-wx-server', env.ACR_REGISTRY) || 'qm-wx-server' }}
+          tags: |
+            type=sha,prefix=ci-
+            type=raw,value=staging,enable={{is_default_branch}}
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/server
+          push: ${{ env.ACR_REGISTRY != '' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
