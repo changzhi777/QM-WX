@@ -6,29 +6,35 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ===== mock 必须在 import 之前 =====
-vi.mock('../../src/infra/prisma.js', () => {
+vi.mock('src/infra/prisma.js', () => {
+  // 事务内复用顶级 mock（让 txMock.X === prisma.X）
+  const userMethods = {
+    findUnique: vi.fn(),
+    findUniqueOrThrow: vi.fn(),
+    upsert: vi.fn(),
+    update: vi.fn(),
+  };
+  const pointsRecordMethods = { create: vi.fn() };
+  const txMock = {
+    user: userMethods,
+    pointsRecord: pointsRecordMethods,
+  };
   return {
     prisma: {
-      user: {
-        findUnique: vi.fn(),
-        findUniqueOrThrow: vi.fn(),
-        upsert: vi.fn(),
-        update: vi.fn(),
-      },
-      pointsRecord: { create: vi.fn() },
+      user: userMethods,
+      pointsRecord: pointsRecordMethods,
       appConfig: { findMany: vi.fn(), findUnique: vi.fn() },
-      $transaction: vi.fn((fn) => fn({})),
+      $transaction: vi.fn((fn) => fn(txMock)),
+      _tx: txMock,
     },
   };
 });
 
-vi.mock('../../src/common/integrations/wx/code2session.js', () => ({
-  code2Session: vi.fn(),
-}));
+vi.mock('src/common/integrations/wx/code2session.js', () => ({ code2Session: vi.fn() }));
 
-import { prisma } from '../../src/infra/prisma.js';
-import { code2Session } from '../../src/common/integrations/wx/code2session.js';
-import { userService } from '../../src/modules/user/user.service.js';
+import { prisma } from 'src/infra/prisma.js';
+import { code2Session } from 'src/common/integrations/wx/code2session.js';
+import { userService } from 'src/modules/user/user.service.js';
 
 const mockedPrisma = vi.mocked(prisma);
 const mockedCode2Session = vi.mocked(code2Session);
@@ -67,8 +73,15 @@ describe('userService.login', () => {
       id: 'u1',
       openid: 'oABC',
       nickname: '张三',
+      avatarUrl: null,
+      phone: null,
+      memberLevel: 'free',
+      memberExpireAt: null,
       points: 100,
-      // ... 实际是 Prisma User
+      certified: false,
+      stats: { totalDistance: 0, totalCheckins: 0, totalPoints: 0 },
+      createdAt: new Date('2026-01-01'),
+      updatedAt: new Date('2026-01-01'),
     } as never);
 
     const result = await userService.login(fakeApp, { code: 'mock-code' });

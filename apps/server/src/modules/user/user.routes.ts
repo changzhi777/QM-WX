@@ -17,11 +17,10 @@ export async function userRoutes(app: FastifyInstance) {
   app.post(
     '/',
     {
-      schema: { body: ActionBodySchema },
       config: { public: true }, // login 不需要已登录
     },
     async (req, reply) => {
-      const { action, payload } = req.body as { action: string; payload: unknown };
+      const { action, payload } = ActionBodySchema.parse(req.body);
 
       switch (action) {
         case 'login': {

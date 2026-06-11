@@ -17,7 +17,7 @@ export const userRepo = {
     return prisma.user.findUnique({ where: { id } });
   },
 
-  /** 首登建档 / 老用户更新昵称头像 */
+  /** 首登建档 / 老用户更新昵称头像（首登积分由 service 走 addPoints 单独加，避免双计） */
   upsertByOpenid(
     openid: string,
     data: { nickname?: string; avatarUrl?: string; unionid?: string },
@@ -29,7 +29,6 @@ export const userRepo = {
         unionid: data.unionid,
         nickname: data.nickname,
         avatarUrl: data.avatarUrl,
-        points: 50, // 注册奖励
       },
       update: {
         ...(data.nickname !== undefined && { nickname: data.nickname }),

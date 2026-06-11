@@ -11,14 +11,12 @@ import {
   ListRecipesInputSchema,
   LogMealInputSchema,
   NutritionSearchInputSchema,
-  RecipeActionBodySchema,
   RecipeDetailInputSchema,
 } from './recipe.schema.js';
 
 export async function recipeRoutes(app: FastifyInstance) {
   app.post(
     '/',
-    { schema: { body: RecipeActionBodySchema } },
     async (req, reply) => {
       const { action, payload } = req.body as { action: string; payload?: unknown };
 

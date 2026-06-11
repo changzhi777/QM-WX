@@ -18,13 +18,18 @@ export async function authRoutes(app: FastifyInstance) {
   app.post(
     '/refresh',
     {
-      schema: {
-        body: RefreshInputSchema,
-      },
       config: { public: true },
     },
     async (req) => {
-      const { refreshToken } = req.body as z.infer<typeof RefreshInputSchema>;
+      // service 层 parse（fastify 4 不直接接 zod schema，service 自己做校验）
+      let body: z.infer<typeof RefreshInputSchema>;
+      try {
+        body = RefreshInputSchema.parse(req.body);
+      } catch (e) {
+        const issue = (e as z.ZodError).issues[0];
+        throw Errors.badRequest(`${issue.path.join('.')}: ${issue.message}`);
+      }
+      const { refreshToken } = body;
 
       let decoded: { sub: string; openid: string; kind?: string };
       try {
@@ -43,11 +48,11 @@ export async function authRoutes(app: FastifyInstance) {
 
       // 签新 token（refresh 轮换：旧的也算失效，靠前端不重发即可）
       const newAccess = await app.jwt.sign(
-        { sub: user.id, openid: user.openid },
+        { sub: user.id, id: user.id, openid: user.openid },
         { expiresIn: '2h' },
       );
       const newRefresh = await app.jwt.sign(
-        { sub: user.id, openid: user.openid, kind: 'refresh' },
+        { sub: user.id, id: user.id, openid: user.openid, kind: 'refresh' },
         { expiresIn: '30d' },
       );
 

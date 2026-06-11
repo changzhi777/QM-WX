@@ -8,14 +8,12 @@ import {
   ContentListInputSchema,
   ContentDetailInputSchema,
   ContentEnrollInputSchema,
-  ContentActionBodySchema,
 } from './content.schema.js';
 
 export async function contentRoutes(app: FastifyInstance) {
   app.post(
     '/',
     {
-      schema: { body: ContentActionBodySchema },
     },
     async (req, reply) => {
       const { action, payload } = req.body as { action: string; payload?: unknown };

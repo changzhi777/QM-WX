@@ -2,7 +2,7 @@
  * 功能开关中间件
  *
  * 从 app_config.feature_flags 读开关；关闭时 403。
- * 应用启动时预读一次缓存；Phase 3 起 admin setConfig 时主动失效。
+ * 启动时预读 + admin setConfig 时主动失效。
  */
 import type { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
@@ -17,18 +17,24 @@ declare module 'fastify' {
   }
 }
 
+/** 模块级缓存实例，供 admin setConfig 失效用 */
+let _cache: Record<FeatureFlag, boolean> | null = null;
+
+/** 外部调用：清缓存，下次请求时重读 DB */
+export function invalidateFeatureFlagsCache(): void {
+  _cache = null;
+}
+
 export const featureGatePlugin = fp(async (app: FastifyInstance) => {
-  // 启动时预读一次；Phase 1.1 加 Redis 缓存 / 主动失效
-  let cache: Record<FeatureFlag, boolean> | null = null;
   const getFlags = async () => {
-    if (!cache) cache = await configRepo.getFeatureFlags();
-    return cache;
+    if (!_cache) _cache = await configRepo.getFeatureFlags();
+    return _cache;
   };
 
   // 启动钩子：预热
   app.addHook('onReady', async () => {
-    cache = await configRepo.getFeatureFlags();
-    app.log.info({ flags: cache }, 'feature_flags loaded from db');
+    _cache = await configRepo.getFeatureFlags();
+    app.log.info({ flags: _cache }, 'feature_flags loaded from db');
   });
 
   app.addHook('onRequest', async (req) => {

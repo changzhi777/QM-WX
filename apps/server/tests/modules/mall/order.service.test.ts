@@ -5,27 +5,37 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../src/infra/prisma.js', () => {
+vi.mock('src/infra/prisma.js', () => {
+  // 事务内复用顶级 mock
+  const userMethods = { findUnique: vi.fn(), findUniqueOrThrow: vi.fn(), update: vi.fn() };
+  const pointsRecordMethods = { create: vi.fn() };
+  const orderMethods = {
+    create: vi.fn(),
+    update: vi.fn(),
+    findMany: vi.fn(),
+    findUnique: vi.fn(),
+    count: vi.fn(),
+  };
   const txMock = {
-    order: { create: vi.fn() },
-    pointsRecord: { create: vi.fn() },
-    user: { findUniqueOrThrow: vi.fn(), update: vi.fn() },
+    order: orderMethods,
+    user: userMethods,
+    pointsRecord: pointsRecordMethods,
   };
   return {
     prisma: {
       product: { findMany: vi.fn() },
-      order: { findMany: vi.fn(), findUnique: vi.fn(), count: vi.fn(), update: vi.fn() },
+      order: orderMethods,
       appConfig: { findMany: vi.fn(), findUnique: vi.fn() },
-      user: { findUnique: vi.fn() },
-      pointsRecord: { create: vi.fn() },
+      user: userMethods,
+      pointsRecord: pointsRecordMethods,
       $transaction: vi.fn((fn) => fn(txMock)),
       _tx: txMock,
     },
   };
 });
 
-import { prisma } from '../../src/infra/prisma.js';
-import { orderService } from '../../src/modules/mall/order.service.js';
+import { prisma } from 'src/infra/prisma.js';
+import { orderService } from 'src/modules/mall/order.service.js';
 
 const mockedPrisma = vi.mocked(prisma);
 const tx = (prisma as unknown as { _tx: unknown })._tx as {
@@ -36,6 +46,7 @@ const tx = (prisma as unknown as { _tx: unknown })._tx as {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockedPrisma.appConfig.findMany.mockResolvedValue([]);
   // featureFlags 默认 payment=false（configRepo 内存兜底）
 });
 
@@ -113,7 +124,7 @@ describe('orderService.cancel', () => {
 
     // 退积分 + 改状态
     expect(tx.user.update).toHaveBeenCalled(); // userRepo.addPoints
-    expect(tx.order.create).toHaveBeenCalled(); // pointsRecord
+    expect(mockedPrisma.pointsRecord.create).toHaveBeenCalled(); // 流水
     // order 状态置 cancelled
     // 注：这里 addPoints 走 user.update + pointsRecord.create
   });

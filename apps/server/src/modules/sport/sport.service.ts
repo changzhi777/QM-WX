@@ -13,15 +13,16 @@ import { Errors } from '../../common/errors.js';
 import { sportRepo } from './sport.repository.js';
 import { userRepo } from '../user/user.repository.js';
 import { configRepo } from '../app-config/app-config.repository.js';
-import { POINTS_RULES_DEFAULT, POINTS_RULES, type MemberLevel } from '@qm-wx/shared';
+import { POINTS_RULES_DEFAULT, type MemberLevel } from '@qm-wx/shared';
 import type {
   CheckinInput,
   CreateGroupInput,
-  GroupRankingInput,
+  GroupRankingOutput,
   JoinGroupInput,
-  MyStatsInput,
+  MyStatsOutput,
   QuitGroupInput,
 } from './sport.schema.js';
+import { CheckinInputSchema } from './sport.schema.js';
 
 // ===== 时区辅助：取"今天"用东八区 =====
 function todayCN(): string {
@@ -68,6 +69,10 @@ export const sportService = {
   async checkin(userId: string, input: CheckinInput) {
     // ⚠️ 防作弊：忽略前端传的 points
     const { points: _ignored, ...clean } = input;
+    void _ignored;
+
+    // 防御性校验：即使 route 已 parse，service 也再 parse 一次防直接调用
+    CheckinInputSchema.parse(input);
 
     const date = todayCN();
 
@@ -110,7 +115,7 @@ export const sportService = {
   /**
    * 我的统计
    */
-  async myStats(userId: string, input: MyStatsInput) {
+  async myStats(userId: string, input: MyStatsOutput) {
     const checkins = await sportRepo.findMyCheckins(userId, periodSince(input.period));
     const totalDistance = checkins.reduce((s, c) => s + c.distance, 0);
     const count = checkins.length;
@@ -244,7 +249,7 @@ export const sportService = {
   /**
    * 群榜单
    */
-  async groupRanking(userId: string, input: GroupRankingInput) {
+  async groupRanking(userId: string, input: GroupRankingOutput) {
     // 鉴权：必须是群成员
     const member = await sportRepo.isMember(input.groupId, userId);
     if (!member) throw Errors.forbidden('你不在该群中');
@@ -274,14 +279,24 @@ export const sportService = {
     }
 
     const members = Array.from(map.values())
-      .map((m) => ({ ...m, distance: round(m.distance, 2) }))
+      .map((m) => ({
+        userId: m.userId,
+        nickname: m.nickname,
+        avatarUrl: m.avatarUrl,
+        distance: round(m.distance, 2),
+        count: m.count,
+        points: m.points,
+        rank: 0, // 占位，sort 后重新赋值
+      }))
       .sort((a, b) => b.distance - a.distance)
+      .map((m, i) => ({ ...m, rank: i + 1 }))
       .slice(0, 50);
 
     return {
       groupId: input.groupId,
       period: input.period,
       members,
+      champion: members[0] ?? null,
       totals: {
         memberCount: members.length,
         totalDistance: round(members.reduce((s, m) => s + m.distance, 0), 2),
@@ -294,6 +309,3 @@ function round(n: number, p: number): number {
   const f = 10 ** p;
   return Math.round(n * f) / f;
 }
-
-// 避免 lint warning
-void POINTS_RULES;

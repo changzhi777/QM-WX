@@ -6,24 +6,27 @@ import { mallService } from './mall.service.js';
 import { orderService } from './order.service.js';
 import { Errors } from '../../common/errors.js';
 import {
+  ListCategoriesInputSchema,
   ListProductsInputSchema,
   ProductDetailInputSchema,
   CreateOrderInputSchema,
   MyOrdersInputSchema,
   CancelOrderInputSchema,
-  MallActionBodySchema,
 } from './mall.schema.js';
 
 export async function mallRoutes(app: FastifyInstance) {
   app.post(
     '/',
     {
-      schema: { body: MallActionBodySchema },
     },
     async (req, reply) => {
       const { action, payload } = req.body as { action: string; payload?: unknown };
 
       switch (action) {
+        case 'listCategories': {
+          const input = ListCategoriesInputSchema.parse(payload ?? {});
+          return { code: 0, data: await mallService.listCategories(input) };
+        }
         case 'listProducts': {
           const input = ListProductsInputSchema.parse(payload ?? {});
           return { code: 0, data: await mallService.listProducts(input) };

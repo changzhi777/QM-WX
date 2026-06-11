@@ -4,12 +4,10 @@
 import type { FastifyInstance } from 'fastify';
 import { weeklyReportService } from './weekly-report.service.js';
 import { Errors } from '../../common/errors.js';
-import { WeeklyReportActionBodySchema } from './weekly-report.schema.js';
 
 export async function weeklyReportRoutes(app: FastifyInstance) {
   app.post(
     '/',
-    { schema: { body: WeeklyReportActionBodySchema } },
     async (req, reply) => {
       if (!req.user) throw Errors.unauthorized();
       const { action, payload } = req.body as { action: string; payload?: { groupId?: string; period?: string } };

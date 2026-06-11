@@ -3,6 +3,12 @@
  */
 import { z } from 'zod';
 
+export const ListCategoriesInputSchema = z.object({
+  /** 是否包含每个分类的商品数量 */
+  includeCount: z.boolean().default(false),
+});
+export type ListCategoriesInput = z.infer<typeof ListCategoriesInputSchema>;
+
 export const ListProductsInputSchema = z.object({
   category: z.string().optional(),
   brand: z.string().optional(),

@@ -1,20 +1,22 @@
 /**
- * admin module — 内容 / 商品 / 配置管理
+ * admin module — 内容 / 商品 / 订单 / 配置管理
  *
  * POST /api/admin
  * 鉴权：openid 必须出现在 AppConfig.admin_whitelist
  *
  * Action:
- * - upsertContent  { id?, type, title, ... }
- * - upsertProduct  { id?, name, category, price, ... }
- * - setConfig      { id: 'feature_flags' | 'member_levels' | 'points_rules', value }
+ * - upsertContent      { id?, type, title, ... }
+ * - upsertProduct      { id?, name, category, price, ... }
+ * - setConfig          { id: 'feature_flags' | 'member_levels' | 'points_rules', value }
+ * - listOrders         { status?, page?, pageSize? }
+ * - updateOrderStatus  { orderId, status }
+ * - listAdmins         {}
  */
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../../infra/prisma.js';
 import { Errors } from '../../common/errors.js';
-import { configRepo } from '../app-config/app-config.repository.js';
-import { featureGatePlugin } from '../../common/middleware/feature-gate.js';
+import { featureGatePlugin, invalidateFeatureFlagsCache } from '../../common/middleware/feature-gate.js';
 import { CONTENT_TYPES } from '../content/content.schema.js';
 
 const UpsertContentSchema = z.object({
@@ -55,9 +57,15 @@ const SetConfigSchema = z.object({
   value: z.record(z.unknown()),
 });
 
-const AdminActionBodySchema = z.object({
-  action: z.enum(['upsertContent', 'upsertProduct', 'setConfig', 'listAdmins']),
-  payload: z.unknown().optional(),
+const ListOrdersSchema = z.object({
+  status: z.enum(['pending_pay', 'paid', 'shipped', 'done', 'cancelled']).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+const UpdateOrderStatusSchema = z.object({
+  orderId: z.string().min(1),
+  status: z.enum(['pending_pay', 'paid', 'shipped', 'done', 'cancelled']),
 });
 
 async function isAdmin(openid: string): Promise<boolean> {
@@ -72,7 +80,6 @@ export async function adminRoutes(app: FastifyInstance) {
 
   app.post(
     '/',
-    { schema: { body: AdminActionBodySchema } },
     async (req, reply) => {
       if (!req.user) throw Errors.unauthorized();
       if (!(await isAdmin(req.user.openid))) {
@@ -131,16 +138,72 @@ export async function adminRoutes(app: FastifyInstance) {
           const input = SetConfigSchema.parse(payload);
           await prisma.appConfig.upsert({
             where: { id: input.id },
-            create: { id: input.id, value: input.value },
-            update: { value: input.value },
+            create: { id: input.id, value: input.value as never },
+            update: { value: input.value as never },
           });
-          // ⚠️ featureGate 中间件有内存缓存；Phase 1.1 加 cache invalidation
-          return { code: 0, data: { ok: true, note: '需要重启服务生效' } };
+          // feature_flags 变更时主动清缓存，无需重启
+          if (input.id === 'feature_flags') {
+            invalidateFeatureFlagsCache();
+          }
+          return { code: 0, data: { ok: true } };
         }
 
         case 'listAdmins': {
           const row = await prisma.appConfig.findUnique({ where: { id: 'admin_whitelist' } });
           return { code: 0, data: { openids: (row?.value as { openids?: string[] } | undefined)?.openids ?? [] } };
+        }
+
+        case 'listOrders': {
+          const input = ListOrdersSchema.parse(payload ?? {});
+          const where = {
+            ...(input.status ? { status: input.status } : {}),
+          };
+          const [list, total] = await Promise.all([
+            prisma.order.findMany({
+              where,
+              orderBy: { createdAt: 'desc' },
+              skip: (input.page - 1) * input.pageSize,
+              take: input.pageSize,
+              include: {
+                items: true,
+                user: { select: { id: true, nickname: true, phone: true } },
+              },
+            }),
+            prisma.order.count({ where }),
+          ]);
+          return {
+            code: 0,
+            data: {
+              list: list.map((o) => ({
+                ...o,
+                totalAmount: o.totalAmount.toString(),
+                payAmount: o.payAmount.toString(),
+                createdAt: o.createdAt.toISOString(),
+                updatedAt: o.updatedAt.toISOString(),
+              })),
+              total,
+              page: input.page,
+              pageSize: input.pageSize,
+            },
+          };
+        }
+
+        case 'updateOrderStatus': {
+          const input = UpdateOrderStatusSchema.parse(payload);
+          const order = await prisma.order.findUnique({ where: { id: input.orderId } });
+          if (!order) throw Errors.notFound('订单不存在');
+          const updated = await prisma.order.update({
+            where: { id: input.orderId },
+            data: { status: input.status },
+          });
+          return {
+            code: 0,
+            data: {
+              id: updated.id,
+              status: updated.status,
+              updatedAt: updated.updatedAt.toISOString(),
+            },
+          };
         }
 
         default:

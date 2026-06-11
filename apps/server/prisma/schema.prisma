@@ -301,7 +301,7 @@ model Recipe {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  @@index([category, status(updatedAt)])
+  @@index([category, updatedAt])
 }
 
 // ===== V2 · 营养缓存 =====

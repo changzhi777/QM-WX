@@ -141,8 +141,11 @@ export const weeklyReportService = {
 
   /**
    * 触发某群生成战报（写 GroupReport 表）
+   *
+   * period 参数当前保留以备未来支持历史周查询（TODO: 写 ISO 周→日期转换工具）
+   * 现仅生成当前周报告。
    */
-  async trigger(userId: string, groupId: string, period?: string) {
+  async trigger(userId: string, groupId: string, _period?: string) {
     // 鉴权：必须是群主
     const member = await prisma.groupMember.findUnique({
       where: { groupId_userId: { groupId, userId } },
@@ -150,39 +153,21 @@ export const weeklyReportService = {
     if (!member) throw Errors.forbidden('你不在该群中');
     if (member.role !== 'owner') throw Errors.forbidden('仅群主可触发');
 
-    let periodStr = period;
-    let start: Date;
-    let end: Date;
-    if (periodStr) {
-      const parts = periodStr.split('-W');
-      const year = Number(parts[0]);
-      const week = Number(parts[1]);
-      // 简化：用当前周替代（生产可写 ISO 周转日期工具）
-      const cur = isoWeek(new Date());
-      start = cur.start;
-      end = cur.end;
-      periodStr = cur.period;
-    } else {
-      const cur = isoWeek(new Date());
-      start = cur.start;
-      end = cur.end;
-      periodStr = cur.period;
-    }
-
-    const report = await this.aggregate(groupId, periodStr, start, end);
+    const { period, start, end } = isoWeek(new Date());
+    const report = await this.aggregate(groupId, period, start, end);
 
     // 写 GroupReport（unique on groupId+period）
     const saved = await prisma.groupReport.upsert({
-      where: { groupId_period: { groupId, period: periodStr } },
+      where: { groupId_period: { groupId, period } },
       create: {
         groupId,
-        period: periodStr,
+        period,
         summary: report as never,
       },
       update: { summary: report as never },
     });
 
-    return { reportId: saved.id, period: periodStr, report };
+    return { reportId: saved.id, period, report };
   },
 
   /**

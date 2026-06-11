@@ -7,7 +7,6 @@ import type { FastifyInstance } from 'fastify';
 import { deviceService } from './device.service.js';
 import { Errors } from '../../common/errors.js';
 import {
-  DeviceActionBodySchema,
   ListBindingsInputSchema,
   StartOAuthInputSchema,
   SyncWeRunInputSchema,
@@ -17,7 +16,6 @@ import {
 export async function deviceRoutes(app: FastifyInstance) {
   app.post(
     '/',
-    { schema: { body: DeviceActionBodySchema } },
     async (req, reply) => {
       if (!req.user) throw Errors.unauthorized();
       const userId = req.user.id;

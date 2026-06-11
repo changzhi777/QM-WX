@@ -11,14 +11,12 @@ import {
   GetWalletInputSchema,
   RechargeInputSchema,
   TransactionsInputSchema,
-  WalletActionBodySchema,
 } from './wallet.schema.js';
 
 export async function walletRoutes(app: FastifyInstance) {
   app.post(
     '/',
     {
-      schema: { body: WalletActionBodySchema },
       config: { requireFeature: 'wallet' },
     },
     async (req, reply) => {

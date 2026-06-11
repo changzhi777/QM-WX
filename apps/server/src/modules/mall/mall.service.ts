@@ -3,9 +3,37 @@
  */
 import { prisma } from '../../infra/prisma.js';
 import { Errors } from '../../common/errors.js';
-import type { ListProductsInput } from './mall.schema.js';
+import type { ListProductsInput, ListCategoriesInput } from './mall.schema.js';
 
 export const mallService = {
+  /**
+   * 分类列表（从商品表聚合 distinct category）
+   */
+  async listCategories(input: ListCategoriesInput) {
+    if (input.includeCount) {
+      const rows = await prisma.product.groupBy({
+        by: ['category'],
+        where: { status: 'on' },
+        _count: { category: true },
+        orderBy: { _count: { category: 'desc' } },
+      });
+      return {
+        categories: rows.map((r) => ({
+          name: r.category,
+          count: r._count.category,
+        })),
+      };
+    }
+    // 轻量查询：只拿 distinct category
+    const rows = await prisma.product.findMany({
+      where: { status: 'on' },
+      select: { category: true },
+      distinct: ['category'],
+      orderBy: { category: 'asc' },
+    });
+    return { categories: rows.map((r) => ({ name: r.category, count: 0 })) };
+  },
+
   async listProducts(input: ListProductsInput) {
     const where = {
       status: 'on',

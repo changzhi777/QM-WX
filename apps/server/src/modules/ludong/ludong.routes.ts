@@ -11,13 +11,11 @@ import { Errors } from '../../common/errors.js';
 import {
   BindLudongInputSchema,
   ListOutboxInputSchema,
-  LudongActionBodySchema,
 } from './ludong.schema.js';
 
 export async function ludongRoutes(app: FastifyInstance) {
   app.post(
     '/',
-    { schema: { body: LudongActionBodySchema } },
     async (req, reply) => {
       if (!req.user) throw Errors.unauthorized();
       const { action, payload } = req.body as { action: string; payload?: unknown };

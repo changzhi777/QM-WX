@@ -3,7 +3,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('../../src/infra/prisma.js', () => {
+vi.mock('src/infra/prisma.js', () => {
   return {
     prisma: {
       content: {
@@ -21,8 +21,8 @@ vi.mock('../../src/infra/prisma.js', () => {
   };
 });
 
-import { prisma } from '../../src/infra/prisma.js';
-import { contentService } from '../../src/modules/content/content.service.js';
+import { prisma } from 'src/infra/prisma.js';
+import { contentService } from 'src/modules/content/content.service.js';
 
 const mockedPrisma = vi.mocked(prisma);
 

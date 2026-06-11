@@ -23,4 +23,5 @@ export const Errors = {
   internal: (msg = '服务器内部错误') => new BusinessError(500, msg, 500),
   featureDisabled: (feature: string) =>
     new BusinessError(403, `功能「${feature}」尚未开通`, 403),
+  notImplemented: (msg = '功能尚未实现') => new BusinessError(501, msg, 501),
 } as const;

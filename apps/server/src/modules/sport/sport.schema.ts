@@ -23,12 +23,14 @@ export const CheckinInputSchema = z
   })
   .strict();
 export type CheckinInput = z.infer<typeof CheckinInputSchema>;
+export type CheckinOutput = z.output<typeof CheckinInputSchema>;
 
 // ===== myStats =====
 export const MyStatsInputSchema = z.object({
   period: z.enum(['week', 'month', 'year', 'all']).default('month'),
 });
 export type MyStatsInput = z.infer<typeof MyStatsInputSchema>;
+export type MyStatsOutput = z.output<typeof MyStatsInputSchema>;
 
 // ===== 群管理 =====
 export const CreateGroupInputSchema = z.object({
@@ -49,9 +51,10 @@ export type QuitGroupInput = z.infer<typeof QuitGroupInputSchema>;
 
 export const GroupRankingInputSchema = z.object({
   groupId: z.string().min(1),
-  period: z.enum(['week', 'month', 'year']).default('week'),
+  period: z.enum(['week', 'month', 'year', 'all']).default('week'),
 });
 export type GroupRankingInput = z.infer<typeof GroupRankingInputSchema>;
+export type GroupRankingOutput = z.output<typeof GroupRankingInputSchema>;
 
 // ===== action body =====
 export const SportActionBodySchema = z.object({

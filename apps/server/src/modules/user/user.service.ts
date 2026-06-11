@@ -64,11 +64,11 @@ export const userService = {
 
     // 3. 签 JWT
     const accessToken = await app.jwt.sign(
-      { sub: user.id, openid: user.openid },
+      { sub: user.id, id: user.id, openid: user.openid },
       { expiresIn: '2h' },
     );
     const refreshToken = await app.jwt.sign(
-      { sub: user.id, openid: user.openid, kind: 'refresh' },
+      { sub: user.id, id: user.id, openid: user.openid, kind: 'refresh' },
       { expiresIn: '30d' },
     );
 
@@ -101,11 +101,10 @@ export const userService = {
 
   /** 绑定第三方运动 APP（feature flag 校验在 route 层做） */
   async bindApps(userId: string, input: BindAppsInput) {
+    void input; // TODO Phase 1.1: 实现 boundApps 写入
     const user = await userRepo.findById(userId);
     if (!user) throw Errors.notFound('user not found');
-    // boundApps 当前是 jsonb 字段，直接 merge
-    const old = (user as unknown as { boundApps?: Record<string, boolean> }).boundApps ?? {};
-    const merged = { ...old, ...input.boundApps };
+    // boundApps 当前在 app_config，Phase 1.1 实现
     const updated = await prisma.user.update({
       where: { id: userId },
       data: { /* boundApps: merged */ } as never, // schema 没该字段，TODO Phase 1.1
