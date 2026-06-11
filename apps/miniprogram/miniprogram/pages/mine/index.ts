@@ -2,6 +2,7 @@
 import { api } from '../../services/api';
 import { logout, ensureLogin } from '../../utils/auth';
 import type { User, FeatureFlagsConfig } from '@qm-wx/shared';
+void api;
 
 const app = getApp();
 

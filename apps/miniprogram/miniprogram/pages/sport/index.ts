@@ -45,7 +45,11 @@ Page({
 
     // 我的群
     const { groups } = await api.call<{ groups: Group[] }>('sport', 'myGroups');
-    const groupOptions = [{ id: '', name: '不加入群' }, ...groups];
+    // "不加入群"占位项 + 真实群列表（补全 memberCount/role 默认值以满足 Group 类型）
+    const groupOptions: Group[] = [
+      { id: '', name: '不加入群', memberCount: 0, role: 'member' },
+      ...groups,
+    ];
     this.setData({ groups: groupOptions });
 
     // 今日状态

@@ -1,8 +1,6 @@
 // components/privacy-popup/index.ts
 // 首启隐私协议弹窗（小程序提审要求）
 
-import { ensureLogin } from '../../utils/auth';
-
 Component({
   options: { multipleSlots: true },
   properties: {

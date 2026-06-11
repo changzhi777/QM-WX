@@ -61,10 +61,17 @@ export async function silentLogin(): Promise<void> {
   if (!cached) return; // 没缓存就不强求
 
   app.globalData.accessToken = cached;
-  // Phase 1 补：用缓存 token 调 /api/user 拉最新 user / config
+
+  // 用缓存 token 调 /api/user me 拉最新 user / config
   // 失败由 services/api.ts 的 401 处理（refresh → 重试）
   try {
-    // TODO: api.call('user', 'me', {}) 或类似 endpoint
+    const result = await api.call<{
+      user: User;
+      config: { featureFlags: FeatureFlagsConfig; memberLevels: unknown; pointsRules: unknown };
+    }>('user', 'me', {});
+    wx.setStorageSync('currentUser', result.user);
+    app.globalData.user = result.user;
+    app.globalData.config = result.config;
   } catch {
     // 静默失败，用户进业务页时 ensureLogin 兜底
   }

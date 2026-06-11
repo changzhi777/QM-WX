@@ -26,13 +26,23 @@ export interface User {
   updatedAt: string;
 }
 
+/**
+ * API 统一返回结构（前后端共用）
+ *
+ * 用统一接口（不取判别联合）的原因：联合在调用方需要
+ * `if (code === 0) { return data }` 收窄后才能访问 data，
+ * 但代码中常常忘记收窄 + 写 throw 会用到 msg，类型噪音大。
+ * 统一接口可省去收窄，code===0 业务上视为成功。
+ */
 export interface ApiSuccess<T> {
   code: 0;
   data: T;
+  msg?: never;
 }
 
 export interface ApiError {
-  code: number;
+  code: number; // 4xx / 5xx
+  data?: never;
   msg: string;
 }
 

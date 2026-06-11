@@ -20,9 +20,11 @@ App({
   },
 
   async onLaunch() {
-    // 1. 注入 baseUrl
+    // 1. 注入 baseUrl（微信小程序无 process.env，用 envVersion 判断环境）
+    const accountInfo = wx.getAccountInfoSync();
+    const isProd = accountInfo.miniProgram.envVersion === 'release';
     (wx as unknown as { $apiBase: string }).$apiBase =
-      process.env.NODE_ENV === 'production' ? API_BASE.prod : API_BASE.dev;
+      isProd ? API_BASE.prod : API_BASE.dev;
 
     // 2. 检查隐私协议（提审要求首启弹）
     if (!wx.getStorageSync('privacyAgreed')) {

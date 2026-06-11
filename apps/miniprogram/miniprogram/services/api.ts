@@ -42,7 +42,8 @@ export const api = {
     const body = res.data as ApiResponse<T>;
 
     if (body.code === 0) {
-      return body.data;
+      // ApiSuccess 分支：data 一定存在
+      return (body as { data: T }).data;
     }
 
     // 401 → 尝试 refresh 一次
@@ -53,16 +54,17 @@ export const api = {
         })
         .catch(() => {
           refreshing = null;
-          // refresh 失败 → 跳登录
-          wx.reLaunch({ url: '/pages/login/index' });
+          // refresh 失败 → 跳首页（无独立登录页）
+          wx.reLaunch({ url: '/pages/index/index' });
         });
       await refreshing;
       return this.call(module, action, payload); // 重试一次
     }
 
-    // 业务错误统一 toast
-    wx.showToast({ title: body.msg ?? '请求失败', icon: 'none' });
-    throw new Error(body.msg);
+    // 业务错误统一 toast（body 此时为 ApiError 分支，msg 必有）
+    const errMsg = (body as { msg: string }).msg ?? '请求失败';
+    wx.showToast({ title: errMsg, icon: 'none' });
+    throw new Error(errMsg);
   },
 
   async refreshToken(): Promise<void> {
@@ -80,9 +82,12 @@ export const api = {
     });
 
     const body = res.data as ApiResponse<{ accessToken: string; refreshToken: string }>;
-    if (body.code !== 0) throw new Error(body.msg);
-    wx.setStorageSync('accessToken', body.data.accessToken);
-    wx.setStorageSync('refreshToken', body.data.refreshToken);
+    if (body.code !== 0) {
+      throw new Error((body as { msg: string }).msg ?? 'refresh failed');
+    }
+    const data = (body as { data: { accessToken: string; refreshToken: string } }).data;
+    wx.setStorageSync('accessToken', data.accessToken);
+    wx.setStorageSync('refreshToken', data.refreshToken);
   },
 
   /**
@@ -107,8 +112,10 @@ export const api = {
 
     // wx.uploadFile 的 data 是 string，需要 parse
     const body = JSON.parse(res.data) as ApiResponse<{ url: string }>;
-    if (body.code !== 0) throw new Error(body.msg);
-    return body.data.url;
+    if (body.code !== 0) {
+      throw new Error((body as { msg: string }).msg ?? 'upload failed');
+    }
+    return (body as { data: { url: string } }).data.url;
   },
 };
 

@@ -33,11 +33,17 @@ export const ENDPOINTS = {
     createOrder: '/api/mall',
     myOrders: '/api/mall',
     cancelOrder: '/api/mall',
+    listCategories: '/api/mall',
   },
   content: {
     list: '/api/content',
     detail: '/api/content',
     enroll: '/api/content',
+  },
+  weeklyReport: {
+    currentWeek: '/api/weekly-report',
+    myReport: '/api/weekly-report',
+    trigger: '/api/weekly-report',
   },
   wallet: {
     get: '/api/wallet',

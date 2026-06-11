@@ -20,7 +20,7 @@ Page({
   async load() {
     this.setData({ loading: true });
     try {
-      const { reports } = await api.call<{ reports: WeeklyReport[] }>('weekly-report', 'currentWeek');
+      const { reports } = await api.call<{ reports: WeeklyReport[] }>('weeklyReport', 'currentWeek');
       this.setData({ reports, loading: false });
     } catch {
       this.setData({ loading: false });
@@ -160,7 +160,7 @@ Page({
   },
 
   drawRoundRect(
-    ctx: WechatMiniprogram.CanvasContext,
+    ctx: WechatMiniprogram.CanvasRenderingContext.CanvasRenderingContext2D,
     x: number,
     y: number,
     w: number,
