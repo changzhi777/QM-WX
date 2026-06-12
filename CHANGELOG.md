@@ -112,3 +112,64 @@
 - **admin**：移除 `zustand` (1287 → 1285 packages)
 - **shared**：未引入新依赖，仅新增 export
 
+---
+
+## [Unreleased] — 2026-06-13 Phase 4 微信支付 V3 MVP
+
+由 `/zcf:workflow` 6 阶段工作流驱动，方案 A（5 人天 MVP 灰度）。
+完整报告见 `.zcf/plan/history/2026-06-13_053749_phase4-wxpay-mvp.md` 和
+`memory/phase4-wxpay-mvp-complete.md`。
+
+### ✨ Added
+
+- **server** (`3fef18b`)：全新 wxpay module
+  - `apps/server/src/modules/wxpay/wxpay.{schema,service,routes}.ts`
+  - 协议：JSAPI 统一下单 + AES-256-GCM 回调解密 + 自研签名（Node `crypto`，不引老旧 SDK）
+  - 公开端点 `POST /api/wxpay`（`config.public=true`，不走 JWT）
+- **miniprogram** (`4d08550`)：order-confirm 三分支
+  - 积分全额兑换（status=paid）
+  - 微信支付（`wx.requestPayment`）
+  - 兜底（payment=OFF 意向单）
+- **Prisma**：Order 表加 4 字段
+  - `payChannel` / `prepayId` / `wxTransactionId @unique`（幂等 key）/ `paidAt`
+- **env**：`WX_MCH_ID` / `WX_PAY_KEY` / `WX_NOTIFY_URL` / `WX_MCH_SERIAL_NO`
+         / `WX_MCH_PRIVATE_KEY_PATH` / `WX_PLAT_CERT_PATH`
+
+### 🔧 Changed
+
+- **orderService.create** (`3fef18b`)：当 `payAmount > 0` + `payment=ON` 时
+  - **事务外** 调 `wxpay.unifiedOrder`（外部 IO 不在 DB 事务内）
+  - 返回 `payParams` 给前端 `wx.requestPayment`
+
+### 📚 Documentation
+
+- (`3b9b672`) `.zcf/plan/current/phase4-wxpay-mvp.md` → `history/2026-06-13_053749_...`
+
+### 📊 关键指标
+
+| 维度 | 前 | 后 | 变化 |
+| --- | --- | ---: | ---: |
+| 后端测试数 | 227 | **234** | +7 |
+| 后端覆盖率 | 88.08% | ~88% | 持平（MVP 加新代码） |
+| 后端 module 数 | 13 | **14** | +1 (wxpay) |
+| E2E 数 | 6 | **8** | +2 (wxpay-notify 通知+幂等) |
+
+### 沙箱可验 ✅
+
+APIv3 无独立沙箱但有验收用例仿真（用正式 mch_id + 验收金额触发不同响应）。
+当前 E2E 通过 `vi.mock` 跳过真验签 + 真解密；**切真生产路径**：
+1. 配真证书 / 密钥 / notify URL 到 env
+2. 去掉 `vi.mock` 注释
+3. 启用商户平台 `feature_flags.payment = true`
+
+### 不在范围（明确延后 → Phase 4.1）
+
+- 退款流程（路由 + 管理员后台入口）
+- 超时关单 BullMQ Cron（30 分钟未支付）
+- 每日对账（账单 API + 文件下载 + 差异报警）
+- WalletTransaction 写入（需 ensureWallet 先建）
+- 状态机校验
+- 积分比例从 DB 读（仍硬编码 POINTS_TO_YUAN=0.01）
+- 真实 AppID / 商户号切换（用户拍板）
+
+
