@@ -50,3 +50,65 @@
 - 佳明 Connect Developer Program（1-2 周）—— V2 设备
 - 小米开放平台（2-4d + 3-5d）—— V2 设备
 - 律动后端契约对齐 —— V2 律动对接
+
+---
+
+## [Unreleased] — 2026-06-12 全栈整顿方案 B
+
+由 `/zcf:workflow` 6 阶段工作流驱动。完整报告见
+`.zcf/plan/history/2026-06-12_163805_audit-fix-batch-b.md` 和
+`memory/audit-batch-b-complete.md`。
+
+### ✨ Added
+
+- **shared** (`a8abb5d`)：ENDPOINTS 补 4 缺口（`sport.myGroups` / `sport.today` /
+  `user.me` / `auth.refresh`）+ 新增 `actionUrl(module, action)` 工具
+- **shared**：`admin` module 补登 `listOrders` / `updateOrderStatus` / `listAdmins`
+- **tests** (`453e8d1`)：测试基建
+  - `tests/helpers/{mockErrors,mockPrisma}.ts`
+  - `tests/fixtures/{user,product,order,group}.fixture.ts`
+  - `tests/helpers/README.md`（Redis mock 分层约定）
+- **tests** (`efd2150`)：`actionUrl` + ENDPOINTS 完整性（5 tests）
+- **tests** (`c530105`)：`mall-flow.e2e.test.ts` Happy Path（3 tests：登录→下单→取消→积分回退）
+- **tests** (`e2858a4`)：code2Session 边界（3 个）+ mall.routes 路由层（10 个）
+- **miniprogram** (`58cf415`)：`<error-state>` 通用错误状态组件
+- **miniprogram** (`7234e61` + `77dcd5e`)：error-state 应用到 **11/11 页面 100% 覆盖**
+
+### 🔧 Changed
+
+- **server** (`5c3739f`)：
+  - `content` / `mall` 公开端点（`config: { public: true }` + 受保护 action 内部 jwtVerify）
+  - `admin.isAdmin` 加内存缓存 + `invalidateAdminCache()`
+  - `recipe.myMeals` 补 Zod `MyMealsInputSchema`
+- **server** (`726befc`)：抽 `requireLogin(req)` 到 `common/middleware/auth.ts`（去重 content/mall）
+- **miniprogram** (`a164cfc`)：`api.call` / `refreshToken` 改走 `actionUrl()`（修根因 URL bug）
+- **miniprogram** (`236d9c6`)：mine 去冗余 flag + product-detail 按钮 disabled
+- **ci** (`20042d1`)：拆 5 个 parallel job（unit-tests + e2e-tests 并行）
+- **admin** (`fa1529a` / `57f381e`)：qm-admin 独立仓
+  - Login 加固（me + listAdmins 双校验）+ 删 zustand + access 真校验
+  - 订单状态扭转并发锁 + nginx 改 envsubst `${BACKEND_URL}` 模板
+
+### 🐛 Fixed
+
+- **miniprogram** (`236d9c6`)：profile 表单无错误态 UI
+- **admin** (`fa1529a`)：qm-admin Login 6 个 P0 安全隐患
+- **admin** (`57f381e`)：qm-admin 订单状态扭转并发 + originalPrice null 误写
+
+### 📊 关键指标
+
+| 维度 | 前 | 后 | 变化 |
+| --- | --- | ---: | ---: |
+| 后端测试数 | 201 | **227** | +26 |
+| 后端覆盖率 | 86.28% | **88.08%** | +1.80% |
+| mall.routes 覆盖 | 2.38% | **100%** | +97.62% |
+| E2E 数 | 5 | **8** | +3 |
+| CI 反馈 | 串行 | **parallel 5 job** | ~30% 提速 |
+| ENDPOINTS 缺口 | 4 | **0** + actionUrl | 修根因 |
+| qm-admin Login P0 | 6 | **0** | 双校验 |
+| 小程序 error UI | 0 页 | **11/11 100%** | 全闭环 |
+
+### 📦 Dependencies
+
+- **admin**：移除 `zustand` (1287 → 1285 packages)
+- **shared**：未引入新依赖，仅新增 export
+
