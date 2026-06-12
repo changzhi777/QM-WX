@@ -7,6 +7,8 @@
 //   const { list } = await api.call<Product[]>('mall', 'listProducts', { page: 1 });
 
 import { ENDPOINTS, type ActionRequest, type ApiResponse, type User } from '@qm-wx/shared';
+// actionUrl 走子路径 export，避开根入口的 ESM .js 后缀解析问题
+import { actionUrl } from '@qm-wx/shared/api-contracts';
 
 const getBaseUrl = (): string =>
   (wx as unknown as { $apiBase?: string }).$apiBase ?? 'http://localhost:3000';
@@ -22,7 +24,7 @@ export const api = {
     action: string,
     payload: unknown = {},
   ): Promise<T> {
-    const url = `${getBaseUrl()}${ENDPOINTS[module]}`;
+    const url = `${getBaseUrl()}${actionUrl(module, action)}`;
     const token = wx.getStorageSync('accessToken');
 
     const res = await new Promise<WechatMiniprogram.RequestSuccessCallbackResult>((resolve, reject) => {
@@ -73,7 +75,7 @@ export const api = {
 
     const res = await new Promise<WechatMiniprogram.RequestSuccessCallbackResult>((resolve, reject) => {
       wx.request({
-        url: `${getBaseUrl()}/api/auth/refresh`,
+        url: `${getBaseUrl()}${actionUrl('auth', 'refresh')}`,
         method: 'POST',
         data: { refreshToken },
         success: resolve,
