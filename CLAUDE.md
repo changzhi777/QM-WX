@@ -8,6 +8,7 @@
 
 ## 变更记录 (Changelog)
 
+- **2026-06-12 12:30** — 🚀 **admin Web 后台落地（独立仓库）**：选型 React + Umi Max 4 + antd 5 + ProComponents，**独立 git repo** `qingmu/qm-admin`（CT400 Gitea，不收纳到 monorepo）。骨架 + 业务页 5 页（Login/Dashboard/商品分类/商品 CRUD/订单管理）一次成型。dev proxy `/api → 127.0.0.1:3000`，临时鉴权走"手工填 JWT token + openid"。`tsc --noEmit` 全绿、`max dev` 5459 模块编译通过。本地 5 commit、push 完成。
 - **2026-06-11 23:30** — 🔧 **P0 验证 + AppID 修 3 bug + Phase 3 补全**：(1) 确认 P0 全 7 项已在 V2 重写中修复；(2) 小程序端修 `process.env`→`getAccountInfoSync`、login 跳转路径、`silentLogin` 补全 `me` 调用；(3) 后端加 admin 订单管理（listOrders/updateOrderStatus）、mall 分类列表（listCategories）、feature flag 缓存失效机制。typecheck + 30 测试全绿。
 - **2026-06-11 23:30** — 🧹 **小程序 typecheck 16 错全清**：(1) `ApiResponse` 加 `data?:never`/`msg?:never` 编译提示；(2) `services/api.ts` 改用断言收窄；(3) `mine` 加 `FeatureFlagsConfig` import；(4) `sport` 补全占位项字段；(5) `weekly-report` 改用 `weeklyReport` 键 + `WechatMiniprogram.CanvasRenderingContext.CanvasRenderingContext2D` 类型；(6) ENDPOINTS 加 `weeklyReport` 键。全栈 typecheck 通过、30 测试全绿。
 - **2026-06-11 23:30** — 🔄 **`/zcf:init-project` 增量刷新**：159 源文件全仓扫描（4/4 模块覆盖）。修正 Prisma 表数 20→22、sport 单元测试 10→12。全部 8 个 CLAUDE.md 验证一致，Mermaid 结构图确认准确。
@@ -36,7 +37,7 @@
 
 **当前阶段**：V1.0 后端核心模块 + V2 stub + CI/CD + Staging + **P0 全修** + **Phase 3 核心补全**。Phase 0~3 已完成，Phase 4（支付接入）待推进。
 
-**下一步**：真实微信 AppID 端到端验证（需真机）/ 真实云环境部署 / Phase 4 支付接入 / admin Web 后台（二期）。
+**下一步**：真实微信 AppID 端到端验证（需真机）/ 真实云环境部署 / Phase 4 支付接入 / admin 业务扩展（已有独立仓库 `qm-admin`，见模块索引）。
 
 **P0 致命问题**（来自 `01-code-review.md`）：
 1. ✅ 钱包余额客户端可篡改 → V2 已修：服务端权威 + 功能开关
@@ -96,7 +97,7 @@ QM-WX/
 ├── apps/
 │   ├── miniprogram/         # 微信小程序（apps/miniprogram 内的 miniprogram/）
 │   ├── server/              # Fastify + TS 后端
-│   └── admin/               # （二期）运营管理后台（Vue3 + Element Plus 或 React + Antd）
+│   └── admin/               # **独立 repo** `qm-admin`（CT400 Gitea qingmu/qm-admin，React + Umi Max + antd 5），不收纳到 monorepo
 ├── packages/
 │   └── shared/              # 共享类型 / Zod schema / API 契约 / 常量
 ├── docs/                    # 设计文档（ARCHITECTURE-V2.md 等）
@@ -113,7 +114,7 @@ QM-WX/
 | --- | --- | --- | --- |
 | `apps/miniprogram/` | 微信小程序前端（13 页面 + 3 组件） | ✅ V1.0 完成 | [→ apps/miniprogram/CLAUDE.md](apps/miniprogram/CLAUDE.md) |
 | `apps/server/` | Node + TS 后端（**13 module** + BullMQ jobs） | ✅ V1.0 完成 + V2 stub | [→ apps/server/CLAUDE.md](apps/server/CLAUDE.md) |
-| `apps/admin/` | 运营管理后台（二期） | ⏳ 暂缓 | — |
+| `apps/admin/` | 运营管理后台 | ✅ **独立 repo** `qingmu/qm-admin` (CT400 Gitea，React+UmiMax+antd5) | — |
 | `packages/shared/` | 前后端共享（类型 / Zod / 端点常量 / 积分规则） | ✅ V1.0 完成 | [→ packages/shared/CLAUDE.md](packages/shared/CLAUDE.md) |
 | `docs/` | 设计文档（ARCHITECTURE-V2 / CI / STAGING_DEPLOY / PHASE 计划等） | ✅ 6 份齐全 | [→ docs/CLAUDE.md](docs/CLAUDE.md) |
 | `tests/` | 跨包 E2E（暂用 supertest，V1.0 没起来） | 🚧 空 | [→ tests/CLAUDE.md](tests/CLAUDE.md) |
@@ -151,7 +152,7 @@ graph TD
 
     Apps --> Mp["apps/miniprogram/ 微信小程序"]
     Apps --> Srv["apps/server/ Fastify+TS+BullMQ"]
-    Apps -. 二期 .-> Adm["apps/admin/ 管理后台"]
+    Apps -. 独立repo .-> Adm["qm-admin (CT400 Gitea<br/>React+Umi Max+antd5)"]
 
     Pkgs --> Shared["packages/shared/ 共享类型+Zod"]
 
