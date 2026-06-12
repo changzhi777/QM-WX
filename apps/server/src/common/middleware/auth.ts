@@ -44,3 +44,27 @@ export const authPlugin = fp(async (app: FastifyInstance) => {
     }
   });
 });
+
+/**
+ * 公开 endpoint 内，对受保护 action 显式鉴权（短路 jwtVerify）。
+ *
+ * 用法（route.ts 内）：
+ * ```ts
+ * const user = await requireLogin(req);  // 已鉴权 → 直接拿 user；未鉴权 → 401
+ * ```
+ *
+ * 设计：当 endpoint 标 `config.public: true`（比如 list / detail 公开）
+ * 时，authPlugin 跳过 jwtVerify，受保护 action（如 enroll / createOrder）
+ * 需主动调用本函数补鉴权。
+ */
+export async function requireLogin(req: FastifyRequest) {
+  if (!req.user) {
+    try {
+      await req.jwtVerify();
+    } catch {
+      throw Errors.unauthorized();
+    }
+  }
+  if (!req.user) throw Errors.unauthorized();
+  return req.user;
+}

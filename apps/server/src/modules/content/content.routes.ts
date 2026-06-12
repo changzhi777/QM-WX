@@ -7,7 +7,7 @@
  */
 import type { FastifyInstance } from 'fastify';
 import { contentService } from './content.service.js';
-import { Errors } from '../../common/errors.js';
+import { requireLogin } from '../../common/middleware/auth.js';
 import {
   ContentListInputSchema,
   ContentDetailInputSchema,
@@ -35,17 +35,9 @@ export async function contentRoutes(app: FastifyInstance) {
         }
 
         case 'enroll': {
-          // 受保护 action：若上游未鉴权（public=true 跳过了 authPlugin），主动 jwtVerify
-          if (!req.user) {
-            try {
-              await req.jwtVerify();
-            } catch {
-              throw Errors.unauthorized();
-            }
-          }
-          if (!req.user) throw Errors.unauthorized();
+          const user = await requireLogin(req);
           const input = ContentEnrollInputSchema.parse(payload);
-          return { code: 0, data: await contentService.enroll(req.user.id, input) };
+          return { code: 0, data: await contentService.enroll(user.id, input) };
         }
 
         default:

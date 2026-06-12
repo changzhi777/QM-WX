@@ -5,10 +5,10 @@
  * createOrder / myOrders / cancelOrder 需登录。
  * 整 endpoint 标 public，受保护 action 内部手工 jwtVerify。
  */
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { mallService } from './mall.service.js';
 import { orderService } from './order.service.js';
-import { Errors } from '../../common/errors.js';
+import { requireLogin } from '../../common/middleware/auth.js';
 import {
   ListCategoriesInputSchema,
   ListProductsInputSchema,
@@ -17,19 +17,6 @@ import {
   MyOrdersInputSchema,
   CancelOrderInputSchema,
 } from './mall.schema.js';
-
-/** 受保护 action 共用的鉴权（若上游未鉴权则主动 jwtVerify） */
-async function requireLogin(req: FastifyRequest) {
-  if (!req.user) {
-    try {
-      await req.jwtVerify();
-    } catch {
-      throw Errors.unauthorized();
-    }
-  }
-  if (!req.user) throw Errors.unauthorized();
-  return req.user;
-}
 
 export async function mallRoutes(app: FastifyInstance) {
   app.post(
