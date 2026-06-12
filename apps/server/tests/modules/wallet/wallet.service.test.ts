@@ -1,5 +1,5 @@
 /**
- * wallet service 单元测试
+ * wallet service 单元测试（使用共享 helpers + fixtures 重构版）
  *
  * 覆盖：
  * - get：自动建空钱包 + 序列化
@@ -9,82 +9,34 @@
  * - ensureWallet：已存在 vs 新建
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createPrismaMock } from '../../helpers/mockPrisma.js';
+import { mockErrors } from '../../helpers/mockErrors.js';
 
+// 注意：vi.hoisted 在所有 import 之前执行，但 vitest 自动 hoist 顶部 import 的函数引用，
+// 所以 createPrismaMock 在这里可用。
 const mocks = vi.hoisted(() => {
-  const walletMethods = {
-    findUnique: vi.fn(),
-    create: vi.fn(),
-    update: vi.fn(),
-  };
-  const walletTxMethods = {
-    findUnique: vi.fn(),
-    update: vi.fn(),
-  };
-  const walletTransactionMethods = {
-    findMany: vi.fn(),
-    count: vi.fn(),
-  };
-  const txMethods = {
-    wallet: walletTxMethods,
-    walletTransaction: { create: vi.fn() },
-  };
-  const txMock = vi.fn((fn: (tx: typeof txMethods) => unknown) => fn(txMethods));
-  return {
-    walletMethods,
-    walletTxMethods,
-    walletTransactionMethods,
-    txMethods,
-    txMock,
-  };
+  // 重新 require 以确保 hoist 顺序正确
+  const helpers = require('../../helpers/mockPrisma.ts') as typeof import('../../helpers/mockPrisma.js');
+  return helpers.createPrismaMock({
+    models: ['wallet', 'walletTransaction'],
+    txModels: ['wallet', 'walletTransaction'],
+  });
 });
 
-vi.mock('src/infra/prisma.js', () => ({
-  prisma: {
-    wallet: mocks.walletMethods,
-    walletTransaction: mocks.walletTransactionMethods,
-    $transaction: mocks.txMock,
-    _tx: mocks.txMethods,
-  },
-}));
-
-vi.mock('src/common/errors.js', () => ({
-  Errors: {
-    featureDisabled: (f: string) => {
-      const e = new Error(`feature ${f}`) as Error & { code: number; statusCode: number };
-      e.code = 403;
-      e.statusCode = 403;
-      return e;
-    },
-    notFound: (msg: string) => {
-      const e = new Error(msg) as Error & { code: number; statusCode: number };
-      e.code = 404;
-      e.statusCode = 404;
-      return e;
-    },
-    forbidden: (msg: string) => {
-      const e = new Error(msg) as Error & { code: number; statusCode: number };
-      e.code = 403;
-      e.statusCode = 403;
-      return e;
-    },
-    badRequest: (msg: string) => {
-      const e = new Error(msg) as Error & { code: number; statusCode: number };
-      e.code = 400;
-      e.statusCode = 400;
-      return e;
-    },
-  },
-}));
+vi.mock('src/infra/prisma.js', () => ({ prisma: mocks.prisma }));
+vi.mock('src/common/errors.js', () => ({ Errors: mockErrors }));
 
 import { walletService } from '../../../src/modules/wallet/wallet.service.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // $transaction 重新绑定（clearAllMocks 会清掉 mockImplementation）
+  mocks.prisma.$transaction.mockImplementation((fn: (t: typeof mocks.tx) => unknown) => fn(mocks.tx));
 });
 
 describe('walletService.get', () => {
   it('已存在钱包：直接返回序列化结果', async () => {
-    mocks.walletMethods.findUnique.mockResolvedValue({
+    mocks.prisma.wallet.findUnique.mockResolvedValue({
       id: 'w1',
       userId: 'u1',
       balance: { toString: () => '100.50' } as unknown as number,
@@ -100,8 +52,8 @@ describe('walletService.get', () => {
   });
 
   it('不存在钱包：自动建空钱包', async () => {
-    mocks.walletMethods.findUnique.mockResolvedValue(null);
-    mocks.walletMethods.create.mockResolvedValue({
+    mocks.prisma.wallet.findUnique.mockResolvedValue(null);
+    mocks.prisma.wallet.create.mockResolvedValue({
       id: 'w2',
       userId: 'u1',
       balance: 0,
@@ -109,7 +61,7 @@ describe('walletService.get', () => {
       updatedAt: new Date('2026-01-01T00:00:00Z'),
     });
     const result = await walletService.get('u1');
-    expect(mocks.walletMethods.create).toHaveBeenCalledWith({
+    expect(mocks.prisma.wallet.create).toHaveBeenCalledWith({
       data: { userId: 'u1', balance: 0, status: 'active' },
     });
     expect(result.balance).toBe('0');
@@ -118,8 +70,8 @@ describe('walletService.get', () => {
 
 describe('walletService.transactions', () => {
   it('分页：page=2 pageSize=10 → skip=10 take=10', async () => {
-    mocks.walletMethods.findUnique.mockResolvedValue({ id: 'w1', userId: 'u1' });
-    mocks.walletTransactionMethods.findMany.mockResolvedValue([
+    mocks.prisma.wallet.findUnique.mockResolvedValue({ id: 'w1', userId: 'u1' });
+    mocks.prisma.walletTransaction.findMany.mockResolvedValue([
       {
         id: 't1',
         userId: 'u1',
@@ -132,10 +84,10 @@ describe('walletService.transactions', () => {
         status: 'success',
       },
     ]);
-    mocks.walletTransactionMethods.count.mockResolvedValue(25);
+    mocks.prisma.walletTransaction.count.mockResolvedValue(25);
 
     const result = await walletService.transactions('u1', { page: 2, pageSize: 10 });
-    expect(mocks.walletTransactionMethods.findMany).toHaveBeenCalledWith(
+    expect(mocks.prisma.walletTransaction.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ skip: 10, take: 10 }),
     );
     expect(result.total).toBe(25);
@@ -149,55 +101,55 @@ describe('walletService.recharge', () => {
   it('V1.0 强制 featureDisabled(payment)', async () => {
     await expect(
       walletService.recharge('u1', { amount: 100, channel: 'wxpay' } as never),
-    ).rejects.toThrow(/feature payment/);
+    ).rejects.toThrow(/payment/);
   });
 });
 
 describe('walletService.consumeInTx', () => {
   it('钱包不存在 → notFound', async () => {
-    mocks.walletTxMethods.findUnique.mockResolvedValue(null);
+    mocks.tx.wallet.findUnique.mockResolvedValue(null);
     await expect(
-      walletService.consumeInTx(mocks.txMethods as never, 'u1', 10, 'consume'),
+      walletService.consumeInTx(mocks.tx as never, 'u1', 10, 'consume'),
     ).rejects.toThrow(/wallet not found/);
   });
 
   it('钱包冻结 → forbidden', async () => {
-    mocks.walletTxMethods.findUnique.mockResolvedValue({
+    mocks.tx.wallet.findUnique.mockResolvedValue({
       id: 'w1',
       userId: 'u1',
       balance: 100,
       status: 'frozen',
     });
     await expect(
-      walletService.consumeInTx(mocks.txMethods as never, 'u1', 10, 'consume'),
+      walletService.consumeInTx(mocks.tx as never, 'u1', 10, 'consume'),
     ).rejects.toThrow(/wallet frozen/);
   });
 
   it('余额不足 → badRequest', async () => {
-    mocks.walletTxMethods.findUnique.mockResolvedValue({
+    mocks.tx.wallet.findUnique.mockResolvedValue({
       id: 'w1',
       userId: 'u1',
       balance: 5,
       status: 'active',
     });
     await expect(
-      walletService.consumeInTx(mocks.txMethods as never, 'u1', -10, 'consume'),
+      walletService.consumeInTx(mocks.tx as never, 'u1', -10, 'consume'),
     ).rejects.toThrow(/余额不足/);
   });
 
   it('正常扣减：update + create transaction', async () => {
-    mocks.walletTxMethods.findUnique.mockResolvedValue({
+    mocks.tx.wallet.findUnique.mockResolvedValue({
       id: 'w1',
       userId: 'u1',
       balance: 100,
       status: 'active',
     });
-    await walletService.consumeInTx(mocks.txMethods as never, 'u1', -30, 'consume', 'o1', 'wx-1');
-    expect(mocks.walletTxMethods.update).toHaveBeenCalledWith({
+    await walletService.consumeInTx(mocks.tx as never, 'u1', -30, 'consume', 'o1', 'wx-1');
+    expect(mocks.tx.wallet.update).toHaveBeenCalledWith({
       where: { userId: 'u1' },
       data: { balance: 70 },
     });
-    expect(mocks.txMethods.walletTransaction.create).toHaveBeenCalledWith({
+    expect(mocks.tx.walletTransaction.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
         userId: 'u1',
         walletId: 'w1',
@@ -213,17 +165,17 @@ describe('walletService.consumeInTx', () => {
 
 describe('walletService.ensureWallet', () => {
   it('已存在 → 不创建', async () => {
-    mocks.walletMethods.findUnique.mockResolvedValue({ id: 'w1' });
+    mocks.prisma.wallet.findUnique.mockResolvedValue({ id: 'w1' });
     const result = await walletService.ensureWallet('u1');
     expect(result).toEqual({ id: 'w1' });
-    expect(mocks.walletMethods.create).not.toHaveBeenCalled();
+    expect(mocks.prisma.wallet.create).not.toHaveBeenCalled();
   });
 
   it('不存在 → 创建', async () => {
-    mocks.walletMethods.findUnique.mockResolvedValue(null);
-    mocks.walletMethods.create.mockResolvedValue({ id: 'w2' });
+    mocks.prisma.wallet.findUnique.mockResolvedValue(null);
+    mocks.prisma.wallet.create.mockResolvedValue({ id: 'w2' });
     const result = await walletService.ensureWallet('u1');
-    expect(mocks.walletMethods.create).toHaveBeenCalledWith({
+    expect(mocks.prisma.wallet.create).toHaveBeenCalledWith({
       data: { userId: 'u1', balance: 0, status: 'active' },
     });
     expect(result).toEqual({ id: 'w2' });
