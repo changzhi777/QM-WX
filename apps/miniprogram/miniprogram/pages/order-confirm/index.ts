@@ -96,11 +96,23 @@ Page({
     if (!this.data.product) return;
 
     // 简单地址校验（不强制，但鼓励填）
-    const { address, usePoints, pointsInput, product, quantity, canPay } = this.data;
+    const { address, usePoints, pointsInput, product, quantity } = this.data;
 
     this.setData({ submitting: true });
     try {
-      const result = await api.call<{ orderId: string; status: string; message: string }>(
+      const result = await api.call<{
+        orderId: string;
+        status: string;
+        payChannel: 'wxpay' | 'points' | null;
+        payParams: {
+          timeStamp: string;
+          nonceStr: string;
+          package: string;
+          signType: 'RSA';
+          paySign: string;
+        } | null;
+        message: string;
+      }>(
         'mall',
         'createOrder',
         {
@@ -110,18 +122,60 @@ Page({
         },
       );
 
-      wx.showModal({
-        title: result.status === 'paid' ? '兑换成功' : '订单已创建',
-        content: result.message,
-        showCancel: false,
-        success: () => {
-          // 跳到我的订单
+      // 积分全额兑换：直接成功
+      if (result.status === 'paid') {
+        wx.showModal({
+          title: '兑换成功',
+          content: result.message,
+          showCancel: false,
+          success: () => {
+            wx.switchTab({ url: '/pages/mine/index' });
+            setTimeout(() => wx.navigateTo({ url: '/pages/order-list/index' }), 100);
+          },
+        });
+        return;
+      }
+
+      // 微信支付分支：调 wx.requestPayment
+      if (result.payChannel === 'wxpay' && result.payParams) {
+        const goOrderList = (): void => {
           wx.switchTab({ url: '/pages/mine/index' });
           setTimeout(() => wx.navigateTo({ url: '/pages/order-list/index' }), 100);
-        },
-      });
+        };
+        try {
+          await wx.requestPayment({
+            timeStamp: result.payParams.timeStamp,
+            nonceStr: result.payParams.nonceStr,
+            package: result.payParams.package,
+            signType: result.payParams.signType,
+            paySign: result.payParams.paySign,
+          });
+          // 支付成功 — 跳订单列表
+          wx.showToast({ title: '支付成功', icon: 'success' });
+          goOrderList();
+        } catch (e) {
+          // 失败/取消：留当前页 + toast
+          const err = e as { errMsg?: string };
+          if (err.errMsg?.includes('cancel')) {
+            wx.showToast({ title: '已取消支付', icon: 'none' });
+          } else {
+            wx.showToast({ title: err.errMsg ?? '支付失败', icon: 'none' });
+          }
+        }
+        return;
+      }
 
-      void canPay; // 暂未用，支付功能开通时用
+      // 兜底（payment=OFF 意向单）
+      const goOrderList = (): void => {
+        wx.switchTab({ url: '/pages/mine/index' });
+        setTimeout(() => wx.navigateTo({ url: '/pages/order-list/index' }), 100);
+      };
+      wx.showModal({
+        title: '订单已创建',
+        content: result.message,
+        showCancel: false,
+        success: goOrderList,
+      });
     } catch (err) {
       wx.showToast({ title: (err as Error).message ?? '提交失败', icon: 'none' });
     } finally {
