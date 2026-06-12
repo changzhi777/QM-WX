@@ -1,4 +1,6 @@
 {
   "navigationBarTitleText": "确认订单",
-  "usingComponents": {}
+  "usingComponents": {
+    "error-state": "/components/error-state/index"
+  }
 }

@@ -61,5 +61,6 @@
   </view>
 </view>
 
-<view wx:elif="{{!loading}}" class="empty">内容不存在或已下架</view>
+<view wx:elif="{{!loading && !error}}" class="empty">内容不存在或已下架</view>
 <view wx:else class="loading">加载中...</view>
+<error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="loadRetry" />

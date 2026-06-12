@@ -25,6 +25,8 @@ Page({
     } as ProfileForm,
     showPopup: false,
     saving: false,
+    error: false,
+    errorMsg: '',
   },
 
   onShow() {
@@ -32,13 +34,16 @@ Page({
   },
 
   async refreshUser() {
+    this.setData({ error: false, errorMsg: '' });
     const cached = (app.globalData.user ?? wx.getStorageSync('currentUser')) as User | null;
     if (cached) this.applyUser(cached);
     try {
       await ensureLogin();
       this.applyUser(app.globalData.user!);
-    } catch {
-      // 失败用 cached
+    } catch (e) {
+      const msg = (e as Error).message;
+      if (msg) this.setData({ error: true, errorMsg: msg });
+      // 否则静默用 cached
     }
   },
 

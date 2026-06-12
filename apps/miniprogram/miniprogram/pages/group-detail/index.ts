@@ -20,6 +20,8 @@ Page({
     members: [] as Member[],
     totals: { memberCount: 0, totalDistance: 0 },
     loading: true,
+    error: false,
+    errorMsg: '',
   },
 
   onLoad(query) {
@@ -37,7 +39,7 @@ Page({
 
   async loadRanking() {
     if (!this.data.groupId) return;
-    this.setData({ loading: true });
+    this.setData({ loading: true, error: false, errorMsg: '' });
     try {
       const result = await api.call<{
         members: Member[];
@@ -51,8 +53,12 @@ Page({
         totals: result.totals,
         loading: false,
       });
-    } catch {
-      this.setData({ loading: false });
+    } catch (e) {
+      this.setData({
+        loading: false,
+        error: true,
+        errorMsg: (e as Error).message ?? '加载榜单失败',
+      });
     }
   },
 

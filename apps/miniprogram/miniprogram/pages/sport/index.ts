@@ -30,6 +30,9 @@ Page({
     submitting: false,
     showCreateGroup: false,
     newGroupName: '',
+
+    error: false,
+    errorMsg: '',
   },
 
   onShow() {
@@ -37,31 +40,40 @@ Page({
   },
 
   async loadAll() {
+    this.setData({ error: false, errorMsg: '' });
     try {
       await ensureLogin();
     } catch {
+      // 未登录不视作错误，UI 引导即可
       return;
     }
 
-    // 我的群
-    const { groups } = await api.call<{ groups: Group[] }>('sport', 'myGroups');
-    // "不加入群"占位项 + 真实群列表（补全 memberCount/role 默认值以满足 Group 类型）
-    const groupOptions: Group[] = [
-      { id: '', name: '不加入群', memberCount: 0, role: 'member' },
-      ...groups,
-    ];
-    this.setData({ groups: groupOptions });
+    try {
+      // 我的群
+      const { groups } = await api.call<{ groups: Group[] }>('sport', 'myGroups');
+      // "不加入群"占位项 + 真实群列表（补全 memberCount/role 默认值以满足 Group 类型）
+      const groupOptions: Group[] = [
+        { id: '', name: '不加入群', memberCount: 0, role: 'member' },
+        ...groups,
+      ];
+      this.setData({ groups: groupOptions });
 
-    // 今日状态
-    const today = await api.call<{ date: string; done: boolean; checkin: null | { points: number } }>(
-      'sport',
-      'today',
-    );
-    this.setData({
-      today: today.date,
-      todayDone: today.done,
-      todayPoints: today.checkin?.points ?? 0,
-    });
+      // 今日状态
+      const today = await api.call<{ date: string; done: boolean; checkin: null | { points: number } }>(
+        'sport',
+        'today',
+      );
+      this.setData({
+        today: today.date,
+        todayDone: today.done,
+        todayPoints: today.checkin?.points ?? 0,
+      });
+    } catch (e) {
+      this.setData({
+        error: true,
+        errorMsg: (e as Error).message ?? '加载运动数据失败',
+      });
+    }
   },
 
   // ===== 表单 =====

@@ -23,14 +23,24 @@ Page({
     canBuy: false, // 来自 feature flag
     showSku: false,
     quantity: 1,
+    error: false,
+    errorMsg: '',
   },
 
   onLoad(query) {
     const id = (query?.id as string) ?? '';
+    (this as unknown as { _prodId: string })._prodId = id;
     this.loadDetail(id);
   },
 
+  /** error-state 重试入口 */
+  loadRetry() {
+    const id = (this as unknown as { _prodId?: string })._prodId;
+    if (id) this.loadDetail(id);
+  },
+
   async loadDetail(id: string) {
+    this.setData({ loading: true, error: false, errorMsg: '' });
     try {
       const { product } = await api.call<{ product: Product }>('mall', 'productDetail', { id });
       this.setData({ product, loading: false });
@@ -39,8 +49,12 @@ Page({
       // 读 feature flag：payment 关闭时只能"积分兑换"或"敬请期待"
       const flags = (getApp().globalData.config?.featureFlags ?? {}) as { payment?: boolean };
       this.setData({ canBuy: !!flags.payment });
-    } catch {
-      this.setData({ loading: false });
+    } catch (e) {
+      this.setData({
+        loading: false,
+        error: true,
+        errorMsg: (e as Error).message ?? '加载商品失败',
+      });
     }
   },
 

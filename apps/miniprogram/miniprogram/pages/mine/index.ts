@@ -25,6 +25,8 @@ Page({
       bindApp: false,
     } as FeatureFlagsConfig,
     isLogin: false,
+    error: false,
+    errorMsg: '',
   },
 
   onShow() {
@@ -32,22 +34,26 @@ Page({
   },
 
   async refresh() {
-    // 1. 快速：先用缓存 user
-    const cached = (app.globalData.user ?? wx.getStorageSync('currentUser')) as User | null;
-    if (cached) this.applyUser(cached);
-
-    // 2. 确保登录（未登录会自动跳登录 / 触发补资料弹窗）
+    this.setData({ error: false, errorMsg: '' });
     try {
+      // 1. 快速：先用缓存 user
+      const cached = (app.globalData.user ?? wx.getStorageSync('currentUser')) as User | null;
+      if (cached) this.applyUser(cached);
+
+      // 2. 确保登录（未登录会自动跳登录 / 触发补资料弹窗）
       await ensureLogin();
       this.applyUser(app.globalData.user!);
-    } catch {
-      // 静默
-    }
 
-    this.setData({
-      flags: (app.globalData.config?.featureFlags ?? this.data.flags) as FeatureFlagsConfig,
-      isLogin: !!app.globalData.user,
-    });
+      this.setData({
+        flags: (app.globalData.config?.featureFlags ?? this.data.flags) as FeatureFlagsConfig,
+        isLogin: !!app.globalData.user,
+      });
+    } catch (e) {
+      // ensureLogin 内部走 silent flow，未登录也可能是预期路径
+      // 只有带 err.message 的真错误才显示给用户
+      const msg = (e as Error).message;
+      if (msg) this.setData({ error: true, errorMsg: msg });
+    }
   },
 
   applyUser(user: User) {

@@ -21,11 +21,14 @@ Page({
     payAmount: '0.00',
     submitting: false,
     canPay: false, // 来自 feature flag
+    error: false,
+    errorMsg: '',
   },
 
   onLoad(query) {
     const productId = (query?.productId as string) ?? '';
     const quantity = Number((query?.quantity as string) ?? '1');
+    (this as unknown as { _productId: string })._productId = productId;
     this.setData({ quantity });
     this.loadProduct(productId);
 
@@ -33,13 +36,23 @@ Page({
     this.setData({ canPay: !!flags.payment });
   },
 
+  /** error-state 重试入口 */
+  loadRetry() {
+    const id = (this as unknown as { _productId?: string })._productId;
+    if (id) this.loadProduct(id);
+  },
+
   async loadProduct(id: string) {
+    this.setData({ error: false, errorMsg: '' });
     try {
       const { product } = await api.call<{ product: Product }>('mall', 'productDetail', { id });
       this.setData({ product });
       this.recalc();
-    } catch {
-      // ignore
+    } catch (e) {
+      this.setData({
+        error: true,
+        errorMsg: (e as Error).message ?? '加载商品失败',
+      });
     }
   },
 

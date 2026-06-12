@@ -1,4 +1,8 @@
 <view class="page">
+  <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="loadAll" />
+
+  <!-- 正常内容（error 时隐藏） -->
+  <block wx:if="{{!error}}">
   <!-- 今日打卡卡 -->
   <view class="checkin-card bg-white m-2 p-4 rounded-lg shadow">
     <view class="title-row">
@@ -98,4 +102,5 @@
       </view>
     </view>
   </view>
+  </block>
 </view>

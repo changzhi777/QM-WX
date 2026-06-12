@@ -1,4 +1,8 @@
 <view class="page">
+  <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="refreshUser" />
+
+  <!-- 正常内容（error 时隐藏） -->
+  <block wx:if="{{!error}}">
   <!-- 头像 + 昵称 -->
   <view class="header bg-white p-4">
     <view class="row" bindtap="onTapEditName">
@@ -62,4 +66,5 @@
     bind:close="onPopupClose"
     bind:success="onProfileUpdated"
   />
+  </block>
 </view>

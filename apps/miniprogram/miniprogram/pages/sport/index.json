@@ -1,4 +1,6 @@
 {
   "navigationBarTitleText": "运动",
-  "usingComponents": {}
+  "usingComponents": {
+    "error-state": "/components/error-state/index"
+  }
 }

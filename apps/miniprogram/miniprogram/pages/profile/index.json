@@ -1,6 +1,7 @@
 {
   "navigationBarTitleText": "个人资料",
   "usingComponents": {
-    "profile-popup": "/components/profile-popup/index"
+    "profile-popup": "/components/profile-popup/index",
+    "error-state": "/components/error-state/index"
   }
 }

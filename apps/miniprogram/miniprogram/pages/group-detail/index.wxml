@@ -12,6 +12,7 @@
   <view class="list bg-white m-2 rounded-lg shadow">
     <view wx:if="{{loading}}" class="loading">加载中...</view>
     <view wx:elif="{{members.length === 0}}" class="empty">暂无打卡数据</view>
+    <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="loadRanking" />
     <view
       class="rank-item"
       wx:for="{{members}}"

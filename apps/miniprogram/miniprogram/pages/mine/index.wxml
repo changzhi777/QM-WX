@@ -1,4 +1,8 @@
 <view class="page">
+  <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="refresh" />
+
+  <!-- 正常内容（error 时隐藏） -->
+  <block wx:if="{{!error}}">
   <!-- 头部：用户信息 -->
   <view class="header">
     <block wx:if="{{user}}">
@@ -99,4 +103,5 @@
   <view class="logout" wx:if="{{user}}" bindtap="onTapLogout">
     退出登录
   </view>
+  </block>
 </view>

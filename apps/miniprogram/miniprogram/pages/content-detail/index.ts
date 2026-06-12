@@ -21,6 +21,8 @@ Page({
   data: {
     content: null as Content | null,
     loading: true,
+    error: false,
+    errorMsg: '',
     showEnroll: false,
     form: { name: '', phone: '', remark: '' },
     submitting: false,
@@ -28,16 +30,29 @@ Page({
 
   onLoad(query) {
     const id = (query?.id as string) ?? '';
+    // 不放 data（避免污染视图层），用普通函数闭包
+    (this as unknown as { _detailId: string })._detailId = id;
     this.loadDetail(id);
   },
 
+  /** error-state 重试入口 */
+  loadRetry() {
+    const id = (this as unknown as { _detailId?: string })._detailId;
+    if (id) this.loadDetail(id);
+  },
+
   async loadDetail(id: string) {
+    this.setData({ loading: true, error: false, errorMsg: '' });
     try {
       const { content } = await api.call<{ content: Content }>('content', 'detail', { id });
       this.setData({ content, loading: false });
       wx.setNavigationBarTitle({ title: content.title });
-    } catch {
-      this.setData({ loading: false });
+    } catch (e) {
+      this.setData({
+        loading: false,
+        error: true,
+        errorMsg: (e as Error).message ?? '加载详情失败',
+      });
     }
   },
 

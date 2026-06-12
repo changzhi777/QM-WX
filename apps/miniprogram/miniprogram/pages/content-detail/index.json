@@ -1,4 +1,6 @@
 {
   "navigationBarTitleText": "详情",
-  "usingComponents": {}
+  "usingComponents": {
+    "error-state": "/components/error-state/index"
+  }
 }
