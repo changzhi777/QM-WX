@@ -37,7 +37,7 @@
       <button class="btn-primary" bindtap="onTapBuy">立即购买</button>
     </block>
     <block wx:else>
-      <button class="btn-primary" bindtap="onTapBuy">立即兑换（支付开通中）</button>
+      <button class="btn-primary" disabled>支付开通中，敬请期待</button>
     </block>
   </view>
 

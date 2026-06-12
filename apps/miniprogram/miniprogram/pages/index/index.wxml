@@ -1,4 +1,9 @@
 <view class="page">
+  <!-- Error 状态：加载失败时显示，可重试 -->
+  <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="loadData" />
+
+  <!-- 正常内容（error 时隐藏） -->
+  <block wx:if="{{!error}}">
   <!-- Hero -->
   <view class="hero bg-white p-4 m-2 rounded-lg shadow">
     <view class="text-xl">欢迎来到青沐</view>
@@ -54,6 +59,7 @@
       </view>
     </view>
   </feature-gate>
+  </block>
 
   <privacy-popup visible="{{showPrivacy}}" bind:agree="onPrivacyAgree" />
 </view>

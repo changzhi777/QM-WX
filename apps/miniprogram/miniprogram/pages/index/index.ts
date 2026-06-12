@@ -5,6 +5,8 @@ import { ensureLogin } from '../../utils/auth';
 Page({
   data: {
     loading: true,
+    error: false,
+    errorMsg: '',
     userStats: {
       totalDistance: 0,
       totalCheckins: 0,
@@ -36,7 +38,7 @@ Page({
   },
 
   async loadData() {
-    this.setData({ loading: true });
+    this.setData({ loading: true, error: false, errorMsg: '' });
     try {
       // 1. 确保登录（不强制）
       try {
@@ -64,8 +66,12 @@ Page({
         },
         loading: false,
       });
-    } catch {
-      this.setData({ loading: false });
+    } catch (e) {
+      this.setData({
+        loading: false,
+        error: true,
+        errorMsg: (e as Error).message ?? '加载首页数据失败',
+      });
     }
   },
 

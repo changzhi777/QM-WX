@@ -61,27 +61,17 @@ Page({
     wx.navigateTo({ url: '/pages/profile/index' });
   },
 
+  // 钱包/会员/绑定 APP 的入口在 WXML 已被 <feature-gate> 隐藏，
+  // 这里仅作 fallback（用户深链直访时）— 无需再次 flag 判断（WXML 层已守门）
   goWallet() {
-    if (!this.data.flags.wallet) {
-      wx.showToast({ title: '钱包功能开通中', icon: 'none' });
-      return;
-    }
     wx.navigateTo({ url: '/pages/wallet/index' });
   },
 
   goMembership() {
-    if (!this.data.flags.membershipPurchase) {
-      wx.showToast({ title: '会员购买即将上线', icon: 'none' });
-      return;
-    }
     wx.navigateTo({ url: '/pages/membership/index' });
   },
 
   goBindApp() {
-    if (!this.data.flags.bindApp) {
-      wx.showToast({ title: '敬请期待', icon: 'none' });
-      return;
-    }
     wx.navigateTo({ url: '/pages/bind-app/index' });
   },
 

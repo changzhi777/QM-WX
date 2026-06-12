@@ -3,6 +3,7 @@
   "enablePullDownRefresh": true,
   "usingComponents": {
     "feature-gate": "/components/feature-gate/index",
-    "privacy-popup": "/components/privacy-popup/index"
+    "privacy-popup": "/components/privacy-popup/index",
+    "error-state": "/components/error-state/index"
   }
 }
