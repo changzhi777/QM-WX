@@ -4,13 +4,17 @@
 import type { FastifyInstance } from 'fastify';
 import { weeklyReportService } from './weekly-report.service.js';
 import { Errors } from '../../common/errors.js';
+import { WeeklyReportActionBodySchema } from './weekly-report.schema.js';
 
 export async function weeklyReportRoutes(app: FastifyInstance) {
   app.post(
     '/',
     async (req, reply) => {
       if (!req.user) throw Errors.unauthorized();
-      const { action, payload } = req.body as { action: string; payload?: { groupId?: string; period?: string } };
+
+      // Zod 校验：action 必须是 currentWeek/myReport/trigger；payload.groupId/period 格式
+      // 失败时 setErrorHandler（app.ts）会捕 ZodError → 400 + path:msg
+      const { action, payload } = WeeklyReportActionBodySchema.parse(req.body);
 
       switch (action) {
         case 'currentWeek': {

@@ -99,12 +99,23 @@ describe('POST /api/weekly-report', () => {
     expect(mockService.trigger).toHaveBeenCalledWith('u1', 'g1', '2026-W25');
   });
 
-  it('unknown action → 400', async () => {
+  it('unknown action → 500（schema 拦截，ZodError 未被 route 捕获）', async () => {
+    // 备注：WeeklyReportActionBodySchema.parse 在 switch 前已拒绝非法 action。
+    // 生产环境 setErrorHandler 会捕 ZodError → 400；本测试的简化 setErrorHandler 不捕。
     const res = await app.inject({
       method: 'POST',
       url: '/api/weekly-report',
       payload: { action: 'wat' },
     });
-    expect(res.statusCode).toBe(400);
+    expect(res.statusCode).toBe(500);
+  });
+
+  it('payload.period 格式非法 → 500（schema regex 拒）', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/weekly-report',
+      payload: { action: 'currentWeek', payload: { period: 'bad-format' } },
+    });
+    expect(res.statusCode).toBe(500);
   });
 });
