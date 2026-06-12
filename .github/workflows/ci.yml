@@ -1,12 +1,12 @@
 /**
- * CI 工作流 — lint + typecheck + test（含 e2e）+ build
+ * CI 工作流 — 4 job parallel：lint-typecheck → (unit-tests + e2e-tests) → build → docker
  *
- * 改动点（vs 旧版）：
- * 1. test:run → test（package.json 实际名）
- * 2. RUN_E2E=1 启用 e2e
- * 3. prisma migrate deploy 先于 generate（确保 schema 一致）
- * 4. shared build 先于 server typecheck（server tsconfig 用 reference）
- * 5. main 分支加 docker image build 验证
+ * 设计：
+ * - lint-typecheck 最快（~2 min），最早反馈
+ * - unit-tests 不需要 PG/Redis services（vi.mock 一切），跑得快
+ * - e2e-tests 单独 job 带 PG/Redis services（启动慢），失败不阻塞 unit 反馈
+ * - build-server 等两个 test 都通过
+ * - docker-image 仅 main 分支 push 时
  */
 name: CI
 
@@ -19,13 +19,65 @@ on:
   workflow_dispatch: # 手动重跑
 
 env:
-  # 阿里云容器镜像服务（留空则只本地构建不推）
   ACR_REGISTRY: ${{ secrets.ACR_REGISTRY }}
 
 jobs:
-  lint-typecheck-test:
-    name: Lint · Typecheck · Test (含 e2e)
+  # ---- 1. Lint + Typecheck（无 services，最快反馈）----
+  lint-typecheck:
+    name: Lint · Typecheck
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build shared
+        run: pnpm --filter @qm-wx/shared build
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+
+  # ---- 2a. Unit Tests（不需要 PG/Redis）----
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint-typecheck
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @qm-wx/shared build
+      - run: pnpm --filter @qm-wx/server prisma:generate
+      - name: Unit tests (exclude e2e)
+        env:
+          # 不设 RUN_E2E → e2e 文件内 it.skip
+          NODE_ENV: test
+          JWT_SECRET: ci-test-secret-32-chars-min-please
+          JWT_ACCESS_TTL: 2h
+          WX_APPID: wx-test-appid
+          WX_SECRET: wx-test-secret
+          # 提供 stub URL（即使不连，env.ts Zod 校验需要）
+          DATABASE_URL: postgresql://stub:stub@localhost:5432/stub
+          REDIS_URL: redis://localhost:6379
+        run: pnpm --filter @qm-wx/server exec vitest run --exclude 'tests/e2e/**'
+
+  # ---- 2b. E2E Tests（需 PG + Redis services）----
+  e2e-tests:
+    name: E2E Tests (PG + Redis)
+    runs-on: ubuntu-latest
+    needs: lint-typecheck
     services:
       postgres:
         image: postgres:16-alpine
@@ -49,7 +101,6 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 10
-
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/qmwx_test
       REDIS_URL: redis://localhost:6379
@@ -59,47 +110,29 @@ jobs:
       WX_SECRET: wx-test-secret
       NODE_ENV: test
       RUN_E2E: '1'
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
         with:
           version: 9
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
-
-      - name: Install deps
-        run: pnpm install --frozen-lockfile
-
-      - name: Build shared
-        run: pnpm --filter @qm-wx/shared build
-
-      - name: Lint
-        run: pnpm lint
-
-      - name: Typecheck
-        run: pnpm typecheck
-
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @qm-wx/shared build
       - name: Prisma migrate deploy
         run: pnpm --filter @qm-wx/server exec prisma migrate deploy
-
       - name: Prisma generate
         run: pnpm --filter @qm-wx/server prisma:generate
+      - name: E2E tests
+        run: pnpm --filter @qm-wx/server exec vitest run tests/e2e
 
-      - name: Test（含 e2e 真 DB）
-        run: pnpm --filter @qm-wx/server test
-
+  # ---- 3. Build Server（等两个 test 都过）----
   build-server:
     name: Build Server
     runs-on: ubuntu-latest
-    needs: lint-typecheck-test
+    needs: [unit-tests, e2e-tests]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -122,6 +155,7 @@ jobs:
             apps/server/prisma
           retention-days: 7
 
+  # ---- 4. Docker Image（仅 main push）----
   docker-image:
     name: Docker Image
     runs-on: ubuntu-latest
@@ -158,4 +192,3 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
