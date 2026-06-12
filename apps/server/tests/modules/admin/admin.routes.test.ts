@@ -25,7 +25,7 @@ vi.mock('src/common/middleware/feature-gate.js', () => ({
   invalidateFeatureFlagsCache: () => mockInvalidate(),
 }));
 
-import { adminRoutes } from '../../../src/modules/admin/admin.routes.js';
+import { adminRoutes, invalidateAdminCache } from '../../../src/modules/admin/admin.routes.js';
 import { BusinessError } from '../../../src/common/errors.js';
 
 async function buildApp(opts: { openid?: string } = {}) {
@@ -52,6 +52,7 @@ describe('POST /api/admin', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    invalidateAdminCache(); // 避免测试间复用 admin 白名单缓存
     // 默认白名单包含 o-admin-1
     mockPrisma.appConfig.findUnique.mockResolvedValue({
       value: { openids: ['o-admin-1', 'o-admin-2'] },

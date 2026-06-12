@@ -54,6 +54,13 @@ export const LogMealInputSchema = z.object({
 });
 export type LogMealInput = z.infer<typeof LogMealInputSchema>;
 
+/** myMeals 查询：since/until 必须 YYYY-MM-DD */
+export const MyMealsInputSchema = z.object({
+  since: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+export type MyMealsInput = z.infer<typeof MyMealsInputSchema>;
+
 export const RecipeActionBodySchema = z.object({
   action: z.enum([
     'listRecipes',

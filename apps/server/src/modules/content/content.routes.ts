@@ -1,5 +1,9 @@
 /**
  * content module routes — POST /api/content
+ *
+ * list / detail 是公开端点（游客可看），enroll 需登录。
+ * 因走单 POST 入口 + action dispatch，无法让 auth 中间件按 action 分流，
+ * 所以整 endpoint 标 public，enroll 内部主动 jwtVerify。
  */
 import type { FastifyInstance } from 'fastify';
 import { contentService } from './content.service.js';
@@ -14,13 +18,13 @@ export async function contentRoutes(app: FastifyInstance) {
   app.post(
     '/',
     {
+      config: { public: true }, // list/detail 公开；enroll 内部自鉴权
     },
     async (req, reply) => {
       const { action, payload } = req.body as { action: string; payload?: unknown };
 
       switch (action) {
         case 'list': {
-          // list 公开（游客可看）
           const input = ContentListInputSchema.parse(payload ?? {});
           return { code: 0, data: await contentService.list(input) };
         }
@@ -31,6 +35,14 @@ export async function contentRoutes(app: FastifyInstance) {
         }
 
         case 'enroll': {
+          // 受保护 action：若上游未鉴权（public=true 跳过了 authPlugin），主动 jwtVerify
+          if (!req.user) {
+            try {
+              await req.jwtVerify();
+            } catch {
+              throw Errors.unauthorized();
+            }
+          }
           if (!req.user) throw Errors.unauthorized();
           const input = ContentEnrollInputSchema.parse(payload);
           return { code: 0, data: await contentService.enroll(req.user.id, input) };

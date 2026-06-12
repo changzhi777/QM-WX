@@ -69,9 +69,19 @@ const UpdateOrderStatusSchema = z.object({
 });
 
 async function isAdmin(openid: string): Promise<boolean> {
-  const row = await prisma.appConfig.findUnique({ where: { id: 'admin_whitelist' } });
-  const list = (row?.value as { openids?: string[] } | undefined)?.openids ?? [];
-  return list.includes(openid);
+  if (!_adminCache) {
+    const row = await prisma.appConfig.findUnique({ where: { id: 'admin_whitelist' } });
+    _adminCache = (row?.value as { openids?: string[] } | undefined)?.openids ?? [];
+  }
+  return _adminCache.includes(openid);
+}
+
+/** admin 白名单内存缓存，setConfig 改 admin_whitelist 时主动失效 */
+let _adminCache: string[] | null = null;
+
+/** 外部调用：清缓存，下次 isAdmin 查询时重读 DB */
+export function invalidateAdminCache(): void {
+  _adminCache = null;
 }
 
 export async function adminRoutes(app: FastifyInstance) {
@@ -141,9 +151,16 @@ export async function adminRoutes(app: FastifyInstance) {
             create: { id: input.id, value: input.value as never },
             update: { value: input.value as never },
           });
-          // feature_flags 变更时主动清缓存，无需重启
+          // feature_flags / admin_whitelist 变更时主动清缓存，无需重启
           if (input.id === 'feature_flags') {
             invalidateFeatureFlagsCache();
+          }
+          // admin_whitelist 通过 setConfig 修改时也要清 admin 缓存
+          // 但 setConfig schema 当前不允许 admin_whitelist（id enum 限定），
+          // 留口子：如未来 schema 扩展支持，立即生效
+          // @ts-expect-error narrowing for future expansion
+          if (input.id === 'admin_whitelist') {
+            invalidateAdminCache();
           }
           return { code: 0, data: { ok: true } };
         }

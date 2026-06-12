@@ -10,6 +10,7 @@ import {
   DishRecognizeInputSchema,
   ListRecipesInputSchema,
   LogMealInputSchema,
+  MyMealsInputSchema,
   NutritionSearchInputSchema,
   RecipeDetailInputSchema,
 } from './recipe.schema.js';
@@ -46,8 +47,11 @@ export async function recipeRoutes(app: FastifyInstance) {
         }
         case 'myMeals': {
           if (!req.user) throw Errors.unauthorized();
-          // TODO: parse since/until
-          return { code: 0, data: await recipeService.myMeals(req.user.id, '', '') };
+          const input = MyMealsInputSchema.parse(payload ?? {});
+          return {
+            code: 0,
+            data: await recipeService.myMeals(req.user.id, input.since ?? '', input.until ?? ''),
+          };
         }
         default:
           return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });

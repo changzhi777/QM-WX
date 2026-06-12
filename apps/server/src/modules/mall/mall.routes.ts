@@ -1,7 +1,11 @@
 /**
  * mall module routes — POST /api/mall
+ *
+ * listCategories / listProducts / productDetail 公开；
+ * createOrder / myOrders / cancelOrder 需登录。
+ * 整 endpoint 标 public，受保护 action 内部手工 jwtVerify。
  */
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { mallService } from './mall.service.js';
 import { orderService } from './order.service.js';
 import { Errors } from '../../common/errors.js';
@@ -14,10 +18,24 @@ import {
   CancelOrderInputSchema,
 } from './mall.schema.js';
 
+/** 受保护 action 共用的鉴权（若上游未鉴权则主动 jwtVerify） */
+async function requireLogin(req: FastifyRequest) {
+  if (!req.user) {
+    try {
+      await req.jwtVerify();
+    } catch {
+      throw Errors.unauthorized();
+    }
+  }
+  if (!req.user) throw Errors.unauthorized();
+  return req.user;
+}
+
 export async function mallRoutes(app: FastifyInstance) {
   app.post(
     '/',
     {
+      config: { public: true }, // 列表/详情公开；下单/我的订单/取消内部自鉴权
     },
     async (req, reply) => {
       const { action, payload } = req.body as { action: string; payload?: unknown };
@@ -36,19 +54,19 @@ export async function mallRoutes(app: FastifyInstance) {
           return { code: 0, data: await mallService.productDetail(input.id) };
         }
         case 'createOrder': {
-          if (!req.user) throw Errors.unauthorized();
+          const user = await requireLogin(req);
           const input = CreateOrderInputSchema.parse(payload);
-          return { code: 0, data: await orderService.create(req.user.id, input) };
+          return { code: 0, data: await orderService.create(user.id, input) };
         }
         case 'myOrders': {
-          if (!req.user) throw Errors.unauthorized();
+          const user = await requireLogin(req);
           const input = MyOrdersInputSchema.parse(payload ?? {});
-          return { code: 0, data: await orderService.myOrders(req.user.id, input) };
+          return { code: 0, data: await orderService.myOrders(user.id, input) };
         }
         case 'cancelOrder': {
-          if (!req.user) throw Errors.unauthorized();
+          const user = await requireLogin(req);
           const input = CancelOrderInputSchema.parse(payload);
-          return { code: 0, data: await orderService.cancel(req.user.id, input.orderId) };
+          return { code: 0, data: await orderService.cancel(user.id, input.orderId) };
         }
         default:
           return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
