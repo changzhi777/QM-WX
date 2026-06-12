@@ -25,6 +25,10 @@ const EnvSchema = z.object({
   WX_MCH_ID: z.string().optional(),
   WX_PAY_KEY: z.string().optional(),
   WX_NOTIFY_URL: z.string().url().optional(),
+  // V3 证书相关（开发期可空，wxpay service 内部 lazy 校验）
+  WX_MCH_SERIAL_NO: z.string().optional(),
+  WX_MCH_PRIVATE_KEY_PATH: z.string().optional(),
+  WX_PLAT_CERT_PATH: z.string().optional(),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

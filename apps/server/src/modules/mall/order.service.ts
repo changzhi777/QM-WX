@@ -12,6 +12,8 @@ import { prisma } from '../../infra/prisma.js';
 import { Errors } from '../../common/errors.js';
 import { configRepo } from '../app-config/app-config.repository.js';
 import { userRepo } from '../user/user.repository.js';
+import { unifiedOrder } from '../wxpay/wxpay.service.js';
+import type { UnifiedOrderResp } from '../wxpay/wxpay.schema.js';
 import type { CreateOrderInput, MyOrdersInput } from './mall.schema.js';
 
 /** 1 积分 = 0.01 元（仅用于积分全额兑换场景） */
@@ -49,6 +51,7 @@ export const orderService = {
     let pointsUsed = 0;
     let payAmount = totalAmount;
     let status: 'paid' | 'pending_pay' = 'pending_pay';
+    let payChannel: 'wxpay' | 'points' | null = null;
 
     if (input.pointsUsed > 0) {
       // 用户主动用积分
@@ -61,15 +64,21 @@ export const orderService = {
         pointsUsed = Math.ceil(totalAmount / POINTS_TO_YUAN); // 实际需要的积分
         payAmount = 0;
         status = 'paid';
+        payChannel = 'points';
       } else {
         // 部分积分抵扣
         pointsUsed = input.pointsUsed;
         payAmount = round2(totalAmount - pointsValue);
-        // 部分抵扣且 payment=OFF：仍生成 pending_pay 意向单
+        // 部分抵扣：还要付钱 → 走微信支付（payment=ON 时）
+        if (paymentOn) payChannel = 'wxpay';
+        // 部分抵扣且 payment=OFF：仍生成 pending_pay 意向单（payChannel=null）
       }
     } else if (!paymentOn) {
       // payment=OFF 且无积分抵扣：直接生成 pending_pay 意向单
       status = 'pending_pay';
+    } else {
+      // payment=ON 且无积分抵扣：走微信支付
+      payChannel = 'wxpay';
     }
 
     // 4. 事务：写 order + 扣积分（如有）
@@ -89,12 +98,13 @@ export const orderService = {
           pointsUsed,
           payAmount: payAmount as never,
           status,
+          payChannel,
           address: input.address as never,
         },
         include: { items: true },
       });
 
-      // 扣积分
+      // 扣积分（仅积分全额兑换场景）
       if (pointsUsed > 0) {
         await userRepo.addPoints(tx, userId, -pointsUsed, 'order_deduct', o.id);
       }
@@ -102,16 +112,47 @@ export const orderService = {
       return o;
     });
 
+    // 5. 微信统一下单（在事务外，外部 IO 不可在 DB 事务内）
+    let wxpayParams: UnifiedOrderResp | null = null;
+    if (payChannel === 'wxpay' && payAmount > 0) {
+      // description 取商品名拼接（最长 127 字节）
+      const desc = items.map((i) => i.name).join('、').slice(0, 127);
+      wxpayParams = await unifiedOrder({
+        outTradeNo: order.id,
+        description: `青沐-${desc}`,
+        totalFen: Math.round(payAmount * 100),
+        openid: user.openid,
+      });
+      // 把 prepayId 落库（回调验签 / admin 查订单时用）
+      await prisma.order.update({
+        where: { id: order.id },
+        data: { prepayId: wxpayParams.prepayId },
+      });
+    }
+
     return {
       orderId: order.id,
       totalAmount: totalAmount.toFixed(2),
       pointsUsed,
       payAmount: payAmount.toFixed(2),
       status,
+      payChannel,
+      // 前端 wx.requestPayment 用的 payParams
+      payParams: wxpayParams
+        ? {
+            timeStamp: wxpayParams.timestamp,
+            nonceStr: wxpayParams.nonceStr,
+            package: wxpayParams.packageStr,
+            signType: 'RSA' as const,
+            paySign: wxpayParams.sign,
+          }
+        : null,
       message:
         status === 'paid'
           ? '兑换成功，客服会安排发货'
-          : '订单已创建，支付功能开通中，客服会联系您',
+          : payChannel === 'wxpay'
+            ? '订单已创建，请完成支付'
+            : '订单已创建，支付功能开通中，客服会联系您',
     };
   },
 

@@ -22,6 +22,7 @@ import { walletRoutes } from './modules/wallet/wallet.routes.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { uploadRoutes } from './modules/upload/upload.routes.js';
+import { wxpayRoutes } from './modules/wxpay/wxpay.routes.js';
 import { weeklyReportRoutes } from './modules/weekly-report/weekly-report.routes.js';
 import { deviceRoutes } from './modules/device/device.routes.js';
 import { recipeRoutes } from './modules/recipe/recipe.routes.js';
@@ -79,6 +80,7 @@ export async function buildApp() {
   await app.register(recipeRoutes, { prefix: '/api/recipe' });
   await app.register(ludongRoutes, { prefix: '/api/ludong' });
   await app.register(adminRoutes, { prefix: '/api/admin' });
+  await app.register(wxpayRoutes, { prefix: '/api/wxpay' });
 
   // ===== 统一错误处理 =====
   app.setErrorHandler((err, req, reply) => {

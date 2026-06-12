@@ -120,6 +120,11 @@ model Order {
   status      String      @default("pending_pay") // pending_pay | paid | shipped | done | cancelled
   payment     Json?
   address     Json?
+  // Phase 4 微信支付 V3 新增
+  payChannel      String? // wxpay | points（默认 null）
+  prepayId        String?
+  wxTransactionId String? @unique // 幂等 key
+  paidAt          DateTime?
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
