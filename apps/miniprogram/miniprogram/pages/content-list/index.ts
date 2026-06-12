@@ -32,6 +32,8 @@ Page({
     tabIndex: 0,
     list: [] as ContentItem[],
     loading: true,
+    error: false,
+    errorMsg: '',
     page: 1,
     hasMore: true,
   },
@@ -54,9 +56,15 @@ Page({
     this.load(true);
   },
 
+  /** error-state 重试入口 */
+  loadRetry() {
+    this.setData({ list: [], page: 1, hasMore: true });
+    this.load(true);
+  },
+
   async load(reset: boolean) {
     if (this.data.loading) return;
-    this.setData({ loading: true });
+    this.setData({ loading: true, error: false, errorMsg: '' });
 
     const page = reset ? 1 : this.data.page;
     const type = TABS[this.data.tabIndex].type || undefined;
@@ -76,8 +84,12 @@ Page({
         hasMore: newList.length < result.total,
         loading: false,
       });
-    } catch {
-      this.setData({ loading: false });
+    } catch (e) {
+      this.setData({
+        loading: false,
+        error: true,
+        errorMsg: (e as Error).message ?? '加载内容失败',
+      });
     }
   },
 

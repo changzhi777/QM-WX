@@ -23,6 +23,8 @@ Page({
     keyword: '',
     list: [] as Product[],
     loading: true,
+    error: false,
+    errorMsg: '',
     page: 1,
     hasMore: true,
   },
@@ -37,6 +39,12 @@ Page({
 
   onReachBottom() {
     if (this.data.hasMore && !this.data.loading) this.load(false);
+  },
+
+  /** error-state 重试入口（仅重置分页，不清空筛选条件） */
+  loadRetry() {
+    this.setData({ list: [], page: 1, hasMore: true });
+    this.load(true);
   },
 
   onCatChange(e: WechatMiniprogram.CustomEvent) {
@@ -56,7 +64,7 @@ Page({
 
   async load(reset: boolean) {
     if (this.data.loading) return;
-    this.setData({ loading: true });
+    this.setData({ loading: true, error: false, errorMsg: '' });
 
     const page = reset ? 1 : this.data.page;
     const category = this.data.catIndex === 0 ? undefined : CATEGORIES[this.data.catIndex];
@@ -74,8 +82,12 @@ Page({
         hasMore: newList.length < result.total,
         loading: false,
       });
-    } catch {
-      this.setData({ loading: false });
+    } catch (e) {
+      this.setData({
+        loading: false,
+        error: true,
+        errorMsg: (e as Error).message ?? '加载商品失败',
+      });
     }
   },
 

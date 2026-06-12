@@ -46,5 +46,6 @@
     <view wx:if="{{loading}}" class="loading">加载中...</view>
     <view wx:elif="{{!hasMore && list.length > 0}}" class="end">— 没有更多了 —</view>
     <view wx:elif="{{!loading && list.length === 0}}" class="empty">暂无内容</view>
+    <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="loadRetry" />
   </view>
 </view>

@@ -1,5 +1,6 @@
 <view class="page">
-  <view class="empty" wx:if="{{!loading && list.length === 0}}">暂无订单</view>
+  <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="load" />
+  <view class="empty" wx:if="{{!loading && !error && list.length === 0}}">暂无订单</view>
   <view
     class="card bg-white m-2 p-4 rounded-lg shadow"
     wx:for="{{list}}"
