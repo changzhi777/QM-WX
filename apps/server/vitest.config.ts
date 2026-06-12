@@ -21,6 +21,14 @@ export default defineConfig({
       reporter: ['text', 'html', 'lcov'],
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.test.ts', 'src/server.ts'],
+      // 阈值：略低于当前实测值，给后续重构留点缓冲空间
+      // 当前实测：lines 71 / funcs 61 / branches 87
+      thresholds: {
+        lines: 65,
+        functions: 58,
+        branches: 75,
+        statements: 65,
+      },
     },
   },
 });
