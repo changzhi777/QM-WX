@@ -82,4 +82,28 @@ describe('code2Session', () => {
     await expect(code2Session('c')).rejects.toThrow(/微信登录失败/);
     expect(mockSetex).not.toHaveBeenCalled();
   });
+
+  it('fetch 抛错（网络失败/DNS 解析失败）→ 错误冒泡', async () => {
+    mockFetch.mockRejectedValue(new Error('ECONNREFUSED'));
+    await expect(code2Session('c')).rejects.toThrow(/ECONNREFUSED/);
+    expect(mockSetex).not.toHaveBeenCalled();
+  });
+
+  it('微信响应 JSON 解析失败 → 错误冒泡', async () => {
+    mockFetch.mockResolvedValue({
+      json: async () => {
+        throw new Error('Unexpected token');
+      },
+    });
+    await expect(code2Session('c')).rejects.toThrow(/Unexpected token/);
+    expect(mockSetex).not.toHaveBeenCalled();
+  });
+
+  it('Redis setex 失败 → 错误冒泡（缓存失败不应静默）', async () => {
+    mockFetch.mockResolvedValue({
+      json: async () => ({ openid: 'o1', session_key: 'sk' }),
+    });
+    mockSetex.mockRejectedValueOnce(new Error('Redis connection lost'));
+    await expect(code2Session('c')).rejects.toThrow(/Redis connection lost/);
+  });
 });
