@@ -22,12 +22,12 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.test.ts', 'src/server.ts'],
       // 阈值：略低于当前实测值，给后续重构留点缓冲空间
-      // 当前实测：lines 83.77 / funcs 68.14 / branches 87.01
+      // 当前实测：lines 85.87 / funcs 82.3 / branches 87.59
       thresholds: {
-        lines: 80,
-        functions: 65,
+        lines: 82,
+        functions: 80,
         branches: 80,
-        statements: 80,
+        statements: 82,
       },
     },
   },
