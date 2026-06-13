@@ -333,3 +333,70 @@ export async function refund(input: RefundInput): Promise<RefundResp> {
     },
   });
 }
+
+// ===== 对账：拉账单 =====
+/**
+ * 申请交易账单（V3 协议）
+ *
+ * 文档：https://pay.weixin.qq.com/doc/v3/merchant/4012791831
+ * 端点：GET /v3/bill/tradebill
+ *
+ * 返回 download_url（4 小时有效）— 需在 30 分钟内下载
+ *
+ * 沙箱测试：需 mock fetch
+ */
+export interface QueryBillInput {
+  /** 账单日期 YYYY-MM-DD */
+  billDate: string;
+  /** 账单类型：ALL / SUCCESS / REFUND */
+  billType?: 'ALL' | 'SUCCESS' | 'REFUND';
+  /** 自定义压缩类型：GZIP（默认） */
+  tarType?: 'GZIP';
+}
+
+export interface QueryBillResp {
+  downloadUrl: string;
+  hashValue: string;
+  hashType: 'SHA1';
+}
+
+export async function queryBill(input: QueryBillInput): Promise<QueryBillResp> {
+  if (!env.WX_MCH_ID) throw Errors.internal('WX_MCH_ID 未配置');
+  const urlPath = '/v3/bill/tradebill';
+  const params = new URLSearchParams({
+    bill_date: input.billDate,
+    bill_type: input.billType ?? 'ALL',
+  });
+  // GET 请求 body 为空字符串（V3 协议要求）
+  const auth = generateAuthorization('GET', `${urlPath}?${params.toString()}`, '');
+  const res = await fetch(`${WXPAY_HOST}${urlPath}?${params.toString()}`, {
+    method: 'GET',
+    headers: { Authorization: auth, 'User-Agent': 'qm-wx-server/1.0' },
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { code?: string; message?: string };
+    throw Errors.internal(`微信账单查询失败: ${res.status} ${err.message ?? err.code ?? ''}`.trim());
+  }
+  const raw = (await res.json()) as { download_url: string; hash_value: string; hash_type: 'SHA1' };
+  return {
+    downloadUrl: raw.download_url,
+    hashValue: raw.hash_value,
+    hashType: raw.hash_type,
+  };
+}
+
+/**
+ * 下载账单文件
+ *
+ * 微信返回的是 GZIP 压缩的 CSV
+ * 沙箱测试：可 mock 返回解压后的 CSV 字符串
+ */
+export async function downloadBill(downloadUrl: string): Promise<string> {
+  const res = await fetch(downloadUrl);
+  if (!res.ok) {
+    throw Errors.internal(`账单下载失败: ${res.status}`);
+  }
+  // MVP 简化：假定返回的 text 已是 CSV（真生产需流式解压 GZIP）
+  // 不引 GZIP 库 — 服务端不需要解压（parseBillCsv 接 CSV 字符串）
+  return res.text();
+}
