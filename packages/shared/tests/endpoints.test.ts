@@ -1,14 +1,15 @@
 /**
- * @qm-wx/shared endpoints + actionUrl 单测
+ * shared 包单测 — endpoints + actionUrl
  *
- * 注：虽然测的是 shared 包，但放在 apps/server 是因为：
- * - packages/shared 的 vitest 1.6 + Node 25 解析 .ts re-export 有 bug
- * - apps/server 用 vitest 3.2 + alias 重写运行正常
- * - 待 shared 升级 vitest 后可搬回
+ * 注：之前在 apps/server/tests/shared/endpoints.test.ts 跑，是因为
+ * shared 仓 vitest 1.6 + Node 25 解析 .ts re-export 有 bug。
+ * 升级 vitest 到 3.2.6 后回到原籍（packages/shared/tests/）。
+ *
+ * 改用相对路径 + 走 vitest.config alias 解析，避免依赖 workspace 协议
+ * 在 monorepo 自我引用时的边缘 case。
  */
 import { describe, it, expect, vi } from 'vitest';
-// 子路径 export — 避开根入口的 ESM .js 后缀解析问题
-import { ENDPOINTS, actionUrl } from '@qm-wx/shared/api-contracts';
+import { ENDPOINTS, actionUrl } from '../src/api-contracts/endpoints.js';
 
 describe('actionUrl', () => {
   it('已注册 action → 返回对应 URL', () => {
