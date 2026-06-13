@@ -142,30 +142,33 @@ describe.skipIf(skip)('mall 全链路 e2e', () => {
     expect(myOrder).toBeDefined();
     expect(myOrder.status).toBe('paid');
 
-    // === ⑥ cancelOrder ===
+    // === ⑥ V1 业务收紧：paid 订单不能直接 cancel（必须走 refund 流程）===
     const cancelRes = await app.inject({
       method: 'POST',
       url: '/api/mall',
       headers: { authorization: `Bearer ${token}` },
       payload: { action: 'cancelOrder', payload: { orderId } },
     });
-    expect(cancelRes.statusCode).toBe(200);
-    expect(cancelRes.json().code).toBe(0);
+    // 期望 4xx + illegal_state 错误
+    expect(cancelRes.statusCode).toBeGreaterThanOrEqual(400);
+    const cancelBody = cancelRes.json() as { message?: string; msg?: string };
+    expect(cancelBody.message ?? cancelBody.msg).toMatch(/illegal_state: paid → cancelled/);
 
-    // === ⑦ 验证：积分回退 + PointsRecord 有 refund 记录 ===
+    // === ⑦ 验证：order 保持 paid（状态机拒绝，未被改写）===
+    const orderAfterCancel = await prisma.order.findUnique({ where: { id: orderId } });
+    expect(orderAfterCancel?.status, 'paid 订单应保持 paid（业务收紧）').toBe('paid');
+
+    // === ⑧ 验证：积分**没有**回退（因为 cancel 被拒绝）===
     const userAfterCancel = await prisma.user.findUnique({ where: { id: userId } });
-    expect(userAfterCancel?.points, '积分应回退').toBe(500);
+    expect(userAfterCancel?.points, '积分应保持 400（cancel 拒绝，未回退 100）').toBe(400);
 
-    // refund 用的是 type='order_deduct' source + 正 change（区别于下单时的负 change）
+    // === ⑨ 验证：只有 1 条 PointsRecord（只有下单扣，没有取消退 — 因为 cancel 被拒）===
     const records = await prisma.pointsRecord.findMany({
       where: { userId, refId: orderId },
       orderBy: { createdAt: 'asc' },
     });
-    expect(records.length, '应有 2 条 PointsRecord：下单扣 + 取消退').toBeGreaterThanOrEqual(2);
-    const deduct = records.find((r) => r.change < 0);
-    const refund = records.find((r) => r.change > 0);
-    expect(deduct?.change, '下单扣 100 分').toBe(-100);
-    expect(refund?.change, '取消退 100 分').toBe(100);
+    expect(records.length, '应有 1 条 PointsRecord：仅下单扣（cancel 被拒，无退）').toBe(1);
+    expect(records[0].change, '下单扣 100 分').toBe(-100);
   });
 
   itE2E('安全：未登录访问 myOrders → 401', async () => {
