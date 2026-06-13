@@ -84,6 +84,20 @@ export async function wxpayRoutes(app: FastifyInstance) {
         // 同 transactionId 已处理，直接返回 200 让微信停止重试
         return { code: 0, data: { ok: true, dedup: true } };
       }
+      // 关单保护：若订单已 cancelled（被超时关单）→ 不复活、记录、返回成功（让微信停止重试）
+      if (order.status === 'cancelled') {
+        return {
+          code: 0,
+          data: { ok: true, ignoredState: 'order_cancelled' },
+        };
+      }
+      // 兜底：只接受 pending_pay 状态的订单进入支付成功路径
+      if (order.status !== 'pending_pay') {
+        return {
+          code: 0,
+          data: { ok: true, ignoredState: `order_status_${order.status}` },
+        };
+      }
 
       if (!isPaySuccess(resource)) {
         // 非成功状态（REFUND/REVERSED/CLOSED 等）暂不处理，仅记录

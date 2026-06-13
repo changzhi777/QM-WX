@@ -130,6 +130,13 @@ export const orderService = {
       });
     }
 
+    // 6. 入队超时关单（30 分钟未支付自动 cancel）
+    //    仅在 pending_pay 时才有意义（积分单直接 paid，不入队）
+    if (status === 'pending_pay') {
+      const { enqueueCloseOrder } = await import('../../jobs/queue.js');
+      await enqueueCloseOrder(order.id);
+    }
+
     return {
       orderId: order.id,
       totalAmount: totalAmount.toFixed(2),

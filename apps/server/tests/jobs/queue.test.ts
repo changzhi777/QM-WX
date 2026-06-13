@@ -104,8 +104,8 @@ function getWorkerDelta(action: () => void | Promise<void>) {
 }
 
 describe('模块导入副作用', () => {
-  it('import 后已构造 1 个 Queue（weekly-report, prefix=qmwx, 默认 jobOptions）', () => {
-    expect(state.queueCtorCalls).toBe(1);
+  it('import 后已构造 2 个 Queue（weekly-report + close-order, prefix=qmwx, 默认 jobOptions）', () => {
+    expect(state.queueCtorCalls).toBe(2);
     const opts = state.queues[0]._opts as Record<string, unknown>;
     expect(opts).toMatchObject({
       prefix: 'qmwx',
@@ -119,8 +119,9 @@ describe('模块导入副作用', () => {
 
   it('导出 weeklyReportQueue 单例', () => {
     expect(weeklyReportQueue).toBeDefined();
-    expect(state.queues).toHaveLength(1);
+    expect(state.queues).toHaveLength(2);
     expect(state.queues[0].name).toBe('weekly-report');
+    expect(state.queues[1].name).toBe('close-order');
   });
 });
 
@@ -162,13 +163,13 @@ describe('startJobs / stopJobs 生命周期', () => {
     vi.clearAllMocks();
   });
 
-  it('startJobs() 第一次：启 worker（concurrency=2）', async () => {
+  it('startJobs() 第一次：启 2 个 worker（weekly-report concurrency=2 + close-order concurrency=4）', async () => {
     const before = state.workerCtorCalls;
     await startJobs();
-    expect(state.workerCtorCalls - before).toBe(1);
+    expect(state.workerCtorCalls - before).toBe(2);
 
     const opts = state.workers[state.workerCtorCalls - 1]._opts as Record<string, unknown>;
-    expect(opts).toMatchObject({ prefix: 'qmwx', concurrency: 2 });
+    expect(opts).toMatchObject({ prefix: 'qmwx', concurrency: 4 });
   });
 
   it('startJobs() 重复调用：幂等（worker 不重复启）', async () => {
@@ -176,7 +177,7 @@ describe('startJobs / stopJobs 生命周期', () => {
     await startJobs();
     await startJobs();
     await startJobs();
-    expect(state.workerCtorCalls - before).toBe(1);
+    expect(state.workerCtorCalls - before).toBe(2);
   });
 
   it('stopJobs() 后 startJobs() 可再次启 worker', async () => {
@@ -184,7 +185,7 @@ describe('startJobs / stopJobs 生命周期', () => {
     await startJobs();
     await stopJobs();
     await startJobs();
-    expect(state.workerCtorCalls - before).toBe(2);
+    expect(state.workerCtorCalls - before).toBe(4);
   });
 
   it('stopJobs() 关 worker + queue', async () => {
