@@ -14,6 +14,7 @@ import { join } from 'node:path';
 import { env } from './config/env.js';
 import { authPlugin } from './common/middleware/auth.js';
 import { featureGatePlugin } from './common/middleware/feature-gate.js';
+import { registerDocsRoutes } from './common/docs.js';
 import { userRoutes } from './modules/user/user.routes.js';
 import { sportRoutes } from './modules/sport/sport.routes.js';
 import { mallRoutes } from './modules/mall/mall.routes.js';
@@ -58,6 +59,9 @@ export async function buildApp() {
   // ===== 业务中间件 =====
   await app.register(authPlugin);
   await app.register(featureGatePlugin);
+
+  // ===== API 文档（OpenAPI 3.1 + Scalar UI）=====
+  await registerDocsRoutes(app);
 
   // ===== 健康检查 =====
   app.get('/health', { config: { public: true } }, async () => ({
