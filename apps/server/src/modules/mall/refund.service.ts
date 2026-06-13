@@ -5,9 +5,9 @@
  * 1. 读 order（事务外）— 校验 status='paid' + 拿 userId / payAmount
  * 2. 调 wxpay.refund（事务外 — 外部 IO 不可在 DB 事务内）
  * 3. 事务内：
- *    - assertTransition('paid', 'refunded')（⑤统一替换时会改为 'refunding' 过渡）
- *    - tx.order.update({ status: 'refunded', refundWxTransactionId, refundedAt })
- *    - walletService.consumeInTx(tx, userId, -refundFen/100, 'refund', orderId, refundId)
+ *    - assertTransition('paid', 'refunded')
+ *    - tx.order.update({ status: 'refunded' })
+ *    - walletService.consumeInTx(tx, userId, -refundYuan, 'refund', orderId, refundResp.refundId)
  *
  * 业务规则：
  * - 限定 paid 状态 — 已 shipping / done 不退（V1 范围）
