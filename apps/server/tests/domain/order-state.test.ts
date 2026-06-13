@@ -14,7 +14,7 @@ import {
 const ALL: OrderStatus[] = [
   'pending_pay',
   'paid',
-  'shipping',
+  'shipped',
   'done',
   'cancelled',
   'refunding',
@@ -28,11 +28,14 @@ describe('canTransition — 合法转换', () => {
   it('pending_pay → cancelled（用户取消 / 超时关单）', () => {
     expect(canTransition('pending_pay', 'cancelled')).toBe(true);
   });
-  it('paid → shipping', () => {
-    expect(canTransition('paid', 'shipping')).toBe(true);
+  it('paid → shipped', () => {
+    expect(canTransition('paid', 'shipped')).toBe(true);
   });
   it('paid → refunding（admin 发起退款）', () => {
     expect(canTransition('paid', 'refunding')).toBe(true);
+  });
+  it('paid → refunded（MVP 简化：微信 refund 同步成功直跳）', () => {
+    expect(canTransition('paid', 'refunded')).toBe(true);
   });
   it('refunding → refunded（微信 refund 成功）', () => {
     expect(canTransition('refunding', 'refunded')).toBe(true);
@@ -40,14 +43,14 @@ describe('canTransition — 合法转换', () => {
   it('refunding → paid（微信 refund 失败回滚）', () => {
     expect(canTransition('refunding', 'paid')).toBe(true);
   });
-  it('shipping → done', () => {
-    expect(canTransition('shipping', 'done')).toBe(true);
+  it('shipped → done', () => {
+    expect(canTransition('shipped', 'done')).toBe(true);
   });
 });
 
 describe('canTransition — 非法转换', () => {
-  it('pending_pay 不能直接 → shipping', () => {
-    expect(canTransition('pending_pay', 'shipping')).toBe(false);
+  it('pending_pay 不能直接 → shipped', () => {
+    expect(canTransition('pending_pay', 'shipped')).toBe(false);
   });
   it('pending_pay 不能直接 → refunded', () => {
     expect(canTransition('pending_pay', 'refunded')).toBe(false);
@@ -70,11 +73,11 @@ describe('canTransition — 非法转换', () => {
       expect(canTransition('refunded', to), `refunded → ${to}`).toBe(false);
     }
   });
-  it('shipping 不能再 → paid（不允许回退）', () => {
-    expect(canTransition('shipping', 'paid')).toBe(false);
+  it('shipped 不能再 → paid（不允许回退）', () => {
+    expect(canTransition('shipped', 'paid')).toBe(false);
   });
-  it('shipping 不能再 → refunding（已发货不能直接退，需先走 done/协商）', () => {
-    expect(canTransition('shipping', 'refunding')).toBe(false);
+  it('shipped 不能再 → refunding（已发货不能直接退，需先走 done/协商）', () => {
+    expect(canTransition('shipped', 'refunding')).toBe(false);
   });
 });
 
@@ -106,10 +109,10 @@ describe('isTerminal — 终态判断', () => {
     expect(isTerminal('cancelled')).toBe(true);
     expect(isTerminal('refunded')).toBe(true);
   });
-  it('pending_pay / paid / shipping / refunding 不是终态', () => {
+  it('pending_pay / paid / shipped / refunding 不是终态', () => {
     expect(isTerminal('pending_pay')).toBe(false);
     expect(isTerminal('paid')).toBe(false);
-    expect(isTerminal('shipping')).toBe(false);
+    expect(isTerminal('shipped')).toBe(false);
     expect(isTerminal('refunding')).toBe(false);
   });
 });

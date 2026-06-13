@@ -114,32 +114,37 @@ describe('orderService.create', () => {
 });
 
 describe('orderService.cancel', () => {
-  it('已扣积分的 paid 订单 → 取消时退积分', async () => {
-    const order = {
-      id: 'o1', userId: 'u1', status: 'paid', pointsUsed: 500,
-    };
-    mockedPrisma.order.findUnique.mockResolvedValue(order as never);
-
+  it('pending_pay 订单 → 取消（无积分退还）', async () => {
+    mockedPrisma.order.findUnique.mockResolvedValue({
+      id: 'o1', userId: 'u1', status: 'pending_pay', pointsUsed: 0,
+    } as never);
     await orderService.cancel('u1', 'o1');
-
-    // 退积分 + 改状态
-    expect(tx.user.update).toHaveBeenCalled(); // userRepo.addPoints
-    expect(mockedPrisma.pointsRecord.create).toHaveBeenCalled(); // 流水
-    // order 状态置 cancelled
-    // 注：这里 addPoints 走 user.update + pointsRecord.create
+    // 状态机放行，order.update 调到 status='cancelled'
+    expect(mockedPrisma.order.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: 'cancelled' }) }),
+    );
   });
 
-  it('非 pending/paid 状态 → 不可取消', async () => {
+  it('paid 订单 → 不可取消（V1 收紧：必须走 refund 流程）', async () => {
+    mockedPrisma.order.findUnique.mockResolvedValue({
+      id: 'o1', userId: 'u1', status: 'paid', pointsUsed: 0,
+    } as never);
+    await expect(orderService.cancel('u1', 'o1')).rejects.toThrow(/illegal_state: paid → cancelled/);
+  });
+
+  it('非 pending_pay 状态（shipped）→ 不可取消（状态机白名单拒绝）', async () => {
     mockedPrisma.order.findUnique.mockResolvedValue({
       id: 'o1', userId: 'u1', status: 'shipped', pointsUsed: 0,
     } as never);
 
-    await expect(orderService.cancel('u1', 'o1')).rejects.toThrow('不可取消');
+    await expect(orderService.cancel('u1', 'o1')).rejects.toThrow(
+      /illegal_state: shipped → cancelled/,
+    );
   });
 
   it('非本人订单 → 403', async () => {
     mockedPrisma.order.findUnique.mockResolvedValue({
-      id: 'o1', userId: 'other', status: 'paid', pointsUsed: 0,
+      id: 'o1', userId: 'other', status: 'pending_pay', pointsUsed: 0,
     } as never);
 
     await expect(orderService.cancel('u1', 'o1')).rejects.toThrow('不是你的订单');

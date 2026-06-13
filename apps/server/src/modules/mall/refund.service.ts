@@ -18,6 +18,7 @@ import { prisma } from '../../infra/prisma.js';
 import { Errors } from '../../common/errors.js';
 import { refund as wxpayRefund } from '../wxpay/wxpay.service.js';
 import { walletService } from '../wallet/wallet.service.js';
+import { assertTransition, type OrderStatus } from '../../domain/order-state.js';
 
 export const refundService = {
   /**
@@ -76,8 +77,8 @@ export const refundService = {
     // 3. 事务内写库：order → refunded + wallet 扣减
     //    consumeInTx 已支持 type='refund'，单一入口不走重复逻辑
     await prisma.$transaction(async (tx) => {
-      // 状态机：⑤统一替换时会接入 assertTransition
-      // 当前 paid → refunded 走硬编码（替换时改）
+      // 状态机：paid → refunded 走白名单（白名单允许直跳）
+      assertTransition(order.status as OrderStatus, 'refunded');
       await tx.order.update({
         where: { id: order.id },
         data: {

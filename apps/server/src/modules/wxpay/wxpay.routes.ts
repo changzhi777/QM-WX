@@ -12,6 +12,7 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { prisma } from '../../infra/prisma.js';
 import { walletRepo } from '../wallet/wallet.repo.js';
+import { assertTransition, type OrderStatus } from '../../domain/order-state.js';
 import {
   isPaySuccess,
   verifyAndDecryptNotify,
@@ -110,6 +111,8 @@ export async function wxpayRoutes(app: FastifyInstance) {
       // 2. Order 标 paid
       // 3. 用户后续可用余额支付（走 walletService.consumeInTx 扣减）
       await prisma.$transaction(async (tx) => {
+        // 状态机：pending_pay → paid（已在上面 if 校验过，此处再过 assertTransition 双保险）
+        assertTransition(order.status as OrderStatus, 'paid');
         const wallet = await walletRepo.ensureWalletInTx(tx, order.userId);
 
         // 微信回调 amount.total 是分，转元

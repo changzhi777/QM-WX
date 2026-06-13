@@ -13,6 +13,7 @@ import { Errors } from '../../common/errors.js';
 import { configRepo } from '../app-config/app-config.repository.js';
 import { userRepo } from '../user/user.repository.js';
 import { unifiedOrder } from '../wxpay/wxpay.service.js';
+import { assertTransition, type OrderStatus } from '../../domain/order-state.js';
 import type { UnifiedOrderResp } from '../wxpay/wxpay.schema.js';
 import type { CreateOrderInput, MyOrdersInput } from './mall.schema.js';
 
@@ -191,9 +192,8 @@ export const orderService = {
     const order = await prisma.order.findUnique({ where: { id: orderId } });
     if (!order) throw Errors.notFound('订单不存在');
     if (order.userId !== userId) throw Errors.forbidden('不是你的订单');
-    if (order.status !== 'pending_pay' && order.status !== 'paid') {
-      throw Errors.badRequest('该状态订单不可取消');
-    }
+    // 状态机：仅 pending_pay 可取消（paid 必须走 refund 流程）
+    assertTransition(order.status as OrderStatus, 'cancelled');
 
     // 取消时退积分（如已扣）
     await prisma.$transaction(async (tx) => {

@@ -7,7 +7,7 @@
  * 状态语义（V1 + V2 stub）：
  * - pending_pay   待支付（订单创建默认）
  * - paid          已支付（微信 notify 确认后）
- * - shipping      已发货（管理员确认发货后，V1 占位）
+ * - shipped      已发货（管理员确认发货后，V1 占位）
  * - done          已完成（用户确认收货 / 物流签收后，V1 占位）
  * - cancelled     已取消（用户主动取消 / 超时关单）
  * - refunding     退款中（admin 发起退款、等待微信返回）
@@ -16,18 +16,19 @@
  * 转换白名单（其它所有组合 → 抛 illegal_state）：
  * - pending_pay → paid（wxpay notify 成功）
  * - pending_pay → cancelled（用户取消 / 超时关单）
- * - paid → shipping（admin 发货，V1 占位）
+ * - paid → shipped（admin 发货，V1 占位）
  * - paid → refunding（admin 发起退款）
- * - refunding → refunded（wxpay refund API 成功）
+ * - paid → refunded（**MVP 简化**：微信 refund 同步成功，refunding 是无意义过渡态）
+ * - refunding → refunded（保留：真生产异步退款可走此路径）
  * - refunding → paid（wxpay refund API 失败，回滚）
- * - shipping → done（用户确认收货，V1 占位）
+ * - shipped → done（用户确认收货，V1 占位）
  */
 import { BusinessError } from '../common/errors.js';
 
 export type OrderStatus =
   | 'pending_pay'
   | 'paid'
-  | 'shipping'
+  | 'shipped'
   | 'done'
   | 'cancelled'
   | 'refunding'
@@ -35,8 +36,8 @@ export type OrderStatus =
 
 const TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   pending_pay: ['paid', 'cancelled'],
-  paid: ['shipping', 'refunding'],
-  shipping: ['done'],
+  paid: ['shipped', 'refunding', 'refunded'], // MVP: 直跳 refunded
+  shipped: ['done'],
   done: [], // 终态
   cancelled: [], // 终态
   refunding: ['refunded', 'paid'], // 成功→refunded / 失败→回滚 paid
