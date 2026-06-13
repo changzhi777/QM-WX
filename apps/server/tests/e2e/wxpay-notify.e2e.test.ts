@@ -34,6 +34,7 @@ vi.mock('../../src/infra/redis.js', () => ({
 }));
 
 let orderId: string;
+let userId: string;
 
 // ===== mock verifyAndDecryptNotify 直接返回固定 resource（跳过真实验签） =====
 const mockResource: WxpayNotifyDecrypted = {
@@ -76,7 +77,7 @@ describe.skipIf(skip)('wxpay 支付回调 e2e（mock 微信回调）', () => {
       payload: { action: 'login', payload: { code: E2E_USER_CODE } },
     });
     expect(login.statusCode).toBe(200);
-    const userId = login.json().data.user.id;
+    userId = login.json().data.user.id;
 
     await prisma.product.upsert({
       where: { id: E2E_PRODUCT_ID },
@@ -117,6 +118,7 @@ describe.skipIf(skip)('wxpay 支付回调 e2e（mock 微信回调）', () => {
   afterAll(async () => {
     // 强清
     await prisma.walletTransaction.deleteMany({ where: { orderId } });
+    await prisma.wallet.deleteMany({ where: { userId } });
     await prisma.orderItem.deleteMany({ where: { orderId } });
     await prisma.order.delete({ where: { id: orderId } }).catch(() => {});
     await prisma.product.delete({ where: { id: E2E_PRODUCT_ID } }).catch(() => {});
@@ -124,7 +126,7 @@ describe.skipIf(skip)('wxpay 支付回调 e2e（mock 微信回调）', () => {
     await app.close();
   });
 
-  itE2E('首次回调：Order.status=paid + wxTransactionId 落库', async () => {
+  itE2E('首次回调：Order.status=paid + wxTransactionId 落库 + WalletTransaction 写入', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/wxpay',
@@ -145,7 +147,20 @@ describe.skipIf(skip)('wxpay 支付回调 e2e（mock 微信回调）', () => {
     expect(order?.status).toBe('paid');
     expect(order?.wxTransactionId).toBe(E2E_TXN_ID);
     expect(order?.paidAt).toBeTruthy();
-    // MVP 阶段 WalletTransaction 写入留 TODO Phase 4.1
+
+    // 钱包账本：余额自增 + 流水落库
+    const wallet = await prisma.wallet.findUnique({ where: { userId } });
+    expect(Number(wallet?.balance)).toBe(10); // 1000 分 → 10 元
+    const txns = await prisma.walletTransaction.findMany({ where: { orderId } });
+    expect(txns).toHaveLength(1);
+    expect(txns[0]).toMatchObject({
+      type: 'recharge',
+      orderId,
+      wxTransactionId: E2E_TXN_ID,
+      status: 'success',
+    });
+    // amount 是 Decimal(10,2)，读出来是字符串 "10"
+    expect(String(txns[0].amount)).toBe('10');
   });
 
   itE2E('幂等：同 transactionId 第二次回调 → data.dedup=true，paidAt 不变', async () => {

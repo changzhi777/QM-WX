@@ -11,6 +11,7 @@
  */
 import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { prisma } from '../../infra/prisma.js';
+import { walletRepo } from '../wallet/wallet.repo.js';
 import {
   isPaySuccess,
   verifyAndDecryptNotify,
@@ -89,8 +90,37 @@ export async function wxpayRoutes(app: FastifyInstance) {
         return { code: 0, data: { ok: true, ignoredState: resource.trade_state } };
       }
 
-      // 事务内更新 Order + 写 WalletTransaction
+      // 事务内：写 Order.paid + 增加钱包余额 + 记 WalletTransaction
+      // 业务模型（"先充值后消费"模式）：
+      // 1. 微信收款入账到钱包（balance += 实际支付金额）
+      // 2. Order 标 paid
+      // 3. 用户后续可用余额支付（走 walletService.consumeInTx 扣减）
       await prisma.$transaction(async (tx) => {
+        const wallet = await walletRepo.ensureWalletInTx(tx, order.userId);
+
+        // 微信回调 amount.total 是分，转元
+        const amountYuan = resource.amount.total / 100;
+
+        // 余额自增（Prisma 原生 increment 原子操作）
+        await tx.wallet.update({
+          where: { id: wallet.id },
+          data: { balance: { increment: amountYuan } },
+        });
+
+        // 写钱包流水（type=recharge 标识"来自微信充值"）
+        await tx.walletTransaction.create({
+          data: {
+            userId: order.userId,
+            walletId: wallet.id,
+            type: 'recharge',
+            amount: amountYuan,
+            orderId: order.id,
+            wxTransactionId: resource.transaction_id,
+            status: 'success',
+          },
+        });
+
+        // 标 Order 已支付
         await tx.order.update({
           where: { id: order.id },
           data: {
@@ -99,8 +129,6 @@ export async function wxpayRoutes(app: FastifyInstance) {
             paidAt: new Date(),
           },
         });
-        // MVP 阶段：钱包交易流水留 TODO（需先 ensureWallet 拿真实 walletId）
-        // TODO Phase 4.1: 写 walletTransaction
       });
 
       return { code: 0, data: { ok: true } };
