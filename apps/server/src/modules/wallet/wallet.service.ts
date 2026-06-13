@@ -14,6 +14,7 @@
  */
 import { prisma } from '../../infra/prisma.js';
 import { Errors } from '../../common/errors.js';
+import { walletRepo } from './wallet.repo.js';
 import type { RechargeInput, TransactionsInput } from './wallet.schema.js';
 
 export const walletService = {
@@ -21,7 +22,7 @@ export const walletService = {
    * 获取当前用户钱包（首次访问自动建空钱包）
    */
   async get(userId: string) {
-    const wallet = await this.ensureWallet(userId);
+    const wallet = await walletRepo.ensureWallet(userId);
     return {
       balance: wallet.balance.toString(),
       status: wallet.status,
@@ -33,7 +34,7 @@ export const walletService = {
    * 流水分页
    */
   async transactions(userId: string, input: TransactionsInput) {
-    await this.ensureWallet(userId);
+    await walletRepo.ensureWallet(userId);
     const [list, total] = await Promise.all([
       prisma.walletTransaction.findMany({
         where: { userId },
@@ -100,15 +101,6 @@ export const walletService = {
         wxTransactionId,
         status: 'success',
       },
-    });
-  },
-
-  /** 自动建空钱包 */
-  async ensureWallet(userId: string) {
-    const existing = await prisma.wallet.findUnique({ where: { userId } });
-    if (existing) return existing;
-    return prisma.wallet.create({
-      data: { userId, balance: 0, status: 'active' },
     });
   },
 };

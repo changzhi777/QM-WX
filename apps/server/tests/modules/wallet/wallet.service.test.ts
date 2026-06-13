@@ -6,7 +6,8 @@
  * - transactions：分页 + 序列化金额
  * - recharge：V1.0 强制 featureDisabled
  * - consumeInTx：余额不足 / 钱包冻结 / 正常扣减
- * - ensureWallet：已存在 vs 新建
+ *
+ * ensureWallet 已迁出到 wallet.repo.test.ts
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createPrismaMock } from '../../helpers/mockPrisma.js';
@@ -160,24 +161,5 @@ describe('walletService.consumeInTx', () => {
         status: 'success',
       }),
     });
-  });
-});
-
-describe('walletService.ensureWallet', () => {
-  it('已存在 → 不创建', async () => {
-    mocks.prisma.wallet.findUnique.mockResolvedValue({ id: 'w1' });
-    const result = await walletService.ensureWallet('u1');
-    expect(result).toEqual({ id: 'w1' });
-    expect(mocks.prisma.wallet.create).not.toHaveBeenCalled();
-  });
-
-  it('不存在 → 创建', async () => {
-    mocks.prisma.wallet.findUnique.mockResolvedValue(null);
-    mocks.prisma.wallet.create.mockResolvedValue({ id: 'w2' });
-    const result = await walletService.ensureWallet('u1');
-    expect(mocks.prisma.wallet.create).toHaveBeenCalledWith({
-      data: { userId: 'u1', balance: 0, status: 'active' },
-    });
-    expect(result).toEqual({ id: 'w2' });
   });
 });
