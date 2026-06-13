@@ -50,3 +50,42 @@ export const WxpayNotifyDecryptedSchema = z.object({
   success_time: z.string().optional(),
 });
 export type WxpayNotifyDecrypted = z.infer<typeof WxpayNotifyDecryptedSchema>;
+
+/** 退款请求 input（内部 service 用） */
+export const RefundInputSchema = z.object({
+  /** 商户订单号（青沐侧唯一 — 用 Order.id） */
+  outTradeNo: z.string().min(1).max(32),
+  /** 商户退款单号（青沐侧唯一 — 生成 cuid 或 ref-{orderId}） */
+  outRefundNo: z.string().min(1).max(64),
+  /** 原订单总金额（**分** — 整数，避免浮点） */
+  totalFen: z.number().int().positive().max(100_000_000),
+  /** 退款金额（**分** — 整数） */
+  refundFen: z.number().int().positive().max(100_000_000),
+  /** 退款原因（可选） */
+  reason: z.string().max(80).optional(),
+  /** 退款结果通知 URL（可选 — 暂不订阅，简化 MVP） */
+  notifyUrl: z.string().url().optional(),
+});
+export type RefundInput = z.infer<typeof RefundInputSchema>;
+
+/** 退款响应 */
+export const RefundRespSchema = z.object({
+  /** 微信退款单号 */
+  refundId: z.string(),
+  outRefundNo: z.string(),
+  outTradeNo: z.string(),
+  transactionId: z.string(),
+  channel: z.string().optional(),
+  userReceivedAccount: z.string().optional(),
+  successTime: z.string().optional(),
+  createTime: z.string().optional(),
+  /** SUCCESS / PROCESSING / ABNORMAL / CLOSED */
+  status: z.string(),
+  amount: z.object({
+    refund: z.number().int(),
+    total: z.number().int(),
+    payerTotal: z.number().int().optional(),
+    settlementTotal: z.number().int().optional(),
+  }),
+});
+export type RefundResp = z.infer<typeof RefundRespSchema>;

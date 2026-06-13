@@ -20,8 +20,12 @@ import { Errors } from '../../common/errors.js';
 import {
   UnifiedOrderInputSchema,
   WxpayNotifyDecryptedSchema,
+  RefundInputSchema,
+  RefundRespSchema,
   type UnifiedOrderInput,
   type UnifiedOrderResp,
+  type RefundInput,
+  type RefundResp,
   type WxpayNotifyDecrypted,
 } from './wxpay.schema.js';
 
@@ -245,4 +249,87 @@ export function toOutTradeNo(orderId: string): string {
     return createHash('sha256').update(orderId).digest('hex').slice(0, 32);
   }
   return orderId;
+}
+
+/**
+ * 申请退款（V3 协议）
+ *
+ * 文档：https://pay.weixin.qq.com/doc/v3/merchant/4012791865
+ * 端点：POST /v3/refund/domestic/refunds
+ *
+ * 注意：
+ * - 必须在 prisma.$transaction 之外调用（外部 IO）
+ * - 双向证书：商户私钥签名（已有），平台证书**不需要**（outgoing call）
+ * - 沙箱测试：vi.mock('undici' / node-fetch) 拦截 fetch
+ */
+export async function refund(input: RefundInput): Promise<RefundResp> {
+  const valid = RefundInputSchema.parse(input);
+  if (!env.WX_MCH_ID) {
+    throw Errors.internal('WX_MCH_ID 未配置');
+  }
+  if (valid.refundFen > valid.totalFen) {
+    throw Errors.badRequest(`refundFen (${valid.refundFen}) > totalFen (${valid.totalFen})`);
+  }
+
+  const urlPath = '/v3/refund/domestic/refunds';
+  const body = JSON.stringify({
+    out_trade_no: valid.outTradeNo,
+    out_refund_no: valid.outRefundNo,
+    reason: valid.reason ?? '用户申请退款',
+    ...(valid.notifyUrl ? { notify_url: valid.notifyUrl } : {}),
+    amount: {
+      refund: valid.refundFen,
+      total: valid.totalFen,
+      currency: 'CNY',
+    },
+  });
+
+  const auth = generateAuthorization('POST', urlPath, body);
+  const res = await fetch(`${WXPAY_HOST}${urlPath}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: auth,
+      'User-Agent': 'qm-wx-server/1.0',
+    },
+    body,
+  });
+
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { code?: string; message?: string };
+    throw Errors.internal(
+      `微信退款失败: ${res.status} ${err.code ?? ''} ${err.message ?? ''}`.trim(),
+    );
+  }
+
+  const raw = (await res.json()) as {
+    refund_id: string;
+    out_refund_no: string;
+    out_trade_no: string;
+    transaction_id: string;
+    channel?: string;
+    user_received_account?: string;
+    success_time?: string;
+    create_time?: string;
+    status: string;
+    amount: { refund: number; total: number; payer_total?: number; settlement_total?: number };
+  };
+
+  return RefundRespSchema.parse({
+    refundId: raw.refund_id,
+    outRefundNo: raw.out_refund_no,
+    outTradeNo: raw.out_trade_no,
+    transactionId: raw.transaction_id,
+    channel: raw.channel,
+    userReceivedAccount: raw.user_received_account,
+    successTime: raw.success_time,
+    createTime: raw.create_time,
+    status: raw.status,
+    amount: {
+      refund: raw.amount.refund,
+      total: raw.amount.total,
+      payerTotal: raw.amount.payer_total,
+      settlementTotal: raw.amount.settlement_total,
+    },
+  });
 }
