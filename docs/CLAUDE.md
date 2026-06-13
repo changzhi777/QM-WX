@@ -30,6 +30,7 @@
 | [CI.md](CI.md) | CI/CD 流程（GitHub Actions + Docker + ACR） | ✅ 当前有效 |
 | [STAGING_DEPLOY.md](STAGING_DEPLOY.md) | Staging 部署手册（ECS/ACR/Secrets/故障排查） | ✅ 当前有效 |
 | [SUBMIT-CHECKLIST.md](SUBMIT-CHECKLIST.md) | 小程序提交前检查清单 | ✅ 当前有效 |
+| [**PHASE-4-2-PREP.md**](PHASE-4-2-PREP.md) | **Phase 4.1 → 4.2 切真生产 playbook**（商户号/证书/env 模板/监控/回滚/9 项 checklist） | ✅ **新增** |
 
 ---
 

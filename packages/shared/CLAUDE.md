@@ -1,6 +1,7 @@
 # packages/shared — 前后端共享层
 
 > 📍 面包屑：`QM-WX/` → [`根 CLAUDE.md`](../../CLAUDE.md) → **packages/shared/**（这里）
+> 最近更新：2026-06-13（vitest 1.6 → 3.2.6 升级 + endpoints.test 迁回原籍）
 
 ---
 
@@ -49,17 +50,21 @@ import {} from '@qm-wx/shared/api-contracts';
 ## 📦 依赖
 
 - **运行时**：`zod`（schema 定义 + 类型推导）
-- **开发**：`typescript` `vitest`
+- **开发**：`typescript` `vitest@^3.2.6` `@vitest/coverage-v8@^3.2.6`
 
 ---
 
 ## 🧪 测试
 
 ```bash
-pnpm test              # 单次跑
-pnpm typecheck         # 类型检查
+pnpm test              # vitest run — 5 passed
+pnpm typecheck         # tsc --noEmit
 pnpm build             # tsc -p tsconfig.build.json → dist/
 ```
+
+> ⚠️ **vitest 配置**：`vitest.config.ts` 锚定 `^(\.{1,2}\/.+)\.js$` 避免误伤 vitest 自身
+> chunk（vitest 1.6 时代 root .js alias 误伤导致 `Cannot find module 'dist/spy.js'`）。
+> 详见 [[phase-c-ci-complete]] / `memory/` 相关条目。
 
 ---
 
@@ -76,6 +81,8 @@ pnpm build             # tsc -p tsconfig.build.json → dist/
 - ✅ 类型导出（从 Zod schema 推导）
 - ✅ 构建产物 `dist/`（.js + .d.ts + .map）
 - ✅ 前后端共用（后端通过 `workspace:*` 引用，小程序通过构建后产物引用）
+- ✅ `api-contracts/endpoints.ts` 补 4 缺口（方案 B）+ `actionUrl(module, action)` 工具
+- ✅ `endpoints.test.ts` 5 测试（vitest 3.2.6 跑通）
 
 ---
 
