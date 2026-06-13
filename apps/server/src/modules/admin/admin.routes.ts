@@ -10,11 +10,13 @@
  * - setConfig          { id: 'feature_flags' | 'member_levels' | 'points_rules', value }
  * - listOrders         { status?, page?, pageSize? }
  * - updateOrderStatus  { orderId, status }
+ * - refundOrder        { orderId, amountFen?, reason? }
  * - listAdmins         {}
  */
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../../infra/prisma.js';
+import { refundService } from '../mall/refund.service.js';
 import { Errors } from '../../common/errors.js';
 import { featureGatePlugin, invalidateFeatureFlagsCache } from '../../common/middleware/feature-gate.js';
 import { CONTENT_TYPES } from '../content/content.schema.js';
@@ -66,6 +68,13 @@ const ListOrdersSchema = z.object({
 const UpdateOrderStatusSchema = z.object({
   orderId: z.string().min(1),
   status: z.enum(['pending_pay', 'paid', 'shipped', 'done', 'cancelled']),
+});
+
+const RefundOrderSchema = z.object({
+  orderId: z.string().min(1),
+  /** 退款金额（分）— 缺省 = order.payAmount 全额 */
+  amountFen: z.number().int().positive().max(10_000_000).optional(),
+  reason: z.string().max(80).optional(),
 });
 
 async function isAdmin(openid: string): Promise<boolean> {
@@ -221,6 +230,17 @@ export async function adminRoutes(app: FastifyInstance) {
               updatedAt: updated.updatedAt.toISOString(),
             },
           };
+        }
+
+        case 'refundOrder': {
+          const input = RefundOrderSchema.parse(payload);
+          const result = await refundService.refundOrder({
+            orderId: input.orderId,
+            amountFen: input.amountFen,
+            reason: input.reason,
+            refundedBy: req.user.openid,
+          });
+          return { code: 0, data: result };
         }
 
         default:
