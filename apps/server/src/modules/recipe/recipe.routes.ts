@@ -50,7 +50,7 @@ export async function recipeRoutes(app: FastifyInstance) {
           const input = MyMealsInputSchema.parse(payload ?? {});
           return {
             code: 0,
-            data: await recipeService.myMeals(req.user.id, input.since ?? '', input.until ?? ''),
+            data: await recipeService.myMeals(req.user.id, input),
           };
         }
         default:
