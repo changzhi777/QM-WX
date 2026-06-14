@@ -310,6 +310,10 @@ graph TD
 
 ## 📌 当前未决事项
 
+> 📦 **版权**：湖南青沐生命科技有限公司（Hunan Qingmu Life Technology Co., Ltd.）
+> 🏷️ **版本管理**：`git tag v{MAJOR}.{MINOR}.{PATCH}` 打在每个 commit 段最后。**约定：每次 commit 段 PATCH 自动 +1**（bug 修 / 文档 / 重构 / 测试补漏都算）。
+> 当前 tag：`v0.1.0`（首版 2026-06-14 落定）。详细规则见 [`CHANGELOG.md` 顶部"版本规则"段](CHANGELOG.md)。
+
 1. ✅ **业务方向** — 青沐·大健康生活方式平台（已确认）
 2. ✅ **后端选型** — Node.js + TypeScript（已确认 2026-06-11）
 3. ✅ **后端细分选型** — Fastify 4 + Prisma + BullMQ（已确认）

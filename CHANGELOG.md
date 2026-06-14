@@ -6,6 +6,22 @@
 
 ---
 
+## 📋 版本规则（约定 2026-06-14）
+
+**Semantic Versioning**：`MAJOR.MINOR.PATCH`
+
+- **MAJOR**（1.0 → 2.0）：架构变更 / 不兼容 API / 数据模型 breaking
+- **MINOR**（0.1 → 0.2）：新功能 / 兼容 / 用户可见增强
+- **PATCH**（0.1.0 → 0.1.1）：bug 修 / 文档 / 重构 / 测试补漏 — **本仓约定：每次 commit 段结束自动 +1**
+
+**Tag 规则**：
+- 主仓 `qingmu/qm-wx`：`git tag v{MAJOR}.{MINOR}.{PATCH}`，tag 打在每个 commit 段最后
+- 独立仓 `qingmu/qm-admin`：同步独立管理
+
+**当前版本**：`V0.1.0`（首版）
+
+---
+
 ## CT400 · V1.0 初始化（已落）
 
 - ✅ monorepo 骨架：pnpm workspaces + 共享 TS / ESLint / Prettier

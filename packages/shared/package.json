@@ -1,8 +1,10 @@
 {
   "name": "@qm-wx/shared",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "type": "module",
+  "author": "湖南青沐生命科技有限公司",
+  "license": "MIT",
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "exports": {

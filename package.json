@@ -1,8 +1,11 @@
 {
   "name": "qm-wx",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "private": true,
   "description": "青沐生命科技微信小程序 + Node 后端 monorepo",
+  "author": "湖南青沐生命科技有限公司 (Hunan Qingmu Life Technology Co., Ltd.)",
+  "license": "MIT",
+  "copyright": "© 2026 湖南青沐生命科技有限公司",
   "packageManager": "pnpm@9.0.0",
   "engines": {
     "node": ">=20.0.0",
