@@ -13,6 +13,7 @@ import { Errors } from '../../common/errors.js';
 import { sportRepo } from './sport.repository.js';
 import { userRepo } from '../user/user.repository.js';
 import { configRepo } from '../app-config/app-config.repository.js';
+import { Cache } from '../../infra/cache.js';
 import { POINTS_RULES_DEFAULT, type MemberLevel } from '@qm-wx/shared';
 import type {
   CheckinInput,
@@ -23,6 +24,10 @@ import type {
   QuitGroupInput,
 } from './sport.schema.js';
 import { CheckinInputSchema } from './sport.schema.js';
+
+/** sport.today 缓存 TTL：60s（打卡后 60s 内可能仍看到旧态，可接受） */
+const TODAY_CACHE_TTL_SEC = 60;
+const todayCacheKey = (userId: string, date: string) => `sport:today:${userId}:${date}`;
 
 // ===== 时区辅助：取"今天"用东八区 =====
 function todayCN(): string {
@@ -43,24 +48,32 @@ function periodSince(period: 'week' | 'month' | 'year' | 'all'): Date {
 
 export const sportService = {
   /**
-   * 今日打卡状态
+   * 今日打卡状态（带缓存）
+   *
+   * 缓存策略：Cache.wrap + 60s TTL
+   * - 命中：~0.5ms（避免每次进入小程序都打 DB）
+   * - 未命中：1 DB + 写回缓存
+   * - 写操作（checkin）成功后 del key 精准失效，不等 TTL
+   * - cache fail-open：Redis 挂掉时静默降级到直查 DB（业务不阻塞）
    */
   async today(userId: string) {
     const date = todayCN();
-    const checkin = await sportRepo.findTodayCheckin(userId, date);
-    return {
-      date,
-      done: !!checkin,
-      checkin: checkin
-        ? {
-            distance: checkin.distance,
-            durationSec: checkin.durationSec,
-            pace: checkin.pace,
-            points: checkin.points,
-            createdAt: checkin.createdAt.toISOString(),
-          }
-        : null,
-    };
+    return Cache.wrap(todayCacheKey(userId, date), TODAY_CACHE_TTL_SEC, async () => {
+      const checkin = await sportRepo.findTodayCheckin(userId, date);
+      return {
+        date,
+        done: !!checkin,
+        checkin: checkin
+          ? {
+              distance: checkin.distance,
+              durationSec: checkin.durationSec,
+              pace: checkin.pace,
+              points: checkin.points,
+              createdAt: checkin.createdAt.toISOString(),
+            }
+          : null,
+      };
+    });
   },
 
   /**
@@ -108,6 +121,10 @@ export const sportService = {
       });
       await userRepo.addPoints(tx, userId, points, 'checkin');
     });
+
+    // 5. 精准失效今日缓存（不等 TTL 过期）
+    //    在事务外执行：缓存失败不阻塞业务返回值
+    await Cache.del(todayCacheKey(userId, date));
 
     return { points, todayDone: true, date };
   },

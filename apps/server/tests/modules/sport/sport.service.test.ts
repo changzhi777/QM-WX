@@ -37,6 +37,25 @@ vi.mock('src/infra/prisma.js', () => {
   };
 });
 
+// Mock Redis — Cache.wrap / Cache.del 需要 redis.get/set/del
+// 用内存 Map 模拟，get 返字符串（Cache 会 JSON.parse）
+const _cacheStore = new Map<string, string>();
+vi.mock('src/infra/redis.js', () => ({
+  redis: {
+    get: vi.fn(async (k: string) => _cacheStore.get(k) ?? null),
+    set: vi.fn(async (k: string, v: string) => {
+      _cacheStore.set(k, v);
+      return 'OK';
+    }),
+    del: vi.fn(async (k: string) => {
+      const had = _cacheStore.has(k);
+      _cacheStore.delete(k);
+      return had ? 1 : 0;
+    }),
+    scan: vi.fn(async () => ['0', []] as [string, string[]]),
+  },
+}));
+
 import { prisma } from 'src/infra/prisma.js';
 import { sportService } from 'src/modules/sport/sport.service.js';
 
@@ -220,5 +239,99 @@ describe('sportService.createGroup', () => {
     const result = await sportService.createGroup('u1', { name: '新群' }, '昵称');
     expect(result.role).toBe('owner');
     expect(result.name).toBe('新群');
+  });
+});
+
+// ===== V0.1.5 增：Cache.wrap 接入 today 行为 =====
+describe('sportService.today（带缓存）', () => {
+  const USER_ID = 'u1';
+
+  beforeEach(() => {
+    _cacheStore.clear();
+  });
+
+  it('首次调用 → miss → 走 sportRepo + 回填缓存', async () => {
+    mockedPrisma.checkin.findFirst.mockResolvedValue({
+      id: 'c1',
+      userId: USER_ID,
+      groupId: null,
+      date: '2026-06-15',
+      distance: 5,
+      durationSec: 1800,
+      pace: 6,
+      heartRate: null,
+      cadence: null,
+      points: 5,
+      createdAt: new Date('2026-06-15T08:00:00Z'),
+    } as never);
+
+    const result = await sportService.today(USER_ID);
+
+    expect(result.done).toBe(true);
+    expect(result.checkin?.distance).toBe(5);
+    expect(mockedPrisma.checkin.findFirst).toHaveBeenCalledTimes(1);
+    // 缓存已回填（key 含 userId + date）
+    expect(_cacheStore.size).toBeGreaterThanOrEqual(1);
+    const cached = _cacheStore.get('qmwx:cache:sport:today:u1:2026-06-15');
+    expect(cached).toBeDefined();
+    expect(JSON.parse(cached!)).toMatchObject({ done: true, checkin: { distance: 5 } });
+  });
+
+  it('二次调用 → 命中缓存 → 不再调 sportRepo', async () => {
+    // 预热缓存（模拟上次调用的产物）
+    _cacheStore.set(
+      'qmwx:cache:sport:today:u1:2026-06-15',
+      JSON.stringify({ date: '2026-06-15', done: true, checkin: { distance: 5, durationSec: 1800, pace: 6, points: 5, createdAt: '2026-06-15T08:00:00.000Z' } }),
+    );
+
+    const result = await sportService.today(USER_ID);
+
+    expect(result.done).toBe(true);
+    expect(result.checkin?.distance).toBe(5);
+    // 命中：sportRepo 一次都没调
+    expect(mockedPrisma.checkin.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('今日未打卡 → done=false + checkin=null', async () => {
+    mockedPrisma.checkin.findFirst.mockResolvedValue(null);
+    const result = await sportService.today(USER_ID);
+    expect(result.done).toBe(false);
+    expect(result.checkin).toBeNull();
+  });
+});
+
+describe('sportService.checkin → 写后精准失效今日缓存', () => {
+  const USER_ID = 'u1';
+
+  beforeEach(() => {
+    _cacheStore.clear();
+  });
+
+  it('打卡成功 → 删 sport:today:{userId}:{date} 缓存（不等 TTL）', async () => {
+    // 预热：模拟用户 1 分钟前看过 today（done=false）
+    const todayKey = 'qmwx:cache:sport:today:u1:2026-06-15';
+    _cacheStore.set(todayKey, JSON.stringify({ date: '2026-06-15', done: false, checkin: null }));
+
+    mockedPrisma.checkin.findFirst.mockResolvedValue(null); // 今日未打卡
+    tx.user.findUniqueOrThrow.mockResolvedValue({ id: USER_ID, points: 100, stats: {} });
+
+    await sportService.checkin(USER_ID, { distance: 5 });
+
+    // 缓存已被精准失效
+    expect(_cacheStore.has(todayKey)).toBe(false);
+  });
+
+  it('打卡失败（已打卡） → 缓存不动', async () => {
+    const todayKey = 'qmwx:cache:sport:today:u1:2026-06-15';
+    _cacheStore.set(todayKey, JSON.stringify({ date: '2026-06-15', done: true, checkin: {} }));
+
+    mockedPrisma.checkin.findFirst.mockResolvedValue({ id: 'c1' } as never); // 今日已打卡
+
+    await expect(
+      sportService.checkin(USER_ID, { distance: 5 }),
+    ).rejects.toThrow('今日已打卡');
+
+    // 缓存未动（事务回滚 → 不该失效缓存）
+    expect(_cacheStore.has(todayKey)).toBe(true);
   });
 });
