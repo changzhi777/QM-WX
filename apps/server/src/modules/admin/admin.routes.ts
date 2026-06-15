@@ -17,6 +17,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../../infra/prisma.js';
 import { refundService } from '../mall/refund.service.js';
+import { invalidateProductsCache } from '../mall/mall.service.js';
 import { Errors } from '../../common/errors.js';
 import { featureGatePlugin, invalidateFeatureFlagsCache } from '../../common/middleware/feature-gate.js';
 import { CONTENT_TYPES } from '../content/content.schema.js';
@@ -158,6 +159,9 @@ export async function adminRoutes(app: FastifyInstance) {
           const product = input.id
             ? await prisma.product.update({ where: { id: input.id }, data })
             : await prisma.product.create({ data });
+          // V0.1.6: 写后抹掉所有 listProducts 缓存（分页/分类/品牌/关键词组合）
+          // 失败静默 — 商品写成功是大事，缓存清理失败不等
+          await invalidateProductsCache();
           return { code: 0, data: { id: product.id } };
         }
 

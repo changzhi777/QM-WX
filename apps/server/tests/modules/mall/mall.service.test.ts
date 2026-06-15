@@ -3,7 +3,7 @@
  *
  * 覆盖：
  * - listCategories: includeCount=true → groupBy；false → distinct
- * - listProducts: 分页 + 多过滤 + 价格序列化
+ * - listProducts: 分页 + 多过滤 + 价格序列化（V0.1.6 增 Cache.wrap 行为）
  * - productDetail: 不存在 / 已下架 → notFound；正常 → 序列化
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -34,10 +34,54 @@ vi.mock('src/common/errors.js', () => ({
   },
 }));
 
-import { mallService } from '../../../src/modules/mall/mall.service.js';
+// V0.1.6: Mock Redis — Cache.wrap / delByPattern 需要
+// 用 vi.hoisted 让 vi.mock 工厂在 import 之前就拿到引用（避免 const TDZ）
+const _redisMockState = vi.hoisted(() => {
+  const cacheStore = new Map<string, string>();
+  return {
+    cacheStore,
+    redis: {
+      get: vi.fn(),
+      set: vi.fn(),
+      del: vi.fn(),
+      scan: vi.fn(),
+    },
+  };
+});
+
+vi.mock('src/infra/redis.js', () => ({
+  redis: _redisMockState.redis,
+}));
+
+function setupMockRedis() {
+  const { cacheStore, redis } = _redisMockState;
+  redis.get.mockImplementation(async (k: string) => cacheStore.get(k) ?? null);
+  redis.set.mockImplementation(async (k: string, v: string) => {
+    cacheStore.set(k, v);
+    return 'OK';
+  });
+  redis.del.mockImplementation(async (k: string) => {
+    const had = cacheStore.has(k);
+    cacheStore.delete(k);
+    return had ? 1 : 0;
+  });
+  // SCAN MATCH 模拟：只返匹配 pattern 的 key（cursor='0' 退出循环）
+  // Cache.delByPattern 调 scan(cursor, 'MATCH', PREFIX+pattern, 'COUNT', 100)
+  redis.scan.mockImplementation(async (_cursor: string, ...args: unknown[]) => {
+    const matchIdx = args.indexOf('MATCH');
+    const pattern = (args[matchIdx + 1] as string) ?? '*';
+    const regex = new RegExp('^' + pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$');
+    const matched = Array.from(cacheStore.keys()).filter((k) => regex.test(k));
+    return ['0', matched] as [string, string[]];
+  });
+}
+
+import { mallService, invalidateProductsCache } from '../../../src/modules/mall/mall.service.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  _redisMockState.cacheStore.clear();
+  setupMockRedis();
 });
 
 describe('mallService.listCategories', () => {
@@ -180,5 +224,72 @@ describe('mallService.productDetail', () => {
     const result = await mallService.productDetail('p1');
     expect(result.product.price).toBe('299.00');
     expect(result.product.originalPrice).toBe('399.00');
+  });
+});
+
+// ===== V0.1.6 增：listProducts 缓存行为 =====
+describe('mallService.listProducts（带缓存）', () => {
+  it('首次调用：miss → 查 DB + 回填缓存', async () => {
+    mocks.productMethods.findMany.mockResolvedValue([
+      { id: 'p1', name: '跑鞋', category: '鞋服', price: { toString: () => '299.00' }, originalPrice: null, brand: null, memberDiscount: null, images: [], description: null, stock: 10 },
+    ] as never);
+    mocks.productMethods.count.mockResolvedValue(1);
+
+    const result = await mallService.listProducts({ page: 1, pageSize: 10 });
+
+    expect(result.list).toHaveLength(1);
+    expect(result.list[0].price).toBe('299.00');
+    expect(result.total).toBe(1);
+    expect(mocks.productMethods.findMany).toHaveBeenCalledTimes(1);
+    // 缓存回填
+    const cached = _redisMockState.cacheStore.get('qmwx:cache:mall:listProducts::::1:10');
+    expect(cached).toBeDefined();
+  });
+
+  it('二次调用同参：命中缓存 → 不再调 DB', async () => {
+    // 预热缓存
+    _redisMockState.cacheStore.set(
+      'qmwx:cache:mall:listProducts::::1:10',
+      JSON.stringify({ list: [{ id: 'p1', name: '缓存商品', price: '1.00' }], total: 1, page: 1, pageSize: 10 }),
+    );
+
+    const result = await mallService.listProducts({ page: 1, pageSize: 10 });
+
+    expect(result.list[0].name).toBe('缓存商品');
+    // 命中：DB 一次都没调
+    expect(mocks.productMethods.findMany).not.toHaveBeenCalled();
+    expect(mocks.productMethods.count).not.toHaveBeenCalled();
+  });
+
+  it('不同参数 → 不同 cache key（不串扰）', async () => {
+    mocks.productMethods.findMany.mockResolvedValue([]);
+    mocks.productMethods.count.mockResolvedValue(0);
+
+    await mallService.listProducts({ page: 1, pageSize: 10 });
+    await mallService.listProducts({ page: 2, pageSize: 10 });
+    await mallService.listProducts({ category: '鞋服', page: 1, pageSize: 10 });
+
+    expect(_redisMockState.cacheStore.has('qmwx:cache:mall:listProducts::::1:10')).toBe(true);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:mall:listProducts::::2:10')).toBe(true);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:mall:listProducts:鞋服:::1:10')).toBe(true);
+  });
+});
+
+describe('invalidateProductsCache（admin 写后失效）', () => {
+  it('抹掉所有 mall:listProducts:* 缓存', async () => {
+    _redisMockState.cacheStore.set('qmwx:cache:mall:listProducts::::1:10', '{}');
+    _redisMockState.cacheStore.set('qmwx:cache:mall:listProducts:鞋服:::1:10', '{}');
+    _redisMockState.cacheStore.set('qmwx:cache:mall:listProducts:器材:brand-a:1:20', '{}');
+    // 无关 key 不该被抹
+    _redisMockState.cacheStore.set('qmwx:cache:sport:today:u1:2026-06-15', '{}');
+
+    const deleted = await invalidateProductsCache();
+
+    expect(deleted).toBe(3);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:mall:listProducts::::1:10')).toBe(false);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:mall:listProducts:鞋服:::1:10')).toBe(false);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:mall:listProducts:器材:brand-a:1:20')).toBe(false);
+    // 无关 key 保持
+    expect(_redisMockState.cacheStore.has('qmwx:cache:sport:today:u1:2026-06-15')).toBe(true);
   });
 });
