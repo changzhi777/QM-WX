@@ -165,15 +165,33 @@ export const orderService = {
   },
 
   async myOrders(userId: string, input: MyOrdersInput) {
+    // N+1 修：count where 缺 status 过滤（旧代码 total 永远 = 全表，与 list 不一致 — UI 分页错乱）
+    // Prisma select 收紧：去 address / payment / userId 等敏感 / 冗余字段
+    const where = { userId, ...(input.status ? { status: input.status } : {}) };
     const [list, total] = await Promise.all([
       prisma.order.findMany({
-        where: { userId, ...(input.status ? { status: input.status } : {}) },
+        where,
         orderBy: { createdAt: 'desc' },
         skip: (input.page - 1) * input.pageSize,
         take: input.pageSize,
-        include: { items: true },
+        select: {
+          id: true,
+          userId: true,
+          status: true,
+          totalAmount: true,
+          payAmount: true,
+          pointsUsed: true,
+          payChannel: true,
+          wxTransactionId: true,
+          paidAt: true,
+          createdAt: true,
+          updatedAt: true,
+          items: {
+            select: { id: true, productId: true, name: true, price: true, qty: true },
+          },
+        },
       }),
-      prisma.order.count({ where: { userId } }),
+      prisma.order.count({ where }),
     ]);
     return {
       list: list.map((o) => ({
