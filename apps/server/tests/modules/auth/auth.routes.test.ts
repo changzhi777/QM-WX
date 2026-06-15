@@ -17,6 +17,10 @@ vi.mock('src/modules/user/user.repository.js', () => ({
   },
 }));
 
+// refresh 一次性轮换依赖 Redis（exists 检测复用 + setex 拉黑）
+const mockRedis = vi.hoisted(() => ({ exists: vi.fn(), setex: vi.fn() }));
+vi.mock('src/infra/redis.js', () => ({ redis: mockRedis }));
+
 import { authRoutes } from '../../../src/modules/auth/auth.routes.js';
 import { BusinessError } from '../../../src/common/errors.js';
 
@@ -29,7 +33,13 @@ async function buildApp() {
       if (token === 'invalid') throw new Error('jwt malformed');
       if (token === 'access-token') return { sub: 'u1', openid: 'o1' }; // kind 缺失
       if (token === 'good-refresh')
-        return { sub: 'u1', openid: 'o1', kind: 'refresh' };
+        return {
+          sub: 'u1',
+          openid: 'o1',
+          kind: 'refresh',
+          jti: 'jti-1',
+          exp: Math.floor(Date.now() / 1000) + 1000,
+        };
       throw new Error('unknown');
     }),
   };
@@ -49,6 +59,8 @@ describe('POST /api/auth/refresh', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    mockRedis.exists.mockResolvedValue(0); // 默认：token 未被使用过
+    mockRedis.setex.mockResolvedValue('OK');
     app = await buildApp();
     await app.ready();
   });
@@ -120,5 +132,21 @@ describe('POST /api/auth/refresh', () => {
     // refresh 应带 kind='refresh'
     const refreshCall = sign.mock.calls[1];
     expect(refreshCall[1]).toEqual({ expiresIn: '30d' });
+    // 新 refresh 带新 jti
+    expect((refreshCall[0] as { jti?: string }).jti).toBeDefined();
+    // 旧 token 被拉黑
+    expect(mockRedis.setex).toHaveBeenCalledWith('auth:refresh:used:jti-1', expect.any(Number), '1');
+  });
+
+  it('refresh token 复用（已拉黑）→ 401', async () => {
+    mockFindById.mockResolvedValue({ id: 'u1', openid: 'o1' });
+    mockRedis.exists.mockResolvedValue(1); // 已被使用过
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/refresh',
+      payload: { refreshToken: 'good-refresh' },
+    });
+    expect(res.statusCode).toBe(401);
+    expect(res.json().msg).toMatch(/already used/);
   });
 });

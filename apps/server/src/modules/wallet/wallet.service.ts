@@ -79,18 +79,36 @@ export const walletService = {
     type: 'recharge' | 'consume' | 'refund',
     orderId?: string,
     wxTransactionId?: string,
+    opts: {
+      /**
+       * 允许余额扣成负数（不抛"余额不足"）。
+       * 退款场景专用：微信退款已不可逆地发生，本地必须如实记账，
+       * 余额为负代表用户欠款（已消费 + 又获退款），绝不能因余额不足回滚导致账实漂移。
+       */
+      allowNegative?: boolean;
+      /** 微信退款商户单号（out_refund_no）：落库用于幂等 + 对账匹配 */
+      outRefundNo?: string;
+    } = {},
   ) {
     const wallet = await tx.wallet.findUnique({ where: { userId } });
     if (!wallet) throw Errors.notFound('wallet not found');
     if (wallet.status !== 'active') throw Errors.forbidden('wallet frozen');
 
-    const newBalance = Number(wallet.balance) + amount;
-    if (newBalance < 0) throw Errors.badRequest('余额不足');
-
-    await tx.wallet.update({
-      where: { userId },
-      data: { balance: newBalance },
-    });
+    // 原子增减：用 increment（DB 侧自增）替代「读出余额→算→覆盖写」，避免并发 lost update。
+    if (amount < 0 && !opts.allowNegative) {
+      // 普通扣减：条件 where(balance >= -amount) 兜底，命中 0 行即余额不足（原子，无 TOCTOU）。
+      const res = await tx.wallet.updateMany({
+        where: { userId, balance: { gte: -amount } },
+        data: { balance: { increment: amount } },
+      });
+      if (res.count === 0) throw Errors.badRequest('余额不足');
+    } else {
+      // 充值（amount>0）或允许走负（退款）：无条件原子自增/自减。
+      await tx.wallet.update({
+        where: { userId },
+        data: { balance: { increment: amount } },
+      });
+    }
     await tx.walletTransaction.create({
       data: {
         userId,
@@ -99,6 +117,7 @@ export const walletService = {
         amount,
         orderId,
         wxTransactionId,
+        outRefundNo: opts.outRefundNo,
         status: 'success',
       },
     });

@@ -178,6 +178,9 @@ model WalletTransaction {
   amount          Decimal  @db.Decimal(10, 2)
   orderId         String?
   wxTransactionId String?
+  // 微信退款商户单号（out_refund_no）：与微信请求一致，用于幂等 + 对账匹配。
+  // 唯一约束防止同一笔退款重复落库。
+  outRefundNo     String?  @unique
   status          String   @default("success") // success | pending | failed
   createdAt       DateTime @default(now())
 

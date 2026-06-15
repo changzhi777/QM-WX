@@ -12,9 +12,18 @@
  * - 私钥 / 平台证书按需读（开发期证书可选）
  * - 微信 API 在事务外调（外部 IO 不可在 DB 事务内）
  */
-import { createHash, createSign, createDecipheriv, randomBytes, randomUUID } from 'node:crypto';
+import {
+  createHash,
+  createSign,
+  createVerify,
+  createDecipheriv,
+  randomBytes,
+  randomUUID,
+  X509Certificate,
+} from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { gunzipSync } from 'node:zlib';
 import { env } from '../../config/env.js';
 import { Errors } from '../../common/errors.js';
 import {
@@ -33,7 +42,6 @@ const WXPAY_HOST = 'https://api.mch.weixin.qq.com';
 
 // ===== 内部缓存：私钥 + 平台证书（开发期空） =====
 let _privateKeyPem: string | null = null;
-let _platformCertPem: string | null = null;
 
 function loadPrivateKey(): string {
   if (_privateKeyPem) return _privateKeyPem;
@@ -45,14 +53,111 @@ function loadPrivateKey(): string {
   return _privateKeyPem;
 }
 
-function loadPlatformCert(): string {
-  if (_platformCertPem) return _platformCertPem;
+// ===== 平台证书存储（支持轮换：多张证书按序列号并存） =====
+/** serial（大写 hex）→ PEM */
+const _platformCerts = new Map<string, string>();
+let _platformCertsLoaded = false;
+
+/** 解析 PEM 证书序列号（大写 hex，与微信 Wechatpay-Serial 对齐） */
+function certSerial(pem: string): string {
+  return new X509Certificate(pem).serialNumber.toUpperCase();
+}
+
+/**
+ * 注册一张平台证书（启动加载 / fetchPlatformCerts 自动拉取都走这里）。
+ * @returns 该证书的序列号
+ */
+export function registerPlatformCert(pem: string): string {
+  const serial = certSerial(pem);
+  _platformCerts.set(serial, pem);
+  _platformCertsLoaded = true; // 手动注册即视为已加载，无需再读 env 文件
+  return serial;
+}
+
+/** 从 env 加载平台证书（WX_PLAT_CERT_PATH 支持逗号分隔多文件，便于轮换并存） */
+function ensurePlatformCertsLoaded(): void {
+  if (_platformCertsLoaded) return;
   const path = env.WX_PLAT_CERT_PATH;
   if (!path) {
     throw Errors.internal('WX_PLAT_CERT_PATH 未配置（需微信支付平台证书）');
   }
-  _platformCertPem = readFileSync(resolve(path), 'utf8');
-  return _platformCertPem;
+  for (const p of path.split(',').map((s) => s.trim()).filter(Boolean)) {
+    registerPlatformCert(readFileSync(resolve(p), 'utf8'));
+  }
+  _platformCertsLoaded = true;
+}
+
+/**
+ * 按序列号取平台证书。
+ * 轮换期会同时存在新旧两张证书，必须用回调头 Wechatpay-Serial 精确匹配，
+ * 否则验签会错用证书而失败。未知序列号 → 抛错（提示更新 / 触发拉取）。
+ */
+function getPlatformCert(serial: string): string {
+  ensurePlatformCertsLoaded();
+  // 兼容：只配了一张证书且回调未带 serial 时，回退到唯一证书
+  if (!serial && _platformCerts.size === 1) {
+    return [..._platformCerts.values()][0];
+  }
+  const cert = _platformCerts.get((serial ?? '').toUpperCase());
+  if (!cert) {
+    throw Errors.internal(
+      `未知微信平台证书序列号: ${serial}（可能已轮换）。请更新 WX_PLAT_CERT_PATH 或调用 fetchPlatformCerts 拉取最新证书`,
+    );
+  }
+  return cert;
+}
+
+/**
+ * 拉取并缓存微信平台证书（V3 协议）
+ *
+ * 文档：https://pay.weixin.qq.com/doc/v3/merchant/4012153196
+ * 端点：GET /v3/certificates（返回的证书用 APIv3 密钥 AES-256-GCM 解密）
+ *
+ * 用途：平台证书会定期轮换。建议用定时任务（如每 12 小时）调用本函数刷新缓存，
+ * 这样回调验签时 getPlatformCert 总能按 serial 命中最新证书。
+ *
+ * 注意（MVP）：首次拉取无可信证书可验响应签名（先有鸡还是先有蛋），此处暂不验证
+ * 响应签名；生产建议拿到首张证书后对后续响应做验签。沙箱测试需 mock fetch。
+ *
+ * @returns 本次拉取到的证书序列号列表
+ */
+export async function fetchPlatformCerts(): Promise<string[]> {
+  if (!env.WX_PAY_KEY) throw Errors.internal('WX_PAY_KEY 未配置（需 APIv3 密钥）');
+  const key = Buffer.from(env.WX_PAY_KEY, 'utf8');
+  if (key.length !== 32) throw Errors.internal('WX_PAY_KEY 长度必须为 32 字节');
+
+  const urlPath = '/v3/certificates';
+  const auth = generateAuthorization('GET', urlPath, '');
+  const res = await fetch(`${WXPAY_HOST}${urlPath}`, {
+    method: 'GET',
+    headers: { Authorization: auth, 'User-Agent': 'qm-wx-server/1.0', Accept: 'application/json' },
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { code?: string; message?: string };
+    throw Errors.internal(
+      `微信平台证书拉取失败: ${res.status} ${err.code ?? ''} ${err.message ?? ''}`.trim(),
+    );
+  }
+  const data = (await res.json()) as {
+    data: Array<{
+      serial_no: string;
+      encrypt_certificate: { nonce: string; associated_data: string; ciphertext: string };
+    }>;
+  };
+
+  const serials: string[] = [];
+  for (const item of data.data ?? []) {
+    const pem = aesGcmDecrypt(
+      item.encrypt_certificate.ciphertext,
+      key,
+      Buffer.from(item.encrypt_certificate.nonce, 'utf8'),
+      Buffer.from(item.encrypt_certificate.associated_data, 'utf8'),
+    );
+    registerPlatformCert(pem);
+    serials.push(item.serial_no);
+  }
+  _platformCertsLoaded = true;
+  return serials;
 }
 
 // ===== 签名 =====
@@ -196,14 +301,23 @@ export interface VerifyNotifyResult {
   verified: true;
 }
 
+/** 回调时间戳允许的偏移窗口（秒）— 超过即视为重放，拒绝 */
+const NOTIFY_TIMESTAMP_TOLERANCE_SEC = 300;
+
 export function verifyAndDecryptNotify(input: VerifyNotifyInput): VerifyNotifyResult {
-  // 1. 验签
-  const cert = loadPlatformCert();
-  const verifier = (() => {
-    // Node 的 createVerify 在 18.6+ 支持 raw cert PEM
-    const { createVerify } = require('node:crypto') as typeof import('node:crypto');
-    return createVerify('RSA-SHA256');
-  })();
+  // 0. 防重放：校验时间戳新鲜度（±5 分钟），过期签名即便合法也拒绝
+  const ts = Number(input.headers.timestamp);
+  if (!Number.isFinite(ts)) {
+    throw Errors.badRequest('微信回调时间戳非法');
+  }
+  const skew = Math.abs(Math.floor(Date.now() / 1000) - ts);
+  if (skew > NOTIFY_TIMESTAMP_TOLERANCE_SEC) {
+    throw Errors.badRequest('微信回调时间戳超出允许窗口（疑似重放）');
+  }
+
+  // 1. 验签（按 Wechatpay-Serial 选对应平台证书，支持轮换期多证书并存）
+  const cert = getPlatformCert(input.headers.serial);
+  const verifier = createVerify('RSA-SHA256');
   const signMessage = `${input.headers.timestamp}\n${input.headers.nonce}\n${input.rawBody}\n`;
   verifier.update(signMessage);
   verifier.end();
@@ -396,7 +510,11 @@ export async function downloadBill(downloadUrl: string): Promise<string> {
   if (!res.ok) {
     throw Errors.internal(`账单下载失败: ${res.status}`);
   }
-  // MVP 简化：假定返回的 text 已是 CSV（真生产需流式解压 GZIP）
-  // 不引 GZIP 库 — 服务端不需要解压（parseBillCsv 接 CSV 字符串）
-  return res.text();
+  // 微信账单默认 GZIP 压缩。用 gzip 魔数（0x1f 0x8b）自动判断：
+  // 压缩则解压成 CSV 文本，否则按原文返回（兼容沙箱/未压缩账单）。
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.length >= 2 && buf[0] === 0x1f && buf[1] === 0x8b) {
+    return gunzipSync(buf).toString('utf8');
+  }
+  return buf.toString('utf8');
 }

@@ -101,13 +101,24 @@ describe('wxpay.service', () => {
 
   describe('verifyAndDecryptNotify', () => {
     it('验签失败抛错（无证书时直接抛内部错）', () => {
-      // 没设 WX_PLAT_CERT_PATH → loadPlatformCert 抛错
+      // 时间戳取当前秒，先通过防重放窗口，再走到 loadPlatformCert 抛错
+      const now = String(Math.floor(Date.now() / 1000));
+      expect(() =>
+        verifyAndDecryptNotify({
+          rawBody: '{}',
+          headers: { serial: 's', timestamp: now, nonce: 'n', signature: 'sig' },
+        }),
+      ).toThrow();
+    });
+
+    it('过期时间戳 → 防重放拒绝', () => {
+      // 1970 的时间戳远超 ±5 分钟窗口 → 验签前即拒绝
       expect(() =>
         verifyAndDecryptNotify({
           rawBody: '{}',
           headers: { serial: 's', timestamp: '1', nonce: 'n', signature: 'sig' },
         }),
-      ).toThrow();
+      ).toThrow(/重放/);
     });
   });
 

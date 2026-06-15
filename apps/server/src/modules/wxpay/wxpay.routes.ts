@@ -9,7 +9,7 @@
  * - 回调路由必须 `config: { public: true }`（不走 authPlugin）
  * - 回调路由 raw body 不可 JSON parse（验签必走原始字节）
  */
-import type { FastifyInstance, FastifyRequest } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import { prisma } from '../../infra/prisma.js';
 import { walletRepo } from '../wallet/wallet.repo.js';
 import { assertTransition, type OrderStatus } from '../../domain/order-state.js';
@@ -31,7 +31,11 @@ export async function wxpayRoutes(app: FastifyInstance) {
       config: { public: true }, // 公开 — 微信回调无 JWT
     },
     async (req, reply) => {
-      const rawBody = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+      // 验签必走原始字节：优先用 app.ts content-type parser 挂的 req.rawBody，
+      // 退路（如测试直接注入字符串）才回退到 body 重序列化。
+      const rawBody =
+        (req as unknown as { rawBody?: string }).rawBody ??
+        (typeof req.body === 'string' ? req.body : JSON.stringify(req.body));
       // 业务字段解析
       const parsed = JSON.parse(rawBody) as { action?: string };
       const action = parsed.action;
@@ -152,5 +156,3 @@ export async function wxpayRoutes(app: FastifyInstance) {
     },
   );
 }
-
-void (null as unknown as FastifyRequest); // 抑制 unused import

@@ -5,6 +5,7 @@
  */
 import type { Prisma, PrismaClient, User } from '@prisma/client';
 import { prisma } from '../../infra/prisma.js';
+import { Errors } from '../../common/errors.js';
 
 /** 提取公共 client，便于事务 */
 export const userRepo = {
@@ -51,22 +52,29 @@ export const userRepo = {
     type: 'signup_bonus' | 'checkin' | 'order_deduct' | 'member_gift',
     refId?: string,
   ) {
-    // 单事务：写流水 + inc points + inc stats.totalPoints
+    // 单事务：inc points（原子）+ 写流水
+    // 说明：stats.totalPoints 与 points 始终相等（两者都从 0 起、每次同增同减），
+    // 是 points 的纯镜像。早先在此 read-modify-write 整个 stats JSON 会与并发写
+    // 互相覆盖（lost update）。这里改为：addPoints 不再触碰 stats，totalPoints 在
+    // 输出层（toUserOutput）由权威字段 points 派生，从根上消除非原子 JSON 写。
+    if (change < 0) {
+      // 扣减走条件 updateMany 防并发双花：仅当余额足够才扣，
+      // 受影响行数为 0 即积分不足（原子，无 TOCTOU 竞态）。
+      const res = await client.user.updateMany({
+        where: { id: userId, points: { gte: -change } },
+        data: { points: { increment: change } },
+      });
+      if (res.count === 0) throw Errors.badRequest('积分不足');
+    } else {
+      await client.user.update({
+        where: { id: userId },
+        data: { points: { increment: change } },
+      });
+    }
+    // 读取更新后的权威余额，写入流水快照
     const user = await client.user.findUniqueOrThrow({ where: { id: userId } });
-    const newBalance = user.points + change;
     await client.pointsRecord.create({
-      data: { userId, change, type, refId, balance: newBalance },
-    });
-    await client.user.update({
-      where: { id: userId },
-      data: {
-        points: { increment: change },
-        stats: {
-          // Prisma JSON 增量更新：用 set 重组
-          ...((user.stats as object) ?? {}),
-          totalPoints: ((user.stats as { totalPoints?: number })?.totalPoints ?? 0) + change,
-        } as Prisma.InputJsonValue,
-      },
+      data: { userId, change, type, refId, balance: user.points },
     });
   },
 };

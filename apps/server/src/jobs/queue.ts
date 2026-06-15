@@ -15,12 +15,16 @@ import { redis } from '../infra/redis.js';
 import { env } from '../config/env.js';
 import { processWeeklyReport } from './weekly-report.job.js';
 import { processCloseOrder, type CloseOrderJobData } from './close-order.job.js';
+import { processRefreshPlatformCerts } from './refresh-certs.job.js';
 import { logger } from '../common/logger.js';
 
 const QUEUE_PREFIX = 'qmwx';
 
 /** 超时关单默认 delay（毫秒）— 30 分钟 */
 export const CLOSE_ORDER_DELAY_MS = 30 * 60 * 1000;
+
+/** 平台证书刷新周期（毫秒）— 12 小时 */
+export const REFRESH_CERTS_EVERY_MS = 12 * 60 * 60 * 1000;
 
 // ===== 队列定义 =====
 export const weeklyReportQueue = new Queue('weekly-report', {
@@ -42,6 +46,17 @@ export const closeOrderQueue = new Queue('close-order', {
     backoff: { type: 'fixed', delay: 30_000 },
     removeOnComplete: { count: 200, age: 86400 },
     removeOnFail: { count: 500, age: 7 * 86400 },
+  },
+});
+
+export const refreshCertsQueue = new Queue('refresh-certs', {
+  connection: redis,
+  prefix: QUEUE_PREFIX,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 60_000 },
+    removeOnComplete: { count: 20, age: 7 * 86400 },
+    removeOnFail: { count: 50, age: 7 * 86400 },
   },
 });
 
@@ -75,12 +90,46 @@ export function startWorkers() {
   startWorker('close-order', async (job) => {
     return processCloseOrder(job.data as CloseOrderJobData);
   }, 4);
+
+  startWorker('refresh-certs', async () => {
+    return processRefreshPlatformCerts();
+  }, 1);
 }
 
 /** 优雅关闭 */
 export async function stopWorkers() {
   await Promise.all(workers.map((w) => w.close()));
-  await Promise.all([weeklyReportQueue.close(), closeOrderQueue.close()]);
+  await Promise.all([
+    weeklyReportQueue.close(),
+    closeOrderQueue.close(),
+    refreshCertsQueue.close(),
+  ]);
+}
+
+/** 微信支付是否已配置齐全（拉取平台证书所需） */
+function wxpayConfigured(): boolean {
+  return Boolean(
+    env.WX_MCH_ID && env.WX_PAY_KEY && env.WX_MCH_SERIAL_NO && env.WX_MCH_PRIVATE_KEY_PATH,
+  );
+}
+
+/**
+ * 注册平台证书刷新的 12h repeatable job（仅在微信支付配置齐全时）。
+ * BullMQ 用 repeat key 去重，重复注册不会叠加。
+ */
+async function scheduleRefreshCerts() {
+  if (env.NODE_ENV === 'test' || !wxpayConfigured()) {
+    logger.info('refresh-certs scheduler skipped (test env or wxpay not configured)');
+    return;
+  }
+  await refreshCertsQueue.add(
+    'refresh',
+    {},
+    { repeat: { every: REFRESH_CERTS_EVERY_MS }, jobId: 'cert-refresh' },
+  );
+  // 启动时立即拉一次，确保证书缓存预热（不阻塞启动）
+  await refreshCertsQueue.add('refresh-now', {});
+  logger.info('refresh-certs scheduler registered (every 12h)');
 }
 
 /** 工具：手动 trigger 周报（admin endpoint / 测试用） */
@@ -104,6 +153,11 @@ export async function enqueueCloseOrder(orderId: string, delayMs = CLOSE_ORDER_D
   );
 }
 
+/** 工具：手动触发一次平台证书刷新（admin / 运维 / 测试用） */
+export async function enqueueRefreshCerts() {
+  return refreshCertsQueue.add('refresh-now', {});
+}
+
 // ===== 启动 / 关闭集成 =====
 let started = false;
 let schedulerHandle: NodeJS.Timeout | null = null;
@@ -123,6 +177,10 @@ export async function startJobs() {
   }, 60_000);
   // 启动时也跑一次（防止上次宕机错过）
   runWeeklyReportScheduler(false).catch(() => {});
+  // 平台证书刷新（12h repeatable + 启动预热）
+  scheduleRefreshCerts().catch((err) => {
+    logger.error({ err }, 'schedule refresh-certs failed');
+  });
   logger.info('jobs system started');
 }
 

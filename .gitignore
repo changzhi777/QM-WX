@@ -3,6 +3,9 @@ node_modules/
 .pnpm-store/
 pnpm-lock.yaml.bak
 
+# ===== Vitest 临时配置产物（esbuild 打包 vitest.config 时生成） =====
+vitest.config.ts.timestamp-*.mjs
+
 # ===== 构建产物 =====
 dist/
 build/

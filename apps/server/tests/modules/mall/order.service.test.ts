@@ -7,7 +7,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('src/infra/prisma.js', () => {
   // 事务内复用顶级 mock
-  const userMethods = { findUnique: vi.fn(), findUniqueOrThrow: vi.fn(), update: vi.fn() };
+  const userMethods = { findUnique: vi.fn(), findUniqueOrThrow: vi.fn(), update: vi.fn(), updateMany: vi.fn() };
   const pointsRecordMethods = { create: vi.fn() };
   const orderMethods = {
     create: vi.fn(),
@@ -34,6 +34,9 @@ vi.mock('src/infra/prisma.js', () => {
   };
 });
 
+// 队列 mock：单元测试不依赖 Redis/BullMQ（pending_pay 单会入队超时关单）
+vi.mock('src/jobs/queue.js', () => ({ enqueueCloseOrder: vi.fn() }));
+
 import { prisma } from 'src/infra/prisma.js';
 import { orderService } from 'src/modules/mall/order.service.js';
 
@@ -41,13 +44,20 @@ const mockedPrisma = vi.mocked(prisma);
 const tx = (prisma as unknown as { _tx: unknown })._tx as {
   order: { create: ReturnType<typeof vi.fn> };
   pointsRecord: { create: ReturnType<typeof vi.fn> };
-  user: { findUniqueOrThrow: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
+  user: {
+    findUniqueOrThrow: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    updateMany: ReturnType<typeof vi.fn>;
+  };
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockedPrisma.appConfig.findMany.mockResolvedValue([]);
   // featureFlags 默认 payment=false（configRepo 内存兜底）
+  // addPoints 内部默认值：扣减条件更新成功 + 读最新积分快照（各用例可覆盖）
+  tx.user.updateMany.mockResolvedValue({ count: 1 } as never);
+  tx.user.findUniqueOrThrow.mockResolvedValue({ points: 0, stats: {} } as never);
 });
 
 describe('orderService.create', () => {
@@ -71,7 +81,8 @@ describe('orderService.create', () => {
     ] as never);
     mockedPrisma.user.findUnique.mockResolvedValue({ points: 20000 } as never);
     tx.order.create.mockResolvedValue({ id: 'o1' } as never);
-    tx.user.findUniqueOrThrow.mockResolvedValue({ points: 0, stats: {} } as never);
+    tx.user.findUniqueOrThrow.mockResolvedValue({ points: 20000, stats: {} } as never);
+    tx.user.updateMany.mockResolvedValue({ count: 1 } as never); // 积分扣减条件更新成功
 
     const result = await orderService.create(USER_ID, {
       items: [{ productId: 'p1', qty: 1 }, { productId: 'p2', qty: 1 }],

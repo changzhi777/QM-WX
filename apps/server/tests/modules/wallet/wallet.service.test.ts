@@ -133,22 +133,26 @@ describe('walletService.consumeInTx', () => {
       balance: 5,
       status: 'active',
     });
+    // 条件扣减：余额不足 → updateMany 命中 0 行
+    mocks.tx.wallet.updateMany.mockResolvedValue({ count: 0 });
     await expect(
       walletService.consumeInTx(mocks.tx as never, 'u1', -10, 'consume'),
     ).rejects.toThrow(/余额不足/);
   });
 
-  it('正常扣减：update + create transaction', async () => {
+  it('正常扣减：原子 decrement + create transaction', async () => {
     mocks.tx.wallet.findUnique.mockResolvedValue({
       id: 'w1',
       userId: 'u1',
       balance: 100,
       status: 'active',
     });
+    mocks.tx.wallet.updateMany.mockResolvedValue({ count: 1 });
     await walletService.consumeInTx(mocks.tx as never, 'u1', -30, 'consume', 'o1', 'wx-1');
-    expect(mocks.tx.wallet.update).toHaveBeenCalledWith({
-      where: { userId: 'u1' },
-      data: { balance: 70 },
+    // 扣减走条件 updateMany + 原子 increment（负数），不再读改写覆盖
+    expect(mocks.tx.wallet.updateMany).toHaveBeenCalledWith({
+      where: { userId: 'u1', balance: { gte: 30 } },
+      data: { balance: { increment: -30 } },
     });
     expect(mocks.tx.walletTransaction.create).toHaveBeenCalledWith({
       data: expect.objectContaining({

@@ -10,19 +10,35 @@ import { ENDPOINTS, type ActionRequest, type ApiResponse, type User } from '@qm-
 // actionUrl 走子路径 export，避开根入口的 ESM .js 后缀解析问题
 import { actionUrl } from '@qm-wx/shared/api-contracts';
 
-const getBaseUrl = (): string =>
-  (wx as unknown as { $apiBase?: string }).$apiBase ?? 'http://localhost:3000';
+const getBaseUrl = (): string => {
+  const base = (wx as unknown as { $apiBase?: string }).$apiBase;
+  if (base) return base;
+  // 未注入 $apiBase：仅开发版允许回退 localhost；体验版/正式版必须显式配置，否则 fail-fast。
+  let envVersion = 'develop';
+  try {
+    envVersion = wx.getAccountInfoSync().miniProgram.envVersion;
+  } catch {
+    // 部分基础库不支持 getAccountInfoSync → 当作开发版
+  }
+  if (envVersion === 'release' || envVersion === 'trial') {
+    throw new Error('API 基础地址未配置（$apiBase）：正式/体验版必须注入 HTTPS 后端地址');
+  }
+  return 'http://localhost:3000';
+};
 
 let refreshing: Promise<void> | null = null;
 
 export const api = {
   /**
    * 统一调用入口
+   *
+   * @param retried 内部递归标记：401 刷新后只重试一次，防止 token 持续失效导致无限循环
    */
   async call<T = unknown>(
     module: keyof typeof ENDPOINTS,
     action: string,
     payload: unknown = {},
+    retried = false,
   ): Promise<T> {
     const url = `${getBaseUrl()}${actionUrl(module, action)}`;
     const token = wx.getStorageSync('accessToken');
@@ -48,19 +64,22 @@ export const api = {
       return (body as { data: T }).data;
     }
 
-    // 401 → 尝试 refresh 一次
-    if (body.code === 401 && !refreshing) {
-      refreshing = this.refreshToken()
-        .then(() => {
+    // 401 → 刷新一次后重试。并发 401 共享同一个 refreshing promise，避免重复刷新；
+    // retried 标记保证最多重试一次，token 持续失效时不会无限递归。
+    if (body.code === 401 && !retried) {
+      if (!refreshing) {
+        refreshing = this.refreshToken().finally(() => {
           refreshing = null;
-        })
-        .catch(() => {
-          refreshing = null;
-          // refresh 失败 → 跳首页（无独立登录页）
-          wx.reLaunch({ url: '/pages/index/index' });
         });
-      await refreshing;
-      return this.call(module, action, payload); // 重试一次
+      }
+      try {
+        await refreshing;
+      } catch {
+        // refresh 失败 → 跳首页（无独立登录页）
+        wx.reLaunch({ url: '/pages/index/index' });
+        throw new Error('登录已过期，请重新进入');
+      }
+      return this.call(module, action, payload, true); // 仅重试一次
     }
 
     // 业务错误统一 toast（body 此时为 ApiError 分支，msg 必有）

@@ -58,10 +58,13 @@ export const refundService = {
     }
     const refundFen = Math.round(refundYuan * 100);
 
+    // 退款商户单号：微信请求与本地流水共用同一值，便于幂等 + 对账匹配
+    const outRefundNo = `refund-${order.id}-${Date.now()}`;
+
     // 2. 调微信 refund（事务外 IO）
     const refundResp = await wxpayRefund({
       outTradeNo: order.id,
-      outRefundNo: `refund-${order.id}-${Date.now()}`,
+      outRefundNo,
       totalFen: Math.round(payAmountYuan * 100),
       refundFen,
       reason: input.reason ?? '管理员发起退款',
@@ -88,7 +91,9 @@ export const refundService = {
       });
 
       // 扣减钱包余额 + 写流水（事务内，余额+流水强一致）
-      // amount 必须传负数 — consumeInTx 内做余额校验
+      // 退款走 allowNegative：微信退款已不可逆发生，本地必须如实记账。
+      // 若用户已消费掉这笔余额，扣减后余额为负（代表欠款），
+      // 绝不能因"余额不足"抛错回滚 —— 否则会出现"钱已退、本地仍 paid"的账实漂移。
       await walletService.consumeInTx(
         tx,
         order.userId,
@@ -96,6 +101,7 @@ export const refundService = {
         'refund',
         order.id,
         refundResp.refundId,
+        { allowNegative: true, outRefundNo },
       );
     });
 

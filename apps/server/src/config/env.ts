@@ -37,5 +37,18 @@ if (!parsed.success) {
   process.exit(1);
 }
 
+// 生产环境额外强校验：拒绝明显弱 / 占位 JWT_SECRET，避免误用默认值上线
+if (parsed.data.NODE_ENV === 'production') {
+  const secret = parsed.data.JWT_SECRET;
+  const weak = ['changeme', 'secret', 'default', 'test', 'placeholder', 'your-secret'];
+  const looksWeak = secret.length < 32 || weak.some((w) => secret.toLowerCase().includes(w));
+  if (looksWeak) {
+    console.error(
+      '❌ 生产环境 JWT_SECRET 过弱：需 ≥32 字符且不含占位词（changeme/secret/default 等）',
+    );
+    process.exit(1);
+  }
+}
+
 export const env = parsed.data;
 export type Env = z.infer<typeof EnvSchema>;

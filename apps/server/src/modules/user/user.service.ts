@@ -8,6 +8,7 @@
  * - 返回 config（featureFlags / memberLevels / pointsRules）让前端首屏就拿到开关
  */
 import type { FastifyInstance } from 'fastify';
+import { randomUUID } from 'node:crypto';
 import { prisma } from '../../infra/prisma.js';
 import { userRepo } from './user.repository.js';
 import { code2Session } from '../../common/integrations/wx/code2session.js';
@@ -68,7 +69,7 @@ export const userService = {
       { expiresIn: '2h' },
     );
     const refreshToken = await app.jwt.sign(
-      { sub: user.id, id: user.id, openid: user.openid, kind: 'refresh' },
+      { sub: user.id, id: user.id, openid: user.openid, kind: 'refresh', jti: randomUUID() },
       { expiresIn: '30d' },
     );
 
@@ -99,17 +100,14 @@ export const userService = {
     return toUserOutput(user);
   },
 
-  /** 绑定第三方运动 APP（feature flag 校验在 route 层做） */
-  async bindApps(userId: string, input: BindAppsInput) {
-    void input; // TODO Phase 1.1: 实现 boundApps 写入
-    const user = await userRepo.findById(userId);
-    if (!user) throw Errors.notFound('user not found');
-    // boundApps 当前在 app_config，Phase 1.1 实现
-    const updated = await prisma.user.update({
-      where: { id: userId },
-      data: { /* boundApps: merged */ } as never, // schema 没该字段，TODO Phase 1.1
-    });
-    return toUserOutput(updated);
+  /**
+   * 绑定第三方运动 APP（Phase 1.1 实现）
+   *
+   * 当前 schema 无 boundApps 字段、逻辑未实现。先前的占位实现会"静默成功"
+   * 但什么都不写，易让调用方误以为已绑定。改为显式 501，避免误用。
+   */
+  async bindApps(_userId: string, _input: BindAppsInput): Promise<never> {
+    throw Errors.notImplemented('绑定运动 APP 功能开发中（Phase 1.1）');
   },
 };
 
@@ -128,10 +126,13 @@ function toUserOutput(u: {
   createdAt: Date;
   updatedAt: Date;
 }) {
-  const stats = (u.stats as { totalDistance: number; totalCheckins: number; totalPoints: number }) ?? {
-    totalDistance: 0,
-    totalCheckins: 0,
-    totalPoints: 0,
+  const rawStats = (u.stats as { totalDistance?: number; totalCheckins?: number } | null) ?? {};
+  // totalPoints 由权威字段 points 派生（不再依赖 stats JSON 里的镜像值），
+  // 与 user.repository.addPoints 的"不写 stats"改动配套，保证展示值始终准确。
+  const stats = {
+    totalDistance: rawStats.totalDistance ?? 0,
+    totalCheckins: rawStats.totalCheckins ?? 0,
+    totalPoints: u.points,
   };
   return {
     id: u.id,

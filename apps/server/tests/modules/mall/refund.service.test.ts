@@ -137,12 +137,12 @@ describe('refundService.refundOrder', () => {
       data: expect.objectContaining({ status: 'refunded' }),
     });
 
-    // consumeInTx 链路：findUnique + update (绝对值) + create transaction
+    // consumeInTx 链路：findUnique + 原子 increment + create transaction
     expect(mocks.tx.wallet.findUnique).toHaveBeenCalledWith({ where: { userId: 'u1' } });
-    // consumeInTx 内 newBalance = 10 + (-10) = 0
+    // 退款走 allowNegative：无条件原子自减（不读改写、不卡余额）
     expect(mocks.tx.wallet.update).toHaveBeenCalledWith({
       where: { userId: 'u1' },
-      data: { balance: 0 },
+      data: { balance: { increment: -10 } },
     });
     expect(mocks.tx.walletTransaction.create).toHaveBeenCalledWith({
       data: expect.objectContaining({
@@ -152,9 +152,17 @@ describe('refundService.refundOrder', () => {
         amount: -10,
         orderId: 'order-1',
         wxTransactionId: 'wx-refund-001',
+        // 退款商户单号落库（幂等 + 对账）：与传给微信的 out_refund_no 一致
+        outRefundNo: expect.stringMatching(/^refund-order-1-/),
         status: 'success',
       }),
     });
+    // 微信请求与落库使用同一个 out_refund_no
+    const wxCallArg = mockWxpayRefund.mock.calls[0][0] as { outRefundNo: string };
+    const dbArg = mocks.tx.walletTransaction.create.mock.calls[0][0] as {
+      data: { outRefundNo: string };
+    };
+    expect(dbArg.data.outRefundNo).toBe(wxCallArg.outRefundNo);
 
     expect(result).toMatchObject({
       orderId: 'order-1',
@@ -175,10 +183,33 @@ describe('refundService.refundOrder', () => {
     expect(mockWxpayRefund).toHaveBeenCalledWith(
       expect.objectContaining({ refundFen: 500 }),
     );
-    // consumeInTx: newBalance = 10 + (-5) = 5
+    // 原子自减 -5
     expect(mocks.tx.wallet.update).toHaveBeenCalledWith({
       where: { userId: 'u1' },
-      data: { balance: 5 },
+      data: { balance: { increment: -5 } },
     });
+  });
+
+  it('P0-2 余额已被消费完：退款仍成功，余额走负不回滚', async () => {
+    // 用户已花光余额（balance=0），微信退款已不可逆发生
+    mocks.tx.wallet.findUnique.mockResolvedValue({ id: 'w1', balance: 0, status: 'active' });
+
+    const result = await refundService.refundOrder({
+      orderId: 'order-1',
+      refundedBy: 'admin1',
+    });
+
+    // 关键：不抛"余额不足"，order 标 refunded，钱包原子自减（结果为负=欠款）
+    expect(mocks.tx.order.update).toHaveBeenCalledWith({
+      where: { id: 'order-1' },
+      data: expect.objectContaining({ status: 'refunded' }),
+    });
+    expect(mocks.tx.wallet.update).toHaveBeenCalledWith({
+      where: { userId: 'u1' },
+      data: { balance: { increment: -10 } },
+    });
+    // 不应走条件 updateMany（那条路径会卡余额）
+    expect(mocks.tx.wallet.updateMany).not.toHaveBeenCalled();
+    expect(result).toMatchObject({ orderId: 'order-1', status: 'SUCCESS' });
   });
 });

@@ -15,6 +15,7 @@ declare module '@fastify/jwt' {
       id: string;    // userId（业务兼容）
       openid: string;
       kind?: string; // 'refresh' | undefined（access token）
+      jti?: string;  // refresh token 唯一 id（一次性轮换 + 复用检测）
       iat?: number;
       exp?: number;
     };

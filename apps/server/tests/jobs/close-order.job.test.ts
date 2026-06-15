@@ -14,7 +14,10 @@ import { createPrismaMock } from '../helpers/mockPrisma.js';
 const mocks = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const helpers = require('../helpers/mockPrisma.ts') as typeof import('../helpers/mockPrisma.js');
-  return helpers.createPrismaMock({ models: ['order'], txModels: [] });
+  return helpers.createPrismaMock({
+    models: ['order'],
+    txModels: ['order', 'user', 'pointsRecord'],
+  });
 });
 
 vi.mock('src/infra/prisma.js', () => ({ prisma: mocks.prisma }));
@@ -27,6 +30,7 @@ import { processCloseOrder } from '../../src/jobs/close-order.job.js';
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.prisma.order.update.mockResolvedValue({});
+  mocks.tx.order.update.mockResolvedValue({});
 });
 
 describe('processCloseOrder', () => {
@@ -64,7 +68,7 @@ describe('processCloseOrder', () => {
     mocks.prisma.order.findUnique.mockResolvedValue({ id: 'order-1', status: 'pending_pay' });
     const result = await processCloseOrder({ orderId: 'order-1' });
     expect(result).toEqual({ orderId: 'order-1', closed: true, reason: 'timeout' });
-    expect(mocks.prisma.order.update).toHaveBeenCalledWith({
+    expect(mocks.tx.order.update).toHaveBeenCalledWith({
       where: { id: 'order-1' },
       data: { status: 'cancelled' },
     });

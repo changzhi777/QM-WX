@@ -20,6 +20,7 @@ import { refundService } from '../mall/refund.service.js';
 import { Errors } from '../../common/errors.js';
 import { featureGatePlugin, invalidateFeatureFlagsCache } from '../../common/middleware/feature-gate.js';
 import { CONTENT_TYPES } from '../content/content.schema.js';
+import { assertTransition, type OrderStatus } from '../../domain/order-state.js';
 
 const UpsertContentSchema = z.object({
   id: z.string().optional(),
@@ -78,19 +79,26 @@ const RefundOrderSchema = z.object({
 });
 
 async function isAdmin(openid: string): Promise<boolean> {
-  if (!_adminCache) {
+  // TTL 兜底：多实例部署时本进程的 invalidateAdminCache 不会通知其它实例，
+  // 用短 TTL 保证白名单变更最迟 ADMIN_CACHE_TTL_MS 内全实例生效。
+  const now = Date.now();
+  if (!_adminCache || now - _adminCacheAt > ADMIN_CACHE_TTL_MS) {
     const row = await prisma.appConfig.findUnique({ where: { id: 'admin_whitelist' } });
     _adminCache = (row?.value as { openids?: string[] } | undefined)?.openids ?? [];
+    _adminCacheAt = now;
   }
   return _adminCache.includes(openid);
 }
 
-/** admin 白名单内存缓存，setConfig 改 admin_whitelist 时主动失效 */
+/** admin 白名单内存缓存，setConfig 改 admin_whitelist 时主动失效 + TTL 兜底 */
 let _adminCache: string[] | null = null;
+let _adminCacheAt = 0;
+const ADMIN_CACHE_TTL_MS = 60_000;
 
 /** 外部调用：清缓存，下次 isAdmin 查询时重读 DB */
 export function invalidateAdminCache(): void {
   _adminCache = null;
+  _adminCacheAt = 0;
 }
 
 export async function adminRoutes(app: FastifyInstance) {
@@ -218,6 +226,9 @@ export async function adminRoutes(app: FastifyInstance) {
           const input = UpdateOrderStatusSchema.parse(payload);
           const order = await prisma.order.findUnique({ where: { id: input.orderId } });
           if (!order) throw Errors.notFound('订单不存在');
+          // 走状态机白名单：禁止裸跳（如直接置 refunded/paid 而不触发钱包/退款副作用）。
+          // 涉及退款的目标态必须走 refundOrder action，不允许在此裸改。
+          assertTransition(order.status as OrderStatus, input.status as OrderStatus);
           const updated = await prisma.order.update({
             where: { id: input.orderId },
             data: { status: input.status },

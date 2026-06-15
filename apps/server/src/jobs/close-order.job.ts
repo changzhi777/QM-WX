@@ -9,6 +9,8 @@
  */
 import { prisma } from '../infra/prisma.js';
 import { logger } from '../common/logger.js';
+import { assertTransition, type OrderStatus } from '../domain/order-state.js';
+import { userRepo } from '../modules/user/user.repository.js';
 
 export interface CloseOrderJobData {
   orderId: string;
@@ -33,12 +35,22 @@ export async function processCloseOrder(data: CloseOrderJobData): Promise<{
     return { orderId, closed: false, reason: `not_pending_pay(${order.status})` };
   }
 
-  // 状态机：pending_pay → cancelled
-  // ⑤统一替换时接 assertTransition（子任务 5 改动）
-  await prisma.order.update({
-    where: { id: orderId },
-    data: { status: 'cancelled' },
+  // 状态机：pending_pay → cancelled（走白名单，禁止裸改）
+  // 与 mall/order.service.cancel 对齐：超时关单同样需退还创建时已扣的积分，
+  // 否则部分积分抵扣的意向单超时后用户积分会丢失。
+  await prisma.$transaction(async (tx) => {
+    assertTransition(order.status as OrderStatus, 'cancelled');
+    if (order.pointsUsed > 0) {
+      await userRepo.addPoints(tx, order.userId, order.pointsUsed, 'order_deduct', orderId);
+    }
+    await tx.order.update({
+      where: { id: orderId },
+      data: { status: 'cancelled' },
+    });
   });
-  logger.info({ orderId }, 'close-order: order cancelled (timeout)');
+  logger.info(
+    { orderId, refundedPoints: order.pointsUsed },
+    'close-order: order cancelled (timeout)',
+  );
   return { orderId, closed: true, reason: 'timeout' };
 }

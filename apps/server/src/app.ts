@@ -38,6 +38,28 @@ export async function buildApp() {
     },
   });
 
+  // ===== 原始 body 保留 =====
+  // 微信支付 V3 回调验签必须对「原始字节」做 RSA 校验。Fastify 默认会先 JSON.parse，
+  // 重新序列化的字节与微信发出的原文不一致会导致验签恒失败。这里改用 parseAs:'string'，
+  // 把原始字符串挂到 req.rawBody，同时仍向其它路由提供解析后的对象。
+  app.addContentTypeParser(
+    'application/json',
+    { parseAs: 'string' },
+    (req, body, done) => {
+      (req as unknown as { rawBody?: string }).rawBody = body as string;
+      if (!body) {
+        done(null, undefined);
+        return;
+      }
+      try {
+        done(null, JSON.parse(body as string));
+      } catch (err) {
+        (err as { statusCode?: number }).statusCode = 400;
+        done(err as Error, undefined);
+      }
+    },
+  );
+
   // ===== 基础插件 =====
   await app.register(helmet);
   await app.register(cors, {
