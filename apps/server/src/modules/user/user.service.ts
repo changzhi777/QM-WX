@@ -13,11 +13,16 @@ import { prisma } from '../../infra/prisma.js';
 import { userRepo } from './user.repository.js';
 import { code2Session } from '../../common/integrations/wx/code2session.js';
 import { Errors } from '../../common/errors.js';
+import { Cache } from '../../infra/cache.js';
 import { configRepo } from '../app-config/app-config.repository.js';
 import { POINTS_RULES_DEFAULT } from '@qm-wx/shared';
 import type { LoginInput, UpdateProfileInput, BindAppsInput } from './user.schema.js';
 
 const SIGNUP_BONUS = POINTS_RULES_DEFAULT.signupBonus;
+
+/** me 缓存 TTL：30s（user 信息变更频繁：积分/会员/打卡/订单，30s 平衡） */
+const ME_CACHE_TTL_SEC = 30;
+const meCacheKey = (userId: string) => `user:me:${userId}`;
 
 export const userService = {
   /**
@@ -84,20 +89,32 @@ export const userService = {
     };
   },
 
-  /** 更新资料（字段白名单） */
+  /** 更新资料（字段白名单，V0.1.8 增 me 缓存失效） */
   async updateProfile(userId: string, input: UpdateProfileInput) {
     const updated = await userRepo.updateProfile(userId, {
       ...(input.nickname !== undefined && { nickname: input.nickname }),
       ...(input.avatarFileID !== undefined && { avatarUrl: input.avatarFileID }),
     });
+    // 写后精准失效 me 缓存（资料变更 → 下次 me 必拿到新值）
+    await Cache.del(meCacheKey(userId));
     return toUserOutput(updated);
   },
 
-  /** 拿当前 user（me 端点用） */
+  /**
+   * 拿当前 user（me 端点用，V0.1.8 增 Cache.wrap）
+   *
+   * 缓存策略：Cache.wrap + 30s TTL
+   * - 命中：~0.5ms（小程序启动查 me，热路径）
+   * - 未命中：1 DB + 写回缓存
+   * - 写失效：updateProfile 后 del key（其他写点：打卡/订单/会员变更 由 30s TTL 兜底）
+   * - cache fail-open：Redis 挂掉时静默降级直查 DB
+   */
   async getById(userId: string) {
-    const user = await userRepo.findById(userId);
-    if (!user) throw Errors.notFound('user not found');
-    return toUserOutput(user);
+    return Cache.wrap(meCacheKey(userId), ME_CACHE_TTL_SEC, async () => {
+      const user = await userRepo.findById(userId);
+      if (!user) throw Errors.notFound('user not found');
+      return toUserOutput(user);
+    });
   },
 
   /**
