@@ -147,6 +147,44 @@ describe.skipIf(skip)('OpenAPI spec e2e 校验（CI gate）', () => {
     });
   });
 
+  // ===== V0.1.4 增 schema 校验（schemas 15+）=====
+  itE2E('含 RefundResp schema（V0.1.4 增）', async () => {
+    const res = await app.inject({ method: 'GET', url: '/openapi.json' });
+    const spec = res.json() as { components: { schemas: Record<string, { properties?: Record<string, unknown> }> } };
+    expect(spec.components.schemas.RefundResp).toBeDefined();
+    expect(spec.components.schemas.RefundResp.properties).toHaveProperty('refundId');
+    expect(spec.components.schemas.RefundResp.properties).toHaveProperty('status');
+  });
+
+  itE2E('含 CheckinResp / WalletInfo / TransactionResp / ProductDetail / ContentItem 5 个 schema', async () => {
+    const res = await app.inject({ method: 'GET', url: '/openapi.json' });
+    const spec = res.json() as { components: { schemas: Record<string, unknown> } };
+    const schemas = Object.keys(spec.components.schemas);
+    // V0.1.3 = 9 schemas（5 user/order/refund/checkin/api envelope + 4 旧），V0.1.4 新增 5 = 14+
+    expect(schemas.length).toBeGreaterThanOrEqual(14);
+    for (const name of ['CheckinResp', 'WalletInfo', 'TransactionResp', 'ProductDetail', 'ContentItem']) {
+      expect(schemas, `缺 schema ${name}`).toContain(name);
+    }
+  });
+
+  itE2E('TransactionResp.outRefundNo 字段在（Phase 4.1 退款幂等 key）', async () => {
+    const res = await app.inject({ method: 'GET', url: '/openapi.json' });
+    const spec = res.json() as {
+      components: { schemas: { TransactionResp: { properties: Record<string, { type?: string }> } } };
+    };
+    expect(spec.components.schemas.TransactionResp.properties.outRefundNo).toBeDefined();
+    expect(spec.components.schemas.TransactionResp.properties.outRefundNo.type).toBe('string');
+  });
+
+  itE2E('ProductDetail 字段类型：stock=integer, status=on/off', async () => {
+    const res = await app.inject({ method: 'GET', url: '/openapi.json' });
+    const spec = res.json() as {
+      components: { schemas: { ProductDetail: { properties: Record<string, { type?: string; enum?: string[] }> } } };
+    };
+    expect(spec.components.schemas.ProductDetail.properties.stock.type).toBe('integer');
+    expect(spec.components.schemas.ProductDetail.properties.status.enum).toEqual(['on', 'off']);
+  });
+
   // 确保 prisma client 已连（e2e 真 DB 校验，e2e 必须配 PG）
   itE2E('prisma 连通（admin_whitelist 可查）', async () => {
     const row = await prisma.appConfig.findUnique({ where: { id: 'admin_whitelist' } });

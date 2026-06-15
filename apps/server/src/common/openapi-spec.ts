@@ -240,6 +240,92 @@ export const openapiSpec: Document = {
           pageSize: { type: 'integer', minimum: 1, maximum: 50, default: 20 },
         },
       },
+
+      // ===== 扩展 schemas（V0.1.4 增）=====
+      RefundResp: {
+        type: 'object',
+        properties: {
+          refundId: { type: 'string' },
+          outTradeNo: { type: 'string' },
+          transactionId: { type: 'string' },
+          amount: {
+            type: 'object',
+            properties: {
+              refund: { type: 'integer', description: '分' },
+              total: { type: 'integer', description: '分' },
+              payerTotal: { type: 'integer', nullable: true },
+              settlementTotal: { type: 'integer', nullable: true },
+            },
+          },
+          status: {
+            type: 'string',
+            enum: ['SUCCESS', 'PROCESSING', 'CLOSED', 'ABNORMAL'],
+          },
+        },
+      },
+      CheckinResp: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          points: { type: 'integer' },
+          steps: { type: 'integer' },
+          date: { type: 'string' },
+        },
+      },
+      WalletInfo: {
+        type: 'object',
+        properties: {
+          balance: { type: 'string', description: '元（Decimal 字符串）' },
+          status: { type: 'string', enum: ['active', 'frozen'] },
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      TransactionResp: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          userId: { type: 'string' },
+          type: { type: 'string', enum: ['recharge', 'consume', 'refund'] },
+          amount: { type: 'string' },
+          orderId: { type: 'string', nullable: true },
+          wxTransactionId: { type: 'string', nullable: true },
+          outRefundNo: { type: 'string', nullable: true },
+          status: { type: 'string', enum: ['success', 'pending', 'failed'] },
+          createdAt: { type: 'string', format: 'date-time' },
+        },
+      },
+      ProductDetail: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          name: { type: 'string' },
+          category: { type: 'string' },
+          price: { type: 'string' },
+          originalPrice: { type: 'string', nullable: true },
+          memberDiscount: { type: 'number', nullable: true },
+          images: { type: 'array', items: { type: 'string' } },
+          description: { type: 'string', nullable: true },
+          stock: { type: 'integer' },
+          status: { type: 'string', enum: ['on', 'off'] },
+        },
+      },
+      ContentItem: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          type: { type: 'string', enum: ['article', 'marathon', 'event', 'course'] },
+          title: { type: 'string' },
+          cover: { type: 'string', nullable: true },
+          summary: { type: 'string', nullable: true },
+          price: { type: 'number', nullable: true },
+          fee: { type: 'number', nullable: true },
+          date: { type: 'string', nullable: true },
+          location: { type: 'string', nullable: true },
+          tags: { type: 'array', items: { type: 'string' }, nullable: true },
+          actionType: { type: 'string', enum: ['enroll', 'book', 'link', 'none'] },
+          status: { type: 'string', enum: ['on', 'off'] },
+        },
+      },
     },
   },
   security: [{ bearerAuth: [] }],
