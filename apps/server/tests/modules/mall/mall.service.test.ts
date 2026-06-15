@@ -275,11 +275,11 @@ describe('mallService.listProducts（带缓存）', () => {
   });
 });
 
-describe('invalidateProductsCache（admin 写后失效）', () => {
-  it('抹掉所有 mall:listProducts:* 缓存', async () => {
+describe('invalidateProductsCache（admin 写后失效，V0.1.7 扩 mall:*）', () => {
+  it('抹掉所有 mall:* 命名空间缓存（listProducts + listCategories）', async () => {
     _redisMockState.cacheStore.set('qmwx:cache:mall:listProducts::::1:10', '{}');
     _redisMockState.cacheStore.set('qmwx:cache:mall:listProducts:鞋服:::1:10', '{}');
-    _redisMockState.cacheStore.set('qmwx:cache:mall:listProducts:器材:brand-a:1:20', '{}');
+    _redisMockState.cacheStore.set('qmwx:cache:mall:listCategories:withCount', '{"categories":[]}');
     // 无关 key 不该被抹
     _redisMockState.cacheStore.set('qmwx:cache:sport:today:u1:2026-06-15', '{}');
 
@@ -288,8 +288,94 @@ describe('invalidateProductsCache（admin 写后失效）', () => {
     expect(deleted).toBe(3);
     expect(_redisMockState.cacheStore.has('qmwx:cache:mall:listProducts::::1:10')).toBe(false);
     expect(_redisMockState.cacheStore.has('qmwx:cache:mall:listProducts:鞋服:::1:10')).toBe(false);
-    expect(_redisMockState.cacheStore.has('qmwx:cache:mall:listProducts:器材:brand-a:1:20')).toBe(false);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:mall:listCategories:withCount')).toBe(false);
     // 无关 key 保持
     expect(_redisMockState.cacheStore.has('qmwx:cache:sport:today:u1:2026-06-15')).toBe(true);
+  });
+});
+
+// ===== V0.1.7 增：listCategories 缓存行为 =====
+describe('mallService.listCategories（带缓存）', () => {
+  it('includeCount=true 首次：miss → 调 groupBy + 回填缓存', async () => {
+    mocks.productMethods.groupBy.mockResolvedValue([
+      { category: '鞋服', _count: { category: 12 } },
+      { category: '器材', _count: { category: 5 } },
+    ] as never);
+
+    const result = await mallService.listCategories({ includeCount: true });
+
+    expect(result.categories).toEqual([
+      { name: '鞋服', count: 12 },
+      { name: '器材', count: 5 },
+    ]);
+    expect(mocks.productMethods.groupBy).toHaveBeenCalledTimes(1);
+    // 缓存已回填
+    const cached = _redisMockState.cacheStore.get('qmwx:cache:mall:listCategories:withCount');
+    expect(cached).toBeDefined();
+    expect(JSON.parse(cached!)).toMatchObject({
+      categories: [
+        { name: '鞋服', count: 12 },
+        { name: '器材', count: 5 },
+      ],
+    });
+  });
+
+  it('includeCount=true 二次：命中缓存 → 不再调 groupBy', async () => {
+    // 预热缓存
+    _redisMockState.cacheStore.set(
+      'qmwx:cache:mall:listCategories:withCount',
+      JSON.stringify({ categories: [{ name: '缓存分类', count: 99 }] }),
+    );
+
+    const result = await mallService.listCategories({ includeCount: true });
+
+    expect(result.categories).toEqual([{ name: '缓存分类', count: 99 }]);
+    // 命中：groupBy 一次都没调
+    expect(mocks.productMethods.groupBy).not.toHaveBeenCalled();
+  });
+
+  it('includeCount=false：不缓存（distinct 极轻量）', async () => {
+    mocks.productMethods.findMany.mockResolvedValue([{ category: '鞋服' }, { category: '器材' }] as never);
+
+    // 首次
+    const r1 = await mallService.listCategories({ includeCount: false });
+    // 二次
+    const r2 = await mallService.listCategories({ includeCount: false });
+
+    expect(r1.categories).toEqual([{ name: '鞋服', count: 0 }, { name: '器材', count: 0 }]);
+    expect(r2.categories).toEqual([{ name: '鞋服', count: 0 }, { name: '器材', count: 0 }]);
+    // includeCount=false 不应产生任何 mall:listCategories: 缓存
+    const catKeys = Array.from(_redisMockState.cacheStore.keys()).filter((k) =>
+      k.startsWith('qmwx:cache:mall:listCategories:'),
+    );
+    expect(catKeys).toHaveLength(0);
+    // findEach 调 2 次（不缓存）
+    expect(mocks.productMethods.findMany).toHaveBeenCalledTimes(2);
+  });
+
+  it('写后失效（invalidateProductsCache）后 → 重新走 groupBy', async () => {
+    // 预热：分类已缓存
+    _redisMockState.cacheStore.set(
+      'qmwx:cache:mall:listCategories:withCount',
+      JSON.stringify({ categories: [{ name: '旧分类', count: 1 }] }),
+    );
+
+    // 1. 命中（不调 groupBy）
+    let result = await mallService.listCategories({ includeCount: true });
+    expect(result.categories[0].name).toBe('旧分类');
+    expect(mocks.productMethods.groupBy).toHaveBeenCalledTimes(0);
+
+    // 2. 失效
+    await invalidateProductsCache();
+
+    // 3. mock 新 groupBy 结果
+    mocks.productMethods.groupBy.mockResolvedValue([
+      { category: '新分类', _count: { category: 7 } },
+    ] as never);
+
+    // 4. 重新走 DB（cache miss）
+    result = await mallService.listCategories({ includeCount: true });
+    expect(result.categories[0].name).toBe('新分类');
+    expect(mocks.productMethods.groupBy).toHaveBeenCalledTimes(1);
   });
 });

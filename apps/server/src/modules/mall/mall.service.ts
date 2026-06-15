@@ -11,26 +11,42 @@ const LIST_PRODUCTS_CACHE_TTL_SEC = 60;
 const listProductsCacheKey = (input: ListProductsInput) =>
   `mall:listProducts:${input.category ?? ''}:${input.brand ?? ''}:${input.keyword ?? ''}:${input.page}:${input.pageSize}`;
 
+/** listCategories（includeCount=true）缓存 TTL：60s */
+const LIST_CATEGORIES_CACHE_TTL_SEC = 60;
+const LIST_CATEGORIES_CACHE_KEY = 'mall:listCategories:withCount';
+
 export const mallService = {
   /**
    * 分类列表（从商品表聚合 distinct category）
+   *
+   * 缓存策略（V0.1.7 增）：
+   * - includeCount=true：走 Cache.wrap（60s TTL）— groupBy 是 N 分类聚合，公开热路径
+   * - includeCount=false：不缓存（distinct 极轻量，缓存收益 < 维护成本）
+   * - 写商品（admin.upsertProduct）后由 invalidateProductsCache() 抹掉（pattern 含 mall:*）
    */
   async listCategories(input: ListCategoriesInput) {
     if (input.includeCount) {
-      const rows = await prisma.product.groupBy({
-        by: ['category'],
-        where: { status: 'on' },
-        _count: { category: true },
-        orderBy: { _count: { category: 'desc' } },
-      });
-      return {
-        categories: rows.map((r) => ({
-          name: r.category,
-          count: r._count.category,
-        })),
-      };
+      const result = await Cache.wrap(
+        LIST_CATEGORIES_CACHE_KEY,
+        LIST_CATEGORIES_CACHE_TTL_SEC,
+        async () => {
+          const rows = await prisma.product.groupBy({
+            by: ['category'],
+            where: { status: 'on' },
+            _count: { category: true },
+            orderBy: { _count: { category: 'desc' } },
+          });
+          return {
+            categories: rows.map((r) => ({
+              name: r.category,
+              count: r._count.category,
+            })),
+          };
+        },
+      );
+      return result;
     }
-    // 轻量查询：只拿 distinct category
+    // 轻量查询：只拿 distinct category（不缓存）
     const rows = await prisma.product.findMany({
       where: { status: 'on' },
       select: { category: true },
@@ -106,9 +122,9 @@ export const mallService = {
 
 /**
  * 商品写后失效工具（admin.upsertProduct 调用）
- * 用 SCAN 抹掉所有分页/分类/品牌/关键词组合的缓存
+ * 用 SCAN 抹掉 mall:* 命名空间下所有缓存（listProducts 全分页 + listCategories withCount）
  * 失败静默 — 商品写操作不应被缓存清理失败阻塞
  */
 export async function invalidateProductsCache(): Promise<number> {
-  return Cache.delByPattern('mall:listProducts:*');
+  return Cache.delByPattern('mall:*');
 }
