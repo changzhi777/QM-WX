@@ -76,7 +76,7 @@ function setupMockRedis() {
   });
 }
 
-import { mallService, invalidateProductsCache } from '../../../src/modules/mall/mall.service.js';
+import { mallService, invalidateProductsCache, invalidateProductDetail } from '../../../src/modules/mall/mall.service.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -198,12 +198,14 @@ describe('mallService.listProducts', () => {
 });
 
 describe('mallService.productDetail', () => {
-  it('商品不存在 → notFound', async () => {
+  it('商品不存在 → notFound（不缓存，防穿透）', async () => {
     mocks.productMethods.findUnique.mockResolvedValue(null);
     await expect(mallService.productDetail('x')).rejects.toThrow(/商品不存在/);
+    // 异常不缓存（Cache.wrap propagate loader 抛错）
+    expect(_redisMockState.cacheStore.has('qmwx:cache:mall:productDetail:x')).toBe(false);
   });
 
-  it('商品已下架（status=off）→ notFound', async () => {
+  it('商品已下架（status=off）→ notFound（不缓存）', async () => {
     mocks.productMethods.findUnique.mockResolvedValue({
       id: 'p1',
       name: '已下架',
@@ -211,9 +213,10 @@ describe('mallService.productDetail', () => {
       price: { toString: () => '1' } as unknown as number,
     });
     await expect(mallService.productDetail('p1')).rejects.toThrow(/下架/);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:mall:productDetail:p1')).toBe(false);
   });
 
-  it('正常：返回序列化商品', async () => {
+  it('正常：返回序列化商品 + 回填缓存', async () => {
     mocks.productMethods.findUnique.mockResolvedValue({
       id: 'p1',
       name: '跑鞋',
@@ -224,6 +227,80 @@ describe('mallService.productDetail', () => {
     const result = await mallService.productDetail('p1');
     expect(result.product.price).toBe('299.00');
     expect(result.product.originalPrice).toBe('399.00');
+    // 缓存已回填
+    const cached = _redisMockState.cacheStore.get('qmwx:cache:mall:productDetail:p1');
+    expect(cached).toBeDefined();
+  });
+});
+
+// ===== V0.1.9 增：productDetail 缓存行为 + invalidateProductDetail =====
+describe('mallService.productDetail（带缓存，V0.1.9）', () => {
+  it('首次 miss → 调 findUnique + 回填缓存', async () => {
+    mocks.productMethods.findUnique.mockResolvedValue({
+      id: 'p2',
+      name: '缓存跑鞋',
+      status: 'on',
+      price: { toString: () => '199.00' } as unknown as number,
+      originalPrice: null,
+    } as never);
+
+    const result = await mallService.productDetail('p2');
+
+    expect(result.product.name).toBe('缓存跑鞋');
+    expect(mocks.productMethods.findUnique).toHaveBeenCalledTimes(1);
+    const cached = _redisMockState.cacheStore.get('qmwx:cache:mall:productDetail:p2');
+    expect(cached).toBeDefined();
+  });
+
+  it('二次同 id：命中缓存 → 不再调 findUnique', async () => {
+    // 预热缓存
+    _redisMockState.cacheStore.set(
+      'qmwx:cache:mall:productDetail:p3',
+      JSON.stringify({ product: { id: 'p3', name: '缓存商品', price: '99.00', originalPrice: null, status: 'on' } }),
+    );
+
+    const result = await mallService.productDetail('p3');
+
+    expect(result.product.name).toBe('缓存商品');
+    // 命中：findUnique 一次都没调
+    expect(mocks.productMethods.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('不同 productId → 不同 cache key（不串扰）', async () => {
+    mocks.productMethods.findUnique.mockResolvedValue({
+      id: 'px',
+      name: 'X',
+      status: 'on',
+      price: { toString: () => '1' } as unknown as number,
+      originalPrice: null,
+    } as never);
+
+    await mallService.productDetail('p4');
+    await mallService.productDetail('p5');
+
+    expect(_redisMockState.cacheStore.has('qmwx:cache:mall:productDetail:p4')).toBe(true);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:mall:productDetail:p5')).toBe(true);
+  });
+});
+
+describe('invalidateProductDetail（V0.1.9 增 admin 写后精准单 key 失效）', () => {
+  it('精准删单个 productId 缓存，不影响其他 product', async () => {
+    _redisMockState.cacheStore.set('qmwx:cache:mall:productDetail:p1', '{}');
+    _redisMockState.cacheStore.set('qmwx:cache:mall:productDetail:p2', '{}');
+    _redisMockState.cacheStore.set('qmwx:cache:mall:listProducts::::1:10', '{}');
+
+    await invalidateProductDetail('p1');
+
+    expect(_redisMockState.cacheStore.has('qmwx:cache:mall:productDetail:p1')).toBe(false);
+    // 其他 product 缓存保持
+    expect(_redisMockState.cacheStore.has('qmwx:cache:mall:productDetail:p2')).toBe(true);
+    // listProducts 缓存保持（精准失效不动它）
+    expect(_redisMockState.cacheStore.has('qmwx:cache:mall:listProducts::::1:10')).toBe(true);
+  });
+
+  it('cache miss 时调用也安全', async () => {
+    // 缓存里啥也没有 — del 静默返回 0
+    await expect(invalidateProductDetail('ghost')).resolves.toBe(1); // .then(() => 1) 永远返 1
   });
 });
 

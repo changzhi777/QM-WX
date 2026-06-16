@@ -15,6 +15,10 @@ const listProductsCacheKey = (input: ListProductsInput) =>
 const LIST_CATEGORIES_CACHE_TTL_SEC = 60;
 const LIST_CATEGORIES_CACHE_KEY = 'mall:listCategories:withCount';
 
+/** productDetail 缓存 TTL：5min（商品详情变更极少，5min 长 TTL） */
+const PRODUCT_DETAIL_CACHE_TTL_SEC = 300;
+const productDetailCacheKey = (id: string) => `mall:productDetail:${id}`;
+
 export const mallService = {
   /**
    * 分类列表（从商品表聚合 distinct category）
@@ -106,17 +110,29 @@ export const mallService = {
     });
   },
 
+  /**
+   * 商品详情（V0.1.9 增 Cache.wrap）
+   *
+   * 缓存策略：Cache.wrap + 5min TTL
+   * - 命中：~0.5ms（商品详情页，QPS 高）
+   * - 未命中：1 DB + 写回缓存
+   * - 写后失效：admin.upsertProduct 调 invalidateProductDetail(id) 精准单 key（不等 TTL）
+   * - 异常不缓存：商品不存在 / 已下架 → 抛 notFound，Cache.wrap propagate，不缓存错误（防穿透）
+   * - cache fail-open：Redis 挂掉静默降级直查 DB
+   */
   async productDetail(id: string) {
-    const p = await prisma.product.findUnique({ where: { id } });
-    if (!p) throw Errors.notFound('商品不存在');
-    if (p.status !== 'on') throw Errors.notFound('商品已下架');
-    return {
-      product: {
-        ...p,
-        price: p.price.toString(),
-        originalPrice: p.originalPrice?.toString() ?? null,
-      },
-    };
+    return Cache.wrap(productDetailCacheKey(id), PRODUCT_DETAIL_CACHE_TTL_SEC, async () => {
+      const p = await prisma.product.findUnique({ where: { id } });
+      if (!p) throw Errors.notFound('商品不存在');
+      if (p.status !== 'on') throw Errors.notFound('商品已下架');
+      return {
+        product: {
+          ...p,
+          price: p.price.toString(),
+          originalPrice: p.originalPrice?.toString() ?? null,
+        },
+      };
+    });
   },
 };
 
@@ -127,4 +143,13 @@ export const mallService = {
  */
 export async function invalidateProductsCache(): Promise<number> {
   return Cache.delByPattern('mall:*');
+}
+
+/**
+ * 单商品精准失效（admin.upsertProduct 调用）
+ * 抹掉单个 productId 的详情缓存（不等 5min TTL）
+ * 失败静默
+ */
+export async function invalidateProductDetail(productId: string): Promise<number> {
+  return Cache.del(productDetailCacheKey(productId)).then(() => 1);
 }

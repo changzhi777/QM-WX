@@ -38,23 +38,28 @@ vi.mock('src/infra/prisma.js', () => {
 });
 
 // Mock Redis — Cache.wrap / Cache.del 需要 redis.get/set/del
-// 用内存 Map 模拟，get 返字符串（Cache 会 JSON.parse）
-const _cacheStore = new Map<string, string>();
-vi.mock('src/infra/redis.js', () => ({
-  redis: {
-    get: vi.fn(async (k: string) => _cacheStore.get(k) ?? null),
-    set: vi.fn(async (k: string, v: string) => {
-      _cacheStore.set(k, v);
-      return 'OK';
-    }),
-    del: vi.fn(async (k: string) => {
-      const had = _cacheStore.has(k);
-      _cacheStore.delete(k);
-      return had ? 1 : 0;
-    }),
-    scan: vi.fn(async () => ['0', []] as [string, string[]]),
-  },
+// 用 vi.hoisted + setupMockRedis 避免 vi.clearAllMocks 清掉 mock 实现
+const _redisMockState = vi.hoisted(() => ({
+  cacheStore: new Map<string, string>(),
+  redis: { get: vi.fn(), set: vi.fn(), del: vi.fn(), scan: vi.fn() },
 }));
+
+vi.mock('src/infra/redis.js', () => ({ redis: _redisMockState.redis }));
+
+function setupMockRedis() {
+  const { cacheStore, redis } = _redisMockState;
+  redis.get.mockImplementation(async (k: string) => cacheStore.get(k) ?? null);
+  redis.set.mockImplementation(async (k: string, v: string) => {
+    cacheStore.set(k, v);
+    return 'OK';
+  });
+  redis.del.mockImplementation(async (k: string) => {
+    const had = cacheStore.has(k);
+    cacheStore.delete(k);
+    return had ? 1 : 0;
+  });
+  redis.scan.mockImplementation(async () => ['0', []] as [string, string[]]);
+}
 
 import { prisma } from 'src/infra/prisma.js';
 import { sportService } from 'src/modules/sport/sport.service.js';
@@ -68,6 +73,8 @@ const tx = (prisma as unknown as { _tx: unknown })._tx as {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  _redisMockState.cacheStore.clear();
+  setupMockRedis();
   mockedPrisma.appConfig.findMany.mockResolvedValue([]);
   // 默认 appConfig 内存默认值：perKm=1, dailyMaxKm=50, dailyMaxCheckins=1
 });
@@ -243,11 +250,19 @@ describe('sportService.createGroup', () => {
 });
 
 // ===== V0.1.5 增：Cache.wrap 接入 today 行为 =====
+// 锁时间到 2026-06-15：todayCN() 用系统时钟，否则 key 包含真实日期导致缓存 miss
+const FROZEN_DATE = new Date('2026-06-15T12:00:00Z');
 describe('sportService.today（带缓存）', () => {
   const USER_ID = 'u1';
 
   beforeEach(() => {
-    _cacheStore.clear();
+    _redisMockState.cacheStore.clear();
+    vi.useFakeTimers();
+    vi.setSystemTime(FROZEN_DATE);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('首次调用 → miss → 走 sportRepo + 回填缓存', async () => {
@@ -271,15 +286,15 @@ describe('sportService.today（带缓存）', () => {
     expect(result.checkin?.distance).toBe(5);
     expect(mockedPrisma.checkin.findFirst).toHaveBeenCalledTimes(1);
     // 缓存已回填（key 含 userId + date）
-    expect(_cacheStore.size).toBeGreaterThanOrEqual(1);
-    const cached = _cacheStore.get('qmwx:cache:sport:today:u1:2026-06-15');
+    expect(_redisMockState.cacheStore.size).toBeGreaterThanOrEqual(1);
+    const cached = _redisMockState.cacheStore.get('qmwx:cache:sport:today:u1:2026-06-15');
     expect(cached).toBeDefined();
     expect(JSON.parse(cached!)).toMatchObject({ done: true, checkin: { distance: 5 } });
   });
 
   it('二次调用 → 命中缓存 → 不再调 sportRepo', async () => {
     // 预热缓存（模拟上次调用的产物）
-    _cacheStore.set(
+    _redisMockState.cacheStore.set(
       'qmwx:cache:sport:today:u1:2026-06-15',
       JSON.stringify({ date: '2026-06-15', done: true, checkin: { distance: 5, durationSec: 1800, pace: 6, points: 5, createdAt: '2026-06-15T08:00:00.000Z' } }),
     );
@@ -304,13 +319,19 @@ describe('sportService.checkin → 写后精准失效今日缓存', () => {
   const USER_ID = 'u1';
 
   beforeEach(() => {
-    _cacheStore.clear();
+    _redisMockState.cacheStore.clear();
+    vi.useFakeTimers();
+    vi.setSystemTime(FROZEN_DATE);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('打卡成功 → 删 sport:today:{userId}:{date} 缓存（不等 TTL）', async () => {
     // 预热：模拟用户 1 分钟前看过 today（done=false）
     const todayKey = 'qmwx:cache:sport:today:u1:2026-06-15';
-    _cacheStore.set(todayKey, JSON.stringify({ date: '2026-06-15', done: false, checkin: null }));
+    _redisMockState.cacheStore.set(todayKey, JSON.stringify({ date: '2026-06-15', done: false, checkin: null }));
 
     mockedPrisma.checkin.findFirst.mockResolvedValue(null); // 今日未打卡
     tx.user.findUniqueOrThrow.mockResolvedValue({ id: USER_ID, points: 100, stats: {} });
@@ -318,12 +339,12 @@ describe('sportService.checkin → 写后精准失效今日缓存', () => {
     await sportService.checkin(USER_ID, { distance: 5 });
 
     // 缓存已被精准失效
-    expect(_cacheStore.has(todayKey)).toBe(false);
+    expect(_redisMockState.cacheStore.has(todayKey)).toBe(false);
   });
 
   it('打卡失败（已打卡） → 缓存不动', async () => {
     const todayKey = 'qmwx:cache:sport:today:u1:2026-06-15';
-    _cacheStore.set(todayKey, JSON.stringify({ date: '2026-06-15', done: true, checkin: {} }));
+    _redisMockState.cacheStore.set(todayKey, JSON.stringify({ date: '2026-06-15', done: true, checkin: {} }));
 
     mockedPrisma.checkin.findFirst.mockResolvedValue({ id: 'c1' } as never); // 今日已打卡
 
@@ -332,6 +353,6 @@ describe('sportService.checkin → 写后精准失效今日缓存', () => {
     ).rejects.toThrow('今日已打卡');
 
     // 缓存未动（事务回滚 → 不该失效缓存）
-    expect(_cacheStore.has(todayKey)).toBe(true);
+    expect(_redisMockState.cacheStore.has(todayKey)).toBe(true);
   });
 });
