@@ -18,7 +18,7 @@
 - 主仓 `qingmu/qm-wx`：`git tag v{MAJOR}.{MINOR}.{PATCH}`，tag 打在每个 commit 段最后
 - 独立仓 `qingmu/qm-admin`：同步独立管理
 
-**当前版本**：`V0.1.0`（首版）
+**当前版本**：`V0.1.12`（V0.1.0 首版 + 12 个 PATCH 段）
 
 ---
 
@@ -66,6 +66,52 @@
 - 佳明 Connect Developer Program（1-2 周）—— V2 设备
 - 小米开放平台（2-4d + 3-5d）—— V2 设备
 - 律动后端契约对齐 —— V2 律动对接
+
+---
+
+## [Unreleased] — 性能优化：Cache 基础设施接入（V0.1.5 ~ V0.1.10）
+
+后端 `infra/cache.ts` 的 `Cache.wrap` 接入公开/鉴权热路径，命中 ~0.5ms 替代 5-10ms DB 查询。
+Decimal 字段进缓存前显式 `toString()` 序列化（避免 JSON 损坏 + 缓存 hit/miss 类型一致）。
+
+| 版本 | 端点 | 类型 | TTL | 失效策略 |
+| --- | --- | --- | --- | --- |
+| V0.1.5 | sport.today | 鉴权 | 60s | 精准单 key |
+| V0.1.6 | mall.listProducts | 公开 | 60s | pattern 抹全分页 |
+| V0.1.7 | mall.listCategories | 公开 | 60s | pattern 抹全 mall |
+| V0.1.8 | user.me | 鉴权 | 30s | 精准单 key |
+| V0.1.9 | mall.productDetail | 鉴权 | 5min | 精准单 key |
+| **V0.1.10** | **content.list** | **公开** | **60s** | **pattern 抹全 content** |
+| **V0.1.10** | **content.detail** | **公开** | **5min** | **精准单 key** |
+| **V0.1.11** | **sport.myStats** | **鉴权** | **60s** | **pattern 抹用户全 period** |
+| **V0.1.11** | **sport.groupRanking** | **鉴权** | **60s** | **pattern 抹群全 period（群维度共享）** |
+| **V0.1.12** | **weekly-report.aggregate** | **鉴权** | **60s** | **pattern 抹群周报（群维度共享）** |
+
+**V0.1.10 详情**：
+
+- **server**：`content.list` / `content.detail` 接 `Cache.wrap`（公开端点，QPS 高）
+- **server**：`price` / `fee`（Decimal?）进缓存前显式 `toString()` 序列化（对齐 mall，顺带修一致性）
+- **server**：`admin.upsertContent` 写后失效（`invalidateContentsCache` pattern + `invalidateContentDetail` 精准单 key）
+- **tests**：`content.service` 单测 8 → 16（+ Decimal 序列化断言 + 缓存 hit/miss + invalidate 行为）
+- 测试 **353 unit 全绿** / 3 端 typecheck 全绿（shared / server / miniprogram）
+
+**V0.1.11 详情**：
+
+- **server**：`sport.myStats`（个人统计）接 `Cache.wrap`（60s，拉全周期 checkins + reduce）
+- **server**：`sport.groupRanking`（群榜单）接 `Cache.wrap`（60s，sport **最重查询**：拉全群全周期 checkins + 按 userId 聚合 + sort + slice；**群维度缓存**，N 人查同榜共享）
+- **server**：`groupRanking` 鉴权（isMember）留在 wrap 外 — 非成员抛 forbidden 不进缓存
+- **server**：`checkin` 写后失效新增：`delByPattern('sport:myStats:{userId}:*')` + 带 groupId 时 `delByPattern('sport:groupRanking:{groupId}:*')`
+- **tests**：`sport.service` 单测 17 → 25（+ 缓存 hit/miss + 群维度共享 + checkin 写后失效；scan mock 从返空增强为 pattern 匹配）
+- 测试 **361 unit 全绿** / 3 端 typecheck 全绿
+
+**V0.1.12 详情**：
+
+- **server**：`weekly-report.aggregate` 接 `Cache.wrap`（60s，周报最重查询：拉全群本周 checkins + 聚合 + sort + top5）
+- **server**：缓存 **aggregate 而非 currentWeek** — aggregate 是群维度（currentWeek/myReport/trigger 共享），A 打卡失效群 g1 单一缓存，所有查 g1 的人共享受益（解决按 userId 缓存的跨用户失效难题）
+- **server**：key 含 period（本周周号）— 跨周自动不命中旧周（同 sport.today 跨日坑）
+- **server**：`checkin` 带 groupId 失效新增 `delByPattern('weeklyReport:aggregate:{groupId}:*')`
+- **tests**：`weekly-report.service` 单测 12 → 16（+ aggregate 缓存 hit/miss + 跨 period + 防穿透）；`sport.service` checkin 失效测试增强 weeklyReport 断言
+- 测试 **365 unit 全绿** / 3 端 typecheck 全绿
 
 ---
 

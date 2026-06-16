@@ -12,7 +12,13 @@
  */
 import { prisma } from '../../infra/prisma.js';
 import { Errors } from '../../common/errors.js';
+import { Cache } from '../../infra/cache.js';
 import type { WeeklyReport, WeeklyReportMember } from '@qm-wx/shared';
+
+/** aggregate 缓存 TTL：60s（群周报随群成员打卡变化，60s 容忍延迟） */
+const AGGREGATE_CACHE_TTL_SEC = 60;
+const aggregateCacheKey = (groupId: string, period: string) =>
+  `weeklyReport:aggregate:${groupId}:${period}`;
 
 // ===== 工具：周编号 + 起止日期 =====
 function isoWeek(date: Date): { period: string; start: Date; end: Date } {
@@ -73,7 +79,14 @@ export const weeklyReportService = {
   },
 
   /**
-   * 单群聚合
+   * 单群聚合（V0.1.12 增 Cache.wrap）
+   *
+   * 缓存策略：Cache.wrap + 60s TTL + key 含 groupId/period（群维度，currentWeek/myReport/trigger 共享）
+   * - 命中：~0.5ms（避免拉全群本周 checkins + 聚合 + sort，周报最重查询）
+   * - 群维度缓存：A 打卡失效群 g1 单一缓存，所有查 g1 的人共享受益（跨用户失效难题的解法）
+   * - 写后失效：checkin 带 groupId 成功后 delByPattern('weeklyReport:aggregate:{groupId}:*')
+   * - key 含 period：跨周后 period 变，自动不命中旧周（同 sport.today 跨日坑）
+   * - cache fail-open
    */
   async aggregate(
     groupId: string,
@@ -81,62 +94,64 @@ export const weeklyReportService = {
     start: Date,
     end: Date,
   ): Promise<WeeklyReport> {
-    const group = await prisma.group.findUnique({ where: { id: groupId } });
-    if (!group) throw Errors.notFound('群不存在');
+    return Cache.wrap(aggregateCacheKey(groupId, period), AGGREGATE_CACHE_TTL_SEC, async () => {
+      const group = await prisma.group.findUnique({ where: { id: groupId } });
+      if (!group) throw Errors.notFound('群不存在');
 
-    const checkins = await prisma.checkin.findMany({
-      where: { groupId, createdAt: { gte: start, lte: end } },
-      include: { user: { select: { id: true, nickname: true, avatarUrl: true } } },
-    });
+      const checkins = await prisma.checkin.findMany({
+        where: { groupId, createdAt: { gte: start, lte: end } },
+        include: { user: { select: { id: true, nickname: true, avatarUrl: true } } },
+      });
 
-    // 聚合
-    const map = new Map<
-      string,
-      { distance: number; count: number; points: number; user: { id: string; nickname: string | null; avatarUrl: string | null } }
-    >();
-    for (const c of checkins) {
-      const cur = map.get(c.userId) ?? {
-        distance: 0,
-        count: 0,
-        points: 0,
-        user: c.user,
+      // 聚合
+      const map = new Map<
+        string,
+        { distance: number; count: number; points: number; user: { id: string; nickname: string | null; avatarUrl: string | null } }
+      >();
+      for (const c of checkins) {
+        const cur = map.get(c.userId) ?? {
+          distance: 0,
+          count: 0,
+          points: 0,
+          user: c.user,
+        };
+        cur.distance += c.distance;
+        cur.count += 1;
+        cur.points += c.points;
+        map.set(c.userId, cur);
+      }
+
+      const sorted: WeeklyReportMember[] = Array.from(map.values())
+        .map((m, i) => ({
+          userId: m.user.id,
+          nickname: m.user.nickname ?? '匿名',
+          avatarUrl: m.user.avatarUrl,
+          distance: round(m.distance, 2),
+          checkinCount: m.count,
+          points: m.points,
+          rank: i + 1,
+        }))
+        .sort((a, b) => b.distance - a.distance)
+        .map((m, i) => ({ ...m, rank: i + 1 }))
+        .slice(0, 50);
+
+      const topMembers = sorted.slice(0, 5);
+      const champion = topMembers[0] ?? null;
+
+      return {
+        groupId,
+        groupName: group.name,
+        period,
+        startDate: dateStr(start),
+        endDate: dateStr(end),
+        totalDistance: round(topMembers.reduce((s, m) => s + m.distance, 0), 2),
+        totalCheckins: topMembers.reduce((s, m) => s + m.checkinCount, 0),
+        totalMembers: map.size,
+        topMembers,
+        champion,
+        generatedAt: new Date().toISOString(),
       };
-      cur.distance += c.distance;
-      cur.count += 1;
-      cur.points += c.points;
-      map.set(c.userId, cur);
-    }
-
-    const sorted: WeeklyReportMember[] = Array.from(map.values())
-      .map((m, i) => ({
-        userId: m.user.id,
-        nickname: m.user.nickname ?? '匿名',
-        avatarUrl: m.user.avatarUrl,
-        distance: round(m.distance, 2),
-        checkinCount: m.count,
-        points: m.points,
-        rank: i + 1,
-      }))
-      .sort((a, b) => b.distance - a.distance)
-      .map((m, i) => ({ ...m, rank: i + 1 }))
-      .slice(0, 50);
-
-    const topMembers = sorted.slice(0, 5);
-    const champion = topMembers[0] ?? null;
-
-    return {
-      groupId,
-      groupName: group.name,
-      period,
-      startDate: dateStr(start),
-      endDate: dateStr(end),
-      totalDistance: round(topMembers.reduce((s, m) => s + m.distance, 0), 2),
-      totalCheckins: topMembers.reduce((s, m) => s + m.checkinCount, 0),
-      totalMembers: map.size,
-      topMembers,
-      champion,
-      generatedAt: new Date().toISOString(),
-    };
+    });
   },
 
   /**

@@ -52,10 +52,44 @@ vi.mock('src/common/errors.js', () => ({
   },
 }));
 
+// V0.1.12: Mock Redis — aggregate 的 Cache.wrap 需要（标准模式，clearAll 不清实现）
+const _redisMockState = vi.hoisted(() => {
+  const cacheStore = new Map<string, string>();
+  return {
+    cacheStore,
+    redis: { get: vi.fn(), set: vi.fn(), del: vi.fn(), scan: vi.fn() },
+  };
+});
+
+vi.mock('src/infra/redis.js', () => ({ redis: _redisMockState.redis }));
+
+function setupMockRedis() {
+  const { cacheStore, redis } = _redisMockState;
+  redis.get.mockImplementation(async (k: string) => cacheStore.get(k) ?? null);
+  redis.set.mockImplementation(async (k: string, v: string) => {
+    cacheStore.set(k, v);
+    return 'OK';
+  });
+  redis.del.mockImplementation(async (k: string) => {
+    const had = cacheStore.has(k);
+    cacheStore.delete(k);
+    return had ? 1 : 0;
+  });
+  redis.scan.mockImplementation(async (_cursor: string, ...args: unknown[]) => {
+    const matchIdx = args.indexOf('MATCH');
+    const pattern = (args[matchIdx + 1] as string) ?? '*';
+    const regex = new RegExp('^' + pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$');
+    const matched = Array.from(cacheStore.keys()).filter((k) => regex.test(k));
+    return ['0', matched] as [string, string[]];
+  });
+}
+
 import { weeklyReportService } from '../../../src/modules/weekly-report/weekly-report.service.js';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  _redisMockState.cacheStore.clear();
+  setupMockRedis();
 });
 
 describe('weeklyReportService.currentWeek', () => {
@@ -228,5 +262,61 @@ describe('weeklyReportService.myReport', () => {
     mocks.groupMemberMethods.findMany.mockResolvedValue([]);
     const result = await weeklyReportService.myReport('u1');
     expect(result.reports).toEqual([]);
+  });
+});
+
+// ===== V0.1.12 增：aggregate 缓存行为（群维度，currentWeek/myReport/trigger 共享）=====
+describe('weeklyReportService.aggregate（带缓存，V0.1.12）', () => {
+  const period = '2026-W25';
+  const start = new Date('2026-06-15T00:00:00Z');
+  const end = new Date('2026-06-21T23:59:59Z');
+
+  it('首次调用：miss → 查 DB + 回填缓存', async () => {
+    mocks.groupMethods.findUnique.mockResolvedValue({ id: 'g1', name: '跑群' });
+    mocks.checkinMethods.findMany.mockResolvedValue([]);
+
+    await weeklyReportService.aggregate('g1', period, start, end);
+
+    expect(mocks.checkinMethods.findMany).toHaveBeenCalledTimes(1);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:weeklyReport:aggregate:g1:2026-W25')).toBe(true);
+  });
+
+  it('二次同群同 period：命中缓存 → 不再调 DB', async () => {
+    _redisMockState.cacheStore.set(
+      'qmwx:cache:weeklyReport:aggregate:g1:2026-W25',
+      JSON.stringify({
+        groupId: 'g1', groupName: '缓存群', period: '2026-W25',
+        totalMembers: 5, totalDistance: 99, totalCheckins: 10,
+        topMembers: [], champion: null,
+        startDate: '2026-06-15', endDate: '2026-06-21', generatedAt: '2026-06-16T00:00:00.000Z',
+      }),
+    );
+
+    const report = await weeklyReportService.aggregate('g1', period, start, end);
+
+    expect(report.groupName).toBe('缓存群');
+    expect(report.totalMembers).toBe(5);
+    // 命中：DB 一次都没调
+    expect(mocks.groupMethods.findUnique).not.toHaveBeenCalled();
+    expect(mocks.checkinMethods.findMany).not.toHaveBeenCalled();
+  });
+
+  it('不同群/period → 不同 cache key（不串扰）', async () => {
+    mocks.groupMethods.findUnique.mockResolvedValue({ id: 'g1', name: '群' });
+    mocks.checkinMethods.findMany.mockResolvedValue([]);
+
+    await weeklyReportService.aggregate('g1', '2026-W25', start, end);
+    await weeklyReportService.aggregate('g1', '2026-W24', start, end);
+    await weeklyReportService.aggregate('g2', '2026-W25', start, end);
+
+    expect(_redisMockState.cacheStore.has('qmwx:cache:weeklyReport:aggregate:g1:2026-W25')).toBe(true);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:weeklyReport:aggregate:g1:2026-W24')).toBe(true);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:weeklyReport:aggregate:g2:2026-W25')).toBe(true);
+  });
+
+  it('群不存在 → notFound 不缓存（防穿透）', async () => {
+    mocks.groupMethods.findUnique.mockResolvedValue(null);
+    await expect(weeklyReportService.aggregate('ghost', period, start, end)).rejects.toThrow(/群不存在/);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:weeklyReport:aggregate:ghost:2026-W25')).toBe(false);
   });
 });
