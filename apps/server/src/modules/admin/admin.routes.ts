@@ -18,6 +18,7 @@ import { z } from 'zod';
 import { prisma } from '../../infra/prisma.js';
 import { refundService } from '../mall/refund.service.js';
 import { invalidateProductsCache, invalidateProductDetail } from '../mall/mall.service.js';
+import { invalidateContentsCache, invalidateContentDetail } from '../content/content.service.js';
 import { Errors } from '../../common/errors.js';
 import { featureGatePlugin, invalidateFeatureFlagsCache } from '../../common/middleware/feature-gate.js';
 import { CONTENT_TYPES } from '../content/content.schema.js';
@@ -138,6 +139,11 @@ export async function adminRoutes(app: FastifyInstance) {
           const content = input.id
             ? await prisma.content.update({ where: { id: input.id }, data })
             : await prisma.content.create({ data });
+          // 写后失效：抹掉 content 列表全分页 + 该 id 详情缓存（不等 TTL）
+          await invalidateContentsCache();
+          if (input.id) {
+            await invalidateContentDetail(input.id);
+          }
           return { code: 0, data: { id: content.id } };
         }
 
