@@ -29,6 +29,14 @@ import { CheckinInputSchema } from './sport.schema.js';
 const TODAY_CACHE_TTL_SEC = 60;
 const todayCacheKey = (userId: string, date: string) => `sport:today:${userId}:${date}`;
 
+/** myStats 缓存 TTL：60s（个人统计随打卡变化，60s 容忍延迟） */
+const MY_STATS_CACHE_TTL_SEC = 60;
+const myStatsCacheKey = (userId: string, period: string) => `sport:myStats:${userId}:${period}`;
+
+/** groupRanking 缓存 TTL：60s（群榜单随群成员打卡变化，60s 容忍延迟） */
+const GROUP_RANKING_CACHE_TTL_SEC = 60;
+const groupRankingCacheKey = (groupId: string, period: string) => `sport:groupRanking:${groupId}:${period}`;
+
 // ===== 时区辅助：取"今天"用东八区 =====
 function todayCN(): string {
   const now = new Date();
@@ -125,33 +133,48 @@ export const sportService = {
     // 5. 精准失效今日缓存（不等 TTL 过期）
     //    在事务外执行：缓存失败不阻塞业务返回值
     await Cache.del(todayCacheKey(userId, date));
+    // V0.1.11：myStats 随打卡变化 → 失效该用户全 period（pattern）
+    await Cache.delByPattern(`sport:myStats:${userId}:*`);
+    // V0.1.11：groupRanking 若打卡带 groupId → 失效该群全 period（pattern）
+    // V0.1.12：weekly-report aggregate 同样随群打卡变化 → 一并失效该群周报缓存
+    if (clean.groupId) {
+      await Cache.delByPattern(`sport:groupRanking:${clean.groupId}:*`);
+      await Cache.delByPattern(`weeklyReport:aggregate:${clean.groupId}:*`);
+    }
 
     return { points, todayDone: true, date };
   },
 
   /**
-   * 我的统计
+   * 我的统计（V0.1.11 增 Cache.wrap）
+   *
+   * 缓存策略：Cache.wrap + 60s TTL + key 含 userId/period
+   * - 命中：~0.5ms（避免拉全周期 checkins + reduce）
+   * - 写后失效：checkin 成功后 delByPattern('sport:myStats:{userId}:*') 抹全 period
+   * - cache fail-open
    */
   async myStats(userId: string, input: MyStatsOutput) {
-    const checkins = await sportRepo.findMyCheckins(userId, periodSince(input.period));
-    const totalDistance = checkins.reduce((s, c) => s + c.distance, 0);
-    const count = checkins.length;
+    return Cache.wrap(myStatsCacheKey(userId, input.period), MY_STATS_CACHE_TTL_SEC, async () => {
+      const checkins = await sportRepo.findMyCheckins(userId, periodSince(input.period));
+      const totalDistance = checkins.reduce((s, c) => s + c.distance, 0);
+      const count = checkins.length;
 
-    // 平均配速：从 durationSec / distance 反推
-    let avgPace: number | null = null;
-    const withDur = checkins.filter((c) => c.durationSec && c.distance > 0);
-    if (withDur.length > 0) {
-      const totalSec = withDur.reduce((s, c) => s + (c.durationSec ?? 0), 0);
-      const totalKm = withDur.reduce((s, c) => s + c.distance, 0);
-      avgPace = totalKm > 0 ? totalSec / totalKm : null;
-    }
+      // 平均配速：从 durationSec / distance 反推
+      let avgPace: number | null = null;
+      const withDur = checkins.filter((c) => c.durationSec && c.distance > 0);
+      if (withDur.length > 0) {
+        const totalSec = withDur.reduce((s, c) => s + (c.durationSec ?? 0), 0);
+        const totalKm = withDur.reduce((s, c) => s + c.distance, 0);
+        avgPace = totalKm > 0 ? totalSec / totalKm : null;
+      }
 
-    return {
-      totalDistance: round(totalDistance, 2),
-      count,
-      avgPace: avgPace ? round(avgPace, 1) : null,
-      period: input.period,
-    };
+      return {
+        totalDistance: round(totalDistance, 2),
+        count,
+        avgPace: avgPace ? round(avgPace, 1) : null,
+        period: input.period,
+      };
+    });
   },
 
   /**
@@ -264,61 +287,69 @@ export const sportService = {
   },
 
   /**
-   * 群榜单
+   * 群榜单（V0.1.11 增 Cache.wrap）
+   *
+   * 缓存策略：Cache.wrap + 60s TTL + key 含 groupId/period（群维度，N 人查同榜共享）
+   * - 鉴权（isMember）在 wrap 外：非成员抛 forbidden，不进缓存
+   * - 命中：~0.5ms（避免拉全群全周期 checkins + 聚合排序，sport 最重查询）
+   * - 写后失效：checkin 带 groupId 成功后 delByPattern('sport:groupRanking:{groupId}:*')
+   * - cache fail-open
    */
   async groupRanking(userId: string, input: GroupRankingOutput) {
-    // 鉴权：必须是群成员
+    // 鉴权在缓存外：非成员不缓存，直接抛 forbidden
     const member = await sportRepo.isMember(input.groupId, userId);
     if (!member) throw Errors.forbidden('你不在该群中');
 
-    const since = periodSince(input.period);
-    const checkins = await sportRepo.findGroupCheckins(input.groupId, since);
+    return Cache.wrap(groupRankingCacheKey(input.groupId, input.period), GROUP_RANKING_CACHE_TTL_SEC, async () => {
+      const since = periodSince(input.period);
+      const checkins = await sportRepo.findGroupCheckins(input.groupId, since);
 
-    // 按 userId 聚合
-    const map = new Map<
-      string,
-      { userId: string; nickname: string; avatarUrl: string | null; distance: number; count: number; points: number }
-    >();
+      // 按 userId 聚合
+      const map = new Map<
+        string,
+        { userId: string; nickname: string; avatarUrl: string | null; distance: number; count: number; points: number }
+      >();
 
-    for (const c of checkins) {
-      const cur = map.get(c.userId) ?? {
-        userId: c.userId,
-        nickname: c.user.nickname ?? '匿名',
-        avatarUrl: c.user.avatarUrl,
-        distance: 0,
-        count: 0,
-        points: 0,
+      for (const c of checkins) {
+        const cur = map.get(c.userId) ?? {
+          userId: c.userId,
+          nickname: c.user.nickname ?? '匿名',
+          avatarUrl: c.user.avatarUrl,
+          distance: 0,
+          count: 0,
+          points: 0,
+        };
+        cur.distance += c.distance;
+        cur.count += 1;
+        cur.points += c.points;
+        map.set(c.userId, cur);
+      }
+
+      const members = Array.from(map.values())
+        .map((m) => ({
+          userId: m.userId,
+          nickname: m.nickname,
+          avatarUrl: m.avatarUrl,
+          distance: round(m.distance, 2),
+          count: m.count,
+          points: m.points,
+          rank: 0, // 占位，sort 后重新赋值
+        }))
+        .sort((a, b) => b.distance - a.distance)
+        .map((m, i) => ({ ...m, rank: i + 1 }))
+        .slice(0, 50);
+
+      return {
+        groupId: input.groupId,
+        period: input.period,
+        members,
+        champion: members[0] ?? null,
+        totals: {
+          memberCount: members.length,
+          totalDistance: round(members.reduce((s, m) => s + m.distance, 0), 2),
+        },
       };
-      cur.distance += c.distance;
-      cur.count += 1;
-      cur.points += c.points;
-      map.set(c.userId, cur);
-    }
-
-    const members = Array.from(map.values())
-      .map((m) => ({
-        userId: m.userId,
-        nickname: m.nickname,
-        avatarUrl: m.avatarUrl,
-        distance: round(m.distance, 2),
-        count: m.count,
-        points: m.points,
-        rank: 0, // 占位，sort 后重新赋值
-      }))
-      .sort((a, b) => b.distance - a.distance)
-      .map((m, i) => ({ ...m, rank: i + 1 }))
-      .slice(0, 50);
-
-    return {
-      groupId: input.groupId,
-      period: input.period,
-      members,
-      champion: members[0] ?? null,
-      totals: {
-        memberCount: members.length,
-        totalDistance: round(members.reduce((s, m) => s + m.distance, 0), 2),
-      },
-    };
+    });
   },
 };
 

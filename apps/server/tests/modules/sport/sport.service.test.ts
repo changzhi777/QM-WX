@@ -58,7 +58,13 @@ function setupMockRedis() {
     cacheStore.delete(k);
     return had ? 1 : 0;
   });
-  redis.scan.mockImplementation(async () => ['0', []] as [string, string[]]);
+  redis.scan.mockImplementation(async (_cursor: string, ...args: unknown[]) => {
+    const matchIdx = args.indexOf('MATCH');
+    const pattern = (args[matchIdx + 1] as string) ?? '*';
+    const regex = new RegExp('^' + pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*') + '$');
+    const matched = Array.from(cacheStore.keys()).filter((k) => regex.test(k));
+    return ['0', matched] as [string, string[]];
+  });
 }
 
 import { prisma } from 'src/infra/prisma.js';
@@ -354,5 +360,141 @@ describe('sportService.checkin → 写后精准失效今日缓存', () => {
 
     // 缓存未动（事务回滚 → 不该失效缓存）
     expect(_redisMockState.cacheStore.has(todayKey)).toBe(true);
+  });
+});
+
+// ===== V0.1.11 增：myStats / groupRanking 缓存行为 + checkin 写后失效 =====
+describe('sportService.myStats（带缓存，V0.1.11）', () => {
+  it('首次调用：miss → 查 DB + 回填缓存', async () => {
+    mockedPrisma.checkin.findMany.mockResolvedValue([] as never);
+
+    await sportService.myStats('u1', { period: 'week' });
+
+    expect(mockedPrisma.checkin.findMany).toHaveBeenCalledTimes(1);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:sport:myStats:u1:week')).toBe(true);
+  });
+
+  it('二次同参：命中缓存 → 不再调 DB', async () => {
+    _redisMockState.cacheStore.set(
+      'qmwx:cache:sport:myStats:u1:week',
+      JSON.stringify({ totalDistance: 99, count: 9, avgPace: 360, period: 'week' }),
+    );
+
+    const result = await sportService.myStats('u1', { period: 'week' });
+
+    expect(result.totalDistance).toBe(99);
+    expect(mockedPrisma.checkin.findMany).not.toHaveBeenCalled();
+  });
+
+  it('不同 period → 不同 cache key（不串扰）', async () => {
+    mockedPrisma.checkin.findMany.mockResolvedValue([] as never);
+
+    await sportService.myStats('u1', { period: 'week' });
+    await sportService.myStats('u1', { period: 'month' });
+
+    expect(_redisMockState.cacheStore.has('qmwx:cache:sport:myStats:u1:week')).toBe(true);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:sport:myStats:u1:month')).toBe(true);
+  });
+});
+
+describe('sportService.groupRanking（带缓存，V0.1.11）', () => {
+  const GROUP_ID = 'g1';
+
+  it('首次调用：miss → 查 DB + 回填缓存', async () => {
+    mockedPrisma.groupMember.findUnique.mockResolvedValue({
+      groupId: GROUP_ID, userId: 'u1', role: 'member',
+    });
+    mockedPrisma.checkin.findMany.mockResolvedValue([] as never);
+
+    await sportService.groupRanking('u1', { groupId: GROUP_ID, period: 'week' });
+
+    expect(mockedPrisma.checkin.findMany).toHaveBeenCalledTimes(1);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:sport:groupRanking:g1:week')).toBe(true);
+  });
+
+  it('不同用户查同群同 period → 命中群维度缓存（N 人共享）', async () => {
+    _redisMockState.cacheStore.set(
+      'qmwx:cache:sport:groupRanking:g1:week',
+      JSON.stringify({
+        groupId: 'g1', period: 'week',
+        members: [{ userId: 'x', nickname: '缓存冠军', rank: 1, distance: 10, count: 1, points: 10, avatarUrl: null }],
+        champion: { userId: 'x', nickname: '缓存冠军', rank: 1, distance: 10, count: 1, points: 10, avatarUrl: null },
+        totals: { memberCount: 1, totalDistance: 10 },
+      }),
+    );
+    mockedPrisma.groupMember.findUnique.mockResolvedValue({
+      groupId: GROUP_ID, userId: 'u2', role: 'member',
+    });
+
+    const result = await sportService.groupRanking('u2', { groupId: GROUP_ID, period: 'week' });
+
+    expect(result.champion?.nickname).toBe('缓存冠军');
+    // 命中群维度缓存：DB 一次都没调
+    expect(mockedPrisma.checkin.findMany).not.toHaveBeenCalled();
+  });
+
+  it('不同 group/period → 不同 cache key（不串扰）', async () => {
+    mockedPrisma.groupMember.findUnique.mockResolvedValue({
+      groupId: GROUP_ID, userId: 'u1', role: 'member',
+    });
+    mockedPrisma.checkin.findMany.mockResolvedValue([] as never);
+
+    await sportService.groupRanking('u1', { groupId: 'g1', period: 'week' });
+    await sportService.groupRanking('u1', { groupId: 'g1', period: 'month' });
+    await sportService.groupRanking('u1', { groupId: 'g2', period: 'week' });
+
+    expect(_redisMockState.cacheStore.has('qmwx:cache:sport:groupRanking:g1:week')).toBe(true);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:sport:groupRanking:g1:month')).toBe(true);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:sport:groupRanking:g2:week')).toBe(true);
+  });
+});
+
+describe('sportService.checkin → 写后失效 myStats/groupRanking（V0.1.11）', () => {
+  beforeEach(() => {
+    _redisMockState.cacheStore.clear();
+    vi.useFakeTimers();
+    vi.setSystemTime(FROZEN_DATE);
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('打卡成功（无 groupId）→ 失效该用户 myStats 全 period，不动 groupRanking', async () => {
+    _redisMockState.cacheStore.set('qmwx:cache:sport:myStats:u1:week', '{}');
+    _redisMockState.cacheStore.set('qmwx:cache:sport:myStats:u1:month', '{}');
+    _redisMockState.cacheStore.set('qmwx:cache:sport:myStats:u2:week', '{}'); // 其他用户保持
+    _redisMockState.cacheStore.set('qmwx:cache:sport:groupRanking:g1:week', '{}'); // 无 groupId 不动群榜
+
+    mockedPrisma.checkin.findFirst.mockResolvedValue(null);
+    tx.user.findUniqueOrThrow.mockResolvedValue({ id: 'u1', points: 0, stats: {} });
+
+    await sportService.checkin('u1', { distance: 5 });
+
+    expect(_redisMockState.cacheStore.has('qmwx:cache:sport:myStats:u1:week')).toBe(false);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:sport:myStats:u1:month')).toBe(false);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:sport:myStats:u2:week')).toBe(true);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:sport:groupRanking:g1:week')).toBe(true);
+  });
+
+  it('打卡成功（带 groupId）→ 同时失效该群 groupRanking + weeklyReport aggregate', async () => {
+    _redisMockState.cacheStore.set('qmwx:cache:sport:groupRanking:g1:week', '{}');
+    _redisMockState.cacheStore.set('qmwx:cache:sport:groupRanking:g1:month', '{}');
+    _redisMockState.cacheStore.set('qmwx:cache:sport:groupRanking:g2:week', '{}'); // 其他群保持
+    _redisMockState.cacheStore.set('qmwx:cache:weeklyReport:aggregate:g1:2026-W25', '{}');
+    _redisMockState.cacheStore.set('qmwx:cache:weeklyReport:aggregate:g2:2026-W25', '{}'); // 其他群保持
+
+    mockedPrisma.checkin.findFirst.mockResolvedValue(null);
+    mockedPrisma.groupMember.findUnique.mockResolvedValue({ groupId: 'g1', userId: 'u1', role: 'member' });
+    tx.user.findUniqueOrThrow.mockResolvedValue({ id: 'u1', points: 0, stats: {} });
+
+    await sportService.checkin('u1', { distance: 5, groupId: 'g1' });
+
+    // groupRanking 失效
+    expect(_redisMockState.cacheStore.has('qmwx:cache:sport:groupRanking:g1:week')).toBe(false);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:sport:groupRanking:g1:month')).toBe(false);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:sport:groupRanking:g2:week')).toBe(true);
+    // weeklyReport aggregate 也失效（同一次 checkin，V0.1.12）
+    expect(_redisMockState.cacheStore.has('qmwx:cache:weeklyReport:aggregate:g1:2026-W25')).toBe(false);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:weeklyReport:aggregate:g2:2026-W25')).toBe(true);
   });
 });
