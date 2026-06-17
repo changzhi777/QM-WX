@@ -2,7 +2,7 @@
 
 > 📍 面包屑：`QM-WX/` → [`根 CLAUDE.md`](../../CLAUDE.md) → **apps/server/**（这里）
 > 架构依据：[docs/ARCHITECTURE-V2.md](../../docs/ARCHITECTURE-V2.md)
-> 最新进展：**Phase 4 + 4.1 微信支付完整闭环**（2026-06-14）
+> 最新进展：**V0.1.x Cache 10 热路径 + OpenAPI 3.1 契约**（2026-06-17）— Phase 4.1 微信支付完整闭环（2026-06-14）
 
 ---
 
@@ -50,6 +50,8 @@ apps/server/
 │   ├── common/
 │   │   ├── errors.ts                 # BusinessError 统一类
 │   │   ├── logger.ts                 # Pino 日志封装
+│   │   ├── openapi-spec.ts           # OpenAPI 3.1 spec（V0.1.4/13，/openapi.json）
+│   │   ├── docs.ts                   # API 文档辅助
 │   │   ├── middleware/
 │   │   │   ├── auth.ts               # JWT 鉴权插件（public 路由跳过）+ requireLogin helper
 │   │   │   └── feature-gate.ts       # 功能开关守卫（requireFeature）
@@ -57,7 +59,8 @@ apps/server/
 │   │       └── code2session.ts       # 微信 code2Session（session_key 缓存 Redis）
 │   ├── infra/
 │   │   ├── prisma.ts                 # PrismaClient 单例
-│   │   └── redis.ts                  # ioredis 单例
+│   │   ├── redis.ts                  # ioredis 单例
+│   │   └── cache.ts                  # Cache.wrap 抽象（V0.1.x，接入 10 热路径）
 │   ├── domain/                       # 跨 module 业务规则（Phase 4.1）
 │   │   └── order-state.ts            # Order 状态机：7 态 + TRANSITIONS 白名单 + assertTransition
 │   ├── modules/                      # 14 个业务 module（见下方详表）
@@ -66,7 +69,8 @@ apps/server/
 │   │   ├── queue.ts                  # startJobs / stopJobs / enqueueCloseOrder
 │   │   ├── scheduler.ts              # BullMQ repeatable（cron）
 │   │   ├── weekly-report.job.ts      # 每周日 20:00 聚合周报
-│   │   └── close-order.job.ts        # 30 分钟超时关单（Phase 4.1）
+│   │   ├── close-order.job.ts        # 30 分钟超时关单（Phase 4.1）
+│   │   └── refresh-certs.job.ts      # 微信平台证书定时刷新（V0.1.1）
 │   └── ...（refund.service / wallet.repo 内部）
 ├── scripts/                          # CLI 工具（Phase 4.1）
 │   └── reconcile.ts                  # `pnpm reconcile -- YYYY-MM-DD` 微信账单比对
@@ -77,7 +81,7 @@ apps/server/
 │   ├── sql/permissions.sql           # 角色权限参考
 │   └── migrations/                   # Prisma 迁移历史
 ├── tests/
-│   ├── modules/                      # 单元测试（vi.mock Prisma/Redis）— 35+ files / 270+ tests
+│   ├── modules/                      # 单元测试（vi.mock Prisma/Redis）— 42 files / 365 tests
 │   │   ├── user/sport/mall/content/wallet/weekly-report/admin/app-config...
 │   │   ├── wxpay/{service,notify}.test.ts          (8 tests)
 │   │   ├── mall/{order,refund}.service.test.ts     (14 tests)
@@ -85,13 +89,14 @@ apps/server/
 │   │   ├── jobs/{queue,close-order.job}.test.ts     (15 tests)
 │   │   ├── domain/order-state.test.ts               (20 tests)
 │   │   └── ...（V2 stub / 公共模块）
-│   ├── e2e/                          # 端到端测试（真 PG/Redis, RUN_E2E=1）— 8 e2e / 6 files
+│   ├── e2e/                          # 端到端测试（真 PG/Redis, RUN_E2E=1）— 37 e2e / 7 files
 │   │   ├── sport-flow.e2e.test.ts        (3 tests)
 │   │   ├── weekly-report.e2e.test.ts     (2 tests)
 │   │   ├── mall-flow.e2e.test.ts         (3 tests) — 已适配 V1 状态机收紧
 │   │   ├── wxpay-notify.e2e.test.ts      (2 tests) — notify + 幂等
 │   │   ├── refund-flow.e2e.test.ts       (3 tests) — Phase 4.1
-│   │   └── close-order.e2e.test.ts       (5 tests) — Phase 4.1
+│   │   ├── close-order.e2e.test.ts       (5 tests) — Phase 4.1
+│   │   └── openapi.e2e.test.ts           (19 tests) — OpenAPI 3.1 spec CI gate（V0.1.4/13）
 │   ├── helpers/                      # 测试基建（方案 B 引入）
 │   │   ├── mockErrors.ts             # BusinessError mock 工厂
 │   │   ├── mockPrisma.ts             # createPrismaMock 工厂（models + txModels）
@@ -168,10 +173,10 @@ apps/server/
 ## 🧪 测试
 
 ```bash
-# 单元测试（vi.mock，不连 DB）— 290 passed
+# 单元测试（vi.mock，不连 DB）— 365 passed（42 files）
 pnpm test
 
-# 端到端（真 PG/Redis）— 308 passed（290 单元 + 18 e2e）
+# 端到端（真 PG/Redis）— 402 passed（365 单元 + 37 e2e / 7 files）
 RUN_E2E=1 pnpm test
 
 # 覆盖率
@@ -222,9 +227,11 @@ docker run -p 3000:3000 --env-file .env qm-wx-server
 - ✅ **Wallet repo**：ensureWallet / ensureWalletInTx 复用入口
 - ✅ **CLI**：`pnpm reconcile -- YYYY-MM-DD` 微信账单比对（5 类 diff + 退出码 0/1/2）
 - ✅ Dockerfile 多阶段构建
-- ✅ **308** 测试（290 单元 + 18 e2e）/ 覆盖 88%+
+- ✅ **402** 测试（365 单元 + 37 e2e）/ 覆盖 88%+
 - ✅ CI/CD（GitHub Actions ci.yml + deploy-staging.yml，拆 5 parallel job）
 - ✅ **wxpay** refund + notify + 幂等 + 关单保护全链路
+- ✅ **缓存基础设施**（V0.1.x）：`infra/cache.ts` Cache.wrap 接入 10 热路径（sport/mall/content/user/weekly-report）
+- ✅ **OpenAPI 3.1 spec**（V0.1.4/13）：`/openapi.json` + `openapi.e2e` CI gate（9 paths + 5 schemas）
 - ✅ 切真生产文档（[`docs/PHASE-4-2-PREP.md`](../../docs/PHASE-4-2-PREP.md)）
 
 ---

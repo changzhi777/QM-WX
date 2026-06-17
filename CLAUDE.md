@@ -8,6 +8,7 @@
 
 ## 变更记录 (Changelog)
 
+- **2026-06-17** — 🔄 **`/zcf:init-project` 增量刷新（V0.1.x 后首次）**：自 2026-06-11 上次 init 后历经 Phase 4 + 4.1 + V0.1.0→V0.1.15（**59 commit**），全仓扫描校准 8 个 CLAUDE.md。**关键修正**：① 后端 `src/infra/cache.ts`（`Cache.wrap` 抽象，V0.1.x 核心，原索引漏登）+ `common/openapi-spec.ts`（OpenAPI 3.1 spec at `/openapi.json`，V0.1.4/13）+ `jobs/refresh-certs.job.ts`（微信平台证书刷新）补入；② 小程序组件 **3 → 4**（`error-state` 通用组件，方案 B 引入，原漏登）；③ 测试数校准（vitest 实跑）：**365 单元 + 37 e2e = 402**（原索引 308，严重过时；`openapi.e2e` V0.1.13 扩到 19 用例）；④ tag 推进 v0.1.0 → **v0.1.12 已打**（V0.1.13~15 在 working tree 待 commit）；⑤ `src/CLAUDE.md` 改写为废弃声明（消除"空目录待填充"误导）；⑥ CT400 未决事项更新。`docs/CLAUDE.md` 已准确无需改。
 - **2026-06-14** — 📦 **Phase 4.1 微信支付完整闭环 + 收尾 + 文档整理**（`/zcf:workflow` 6 阶段，方案 1 — 5-7 人天 MVP 灰度 / 7 commit）：① 状态机 `domain/order-state.ts`（7 态 + TRANSITIONS 白名单 + assertTransition 替换 5 处硬编码）；② `wallet.repo.ts` 抽 ensureWalletInTx（事务内/外双入口）；③ wxpay.refund service + admin 退款 action + WalletTransaction 扣减（限定 paid 状态）；④ BullMQ 超时关单（closeOrderQueue + 30min delayed + jobId 幂等 + notify 关单保护）；⑤ 对账脚本（`pnpm reconcile -- YYYY-MM-DD`，5 类 diff，cron 退出码 2 报警）；⑥ `docs/PHASE-4-2-PREP.md` 切真生产 playbook（7 章节 + 9 项 checklist + 7 章回滚）；⑦ e2e 补漏（`refund-flow.e2e` 3 + `close-order.e2e` 5 + `mall-flow.e2e` 适配 V1 收紧）。**qm-admin 独立仓同步**：Orders 退款按钮 + Modal + 状态机收紧 + vitest 27 → 35 测试 + happy-dom 框架。**后端测试 227 → 308（+81）**、state machine 5 处硬编码 → 0、CT400 仍阻塞 23+ commit 待推。完整摘要见 `CHANGELOG.md` [Unreleased] 段。
 - **2026-06-12 16:38** — 🧹 **全栈整顿方案 B 完结**（`/zcf:workflow` 6 阶段）：4 个 Explore agent 并行扫两仓 → 选 B 方案。P0 8 项全清 + P1 9 项 + 测试基建 + CI parallel。① 后端：content/mall 公开端点 + isAdmin 缓存 + recipe.myMeals Zod；② shared：ENDPOINTS 补 4 缺口 + 新增 `actionUrl()` 工具（修根因 — `api.call` 原来用 `ENDPOINTS[module]` 拿到嵌套对象拼接成 `[object Object]`，URL 全错）；③ 小程序：api.call/refreshToken 走 actionUrl + 抽 `<error-state>` 通用组件 + mine 去冗余；④ qm-admin（独立 repo）：Login 加固（me + listAdmins 双校验，消 6 P0 隐患）+ 删 zustand 死依赖 + access 真校验 + nginx 改 envsubst `${BACKEND_URL}` 模板 + 订单状态扭转并发锁；⑤ 测试：`tests/helpers/{mockErrors,mockPrisma}.ts` + `tests/fixtures/{user,product,order,group}.fixture.ts`，wallet 示范改造 231→183 行；⑥ E2E：`tests/e2e/mall-flow.e2e.test.ts` 完整 Happy Path（登录→下单→取消→积分回退）；⑦ CI：拆 `lint-typecheck` + `unit-tests`（无 services） + `e2e-tests`（PG+Redis） parallel。**11 commit + 227 测试全绿 + 覆盖 86.28→88.08% + mall.routes 2.38→100%**。计划文件归档到 `.zcf/plan/history/`。
 - **2026-06-12 12:30** — 🚀 **admin Web 后台落地（独立仓库）**：选型 React + Umi Max 4 + antd 5 + ProComponents，**独立 git repo** `qingmu/qm-admin`（CT400 Gitea，不收纳到 monorepo）。骨架 + 业务页 5 页（Login/Dashboard/商品分类/商品 CRUD/订单管理）一次成型。dev proxy `/api → 127.0.0.1:3000`，临时鉴权走"手工填 JWT token + openid"。`tsc --noEmit` 全绿、`max dev` 5459 模块编译通过。本地 5 commit、push 完成。
@@ -114,12 +115,12 @@ QM-WX/
 
 | 路径 | 职责 | 状态 | 本地 CLAUDE.md |
 | --- | --- | --- | --- |
-| `apps/miniprogram/` | 微信小程序前端（13 页面 + 3 组件） | ✅ V1.0 + Phase 4 order-confirm | [→ apps/miniprogram/CLAUDE.md](apps/miniprogram/CLAUDE.md) |
-| `apps/server/` | Node + TS 后端（**14 module** + BullMQ jobs + 状态机 + 对账） | ✅ V1.0 + V2 stub + **Phase 4.1** | [→ apps/server/CLAUDE.md](apps/server/CLAUDE.md) |
+| `apps/miniprogram/` | 微信小程序前端（13 页面 + **4 组件**） | ✅ V1.0 + Phase 4 order-confirm + error-state | [→ apps/miniprogram/CLAUDE.md](apps/miniprogram/CLAUDE.md) |
+| `apps/server/` | Node + TS 后端（**14 module** + BullMQ jobs + 状态机 + 对账 + **infra/cache + OpenAPI spec**） | ✅ V1.0 + V2 stub + **Phase 4.1** + **V0.1.x Cache 10 热路径** | [→ apps/server/CLAUDE.md](apps/server/CLAUDE.md) |
 | `apps/admin/` | 运营管理后台 | ✅ **独立 repo** `qingmu/qm-admin` (CT400 Gitea，React+UmiMax+antd5 + 35 tests) | — |
 | `packages/shared/` | 前后端共享（类型 / Zod / 端点常量 / 积分规则） | ✅ V1.0 + vitest 3.2.6 | [→ packages/shared/CLAUDE.md](packages/shared/CLAUDE.md) |
 | `docs/` | 设计文档（ARCHITECTURE-V2 / CI / STAGING_DEPLOY / PHASE 计划 / **PHASE-4-2-PREP**） | ✅ 7 份齐全 | [→ docs/CLAUDE.md](docs/CLAUDE.md) |
-| `tests/` | 跨包 E2E（已实：mall-flow / sport-flow / weekly-report / **wxpay-notify / refund-flow / close-order**） | ✅ RUN_E2E=1 跑通 8 e2e | [→ tests/CLAUDE.md](tests/CLAUDE.md) |
+| `tests/` | 跨包 E2E 容器（e2e 实在 `apps/server/tests/e2e/`：sport / weekly / mall / wxpay-notify / refund / close-order + **openapi spec 校验**） | ✅ RUN_E2E=1 跑通 **7 files / 37 e2e** | [→ tests/CLAUDE.md](tests/CLAUDE.md) |
 | `reviews/` | 历史评审（02 已废弃，业务规则参考） | ✅ 已建 | [→ reviews/CLAUDE.md](reviews/CLAUDE.md) |
 | `reviews/running-group-stats/` | 8 篇 review 文档 + 1 构建脚本 | ✅ 已建 | 父级覆盖 |
 | `scripts/` | 工具脚本（smoke + **reconcile**） | ✅ smoke.sh + reconcile.ts | — |
@@ -134,11 +135,15 @@ QM-WX/
 
 **Domain layer**（新）：`apps/server/src/domain/order-state.ts` — Order 状态机白名单（7 态 + assertTransition 统一）
 
-**BullMQ Jobs**：`apps/server/src/jobs/` — `queue.ts` + `scheduler.ts` + `weekly-report.job.ts`（每周日 20:00）+ **`close-order.job.ts`**（30 分钟超时关单）
+**BullMQ Jobs**：`apps/server/src/jobs/` — `queue.ts` + `scheduler.ts` + `weekly-report.job.ts`（每周日 20:00）+ **`close-order.job.ts`**（30 分钟超时关单）+ **`refresh-certs.job.ts`**（微信平台证书定时刷新，V0.1.1）
 
 **数据访问层**（新）：`apps/server/src/modules/wallet/wallet.repo.ts` — `ensureWallet` / `ensureWalletInTx` 复用入口
 
 **CLI 工具**（新）：`apps/server/scripts/reconcile.ts` — `pnpm reconcile -- YYYY-MM-DD` 微信账单比对
+
+**缓存基础设施**（V0.1.x）：`apps/server/src/infra/` — `cache.ts`（`Cache.wrap` 抽象，接入 **10 热路径**，命中 ~0.5ms 替代 5-10ms DB 查询；Decimal 进缓存前显式 `toString()` 序列化）+ `prisma.ts` / `redis.ts` 单例
+
+**API 文档**（V0.1.4/13）：`apps/server/src/common/openapi-spec.ts` — OpenAPI 3.1 spec at `/openapi.json`（9 paths + 5 schemas，`openapi.e2e` CI gate）
 
 > 💡 **约定**：每个新模块目录都必须有自己的 `CLAUDE.md`，并在根目录索引表里登记一行。
 
@@ -178,12 +183,14 @@ graph TD
     Srv -. V2 .-> Device["device/ (stub)"]
     Srv -. V2 .-> Recipe["recipe/ (stub)"]
     Srv -. V2 .-> Ludong["ludong/ (stub)"]
-    Srv --> Jobs["jobs/ (BullMQ)"]
+    Srv --> Jobs["jobs/ (BullMQ: 周报/关单/刷证书)"]
     Srv --> Domain["domain/order-state.ts (新)"]
     Srv --> Scripts["scripts/reconcile.ts (新)"]
+    Srv --> Infra["infra/ cache+prisma+redis (V0.1.x)"]
+    Srv --> OpenApi["common/openapi-spec.ts (V0.1.4/13)"]
 
     Mp --> MpPages["pages/ (13)"]
-    Mp --> MpComps["components/ (3)"]
+    Mp --> MpComps["components/ (4: +error-state)"]
     Mp --> MpSvc["services/api.ts"]
     Mp --> MpUtils["utils/ + config/"]
 
@@ -247,6 +254,8 @@ graph TD
     style Jobs fill:#ff6f00,color:#fff
     style Domain fill:#e91e63,color:#fff
     style Scripts fill:#00897b,color:#fff
+    style Infra fill:#00897b,color:#fff
+    style OpenApi fill:#558b2f,color:#fff
     style MpPages fill:#283593,color:#bbb
     style MpComps fill:#283593,color:#bbb
     style MpSvc fill:#283593,color:#bbb
@@ -312,7 +321,7 @@ graph TD
 
 > 📦 **版权**：湖南青沐生命科技有限公司（Hunan Qingmu Life Technology Co., Ltd.）
 > 🏷️ **版本管理**：`git tag v{MAJOR}.{MINOR}.{PATCH}` 打在每个 commit 段最后。**约定：每次 commit 段 PATCH 自动 +1**（bug 修 / 文档 / 重构 / 测试补漏都算）。
-> 当前 tag：`v0.1.0`（首版 2026-06-14 落定）。详细规则见 [`CHANGELOG.md` 顶部"版本规则"段](CHANGELOG.md)。
+> 当前 tag：**`v0.1.16`**（V0.1.0 首版 2026-06-14 + 16 个 PATCH 段；V0.1.13~15 OpenAPI 契约系列收口 + V0.1.16 init-project 增量刷新）。详细规则见 [`CHANGELOG.md` 顶部"版本规则"段](CHANGELOG.md)。
 
 1. ✅ **业务方向** — 青沐·大健康生活方式平台（已确认）
 2. ✅ **后端选型** — Node.js + TypeScript（已确认 2026-06-11）
@@ -325,9 +334,9 @@ graph TD
 9. ⏳ **微信商户号 + 实名认证** — 申请中（Phase 4.2 切真生产前置条件）
 10. ✅ **CI / 部署流程** — GitHub Actions ci.yml + deploy-staging.yml（已完成，拆 5 parallel job）
 11. ✅ **品牌色定稿** — #0FAF8E（青沐绿，已全局应用）
-12. ⏳ **CT400 内网** — 10.10.10.4:22 自 2026-06-11 11:30 起持续不通，阻塞 23+ commit 待推
+12. ✅ **CT400 内网** — 已通（2026-06-16 验证），v0.1.0~v0.1.16 tag 已推 Gitea（见 memory `gitea-ssh-ct400-push`）
 13. ⏳ **测试覆盖率阈值**（建议参考 04 任务的 AC 走最小验收）— 当前 ~88%，建议设阈值 80%
 
 ---
 
-🤙 *Be water, my friend.* Phase 4.1 完结，水到渠成；Phase 4.2 等风来（外部依赖）。
+🤙 *Be water, my friend.* V0.1.16 已落（V0.1.13~15 OpenAPI 契约收口 + init 增量刷新）；Phase 4.2 等风来（外部依赖）。

@@ -47,6 +47,7 @@ miniprogram/
 │   └── api.ts                      # **唯一**调后端的地方（含 refresh 一次重试）
 ├── components/
 │   ├── feature-gate/               # 功能开关守卫组件（读取远程 feature_flags）
+│   ├── error-state/                # 通用错误态组件（方案 B 引入）
 │   ├── privacy-popup/              # 隐私协议弹窗
 │   └── profile-popup/              # 用户资料弹窗
 ├── pages/
@@ -117,7 +118,7 @@ wx.request({ url: 'https://...' });
 ## 📌 当前状态
 
 - ✅ 13 个页面全部就位（4 tabBar + 9 子页面）
-- ✅ 3 个组件（feature-gate / privacy-popup / profile-popup）
+- ✅ 4 个组件（feature-gate / error-state / privacy-popup / profile-popup）
 - ✅ `app.ts` 静默登录逻辑
 - ✅ `services/api.ts` 统一封装（含 refresh 一次重试）
 - ✅ `utils/auth.ts` / `format.ts` / `config/env.ts`

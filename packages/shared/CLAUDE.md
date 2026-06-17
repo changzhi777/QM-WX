@@ -1,7 +1,7 @@
 # packages/shared — 前后端共享层
 
 > 📍 面包屑：`QM-WX/` → [`根 CLAUDE.md`](../../CLAUDE.md) → **packages/shared/**（这里）
-> 最近更新：2026-06-13（vitest 1.6 → 3.2.6 升级 + endpoints.test 迁回原籍）
+> 最近更新：2026-06-17（init-project 增量校验，内容无实质变化 — 4 常量模块 + endpoints.test 5 用例均准确）
 
 ---
 

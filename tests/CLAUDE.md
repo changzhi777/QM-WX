@@ -1,7 +1,7 @@
 # tests/ — 跨包测试
 
 > 📍 面包屑：`QM-WX/` → [`根 CLAUDE.md`](../CLAUDE.md) → **tests/**（这里）
-> 最近更新：2026-06-14
+> 最近更新：2026-06-17
 
 ---
 
@@ -40,7 +40,7 @@ tests/
 ## 📌 当前状态
 
 - 🚧 空目录 — 跨包 E2E 待接入（小程序无 automator / Playwright 通道）
-- ✅ 后端测试在 `apps/server/tests/`（**290 单元 + 18 e2e** = 308 with `RUN_E2E=1`）
+- ✅ 后端测试在 `apps/server/tests/`（**365 单元 + 37 e2e** = 402 with `RUN_E2E=1`）
 
 ### 后端 e2e 清单（`apps/server/tests/e2e/`）
 
@@ -52,6 +52,7 @@ tests/
 | `wxpay-notify.e2e.test.ts` | 2 | 微信支付 notify + 幂等 |
 | **`refund-flow.e2e.test.ts`** | 3 | **Phase 4.1**：支付 → admin 退款 → 余额归零 + 流水 + 重复退款拒绝 |
 | **`close-order.e2e.test.ts`** | 5 | **Phase 4.1**：状态机 5 态 + 队列契约 |
+| **`openapi.e2e.test.ts`** | 19 | **V0.1.4/13**：OpenAPI 3.1 spec CI gate（9 paths + 5 schemas） |
 
 ---
 
