@@ -25,6 +25,17 @@ const { buildApp } = await import('../../src/app.js');
 const skip = !process.env.RUN_E2E;
 const itE2E = skip ? it.skip : it;
 
+/**
+ * 按 openid prefix 关联清理（deleteMany 删 0 行不报错 — 替代旧死代码 GROUP_ID 的 group.delete 噪音）
+ * 幂等可重跑 + 兜底失败残留（按 owner/user openid 反查关联数据）
+ */
+async function cleanupFlowData() {
+  await prisma.checkin.deleteMany({ where: { user: { openid: { startsWith: 'e2e-flow-' } } } });
+  await prisma.groupMember.deleteMany({ where: { user: { openid: { startsWith: 'e2e-flow-' } } } });
+  await prisma.group.deleteMany({ where: { owner: { openid: { startsWith: 'e2e-flow-' } } } });
+  await prisma.user.deleteMany({ where: { openid: { startsWith: 'e2e-flow-' } } });
+}
+
 describe.skipIf(skip)('运动流程 e2e（HTTP 端到端）', () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
   let ownerToken: string;
@@ -32,11 +43,13 @@ describe.skipIf(skip)('运动流程 e2e（HTTP 端到端）', () => {
   let ownerId: string;
   let memberId: string;
   void memberId;
-  const GROUP_ID = 'e2e-flow-group-1';
 
   beforeAll(async () => {
     app = await buildApp();
     await app.ready();
+
+    // 清理上次残留（登录前，按 openid prefix 关联清 — 幂等可重跑）
+    await cleanupFlowData();
 
     // ===== owner 登录 =====
     const ownerLogin = await app.inject({
@@ -59,20 +72,11 @@ describe.skipIf(skip)('运动流程 e2e（HTTP 端到端）', () => {
     expect(memberLogin.statusCode).toBe(200);
     memberToken = memberLogin.json().data.accessToken;
     memberId = memberLogin.json().data.user.id;
-
-    // 清理
-    await prisma.checkin.deleteMany({ where: { groupId: GROUP_ID } });
-    await prisma.groupReport.deleteMany({ where: { groupId: GROUP_ID } });
-    await prisma.groupMember.deleteMany({ where: { groupId: GROUP_ID } });
-    await prisma.group.delete({ where: { id: GROUP_ID } }).catch(() => {});
   });
 
   afterAll(async () => {
-    await prisma.checkin.deleteMany({ where: { groupId: GROUP_ID } });
-    await prisma.groupReport.deleteMany({ where: { groupId: GROUP_ID } });
-    await prisma.groupMember.deleteMany({ where: { groupId: GROUP_ID } });
-    await prisma.group.delete({ where: { id: GROUP_ID } }).catch(() => {});
-    await prisma.user.deleteMany({ where: { openid: { startsWith: 'e2e-flow-' } } });
+    // 兜底清理（按 openid prefix 关联清，含 it 中途失败残留）
+    await cleanupFlowData();
     await app.close();
     await prisma.$disconnect();
   });

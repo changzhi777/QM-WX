@@ -87,6 +87,18 @@ describe.skipIf(skip)('OpenAPI spec e2e 校验（CI gate）', () => {
     expect(spec.paths['/api/wxpay'].post?.security).toEqual([]);
   });
 
+  itE2E('wxpay action enum 只 notify（refund 走 admin.refundOrder，queryBill 走 CLI，V0.1.15 修正）', async () => {
+    const res = await app.inject({ method: 'GET', url: '/openapi.json' });
+    const spec = res.json() as {
+      paths: Record<string, {
+        post?: { requestBody?: { content: { 'application/json': { schema: { properties: { action: { enum?: string[] } } } } } } };
+      }>;
+    };
+    const actionEnum =
+      spec.paths['/api/wxpay'].post?.requestBody?.content['application/json'].schema.properties.action.enum;
+    expect(actionEnum).toEqual(['notify']);
+  });
+
   itE2E('User schema 含 id / openid / nickname / avatarUrl / points / memberLevel', async () => {
     const res = await app.inject({ method: 'GET', url: '/openapi.json' });
     const spec = res.json() as {
@@ -183,6 +195,48 @@ describe.skipIf(skip)('OpenAPI spec e2e 校验（CI gate）', () => {
     };
     expect(spec.components.schemas.ProductDetail.properties.stock.type).toBe('integer');
     expect(spec.components.schemas.ProductDetail.properties.status.enum).toEqual(['on', 'off']);
+  });
+
+  // ===== V0.1.13 增 path 覆盖补全（content/wallet/weekly-report + ContentItem type 修正）=====
+  itE2E('含 content / wallet / weekly-report 三 path + WeeklyReport schema（V0.1.13）', async () => {
+    const res = await app.inject({ method: 'GET', url: '/openapi.json' });
+    const spec = res.json() as {
+      paths: Record<string, unknown>;
+      components: { schemas: Record<string, unknown> };
+    };
+    const keys = Object.keys(spec.paths);
+    // 9 个核心 path 全在（原 6 + V0.1.13 新增 3）
+    expect(keys.length).toBeGreaterThanOrEqual(9);
+    for (const p of ['/api/content', '/api/wallet', '/api/weekly-report']) {
+      expect(keys, `缺 path ${p}`).toContain(p);
+    }
+    // 周报聚合 schema
+    expect(spec.components.schemas.WeeklyReport).toBeDefined();
+    expect(spec.components.schemas.WeeklyReportMember).toBeDefined();
+  });
+
+  itE2E('ContentItem.type enum = 5 类内容（marathon/hotel/scenic/food/rural，V0.1.13 修正旧错误 enum）', async () => {
+    const res = await app.inject({ method: 'GET', url: '/openapi.json' });
+    const spec = res.json() as {
+      components: {
+        schemas: { ContentItem: { properties: { type: { enum?: string[] } } } };
+      };
+    };
+    expect(spec.components.schemas.ContentItem.properties.type.enum).toEqual([
+      'marathon',
+      'hotel',
+      'scenic',
+      'food',
+      'rural',
+    ]);
+  });
+
+  itE2E('content 标 security=[] 公开（list/detail 游客可看，V0.1.13）', async () => {
+    const res = await app.inject({ method: 'GET', url: '/openapi.json' });
+    const spec = res.json() as {
+      paths: Record<string, { post?: { security?: unknown[] } }>;
+    };
+    expect(spec.paths['/api/content'].post?.security).toEqual([]);
   });
 
   // 确保 prisma client 已连（e2e 真 DB 校验，e2e 必须配 PG）

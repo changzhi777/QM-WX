@@ -2,8 +2,11 @@
  * wxpay routes — POST /api/wxpay/*
  *
  * 路由：
- * - POST /api/wxpay/notify  公开端点（微信回调，无 JWT）
- * - POST /api/wxpay/refund   鉴权端点（管理员，MVP 占位）
+ * - POST /api/wxpay  公开端点（action=notify：微信支付异步回调，无 JWT）
+ *
+ * 注：退款不走本路由 — 走 /api/admin 的 refundOrder action（管理员鉴权，
+ *     调 wxpay.service.refund，Phase 4.1 已完整实现）。
+ *     对账查询（queryBill/downloadBill）走 scripts/reconcile.ts CLI，无 HTTP 路由。
  *
  * 设计：
  * - 回调路由必须 `config: { public: true }`（不走 authPlugin）

@@ -1,13 +1,16 @@
 /**
  * OpenAPI 3.1 规范（手写 — 不引第三方 lib）
  *
- * 覆盖范围（V1 — 6 个核心 module）：
+ * 覆盖范围（V1 — 9 个核心 module）：
  * - auth（code2Session / refresh）
  * - user（login / me / updateProfile）
  * - mall（listProducts / productDetail / createOrder / cancelOrder / myOrders）
  * - sport（checkin / today / myCheckins / groupRanking）
  * - wxpay（notify — 公开）
  * - admin（listOrders / updateOrderStatus / refundOrder）
+ * - content（list / detail / enroll — list/detail 公开）        V0.1.13 增
+ * - wallet（get / transactions / recharge — feature gate）     V0.1.13 增
+ * - weekly-report（currentWeek / myReport / trigger）          V0.1.13 增
  *
  * 原则：zod 做运行时校验，OpenAPI 仅作文档生成（不参与运行时）。
  * 未来扩 module 时：往 paths/components 加 entry 即可。
@@ -313,7 +316,7 @@ export const openapiSpec: Document = {
         type: 'object',
         properties: {
           id: { type: 'string' },
-          type: { type: 'string', enum: ['article', 'marathon', 'event', 'course'] },
+          type: { type: 'string', enum: ['marathon', 'hotel', 'scenic', 'food', 'rural'] },
           title: { type: 'string' },
           cover: { type: 'string', nullable: true },
           summary: { type: 'string', nullable: true },
@@ -324,6 +327,41 @@ export const openapiSpec: Document = {
           tags: { type: 'array', items: { type: 'string' }, nullable: true },
           actionType: { type: 'string', enum: ['enroll', 'book', 'link', 'none'] },
           status: { type: 'string', enum: ['on', 'off'] },
+        },
+      },
+
+      // ===== weekly-report（V0.1.13 增）=====
+      WeeklyReportMember: {
+        type: 'object',
+        properties: {
+          userId: { type: 'string' },
+          nickname: { type: 'string' },
+          avatarUrl: { type: 'string', nullable: true },
+          distance: { type: 'number', description: '公里' },
+          checkinCount: { type: 'integer' },
+          points: { type: 'integer' },
+          rank: { type: 'integer' },
+        },
+      },
+      WeeklyReport: {
+        type: 'object',
+        description: '某群某周聚合报告（top5 + 冠军 + 总计）',
+        properties: {
+          groupId: { type: 'string' },
+          groupName: { type: 'string' },
+          period: { type: 'string', description: 'ISO 周（如 2026-W25）' },
+          startDate: { type: 'string', description: 'YYYY-MM-DD' },
+          endDate: { type: 'string', description: 'YYYY-MM-DD' },
+          totalDistance: { type: 'number' },
+          totalCheckins: { type: 'integer' },
+          totalMembers: { type: 'integer' },
+          topMembers: {
+            type: 'array',
+            maxItems: 5,
+            items: { $ref: '#/components/schemas/WeeklyReportMember' },
+          },
+          champion: { description: '冠军（结构同 WeeklyReportMember）', nullable: true },
+          generatedAt: { type: 'string', format: 'date-time' },
         },
       },
     },
@@ -457,10 +495,11 @@ export const openapiSpec: Document = {
     '/api/wxpay': {
       post: {
         tags: ['wxpay'],
-        summary: '微信支付回调 + 退款 + 对账查询',
+        summary: '微信支付异步通知（公开回调，仅 action=notify）',
         description:
-          '微信支付 V3 异步通知 — **公开端点**（不走 JWT）\n' +
-          'action: notify(微信回调) / refund(admin 调) / queryBill(admin 调)',
+          '微信支付 V3 异步通知 — **公开端点**（不走 JWT），仅 action=notify。\n' +
+          '退款走 /api/admin 的 refundOrder（管理员鉴权，调 wxpay.service.refund）；\n' +
+          '对账查询（queryBill/downloadBill）走 scripts/reconcile.ts CLI，无 HTTP 路由。',
         security: [],
         requestBody: {
           required: true,
@@ -470,7 +509,7 @@ export const openapiSpec: Document = {
                 type: 'object',
                 required: ['action'],
                 properties: {
-                  action: { type: 'string', enum: ['notify', 'refund', 'queryBill'] },
+                  action: { type: 'string', enum: ['notify'] },
                   payload: { type: 'object' },
                 },
               },
@@ -521,6 +560,122 @@ export const openapiSpec: Document = {
         responses: {
           '200': { description: '成功', content: { 'application/json': { schema: { $ref: '#/components/schemas/ApiEnvelope' } } } },
           '403': { description: '非 admin', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResp' } } } },
+        },
+      },
+    },
+
+    // ===== content（list/detail 公开，enroll 内部鉴权）— V0.1.13 增 =====
+    '/api/content': {
+      post: {
+        tags: ['content'],
+        summary: 'content action 入口（list / detail / enroll）',
+        description:
+          '公开 action：list / detail（游客可看）\n' +
+          '鉴权 action：enroll（内部 requireLogin）\n' +
+          '5 类内容：marathon(赛事) / hotel(酒店) / scenic(景区) / food(餐饮) / rural(乡村振兴)',
+        security: [],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['action'],
+                properties: {
+                  action: { type: 'string', enum: ['list', 'detail', 'enroll'] },
+                  payload: { type: 'object' },
+                },
+              },
+              examples: {
+                list: { value: { action: 'list', payload: { type: 'marathon', page: 1, pageSize: 20 } } },
+                detail: { value: { action: 'detail', payload: { id: 'c1' } } },
+                enroll: {
+                  value: {
+                    action: 'enroll',
+                    payload: { id: 'c1', formData: { name: '智', phone: '13800000000' } },
+                  },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: '成功', content: { 'application/json': { schema: { $ref: '#/components/schemas/ApiEnvelope' } } } },
+        },
+      },
+    },
+
+    // ===== wallet（JWT + feature gate `wallet`，当前关闭 → 403）— V0.1.13 增 =====
+    '/api/wallet': {
+      post: {
+        tags: ['wallet'],
+        summary: 'wallet action 入口（get / transactions / recharge）',
+        description:
+          '全部 action 需 JWT + feature gate `wallet`（当前 wallet=false → 403）。\n' +
+          'get: 查余额；transactions: 分页流水；recharge: 充值（amount 元，单次 ≤ 10000）',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['action'],
+                properties: {
+                  action: { type: 'string', enum: ['get', 'transactions', 'recharge'] },
+                  payload: { type: 'object' },
+                },
+              },
+              examples: {
+                get: { value: { action: 'get' } },
+                transactions: { value: { action: 'transactions', payload: { page: 1, pageSize: 20 } } },
+                recharge: { value: { action: 'recharge', payload: { amount: 100 } } },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: '成功', content: { 'application/json': { schema: { $ref: '#/components/schemas/ApiEnvelope' } } } },
+          '403': { description: 'feature gate 关闭 / 未登录', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResp' } } } },
+        },
+      },
+    },
+
+    // ===== weekly-report（JWT，trigger 仅群主）— V0.1.13 增 =====
+    '/api/weekly-report': {
+      post: {
+        tags: ['weekly-report'],
+        summary: 'weekly-report action 入口（currentWeek / myReport / trigger）',
+        description:
+          'currentWeek/myReport: 查本周报告（groupId 可选，不传 = 我所有群）\n' +
+          'trigger: 群主触发生成战报（payload.groupId 必填，period 可选）',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['action'],
+                properties: {
+                  action: { type: 'string', enum: ['currentWeek', 'myReport', 'trigger'] },
+                  payload: {
+                    type: 'object',
+                    properties: {
+                      groupId: { type: 'string' },
+                      period: { type: 'string', description: 'ISO 周（如 2026-W25），可选' },
+                    },
+                  },
+                },
+              },
+              examples: {
+                currentWeek: { value: { action: 'currentWeek', payload: { groupId: 'g1' } } },
+                trigger: { value: { action: 'trigger', payload: { groupId: 'g1' } } },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': { description: '成功', content: { 'application/json': { schema: { $ref: '#/components/schemas/ApiEnvelope' } } } },
+          '403': { description: '非群成员 / 非群主', content: { 'application/json': { schema: { $ref: '#/components/schemas/ErrorResp' } } } },
         },
       },
     },
