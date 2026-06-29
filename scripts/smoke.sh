@@ -115,8 +115,9 @@ status=$(post_with_token /api/sport '{"action":"checkin","payload":{"distance":9
 assert_status 401 "$status" "POST /api/sport checkin (token 假 → 401)"
 
 # ===== 6. 模块路由注册 =====
-echo "[6] 模块路由注册（每个 module 至少 1 端点）"
-for module in user sport mall content weekly-report; do
+echo "[6] 模块路由注册（每个 module 至少 1 端点，admin/wallet/wxpay 已纳入）"
+# 注：app-config 是内部模块，未注册到 /api/，故不列入此清单
+for module in user sport mall content weekly-report admin wallet wxpay; do
   status=$(post "/api/$module" '{}')
   if [ "$status" = "200" ] || [ "$status" = "400" ] || [ "$status" = "401" ]; then
     echo -e "  ${GREEN}✓${NC} /api/$module 路由可达 (HTTP $status)"

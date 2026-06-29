@@ -59,10 +59,13 @@ services:
       HOST: 0.0.0.0
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/qmwx_dev
       REDIS_URL: redis://redis:6379
-      JWT_SECRET: ${JWT_SECRET:-change-me-32-chars-min-please}
+      # JWT_SECRET 强制显式（不允许弱默认被部署到 staging/prod）
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required, use 'openssl rand -hex 32'}
       JWT_ACCESS_TTL: 2h
       JWT_REFRESH_TTL: 30d
-      WX_APPID: ${WX_APPID:-wx426885831a05f18e}
+      # WX_APPID 强制显式（不留历史默认值）
+      WX_APPID: ${WX_APPID:?WX_APPID is required, copy env.example to apps/server/.env}
+      # WX_SECRET 允许空（DEV_LOGIN_BYPASS=1 时无需真值；env.ts Zod 会按需校验）
       WX_SECRET: ${WX_SECRET:-}
       CORS_ORIGINS: "*"
     ports:

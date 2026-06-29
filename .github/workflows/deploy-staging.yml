@@ -67,9 +67,9 @@ jobs:
             TAG="${{ steps.tag.outputs.value }}"
             IMAGE="${{ env.ACR_REGISTRY }}/qm-wx/qm-wx-server:${TAG}"
 
-            # 跑 staging 部署脚本（项目内 deploy/staging.sh）
+            # 镜像为唯一可信源：git pull 已移除，避免镜像 tag 与代码版本错配
+            # 脚本 deploy/staging.sh 完全自包含（停旧容器 → 起新镜像 → 健康检查 → 回滚）
             cd /opt/qm-wx
-            git pull --ff-only 2>/dev/null || true
             IMAGE_TAG="$TAG" CONTAINER_IMAGE="$IMAGE" \
               bash deploy/staging.sh
 
