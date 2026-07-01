@@ -2,7 +2,8 @@
 
 > 📍 面包屑：`QM-WX/` → [`根 CLAUDE.md`](../../CLAUDE.md) → **apps/server/**（这里）
 > 架构依据：[docs/ARCHITECTURE-V2.md](../../docs/ARCHITECTURE-V2.md)
-> 最新进展：**V0.1.x Cache 10 热路径 + OpenAPI 3.1 契约**（2026-06-17）— Phase 4.1 微信支付完整闭环（2026-06-14）
+> 最新进展：**佳明（Garmin）数据全链路落地**（2026-07-01）— V0.1.17 部署加固 + 云端链路打通（qingmulife.cn）+ admin 重构 + P0-1 修复（2026-06-29）— V0.1.x Cache **14** 热路径 + OpenAPI 3.1 契约（2026-06-17）— Phase 4.1 微信支付完整闭环（2026-06-14）
+> ⚠️ **working tree 含未提交**：佳明 3 表 + device 部分实现（4 查询 + Cache）+ shared device endpoints + admin.schema/service 抽离 + user.routes requireLogin（P0-1）+ prod-smoke/user-flow/admin-audit e2e + common/csv.ts（预期 V0.1.18+）
 
 ---
 
@@ -60,7 +61,7 @@ apps/server/
 │   ├── infra/
 │   │   ├── prisma.ts                 # PrismaClient 单例
 │   │   ├── redis.ts                  # ioredis 单例
-│   │   └── cache.ts                  # Cache.wrap 抽象（V0.1.x，接入 10 热路径）
+│   │   └── cache.ts                  # Cache.wrap 抽象（V0.1.x，接入 14 热路径）
 │   ├── domain/                       # 跨 module 业务规则（Phase 4.1）
 │   │   └── order-state.ts            # Order 状态机：7 态 + TRANSITIONS 白名单 + assertTransition
 │   ├── modules/                      # 14 个业务 module（见下方详表）
@@ -75,13 +76,13 @@ apps/server/
 ├── scripts/                          # CLI 工具（Phase 4.1）
 │   └── reconcile.ts                  # `pnpm reconcile -- YYYY-MM-DD` 微信账单比对
 ├── prisma/
-│   ├── schema.prisma                 # 22 张表（V1 12 + V2 10）
+│   ├── schema.prisma                 # 26 张表（V1 12 + admin AuditLog + V2 13 含佳明 3 表）
 │   │                                # Order 表加 4 字段：payChannel / prepayId / wxTransactionId / paidAt
 │   ├── seed.ts                       # 初始数据（feature_flags 等）
 │   ├── sql/permissions.sql           # 角色权限参考
 │   └── migrations/                   # Prisma 迁移历史
 ├── tests/
-│   ├── modules/                      # 单元测试（vi.mock Prisma/Redis）— 42 files / 365 tests
+│   ├── modules/                      # 单元测试（vi.mock Prisma/Redis）— 404 tests / 45 files（vitest run 实测）
 │   │   ├── user/sport/mall/content/wallet/weekly-report/admin/app-config...
 │   │   ├── wxpay/{service,notify}.test.ts          (8 tests)
 │   │   ├── mall/{order,refund}.service.test.ts     (14 tests)
@@ -89,7 +90,7 @@ apps/server/
 │   │   ├── jobs/{queue,close-order.job}.test.ts     (15 tests)
 │   │   ├── domain/order-state.test.ts               (20 tests)
 │   │   └── ...（V2 stub / 公共模块）
-│   ├── e2e/                          # 端到端测试（真 PG/Redis, RUN_E2E=1）— 37 e2e / 7 files
+│   ├── e2e/                          # 端到端测试（真 PG/Redis, RUN_E2E=1）— 49 用例 / 10 files（+prod-smoke/user-flow/admin-audit）
 │   │   ├── sport-flow.e2e.test.ts        (3 tests)
 │   │   ├── weekly-report.e2e.test.ts     (2 tests)
 │   │   ├── mall-flow.e2e.test.ts         (3 tests) — 已适配 V1 状态机收紧
@@ -130,14 +131,14 @@ apps/server/
 | **wallet** | `/api/wallet` | ✅ 114 行 + wallet.repo 64 行 | ✅ 29 行 | 12 单元 | ✅ 余额/充值/消费/退款 + ensureWalletInTx |
 | **weekly-report** | `/api/weekly-report` | ✅ 185 行 | ✅ 14 行 | 2 e2e | ✅ 周报聚合 + BullMQ 定时 |
 | **upload** | `/api/upload` | — (route 内联) | — | — | ✅ 文件上传（@fastify/multipart） |
-| **admin** | `/api/admin` | ✅ 250 行（含 refundOrder） | — | — | ✅ 白名单校验 + 商品/内容/订单/配置/退款管理 + 缓存失效 |
+| **admin** | `/api/admin` | ✅ admin.service（**18** action / 522 行） | ✅ admin.schema（143 行） | 22 + **12** 单元 | ✅ 白名单 + 商品/内容/订单/配置/退款 + **用户/内容/商品列表/统计（P1-2）** + **黑名单/审计/报表/导出（V0.1.18+19，working tree）** + 缓存失效 |
 | **app-config** | (内嵌) | — | — | — | ✅ AppConfig 表 + 功能开关 |
 | **wxpay** | `/api/wxpay` | ✅ 350 行（含 refund / queryBill / downloadBill） | ✅ 80 行 | 8 单元 + 2 e2e | ✅ **Phase 4 + 4.1** 微信支付 V3 完整闭环 |
-| **device** | `/api/device` | ✅ 66 行 | ✅ 39 行 | 7 路由层 | 🚧 V2 stub — 设备绑定 |
+| **device** | `/api/device` | ✅ **268 行** | ✅ **82 行** | **3 files / 18 用例** | 🚧 V2 **部分实现** — 设备绑定 + **佳明 4 查询（myActivities/Sleep/Metrics/FitnessAge + Cache 300s，2026-07-01）** |
 | **recipe** | `/api/recipe` | ✅ 66 行 | ✅ 67 行 | 7 路由层 | 🚧 V2 stub — 菜谱 |
 | **ludong** | `/api/ludong` | ✅ 57 行 | ✅ 45 行 | 6 路由层 | 🚧 V2 stub — 律动对接 |
 
-### 数据库表（22 张）
+### 数据库表（26 张）
 
 | # | 表名 | Module | V1/V2 |
 |---|--- |--- |--- |
@@ -151,14 +152,18 @@ apps/server/
 | 8 | Content / Enrollment | content | V1 |
 | 9 | AppConfig | app-config | V1 |
 | 10 | GroupReport | weekly-report | V1 |
-| 11 | DeviceBinding | device | V2 |
-| 12 | RawActivity | device | V2 |
-| 13 | Recipe | recipe | V2 |
-| 14 | FoodCache | recipe | V2 |
-| 15 | Meal | recipe | V2 |
-| 16 | IdMapping | ludong | V2 |
-| 17 | SyncOutbox | ludong | V2 |
-| 18 | InboundEvent | ludong | V2 |
+| 11 | AuditLog | admin | V1（V0.1.18 黑名单/审计） |
+| 12 | DeviceBinding | device | V2 |
+| 13 | RawActivity | device | V2（佳明 vendor=garmin 复用） |
+| 14 | GarminSleep | device | V2（佳明，2026-07-01） |
+| 15 | GarminMetric | device | V2（佳明，含 sport 列） |
+| 16 | GarminFitnessAge | device | V2（佳明） |
+| 17 | Recipe | recipe | V2 |
+| 18 | FoodCache | recipe | V2 |
+| 19 | Meal | recipe | V2 |
+| 20 | IdMapping | ludong | V2 |
+| 21 | SyncOutbox | ludong | V2 |
+| 22 | InboundEvent | ludong | V2 |
 
 ---
 
@@ -173,10 +178,10 @@ apps/server/
 ## 🧪 测试
 
 ```bash
-# 单元测试（vi.mock，不连 DB）— 365 passed（42 files）
+# 单元测试（vi.mock，不连 DB）— 404 passed（45 files，vitest run 实测 2026-06-29）
 pnpm test
 
-# 端到端（真 PG/Redis）— 402 passed（365 单元 + 37 e2e / 7 files）
+# 端到端（真 PG/Redis）— 49 用例 / 10 files（+prod-smoke/user-flow/admin-audit；本地无 PG 全 skip）
 RUN_E2E=1 pnpm test
 
 # 覆盖率
@@ -221,16 +226,16 @@ docker run -p 3000:3000 --env-file .env qm-wx-server
   - **Phase 4.1 新加**：wxpay（V3 完整闭环，含 refund / queryBill / downloadBill）
 - ✅ JWT 鉴权 + 功能开关中间件 + 公开端点（content/mall/wxpay）
 - ✅ 微信 code2Session（session_key 缓存 Redis）
-- ✅ Prisma 22 张表 + 迁移（Order 加 4 字段：payChannel / prepayId / wxTransactionId / paidAt）
+- ✅ Prisma **26** 张表 + 迁移（Order 加 4 字段：payChannel / prepayId / wxTransactionId / paidAt；+AuditLog 迁移；**+佳明 3 表 GarminSleep/GarminMetric/GarminFitnessAge，2026-07-01**）
 - ✅ **Domain 层**：order-state 状态机（7 态 + TRANSITIONS 白名单 + assertTransition 5 处替换）
 - ✅ **BullMQ jobs**：周报（每周日 20:00）+ **超时关单（30min delayed，Phase 4.1）**
 - ✅ **Wallet repo**：ensureWallet / ensureWalletInTx 复用入口
 - ✅ **CLI**：`pnpm reconcile -- YYYY-MM-DD` 微信账单比对（5 类 diff + 退出码 0/1/2）
 - ✅ Dockerfile 多阶段构建
-- ✅ **402** 测试（365 单元 + 37 e2e）/ 覆盖 88%+
+- ✅ **~470** 测试（**~420 单元**（含 device 3 files/18 用例，2026-07-01）+ 49 e2e / 10 files；精确数待 `pnpm test` 校准）/ 覆盖 88%+
 - ✅ CI/CD（GitHub Actions ci.yml + deploy-staging.yml，拆 5 parallel job）
 - ✅ **wxpay** refund + notify + 幂等 + 关单保护全链路
-- ✅ **缓存基础设施**（V0.1.x）：`infra/cache.ts` Cache.wrap 接入 10 热路径（sport/mall/content/user/weekly-report）
+- ✅ **缓存基础设施**（V0.1.x）：`infra/cache.ts` Cache.wrap 接入 **14 热路径**（sport/mall/content/user/weekly-report + **佳明 4 查询 myActivities/Sleep/Metrics/FitnessAge，TTL 300s，2026-07-01**）
 - ✅ **OpenAPI 3.1 spec**（V0.1.4/13）：`/openapi.json` + `openapi.e2e` CI gate（9 paths + 5 schemas）
 - ✅ 切真生产文档（[`docs/PHASE-4-2-PREP.md`](../../docs/PHASE-4-2-PREP.md)）
 

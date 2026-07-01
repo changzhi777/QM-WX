@@ -26,20 +26,37 @@
     </block>
   </view>
 
-  <!-- 数据概览 -->
+  <!-- 跑者数据汇总（参考图 2768，stats.myRunnerStats） -->
   <view class="stats bg-white" wx:if="{{user}}">
     <view class="stat">
-      <view class="num">{{user.stats.totalDistance || 0}}</view>
-      <view class="lbl">总公里</view>
+      <view class="num">{{runnerStats.yearDistance}}</view>
+      <view class="lbl">年跑量(km)</view>
     </view>
     <view class="stat">
-      <view class="num">{{user.stats.totalCheckins || 0}}</view>
-      <view class="lbl">打卡</view>
+      <view class="num">{{runnerStats.yearCheckins}}</view>
+      <view class="lbl">年打卡</view>
     </view>
     <view class="stat">
-      <view class="num">{{user.points || 0}}</view>
-      <view class="lbl">积分</view>
+      <view class="num">{{runnerStats.totalDistance}}</view>
+      <view class="lbl">总跑量(km)</view>
     </view>
+    <view class="stat">
+      <view class="num">{{runnerStats.avgPace || '-'}}</view>
+      <view class="lbl">平均配速</view>
+    </view>
+  </view>
+
+  <!-- 佳明运动数据（B-2，2026-07-01） -->
+  <view class="stats bg-white mt-2" wx:if="{{user}}" style="display:block;padding:24rpx;">
+    <view style="font-size:30rpx;font-weight:600;margin-bottom:16rpx;">佳明运动数据</view>
+    <view wx:if="{{garminLoading}}" style="color:#999;font-size:26rpx;">加载中…</view>
+    <block wx:elif="{{garminActivities.length}}">
+      <view wx:for="{{garminActivities}}" wx:key="id" style="display:flex;justify-content:space-between;align-items:center;padding:14rpx 0;border-bottom:1rpx solid #f0f0f0;">
+        <view style="font-size:28rpx;flex:1;">{{item.name || item.type}}</view>
+        <view style="font-size:26rpx;color:#666;">{{item.distanceKm}}km · {{item.durationMin}}min</view>
+      </view>
+    </block>
+    <view wx:else style="color:#999;font-size:26rpx;">暂无佳明数据</view>
   </view>
 
   <!-- 功能列表 -->
@@ -75,6 +92,16 @@
 
     <view class="list-item" bindtap="goWeeklyReport">
       <view class="lbl">跑群周报</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goGarminData">
+      <view class="lbl">佳明数据处理</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goRanking">
+      <view class="lbl">我的榜单</view>
       <view class="arrow">›</view>
     </view>
 

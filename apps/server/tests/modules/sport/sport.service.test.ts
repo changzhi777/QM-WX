@@ -83,6 +83,10 @@ beforeEach(() => {
   setupMockRedis();
   mockedPrisma.appConfig.findMany.mockResolvedValue([]);
   // 默认 appConfig 内存默认值：perKm=1, dailyMaxKm=50, dailyMaxCheckins=1
+  // V0.1.18: 默认 user 不被封禁（checkin 黑名单检查需要）
+  mockedPrisma.user.findUnique.mockResolvedValue({
+    id: 'u1', openid: 'o1', nickname: 'tester', points: 0, isBanned: false,
+  } as never);
 });
 
 describe('sportService.checkin', () => {

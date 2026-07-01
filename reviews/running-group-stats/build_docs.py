@@ -6,7 +6,7 @@ import markdown, pathlib, datetime
 DOCS = ["README.md", "01-code-review.md", "02-architecture.md",
         "03-product-prototype.md", "04-task-breakdown.md",
         "05-payment.md", "06-device-integration.md", "07-food-nutrition-apis.md",
-        "08-recipe-ingestion-and-ludong.md"]
+        "08-recipe-ingestion-and-ludong.md", "09-code-optimization.md"]
 HERE = pathlib.Path(__file__).parent
 
 CSS = """

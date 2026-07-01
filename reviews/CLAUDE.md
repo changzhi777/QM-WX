@@ -35,6 +35,7 @@
 | [06-device-integration.md](running-group-stats/06-device-integration.md) | 手表/手环对接：蓝牙 BLE 实时心率 + 各厂商 OAuth 授权采集（Phase 6） | 二期 | 开发 |
 | [07-food-nutrition-apis.md](running-group-stats/07-food-nutrition-apis.md) | 国内菜谱/营养 API 选型 + 缓存代理设计 | 二期 | 产品 + 开发 |
 | [08-recipe-ingestion-and-ludong.md](running-group-stats/08-recipe-ingestion-and-ludong.md) | 菜谱采集 ETL（统一 Schema/去重/审核）+ 律动平台双向对接（Phase 7） | 二期 | 开发 + 律动团队 |
+| [09-code-optimization.md](running-group-stats/09-code-optimization.md) | 代码优化评审（性能/可维护性/重构建议） | ✅ 新增 | 开发 |
 | [README.md](running-group-stats/README.md) | 文档包导航 + 30 秒结论 | ✅ 入口 | 任何人 |
 | [build_docs.py](running-group-stats/build_docs.py) | 把上述 9 份 md 拼成 `review-package.html` / `review-package.pdf` 的构建脚本 | 🔧 工具 | 维护者 |
 | `review-package.html` | 网页汇总版（可浏览器打开 / 打印） | 产物 | 任何人 |
@@ -78,7 +79,7 @@ python3 build_docs.py
 
 ## 📌 当前状态
 
-- ✅ **8 篇 review 文档已就位** + 构建脚本 + 网页/PDF 产物
+- ✅ **9 篇 review 文档已就位**（01~09，含 09-code-optimization） + 构建脚本 + 网页/PDF 产物
 - 🟢 `running-group-stats/` 是一个**完整的、可重跑**的评审包
 
 ---

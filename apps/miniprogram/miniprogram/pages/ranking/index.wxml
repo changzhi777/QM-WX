@@ -1,0 +1,44 @@
+<view class="page">
+  <!-- 群选择 -->
+  <view class="group-bar bg-white">
+    <picker wx:if="{{groups.length > 0}}" mode="selector" range="{{groups}}" range-key="name" value="{{currentGroupIndex}}" bindchange="switchGroup">
+      <view class="group-pick">{{groups[currentGroupIndex].name}} ▾</view>
+    </picker>
+    <view wx:else class="group-pick">未加入跑群</view>
+  </view>
+
+  <!-- 运动类型 tab（参考图 2772 跑步榜/健步榜） -->
+  <view class="tabs bg-white">
+    <view class="tab {{sportType === 'all' ? 'active' : ''}}" bindtap="switchSport" data-sport="all">综合</view>
+    <view class="tab {{sportType === 'run' ? 'active' : ''}}" bindtap="switchSport" data-sport="run">跑步榜</view>
+    <view class="tab {{sportType === 'hike' ? 'active' : ''}}" bindtap="switchSport" data-sport="hike">健步榜</view>
+  </view>
+
+  <!-- 周期 tab -->
+  <view class="periods bg-white">
+    <view class="period {{period === 'week' ? 'active' : ''}}" bindtap="switchPeriod" data-period="week">本周</view>
+    <view class="period {{period === 'month' ? 'active' : ''}}" bindtap="switchPeriod" data-period="month">本月</view>
+    <view class="period {{period === 'year' ? 'active' : ''}}" bindtap="switchPeriod" data-period="year">今年</view>
+    <view class="period {{period === 'all' ? 'active' : ''}}" bindtap="switchPeriod" data-period="all">总榜</view>
+  </view>
+
+  <!-- 我的排名 -->
+  <view class="my-rank" wx:if="{{myRank}}">🏆 我的排名：第 {{myRank}} 名</view>
+
+  <!-- 榜单列表 -->
+  <view class="list" wx:if="{{!loading}}">
+    <view wx:if="{{list.length === 0}}" class="empty">暂无榜单数据</view>
+    <view class="rank-row bg-white" wx:for="{{list}}" wx:key="userId">
+      <view class="rank-num {{item.rank <= 3 ? 'top' : ''}}">{{item.rankIcon}}</view>
+      <image wx:if="{{item.avatarUrl}}" class="avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
+      <view wx:else class="avatar ph">{{item.nickname[0]}}</view>
+      <view class="rank-info">
+        <view class="name">{{item.nickname}}</view>
+        <view class="meta">{{item.checkins}} 次打卡</view>
+      </view>
+      <view class="distance">{{item.distanceDisplay}}<text class="u">km</text></view>
+    </view>
+  </view>
+
+  <view class="loading" wx:else>加载中...</view>
+</view>

@@ -10,7 +10,9 @@
 export const API_BASE = {
   dev: 'http://localhost:3000',
   staging: 'https://api-staging.qingmu.example',
-  prod: 'https://api.qingmu.example',
+  // 生产：小程序 release/trial 版走企业官网共用域名（备案 + HTTPS + nginx /api/ 反代已就位）
+  // 详见 memory/deploy-prod-qingmulife.md
+  prod: 'https://qingmulife.cn',
 } as const;
 
 export const ENDPOINTS = {
@@ -63,6 +65,29 @@ export const ENDPOINTS = {
     listOrders: '/api/admin',
     updateOrderStatus: '/api/admin',
     listAdmins: '/api/admin',
+  },
+  device: {
+    listBindings: '/api/device',
+    startOAuth: '/api/device',
+    unbind: '/api/device',
+    syncWeRun: '/api/device',
+    submitHeartRate: '/api/device',
+    // 佳明数据查询（B-2，2026-07-01）
+    myActivities: '/api/device',
+    mySleep: '/api/device',
+    myMetrics: '/api/device',
+    myFitnessAge: '/api/device',
+    // 佳明数据处理（导入榜单，2026-07-01）
+    myPending: '/api/device',
+    myProcessed: '/api/device',
+    ignoreActivity: '/api/device',
+    importToCheckin: '/api/device',
+  },
+  stats: {
+    myRunnerStats: '/api/stats',
+  },
+  ranking: {
+    groupRankingMulti: '/api/ranking',
   },
 } as const;
 

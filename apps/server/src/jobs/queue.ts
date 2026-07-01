@@ -16,6 +16,7 @@ import { env } from '../config/env.js';
 import { processWeeklyReport } from './weekly-report.job.js';
 import { processCloseOrder, type CloseOrderJobData } from './close-order.job.js';
 import { processRefreshPlatformCerts } from './refresh-certs.job.js';
+import { processGarminImport, type GarminImportJobData } from './garmin-import.job.js';
 import { logger } from '../common/logger.js';
 
 const QUEUE_PREFIX = 'qmwx';
@@ -60,6 +61,17 @@ export const refreshCertsQueue = new Queue('refresh-certs', {
   },
 });
 
+export const garminImportQueue = new Queue('garmin-import', {
+  connection: redis,
+  prefix: QUEUE_PREFIX,
+  defaultJobOptions: {
+    attempts: 2,
+    backoff: { type: 'fixed', delay: 5_000 },
+    removeOnComplete: { count: 200, age: 86400 },
+    removeOnFail: { count: 500, age: 7 * 86400 },
+  },
+});
+
 // ===== Worker 集合 =====
 const workers: Worker[] = [];
 
@@ -94,6 +106,10 @@ export function startWorkers() {
   startWorker('refresh-certs', async () => {
     return processRefreshPlatformCerts();
   }, 1);
+
+  startWorker('garmin-import', async (job) => {
+    return processGarminImport(job.data as GarminImportJobData);
+  }, 2);
 }
 
 /** 优雅关闭 */
@@ -103,6 +119,7 @@ export async function stopWorkers() {
     weeklyReportQueue.close(),
     closeOrderQueue.close(),
     refreshCertsQueue.close(),
+    garminImportQueue.close(),
   ]);
 }
 
@@ -156,6 +173,18 @@ export async function enqueueCloseOrder(orderId: string, delayMs = CLOSE_ORDER_D
 /** 工具：手动触发一次平台证书刷新（admin / 运维 / 测试用） */
 export async function enqueueRefreshCerts() {
   return refreshCertsQueue.add('refresh-now', {});
+}
+
+/**
+ * 工具：入队佳明活动导入（device.importToCheckin 调用）
+ *
+ * jobId 用 userId + activityIds 排序 hash + 5 分钟桶 去重（同批短时重复入队只跑一次）
+ */
+export async function enqueueGarminImport(data: GarminImportJobData) {
+  const dedupeKey = `${data.userId}-${data.activityIds.slice().sort().join(',')}`;
+  return garminImportQueue.add('import', data, {
+    jobId: `${dedupeKey}-${Math.floor(Date.now() / 300_000)}`,
+  });
 }
 
 // ===== 启动 / 关闭集成 =====

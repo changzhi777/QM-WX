@@ -192,3 +192,28 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # ---- 5. Prod Smoke（公网 qingmulife.cn 链路冒烟）----
+  # 仅 main 分支 push + 手动 dispatch 触发（PR 不打公网）
+  # 用例在 apps/server/tests/e2e/prod-smoke.e2e.test.ts（PROD_SMOKE=1 启用）
+  prod-smoke:
+    name: Prod Smoke (公网 qingmulife.cn)
+    runs-on: ubuntu-latest
+    if: |
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @qm-wx/shared build
+      - name: Prod smoke against qingmulife.cn
+        env:
+          PROD_SMOKE: '1'
+        run: pnpm --filter @qm-wx/server exec vitest run prod-smoke

@@ -12,51 +12,64 @@ datasource db {
 
 // ===== 用户 =====
 model User {
-  id            String    @id @default(cuid())
-  openid        String    @unique
-  unionid       String?   @unique
-  nickname      String?
-  avatarUrl     String?
-  phone         String?
-  memberLevel   String    @default("free") // free | monthly | quarterly | yearly
+  id             String    @id @default(cuid())
+  openid         String    @unique
+  unionid        String?   @unique
+  nickname       String?
+  avatarUrl      String?
+  phone          String?
+  memberLevel    String    @default("free") // free | monthly | quarterly | yearly
   memberExpireAt DateTime?
-  points        Int       @default(0)
-  certified     Boolean   @default(false)
-  stats         Json      @default("{\"totalDistance\":0,\"totalCheckins\":0,\"totalPoints\":0}")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  points         Int       @default(0)
+  certified      Boolean   @default(false)
+  stats          Json      @default("{\"totalDistance\":0,\"totalCheckins\":0,\"totalPoints\":0}")
+  // V0.1.18：黑名单字段（admin banUser/unbanUser 维护）
+  isBanned       Boolean   @default(false)
+  bannedAt       DateTime?
+  bannedReason   String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  checkins       Checkin[]
-  orders         Order[]
-  wallet         Wallet?
-  groupMembers   GroupMember[]
-  ownedGroups    Group[]      @relation("GroupOwner")
-  deviceBindings DeviceBinding[]
-  meals          Meal[]
-  idMapping      IdMapping?
+  checkins          Checkin[]
+  orders            Order[]
+  wallet            Wallet?
+  groupMembers      GroupMember[]
+  ownedGroups       Group[]            @relation("GroupOwner")
+  deviceBindings    DeviceBinding[]
+  meals             Meal[]
+  idMapping         IdMapping?
+  // 佳明数据导入（B-2）：Activity 复用 RawActivity（无 relation），其余 3 表反向
+  garminSleeps      GarminSleep[]
+  garminFitnessAges GarminFitnessAge[]
+  garminMetrics     GarminMetric[]
 
   @@index([openid])
+  @@index([isBanned])
 }
 
 // ===== 打卡 =====
 model Checkin {
-  id          String   @id @default(cuid())
-  userId      String
-  groupId     String?
-  distance    Float    // km
-  durationSec Int?
-  pace        String?  // mm:ss
-  heartRate   Int?
-  cadence     Int?
-  points      Int      @default(0)
-  date        String   // YYYY-MM-DD
-  createdAt   DateTime @default(now())
+  id               String   @id @default(cuid())
+  userId           String
+  groupId          String?
+  distance         Float // km
+  durationSec      Int?
+  pace             String? // mm:ss
+  heartRate        Int?
+  cadence          Int?
+  points           Int      @default(0)
+  date             String // YYYY-MM-DD
+  dataSource       String   @default("manual") // manual | garmin
+  garminActivityId String?  @unique // 佳明去重键（null = 手动打卡）
+  sportType        String? // run | hike | ride | other
+  createdAt        DateTime @default(now())
 
   user  User   @relation(fields: [userId], references: [id])
   group Group? @relation(fields: [groupId], references: [id])
 
   @@index([userId, date])
   @@index([groupId, date])
+  @@index([userId, sportType, date])
 }
 
 // ===== 跑群 =====
@@ -68,18 +81,18 @@ model Group {
   memberCount Int      @default(0)
   createdAt   DateTime @default(now())
 
-  owner   User          @relation("GroupOwner", fields: [ownerId], references: [id])
-  members GroupMember[]
+  owner    User          @relation("GroupOwner", fields: [ownerId], references: [id])
+  members  GroupMember[]
   checkins Checkin[]
 }
 
 model GroupMember {
-  groupId    String
-  userId     String
-  nickname   String
-  avatarUrl  String?
-  role       String   @default("member") // owner | member
-  joinedAt   DateTime @default(now())
+  groupId   String
+  userId    String
+  nickname  String
+  avatarUrl String?
+  role      String   @default("member") // owner | member
+  joinedAt  DateTime @default(now())
 
   group Group @relation(fields: [groupId], references: [id])
   user  User  @relation(fields: [userId], references: [id])
@@ -111,22 +124,22 @@ model Product {
 }
 
 model Order {
-  id          String      @id @default(cuid())
-  userId      String
-  items       OrderItem[]
-  totalAmount Decimal     @db.Decimal(10, 2)
-  pointsUsed  Int         @default(0)
-  payAmount   Decimal     @db.Decimal(10, 2)
-  status      String      @default("pending_pay") // pending_pay | paid | shipped | done | cancelled
-  payment     Json?
-  address     Json?
+  id              String      @id @default(cuid())
+  userId          String
+  items           OrderItem[]
+  totalAmount     Decimal     @db.Decimal(10, 2)
+  pointsUsed      Int         @default(0)
+  payAmount       Decimal     @db.Decimal(10, 2)
+  status          String      @default("pending_pay") // pending_pay | paid | shipped | done | cancelled
+  payment         Json?
+  address         Json?
   // Phase 4 微信支付 V3 新增
   payChannel      String? // wxpay | points（默认 null）
   prepayId        String?
-  wxTransactionId String? @unique // 幂等 key
+  wxTransactionId String?     @unique // 幂等 key
   paidAt          DateTime?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   user User @relation(fields: [userId], references: [id])
 
@@ -150,7 +163,7 @@ model PointsRecord {
   id        String   @id @default(cuid())
   userId    String
   change    Int
-  type      String   // checkin | signup_bonus | order_deduct | member_gift
+  type      String // checkin | signup_bonus | order_deduct | member_gift
   refId     String?
   balance   Int
   createdAt DateTime @default(now())
@@ -174,7 +187,7 @@ model WalletTransaction {
   id              String   @id @default(cuid())
   userId          String
   walletId        String
-  type            String   // recharge | consume | refund
+  type            String // recharge | consume | refund
   amount          Decimal  @db.Decimal(10, 2)
   orderId         String?
   wxTransactionId String?
@@ -191,23 +204,23 @@ model WalletTransaction {
 
 // ===== 内容（赛事/酒店/景区/餐饮/乡村振兴 统一）=====
 model Content {
-  id          String   @id @default(cuid())
-  type        String   // marathon | hotel | scenic | food | rural
-  title       String
-  cover       String?
-  summary     String?
-  detail      Json?
-  price       Decimal? @db.Decimal(10, 2)
-  fee         Decimal? @db.Decimal(10, 2)
-  date        String?
-  validRange  Json?
-  location    String?
-  tags        String[]
-  actionType  String   @default("none") // enroll | book | link | none
-  status      String   @default("on") // on | off
-  sort        Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id         String   @id @default(cuid())
+  type       String // marathon | hotel | scenic | food | rural
+  title      String
+  cover      String?
+  summary    String?
+  detail     Json?
+  price      Decimal? @db.Decimal(10, 2)
+  fee        Decimal? @db.Decimal(10, 2)
+  date       String?
+  validRange Json?
+  location   String?
+  tags       String[]
+  actionType String   @default("none") // enroll | book | link | none
+  status     String   @default("on") // on | off
+  sort       Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   enrollments Enrollment[]
 
@@ -230,16 +243,33 @@ model Enrollment {
 
 // ===== 远程配置 / 功能开关 =====
 model AppConfig {
-  id    String @id // feature_flags | member_levels | points_rules | admin_whitelist ...
-  value Json
+  id        String   @id // feature_flags | member_levels | points_rules | admin_whitelist ...
+  value     Json
   updatedAt DateTime @updatedAt
+}
+
+// ===== 审计日志（V0.1.18）=====
+// 关键 admin 操作留痕：refundOrder / setConfig / banUser / unbanUser
+// 写失败只 log error 不 throw（业务不能被审计拖累）
+model AuditLog {
+  id          BigInt   @id @default(autoincrement())
+  actorOpenid String // 操作者 openid
+  action      String // e.g. 'admin.refundOrder' | 'admin.banUser' | 'admin.setConfig'
+  target      String? // 目标实体 id（如 user openid / order id / config key）
+  payload     Json // 操作内容（脱敏后的关键字段）
+  ip          String? // 来源 IP（route 层 req.ip 传入）
+  createdAt   DateTime @default(now())
+
+  @@index([actorOpenid, createdAt])
+  @@index([action, createdAt])
+  @@index([createdAt])
 }
 
 // ===== 周报 =====
 model GroupReport {
   id        String   @id @default(cuid())
   groupId   String
-  period    String   // YYYY-WW
+  period    String // YYYY-WW
   summary   Json
   imageUrl  String?
   createdAt DateTime @default(now())
@@ -251,8 +281,8 @@ model GroupReport {
 model DeviceBinding {
   id              String    @id @default(cuid())
   userId          String
-  vendor          String    // werun | garmin | huawei | xiaomi | honor | coros | zepp
-  accessTokenEnc  String?   // AES 加密
+  vendor          String // werun | garmin | huawei | xiaomi | honor | coros | zepp
+  accessTokenEnc  String? // AES 加密
   refreshTokenEnc String?
   expireAt        DateTime?
   vendorUserId    String?
@@ -270,11 +300,11 @@ model DeviceBinding {
 
 // ===== V2 · 设备原始活动（留底可追溯）=====
 model RawActivity {
-  id               String   @id @default(cuid())
+  id               String    @id @default(cuid())
   userId           String
   vendor           String
-  vendorActivityId String   // vendor + vendorActivityId 唯一防重
-  type             String   // running | walking | cycling
+  vendorActivityId String // vendor + vendorActivityId 唯一防重
+  type             String // running | walking | cycling
   startTime        DateTime
   durationSec      Int?
   distanceMeters   Float?
@@ -282,11 +312,15 @@ model RawActivity {
   maxHr            Int?
   cadence          Int?
   raw              Json
-  ingestedAt       DateTime @default(now())
+  ingestedAt       DateTime  @default(now())
   normalizedAt     DateTime?
+  status           String    @default("pending") // pending | imported | ignored
+  importedAt       DateTime?
+  importCheckinId  String? // 导入后指向 Checkin.id（1-1）
 
   @@unique([vendor, vendorActivityId])
   @@index([userId, startTime])
+  @@index([userId, status])
 }
 
 // ===== V2 · 菜谱 =====
@@ -294,16 +328,16 @@ model Recipe {
   id          String   @id @default(cuid())
   title       String
   coverFileId String?
-  category    String   // breakfast | prerun | postrun | lowcal | homedish
+  category    String // breakfast | prerun | postrun | lowcal | homedish
   tags        String[]
-  ingredients Json     // [{name, amount, isMain}]
-  steps       Json     // [{order, text, imageFileId}]
-  nutrition   Json?    // {calorie, protein, fat, carb, per}
+  ingredients Json // [{name, amount, isMain}]
+  steps       Json // [{order, text, imageFileId}]
+  nutrition   Json? // {calorie, protein, fat, carb, per}
   durationMin Int?
   difficulty  Int?
   servings    Int?
-  source      Json     // {type, vendor, vendorId, license}
-  audit       Json     // {status, reviewer, reviewedAt}
+  source      Json // {type, vendor, vendorId, license}
+  audit       Json // {status, reviewer, reviewedAt}
   stats       Json     @default("{\"views\":0,\"favorites\":0}")
   fingerprint String?  @unique // 去重指纹
   createdAt   DateTime @default(now())
@@ -316,7 +350,7 @@ model Recipe {
 model FoodCache {
   id        String   @id @default(cuid())
   keyword   String
-  source    String   // juhe | tianapi | baidu
+  source    String // juhe | tianapi | baidu
   payload   Json
   hitCount  Int      @default(0)
   expiredAt DateTime
@@ -328,13 +362,13 @@ model FoodCache {
 
 // ===== V2 · 饮食日记 =====
 model Meal {
-  id        String   @id @default(cuid())
-  userId    String
-  mealType  String   // breakfast | lunch | dinner | snack
-  items     Json     // [{name, calorie, qty}]
+  id           String   @id @default(cuid())
+  userId       String
+  mealType     String // breakfast | lunch | dinner | snack
+  items        Json // [{name, calorie, qty}]
   totalCalorie Int
-  date      String   // YYYY-MM-DD
-  createdAt DateTime @default(now())
+  date         String // YYYY-MM-DD
+  createdAt    DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
 
@@ -343,10 +377,10 @@ model Meal {
 
 // ===== V2 · 律动账号映射 =====
 model IdMapping {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  ludongUserId  String   @unique
-  boundAt       DateTime @default(now())
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  ludongUserId String   @unique
+  boundAt      DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id])
 }
@@ -354,8 +388,8 @@ model IdMapping {
 // ===== V2 · 出站队列（小程序 → 律动）=====
 model SyncOutbox {
   id          String    @id @default(cuid())
-  eventType   String    // user.upsert | checkin.batch | order.sync | points.sync
-  path        String    // /open/v1/...
+  eventType   String // user.upsert | checkin.batch | order.sync | points.sync
+  path        String // /open/v1/...
   payload     Json
   status      String    @default("pending") // pending | done | dead
   retryCount  Int       @default(0)
@@ -369,9 +403,80 @@ model SyncOutbox {
 
 // ===== V2 · 入站幂等（律动 → 小程序 webhook）=====
 model InboundEvent {
-  id        String   @id // 律动 eventId
-  type      String
+  id         String   @id // 律动 eventId
+  type       String
   receivedAt DateTime @default(now())
 
   @@index([receivedAt])
+}
+
+// ===== 佳明（Garmin）数据导入 — 方案 B-2：核心厚表 + Metrics 通用宽表 =====
+// 数据来源：佳明账户导出包（userProfileId 11032831 / 张晨）
+// 关联现有 User（vendor=garmin）；活动复用 RawActivity，不新建活动表
+
+/// 佳明睡眠（厚表）— 来源 DI-Connect-Wellness/sleepData，按日一条
+model GarminSleep {
+  id                  String    @id @default(cuid())
+  userId              String
+  calendarDate        DateTime
+  sleepStartGMT       DateTime?
+  sleepEndGMT         DateTime?
+  deepSleepSeconds    Int?
+  lightSleepSeconds   Int?
+  remSleepSeconds     Int?
+  awakeSleepSeconds   Int?
+  unmeasurableSeconds Int?
+  averageRespiration  Float?
+  lowestRespiration   Float?
+  highestRespiration  Float?
+  awakeCount          Int?
+  avgSleepStress      Float?
+  sleepScores         Json? // 嵌套评分（overall/quality/...）
+  raw                 Json
+  ingestedAt          DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, calendarDate])
+  @@index([userId, calendarDate])
+}
+
+/// 佳明健身年龄（厚表）— 来源 fitnessAgeData，按日一条
+model GarminFitnessAge {
+  id                String   @id @default(cuid())
+  userId            String
+  asOfDate          DateTime
+  chronologicalAge  Int?
+  bmi               Float?
+  rhr               Int? // 静息心率
+  vo2Max            Float? // biometricVo2Max
+  currentBioAge     Float?
+  totalVigorousDays Int?
+  raw               Json
+  ingestedAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, asOfDate])
+  @@index([userId, asOfDate])
+}
+
+/// 佳明指标（通用宽表）— 来源 DI-Connect-Metrics（8 类）+ Wellness 杂项
+/// metricType: training_readiness | hill_score | endurance_score | acute_load |
+///             heat_acclimation | heat_acclimation | max_met | run_race_predictions | training_history
+model GarminMetric {
+  id           String    @id @default(cuid())
+  userId       String
+  metricType   String
+  sport        String? // 按运动细分的指标（training_history/max_met 有；其余 null）
+  calendarDate DateTime?
+  value        Float?
+  level        String? // NONE | LOW | MEDIUM | HIGH（部分类型）
+  raw          Json
+  ingestedAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, metricType, sport, calendarDate])
+  @@index([userId, metricType, calendarDate])
 }

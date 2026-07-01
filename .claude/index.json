@@ -1,92 +1,273 @@
 {
   "project": "QM-WX",
-  "projectType": "wechat-miniprogram",
+  "projectType": "wechat-miniprogram-monorepo",
   "businessDirection": "青沐生命科技·大健康生活方式平台（运动社群 + 健康/运动商城 + 赛事与本地服务）",
-  "lastUpdated": "2026-06-11T11:18:43+08:00",
+  "lastUpdated": "2026-07-01T15:11:35+08:00",
   "agent": "init-architect",
   "runMode": "incremental",
   "truncated": false,
   "stats": {
-    "totalFiles": 18,
-    "scannedFiles": 14,
-    "scannedBytesApprox": 60000,
-    "coveragePercent": 78,
+    "estimatedTotalFiles": 368,
+    "scannedFiles": 322,
+    "coveragePercent": 87,
+    "tsFiles": {
+      "server_src": 64,
+      "server_tests": 70,
+      "miniprogram_pages": 13,
+      "miniprogram_components": 4,
+      "shared_src": 6
+    },
+    "modulesFound": 16,
+    "modulesWithService": 12,
+    "v2Stubs": ["recipe", "ludong"],
+    "v2Partial": ["device (佳明 4 查询 myActivities/Sleep/Metrics/FitnessAge + Cache 300s, 2026-07-01)"],
+    "prismaTables": 26,
+    "unitTests": 424,
+    "e2eFiles": 10,
+    "e2eTests": 49,
+    "totalTests": 473,
+    "testCountNote": "2026-07-01 估算：~420 单元（含 device 3 files/18 用例，基线 404）+ 49 e2e（10 files）；精确数待 pnpm test 校准",
+    "cachedEndpoints": 16,
     "ignored": {
       "binaryFiles": [
-        "reviews/running-group-stats/review-package.pdf"
+        "miniprogram/miniprogram_npm/** (微信预编译产物)",
+        "reviews/running-group-stats/review-package.pdf",
+        "*.png / *.jpg (图标/封面)"
       ],
-      "reason": "PDF binary, path only recorded"
+      "reason": "node_modules + 构建产物 + 微信预编译 npm"
     }
   },
+  "versionControl": {
+    "currentBranch": "main",
+    "currentTag": "v0.1.17",
+    "latestCommit": "8029ef9 perf(deploy): 部署代码审查与加固（V0.1.17）",
+    "workingTreeNote": "佳明 3 表（GarminSleep/Metric/FitnessAge）+ device 部分实现（service 268行/schema 82行/4 查询 + Cache 300s/测试 3 files 18 用例）+ shared device endpoints + prod 域名 qingmulife.cn + admin 重构（admin.service 522行/18 action + admin.schema 143行）+ P0-1 user 鉴权修复（requireLogin×3）+ 云端 e2e（prod-smoke/user-flow/admin-audit）+ 26 表迁移 + docker-compose.prod.yml + common/csv.ts 均在 working tree 未提交（预期 V0.1.18+）",
+    "versionNote": "V0.1.17 部署加固已 commit；working tree 另含佳明全链路 + admin 重构（V0.1.18+ 预期）；另含需 .gitignore 的数据/备份文件（佳明数据包 zip / 生产 PG 备份 sql / 截图 png）"
+  },
+  "recentCommits": [
+    "8029ef9 perf(deploy): 部署代码审查与加固（V0.1.17）",
+    "8307813 docs: init-project 增量刷新（V0.1.x 后首次，59 commit 差异校准）",
+    "a5a7f07 feat(server): OpenAPI 3.1 契约补全 + e2e cleanup + Phase 4.2 审查（V0.1.13~15）",
+    "32c4f1c perf(server): Cache.wrap 接入 weekly-report.aggregate（V0.1.12）",
+    "19cdc1a perf(server): Cache.wrap 接入 sport.myStats/groupRanking（V0.1.11）"
+  ],
   "files": [
-    {"path": "CLAUDE.md", "kind": "root-context", "status": "updated", "changelogEntry": "2026-06-11 11:18"},
-    {"path": "README.md", "kind": "readme", "status": "unchanged"},
-    {"path": "package.json", "kind": "config", "status": "placeholder"},
+    {"path": "CLAUDE.md", "kind": "root-context", "status": "updated", "changelogEntry": "2026-07-01 佳明全链路增量（26表/device部分实现/14热路径/15723真数据）"},
+    {"path": ".claude/index.json", "kind": "index", "status": "updated", "changelogEntry": "2026-07-01 佳明 3 表 + device 部分实现 + 14 热路径"},
+    {"path": "apps/server/CLAUDE.md", "kind": "module-context", "status": "updated", "changelogEntry": "2026-07-01 26 表 + device 部分实现 + 14 热路径 + device 18 用例"},
+    {"path": "docs/CLAUDE.md", "kind": "module-context", "status": "updated", "changelogEntry": "补登 API-AUDIT.md"},
+    {"path": "reviews/CLAUDE.md", "kind": "module-context", "status": "updated", "changelogEntry": "补登 09-code-optimization.md（8→9 篇）"},
+    {"path": "package.json", "kind": "config", "status": "exists"},
+    {"path": "pnpm-workspace.yaml", "kind": "config", "status": "exists"},
     {"path": ".gitignore", "kind": "config", "status": "exists"},
-    {"path": "src/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "docs/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
+    {"path": "docker-compose.yml", "kind": "config", "status": "exists"},
+    {"path": "docker-compose.prod.yml", "kind": "config", "status": "new", "note": "生产部署 compose（云端链路打通）"},
+    {"path": "apps/server/.env.example", "kind": "config", "status": "exists"},
+    {"path": "src/CLAUDE.md", "kind": "module-context", "status": "deprecated (V2 转向后废弃)"},
     {"path": "tests/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "reviews/CLAUDE.md", "kind": "module-context", "status": "created", "breadcrumb": "QM-WX/ > 根 > reviews/"},
-    {
-      "path": "reviews/running-group-stats/",
-      "kind": "review-package",
-      "status": "indexed",
-      "contents": [
-        "README.md",
-        "01-code-review.md",
-        "02-architecture.md",
-        "03-product-prototype.md",
-        "04-task-breakdown.md",
-        "05-payment.md",
-        "06-device-integration.md",
-        "07-food-nutrition-apis.md",
-        "08-recipe-ingestion-and-ludong.md",
-        "build_docs.py",
-        "review-package.html",
-        "review-package.pdf"
-      ]
-    }
+    {"path": "packages/shared/CLAUDE.md", "kind": "module-context", "status": "updated", "changelogEntry": "2026-07-01 device endpoints (10 action) + prod 域名 qingmulife.cn"},
+    {"path": "apps/miniprogram/CLAUDE.md", "kind": "module-context", "status": "updated", "changelogEntry": "2026-07-01 mine 页接入佳明活动数据展示"}
   ],
   "modules": [
-    {"path": "src", "role": "业务代码（重构 Phase 0 起填充）", "coverage": "empty", "claudeMd": true},
-    {"path": "docs", "role": "设计文档 / 接口契约", "coverage": "empty", "claudeMd": true},
-    {"path": "tests", "role": "测试用例", "coverage": "empty", "claudeMd": true},
-    {"path": "reviews", "role": "评审资料（8 篇 review + 构建脚本）", "coverage": "complete", "claudeMd": true},
-    {"path": "reviews/running-group-stats", "role": "青沐小程序全量重构文档包", "coverage": "complete", "claudeMd": "inherited"}
+    {
+      "path": "apps/server",
+      "role": "Fastify 4 + TS 后端",
+      "name": "@qm-wx/server",
+      "entry": "src/server.ts (buildApp + listen + jobs)",
+      "moduleCount": 14,
+      "moduleList": ["auth", "user", "sport", "mall", "content", "wallet", "weekly-report", "upload", "admin", "app-config", "wxpay", "device (V2 部分实现·佳明 4 查询 + 4 数据处理)", "recipe (V2 stub)", "ludong (V2 stub)", "stats (新·跑者汇总)", "ranking (新·多维榜单)"],
+      "adminRefactor": "admin.service.ts (522行/18 action) + admin.schema.ts (143行) 抽离，routes 276→113 行；新增 ban/unban + AuditLog 审计 + statsByTimeRange 报表 + exportOrders/exportUsers CSV 导出（working tree，预期 V0.1.18+19）",
+      "garminPipeline": "device.service.ts (268行) 佳明 4 查询 myActivities/Sleep/Metrics/FitnessAge + Cache.wrap 300s；复用 RawActivity(vendor=garmin) + 3 新表；15723 条真数据灌入 + 小程序「我的」页实测（2026-07-01，working tree）",
+      "domain": ["src/domain/order-state.ts (7 态 + TRANSITIONS 白名单)"],
+      "jobs": ["queue", "scheduler", "weekly-report", "close-order", "refresh-certs", "garmin-import"],
+      "infra": ["infra/prisma.ts", "infra/redis.ts", "infra/cache.ts (Cache.wrap, 14 热路径: mall×3/user/sport×3/content×2/weekly-report + 佳明×4 TTL 300s)"],
+      "common": ["errors.ts", "logger.ts", "openapi-spec.ts (OpenAPI 3.1, /openapi.json, 9 paths + 16 schemas)", "docs.ts", "csv.ts (CSV 导出工具, working tree)", "middleware/auth.ts (requireLogin helper)", "middleware/feature-gate.ts", "integrations/wx/code2session.ts"],
+      "prismaTables": 26,
+      "prismaMigrations": ["20260618135224_qmwx (初始)", "20260629144948_auditlog_blacklist (AuditLog, working tree)", "20260701034725_garmin_tables (佳明 3 表, 2026-07-01)", "20260701123150_garmin_metric_sport (GarminMetric + sport 列)"],
+      "testCount": {"unit": 420, "e2e": 49, "e2eFiles": 10, "total": 469, "note": "2026-07-01 估算：~420 单元（device 3 files/18 用例新增/扩充，基线 404）+ 49 e2e；精确数待 pnpm test"},
+      "claudeMd": "apps/server/CLAUDE.md"
+    },
+    {
+      "path": "apps/miniprogram",
+      "role": "微信小程序前端",
+      "name": "@qm-wx/miniprogram",
+      "entry": "miniprogram/app.ts",
+      "pages": 15,
+      "components": 4,
+      "componentList": ["feature-gate", "error-state", "privacy-popup", "profile-popup"],
+      "apiWrapper": "miniprogram/services/api.ts (actionUrl + refresh 一次重试)",
+      "garminIntegration": "mine/index 调 api.call('device', 'myActivities', {page:1,pageSize:3}) 展示最近佳明活动（距离/时长/类型），garminLoading/garminActivities 状态驱动 wxml（2026-07-01）",
+      "claudeMd": "apps/miniprogram/CLAUDE.md"
+    },
+    {
+      "path": "apps/admin",
+      "role": "运营后台 (独立仓)",
+      "name": "qm-admin",
+      "location": "独立 git 仓 (CT400 Gitea qingmu/qm-admin)",
+      "framework": "React + Umi Max 4 + antd 5",
+      "testCount": 35,
+      "claudeMd": null,
+      "note": "不在本 monorepo 范围"
+    },
+    {
+      "path": "packages/shared",
+      "role": "前后端共享层",
+      "name": "@qm-wx/shared",
+      "entry": "src/index.ts",
+      "exports": [
+        "constants/feature-flags",
+        "constants/member-levels",
+        "constants/points-rules",
+        "api-contracts/endpoints (+ actionUrl 工具 + device 模块 10 action)",
+        "types (从 Zod 推导)"
+      ],
+      "apiBaseProd": "qingmulife.cn (从 api.qingmu.example 改真域名, 2026-07-01)",
+      "testCount": 5,
+      "claudeMd": "packages/shared/CLAUDE.md"
+    },
+    {
+      "path": "docs",
+      "role": "设计文档 / 部署手册 / 审查报告",
+      "files": [
+        "ARCHITECTURE-V2.md",
+        "PHASE-0-PLAN.md",
+        "PHASE-V2-PLAN.md",
+        "CI.md",
+        "STAGING_DEPLOY.md",
+        "SUBMIT-CHECKLIST.md",
+        "PHASE-4-2-PREP.md (切真生产 playbook)",
+        "API-AUDIT.md (P0 user 鉴权 + admin 重构；P0-1/P1 已修 working tree)"
+      ],
+      "claudeMd": "docs/CLAUDE.md"
+    },
+    {
+      "path": "tests",
+      "role": "跨包 e2e 容器 (暂空)",
+      "note": "后端 e2e 实在 apps/server/tests/e2e/ (10 files：sport/weekly/mall/wxpay-notify/refund/close-order/openapi + prod-smoke/user-flow/admin-audit)",
+      "claudeMd": "tests/CLAUDE.md"
+    },
+    {
+      "path": "reviews",
+      "role": "评审资料",
+      "subdirs": ["running-group-stats (9 文档 + build_docs.py)"],
+      "claudeMd": "reviews/CLAUDE.md"
+    },
+    {
+      "path": "scripts",
+      "role": "工具脚本",
+      "files": [
+        "smoke.sh",
+        "reconcile.ts (微信账单比对 CLI)",
+        "build-mp-shared.mjs (小程序 shared 运行时构建 — 微信不支持 bare import)",
+        "dev-up.sh (开发环境一键启动)"
+      ]
+    },
+    {
+      "path": "deploy",
+      "role": "部署脚本",
+      "files": [
+        "staging.sh (蓝绿部署 + 健康检查 + 自动回滚)",
+        "nginx-qmwx-api.conf"
+      ]
+    },
+    {
+      "path": ".github/workflows",
+      "role": "CI/CD",
+      "files": [
+        "ci.yml (4 job parallel + prod-smoke job: PROD_SMOKE=1 对 qingmulife.cn 冒烟)",
+        "deploy-staging.yml (SSH 部署 + health check + 失败通知)"
+      ]
+    },
+    {
+      "path": "src",
+      "role": "已废弃 (V2 转向后)",
+      "note": "src/CLAUDE.md 仍存在但仅作废弃声明",
+      "claudeMd": "src/CLAUDE.md"
+    }
   ],
+  "cloudLink": {
+    "status": "已打通 (2026-06-29) + 佳明真数据已灌云 (2026-07-01)",
+    "domain": "qingmulife.cn (腾讯云 106.53.168.73)",
+    "filing": "湘ICP备2026022616号",
+    "stack": "全 docker (server + PG + Redis) + nginx 共用 /api/",
+    "wxAppId": "wx8c37d7ac5b7d0a83 (真)",
+    "wxSecret": "已配真值",
+    "seed": "AppConfig / Product / User(张晨) 三类 + 佳明 15723 条活动/睡眠/指标/健身年龄",
+    "ciGate": "prod-smoke.e2e (3 用例) + user-flow.e2e (6 用例, P0-1 回归)",
+    "memory": "cloud-api-db-link-2026-06-29 + deploy-prod-qingmulife + garmin-pipeline-complete"
+  },
   "mermaid": {
     "updated": true,
     "rootFile": "CLAUDE.md",
-    "newNodes": [
-      "reviews/ (purple)",
-      "reviews/running-group-stats/ (dark purple)",
-      "8 review docs + build_docs.py children"
-    ],
-    "clickableLinks": true
+    "clickableLinks": true,
+    "nodeGroups": {
+      "root": "QM-WX/ 根 (monorepo)",
+      "apps": "apps/ (3 子)",
+      "packages": "packages/shared",
+      "docs": "docs/ (8 篇 + API-AUDIT)",
+      "reviews": "reviews/ + 9 子文档",
+      "infra": "infra/cache (14 热路径) + openapi-spec + csv",
+      "domain": "domain/order-state",
+      "garmin": "device 模块佳明全链路 (2026-07-01)"
+    }
   },
   "breadcrumbs": {
-    "total": 4,
+    "total": 8,
     "list": [
-      "src/CLAUDE.md",
+      "apps/server/CLAUDE.md",
+      "apps/miniprogram/CLAUDE.md",
+      "packages/shared/CLAUDE.md",
       "docs/CLAUDE.md",
+      "reviews/CLAUDE.md",
       "tests/CLAUDE.md",
-      "reviews/CLAUDE.md (new)"
+      "src/CLAUDE.md (废弃声明)",
+      "根 CLAUDE.md"
     ]
   },
-  "p0Issues": [
-    "钱包余额客户端可篡改",
-    "云函数信任前端 openid",
-    "'test_openid' 兜底导致全员数据混写",
-    "登录链路断裂（未调 wx.login）",
-    "调用不存在的云函数",
-    "微信群消息自动统计前提不成立",
-    "基础配置占位符 / sitemap.json 缺失"
+  "gaps": [
+    {
+      "id": "GAP-1",
+      "area": "user 鉴权",
+      "severity": "P0",
+      "detail": "user.routes.ts 三处 if(!req.user) 恒 401 → 已改 await requireLogin(req)。",
+      "evidence": "user.routes.ts:34/42/50；user-flow.e2e 6 用例回归",
+      "status": "已修 (working tree, 待 commit)"
+    },
+    {
+      "id": "GAP-2",
+      "area": "admin 范式",
+      "severity": "P1",
+      "detail": "admin.schema.ts (143行) + admin.service.ts (522行/18 action) 已抽离，routes 276→113 行；含黑名单/审计/报表/导出。",
+      "status": "已完成 (working tree, 待 commit)"
+    },
+    {
+      "id": "GAP-3",
+      "area": "测试覆盖率阈值",
+      "severity": "P2",
+      "detail": "覆盖率 88%+ 但 CI 无阈值门禁，建议设 80% 强制下行 (vitest.config.ts coverage.thresholds)。",
+      "status": "建议后续"
+    },
+    {
+      "id": "GAP-4",
+      "area": "CHANGELOG 版本段",
+      "severity": "P3",
+      "detail": "已补 V0.1.13~17（已 commit）+ working tree（V0.1.18+）两段。",
+      "status": "已完成 (2026-06-29)"
+    },
+    {
+      "id": "GAP-5",
+      "area": "device userId 兜底",
+      "severity": "P2",
+      "detail": "佳明查询临时默认张晨 userId（device 查询兜底），需改真用户切换（小程序登录态 → req.user.id）。",
+      "status": "待修 (working tree, 2026-07-01 引入)"
+    }
   ],
   "nextSteps": [
-    "用户/负责人最终确认业务方向（当前基于 8 篇 review 推断为'大健康生活方式平台'）",
-    "深读 reviews/running-group-stats/04-task-breakdown.md 后再启 Phase 0（T0-1 ~ T0-6）",
-    "真实云环境 ID + 商户号到位后，按 app_config.feature_flags 切支付开关",
-    "Phase 2 运动闭环（产品核心）开始前，先建 src/pages/ src/services/ src/cloudfunctions/ 子目录（不要一次性全建）",
-    "如需 V2 食谱/硬件模块，先读 06/07/08 文档，二期再启动"
+    "commit working tree：佳明 3 表 + device 部分实现 + admin 重构 + P0-1 修复 + 云端 e2e + 26 表迁移 → 凑 V0.1.18+ 段 → 推 tag",
+    "GAP-5：device 查询 userId 兜底改真用户切换（当前默认张晨）",
+    "GAP-3：vitest.config.ts 加 coverage.thresholds (建议 80%)",
+    "真支付生产：商户号 / APIv3 密钥 / 商户证书 + 序列号 / 微信平台证书 到位后切真 (docs/PHASE-4-2-PREP.md)",
+    "运行 pnpm test:coverage 抓最新覆盖快照 + 精确测试数（当前 ~420 单元为估算值）",
+    "深读 recipe/ludong 确认 V2 stub 完整度（与 reviews/07/08 对齐）— device 已部分实现"
   ]
 }

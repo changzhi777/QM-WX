@@ -22,6 +22,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md}\"",
     "typecheck": "pnpm --filter @qm-wx/shared --filter @qm-wx/server typecheck",
+    "build:mp-shared": "node scripts/build-mp-shared.mjs",
     "prisma:generate": "pnpm --filter @qm-wx/server prisma:generate",
     "prisma:migrate": "pnpm --filter @qm-wx/server prisma:migrate",
     "prisma:studio": "pnpm --filter @qm-wx/server prisma:studio",
@@ -33,6 +34,7 @@
     "@typescript-eslint/parser": "^7.0.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
+    "miniprogram-automator": "^0.12.1",
     "prettier": "^3.2.0",
     "typescript": "^5.4.0"
   }

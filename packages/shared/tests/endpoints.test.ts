@@ -9,7 +9,7 @@
  * 在 monorepo 自我引用时的边缘 case。
  */
 import { describe, it, expect, vi } from 'vitest';
-import { ENDPOINTS, actionUrl } from '../src/api-contracts/endpoints.js';
+import { ENDPOINTS, actionUrl, API_BASE } from '../src/api-contracts/endpoints.js';
 
 describe('actionUrl', () => {
   it('已注册 action → 返回对应 URL', () => {
@@ -50,5 +50,13 @@ describe('ENDPOINTS 结构完整性', () => {
         expect(url, `${module}.${action}`).toMatch(/^\/api\//);
       }
     }
+  });
+});
+
+describe('API_BASE 环境地址', () => {
+  // 对外契约：prod 必须指向已备案公网域名（生产微信合法域名）。
+  // dev/staging 不在此断言 — 它们是开发占位，不在本次对接范围内。
+  it('prod 指向已备案公网域名', () => {
+    expect(API_BASE.prod).toBe('https://qingmulife.cn');
   });
 });

@@ -13,9 +13,11 @@ import Fastify, { type FastifyInstance } from 'fastify';
 
 const mockPrisma = vi.hoisted(() => ({
   appConfig: { findUnique: vi.fn(), upsert: vi.fn() },
-  content: { create: vi.fn(), update: vi.fn() },
-  product: { create: vi.fn(), update: vi.fn() },
-  order: { findMany: vi.fn(), count: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
+  content: { create: vi.fn(), update: vi.fn(), findMany: vi.fn(), count: vi.fn() },
+  product: { create: vi.fn(), update: vi.fn(), findMany: vi.fn(), count: vi.fn() },
+  order: { findMany: vi.fn(), count: vi.fn(), findUnique: vi.fn(), update: vi.fn(), aggregate: vi.fn() },
+  user: { findMany: vi.fn(), count: vi.fn() },
+  checkin: { count: vi.fn() },
 }));
 
 const mockInvalidate = vi.fn();
@@ -25,7 +27,8 @@ vi.mock('src/common/middleware/feature-gate.js', () => ({
   invalidateFeatureFlagsCache: () => mockInvalidate(),
 }));
 
-import { adminRoutes, invalidateAdminCache } from '../../../src/modules/admin/admin.routes.js';
+import { adminRoutes } from '../../../src/modules/admin/admin.routes.js';
+import { invalidateAdminCache } from '../../../src/modules/admin/admin.service.js';
 import { BusinessError } from '../../../src/common/errors.js';
 
 async function buildApp(opts: { openid?: string } = {}) {
@@ -334,6 +337,123 @@ describe('POST /api/admin', () => {
         where: { id: 'o1' },
         data: { status: 'paid' },
       });
+    });
+  });
+
+  describe('listUsers（P1-2 新增）', () => {
+    it('分页 + 时间序列化', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([
+        { id: 'u1', openid: 'o1', nickname: '张三', phone: '138', points: 100, memberLevel: 'free', memberExpireAt: null, createdAt: new Date('2026-01-01T00:00:00Z') },
+      ]);
+      mockPrisma.user.count.mockResolvedValue(1);
+      app = await buildApp();
+      await app.ready();
+      const res = await app.inject({
+        method: 'POST', url: '/api/admin',
+        payload: { action: 'listUsers', payload: { page: 1, pageSize: 20 } },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().data.total).toBe(1);
+      expect(res.json().data.list[0].createdAt).toBe('2026-01-01T00:00:00.000Z');
+    });
+
+    it('keyword → OR 过滤', async () => {
+      mockPrisma.user.findMany.mockResolvedValue([]);
+      mockPrisma.user.count.mockResolvedValue(0);
+      app = await buildApp();
+      await app.ready();
+      await app.inject({
+        method: 'POST', url: '/api/admin',
+        payload: { action: 'listUsers', payload: { keyword: '张' } },
+      });
+      expect(mockPrisma.user.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { OR: expect.any(Array) } }),
+      );
+    });
+  });
+
+  describe('listContents（P1-2 新增，admin 视角含 off）', () => {
+    it('status 过滤 + Decimal 序列化', async () => {
+      mockPrisma.content.findMany.mockResolvedValue([
+        {
+          id: 'c1', type: 'marathon', title: '赛事', price: { toString: () => '99.00' } as never,
+          fee: null, status: 'off', sort: 0, tags: [],
+          createdAt: new Date('2026-01-01T00:00:00Z'), updatedAt: new Date('2026-01-01T00:00:00Z'),
+        },
+      ]);
+      mockPrisma.content.count.mockResolvedValue(1);
+      app = await buildApp();
+      await app.ready();
+      const res = await app.inject({
+        method: 'POST', url: '/api/admin',
+        payload: { action: 'listContents', payload: { status: 'off' } },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().data.list[0].status).toBe('off');
+      expect(res.json().data.list[0].price).toBe('99.00');
+      expect(mockPrisma.content.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { status: 'off' } }),
+      );
+    });
+  });
+
+  describe('listProducts（P1-2 新增）', () => {
+    it('category 过滤', async () => {
+      mockPrisma.product.findMany.mockResolvedValue([
+        {
+          id: 'p1', name: '跑鞋', category: '鞋服', price: { toString: () => '299.00' } as never,
+          originalPrice: null, memberDiscount: null, status: 'on', sort: 0, images: [], stock: 10,
+          createdAt: new Date('2026-01-01T00:00:00Z'), updatedAt: new Date('2026-01-01T00:00:00Z'),
+        },
+      ]);
+      mockPrisma.product.count.mockResolvedValue(1);
+      app = await buildApp();
+      await app.ready();
+      const res = await app.inject({
+        method: 'POST', url: '/api/admin',
+        payload: { action: 'listProducts', payload: { category: '鞋服' } },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().data.list[0].price).toBe('299.00');
+      expect(mockPrisma.product.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { category: '鞋服' } }),
+      );
+    });
+  });
+
+  describe('stats（P1-2 新增，概览聚合）', () => {
+    it('返回 userCount/orderCount/revenue/checkinCount', async () => {
+      mockPrisma.user.count.mockResolvedValue(100);
+      mockPrisma.order.count.mockResolvedValue(50);
+      mockPrisma.order.aggregate.mockResolvedValue({ _sum: { payAmount: { toString: () => '9999.00' } as never } });
+      mockPrisma.checkin.count.mockResolvedValue(200);
+      app = await buildApp();
+      await app.ready();
+      const res = await app.inject({
+        method: 'POST', url: '/api/admin',
+        payload: { action: 'stats' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json().data).toEqual({
+        userCount: 100, orderCount: 50, revenue: '9999.00', checkinCount: 200,
+      });
+      expect(mockPrisma.order.aggregate).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { status: { in: ['paid', 'shipped', 'done'] } } }),
+      );
+    });
+
+    it('无已支付订单 → revenue = "0"', async () => {
+      mockPrisma.user.count.mockResolvedValue(0);
+      mockPrisma.order.count.mockResolvedValue(0);
+      mockPrisma.order.aggregate.mockResolvedValue({ _sum: { payAmount: null } });
+      mockPrisma.checkin.count.mockResolvedValue(0);
+      app = await buildApp();
+      await app.ready();
+      const res = await app.inject({
+        method: 'POST', url: '/api/admin',
+        payload: { action: 'stats' },
+      });
+      expect(res.json().data.revenue).toBe('0');
     });
   });
 

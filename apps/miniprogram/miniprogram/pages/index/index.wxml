@@ -6,7 +6,7 @@
   <block wx:if="{{!error}}">
   <!-- Hero -->
   <view class="hero bg-white p-4 m-2 rounded-lg shadow">
-    <view class="text-xl">欢迎来到青沐</view>
+    <view class="text-xl">欢迎来到青沐运动</view>
     <view class="text-sm text-secondary mt-2">运动 · 社群 · 商城</view>
     <view class="hero-actions" wx:if="{{!isLogin}}">
       <view class="link" bindtap="goMine">登录享更多 →</view>

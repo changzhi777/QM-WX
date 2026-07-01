@@ -20,7 +20,9 @@
     "prisma:migrate:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
     "prisma:seed": "tsx prisma/seed.ts",
-    "reconcile": "tsx scripts/reconcile.ts"
+    "reconcile": "tsx scripts/reconcile.ts",
+    "garmin-ingest": "tsx scripts/garmin-ingest.ts",
+    "garmin-import": "tsx scripts/import-garmin.ts"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.0",

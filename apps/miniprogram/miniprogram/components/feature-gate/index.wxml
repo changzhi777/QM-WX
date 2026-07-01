@@ -1,0 +1,8 @@
+<!--
+  feature-gate/index.wxml — 功能开关守卫
+  flag 对应的 feature_flags 为 true 时渲染默认 slot 内容；否则不渲染。
+  用法：<feature-gate flag="wallet"><view>钱包入口</view></feature-gate>
+-->
+<view wx:if="{{visible}}">
+  <slot></slot>
+</view>

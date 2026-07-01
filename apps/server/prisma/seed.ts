@@ -30,6 +30,38 @@ const DEFAULT_POINTS_RULES = {
   memberMonthlyGift: 100,
 };
 
+const SEED_PRODUCTS = [
+  {
+    name: '智能运动手环',
+    category: '运动装备',
+    brand: '青沐',
+    price: 299.0,
+    originalPrice: 399.0,
+    memberDiscount: 0.9,
+    description: '心率监测 + 步数记录 + 50米防水',
+    stock: 100,
+  },
+  {
+    name: '专业马拉松跑鞋',
+    category: '运动装备',
+    brand: '青沐',
+    price: 599.0,
+    originalPrice: 799.0,
+    memberDiscount: 0.85,
+    description: '轻量化设计 + 碳板支撑 + 适合长距离',
+    stock: 50,
+  },
+  {
+    name: '运动蛋白粉（巧克力味）',
+    category: '营养品',
+    brand: '青沐',
+    price: 199.0,
+    memberDiscount: 0.95,
+    description: '乳清蛋白 + 支链氨基酸 + 修复肌肉',
+    stock: 200,
+  },
+];
+
 async function main() {
   console.log('🌱 Seeding AppConfig...');
 
@@ -52,6 +84,16 @@ async function main() {
   });
 
   console.log('✅ AppConfig seeded');
+
+  // 商品 seed：仅在 Product 表为空时插（幂等 — 重复跑不爆）
+  const productCount = await prisma.product.count();
+  if (productCount === 0) {
+    await prisma.product.createMany({ data: SEED_PRODUCTS });
+    console.log(`✅ Products seeded (${SEED_PRODUCTS.length} 条)`);
+  } else {
+    console.log(`⏭️  Products 已存在 ${productCount} 条，跳过 seed`);
+  }
+
   console.log({
     feature_flags: DEFAULT_FEATURE_FLAGS,
     member_levels: DEFAULT_MEMBER_LEVELS,

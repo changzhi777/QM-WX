@@ -68,3 +68,20 @@ packages/shared/src/**/*.d.ts.map
 packages/shared/src/**/*.js
 packages/shared/src/**/*.js.map
 *.tsbuildinfo
+
+# ===== 大数据 / 备份 / 临时文件（不进 git）=====
+# 佳明数据包 + 解压目录（含真实健康数据）
+佳明手表数据包.zip
+佳明手表数据包/
+# 生产 DB 备份（含真实用户数据，绝不入库）
+*-backup-*.sql
+*.sql.bak
+# 参考图 / 临时截图（pic/ 设计参考，开发期用）
+pic/
+mp-login.png
+# Playwright 临时
+.playwright-mcp/
+# 云开发临时
+apps/miniprogram/.cloudbase/
+# zcf 进行中任务（history 归档保留）
+.zcf/plan/current/

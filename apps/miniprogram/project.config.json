@@ -5,7 +5,7 @@
     "include": []
   },
   "setting": {
-    "urlCheck": true,
+    "urlCheck": false,
     "es6": true,
     "enhance": true,
     "postcss": true,
@@ -40,15 +40,24 @@
     "disableUseStrict": false,
     "minifyWXML": true,
     "showES6CompileOption": false,
-    "useCompilerPlugins": false
+    "useCompilerPlugins": [
+      "typescript"
+    ],
+    "compileWorklet": true,
+    "localPlugins": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true
   },
+  "miniprogramRoot": "miniprogram/",
   "compileType": "miniprogram",
   "libVersion": "2.32.3",
-  "appid": "wx426885831a05f18e",
+  "appid": "wx8c37d7ac5b7d0a83",
   "projectname": "qm-wx",
   "condition": {},
   "editorSetting": {
     "tabIndent": "insertSpaces",
     "tabSize": 2
-  }
+  },
+  "simulatorPluginLibVersion": {}
 }

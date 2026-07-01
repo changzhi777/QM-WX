@@ -12,12 +12,14 @@
     "pages/order-confirm/index",
     "pages/order-list/index",
     "pages/weekly-report/index",
-    "pages/agreement/index"
+    "pages/agreement/index",
+    "pages/garmin-data/index",
+    "pages/ranking/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",
     "navigationBarBackgroundColor": "#0FAF8E",
-    "navigationBarTitleText": "青沐",
+    "navigationBarTitleText": "首页",
     "navigationBarTextStyle": "white",
     "backgroundColor": "#f5f5f5"
   },

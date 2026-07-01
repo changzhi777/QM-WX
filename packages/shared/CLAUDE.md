@@ -1,7 +1,7 @@
 # packages/shared — 前后端共享层
 
 > 📍 面包屑：`QM-WX/` → [`根 CLAUDE.md`](../../CLAUDE.md) → **packages/shared/**（这里）
-> 最近更新：2026-06-17（init-project 增量校验，内容无实质变化 — 4 常量模块 + endpoints.test 5 用例均准确）
+> 最近更新：2026-07-01（init-project 增量校验 — `ENDPOINTS` 新增 `device` 模块 10 action + `API_BASE.prod` 改 `qingmulife.cn`；4 常量模块 + endpoints.test 仍准确）
 
 ---
 
@@ -83,6 +83,8 @@ pnpm build             # tsc -p tsconfig.build.json → dist/
 - ✅ 前后端共用（后端通过 `workspace:*` 引用，小程序通过构建后产物引用）
 - ✅ `api-contracts/endpoints.ts` 补 4 缺口（方案 B）+ `actionUrl(module, action)` 工具
 - ✅ `endpoints.test.ts` 5 测试（vitest 3.2.6 跑通）
+- ✅ **`device` 模块端点**（2026-07-01）— 10 action：listBindings / startOAuth / unbind / syncWeRun / submitHeartRate + 佳明 4 查询 myActivities / mySleep / myMetrics / myFitnessAge
+- ✅ **`API_BASE.prod`** 从 `api.qingmu.example` → `qingmulife.cn`（生产真实域名，nginx /api/ 反代）
 
 ---
 

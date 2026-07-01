@@ -1,0 +1,72 @@
+# docker-compose.prod.yml — 生产（自包含，不依赖 dev compose）
+#
+# 用法（服务器 /opt/qm-wx）：
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# 生产差异：
+# - PG 强密码（${POSTGRES_PASSWORD}）+ 调小内存（适配 1.9G 服务器）+ 不暴露宿主端口
+# - Redis 不暴露宿主端口（仅容器内网）
+# - server 只监听 127.0.0.1:3000（由 nginx 反代 /api/）
+# - DB 名 qmwx
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: qmwx-pg
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: qmwx
+    # 1.9G 小内存服务器：PG 调小缓冲 + 限连接
+    command: >-
+      postgres
+      -c shared_buffers=128MB
+      -c effective_cache_size=256MB
+      -c work_mem=2MB
+      -c max_connections=50
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: qmwx-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build:
+      context: .
+      dockerfile: apps/server/Dockerfile
+    container_name: qmwx-server
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOST: 0.0.0.0
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/qmwx
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGINS: https://qingmulife.cn,https://www.qingmulife.cn
+    ports:
+      - "127.0.0.1:3000:3000"   # 只监听本地，nginx 反代 /api/
+    volumes:
+      - ./uploads:/app/uploads
+
+volumes:
+  pg_data:
+  redis_data:

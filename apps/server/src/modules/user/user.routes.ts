@@ -5,7 +5,7 @@
  */
 import type { FastifyInstance } from 'fastify';
 import { userService } from './user.service.js';
-import { Errors } from '../../common/errors.js';
+import { requireLogin } from '../../common/middleware/auth.js';
 import {
   LoginInputSchema,
   UpdateProfileInputSchema,
@@ -30,24 +30,25 @@ export async function userRoutes(app: FastifyInstance) {
         }
 
         case 'updateProfile': {
-          // 需鉴权（auth middleware 已挂）
-          if (!req.user) throw Errors.unauthorized();
+          // public 路由内显式鉴权：authPlugin 对 public:true 跳过 jwtVerify，
+          // 受保护 action 须主动 requireLogin（否则 req.user 恒 undefined → 401）
+          const authUser = await requireLogin(req);
           const input = UpdateProfileInputSchema.parse(payload);
-          const user = await userService.updateProfile(req.user.id, input);
+          const user = await userService.updateProfile(authUser.id, input);
           return { code: 0, data: { user } };
         }
 
         case 'bindApps': {
-          if (!req.user) throw Errors.unauthorized();
+          const authUser = await requireLogin(req);
           const input = BindAppsInputSchema.parse(payload);
-          const user = await userService.bindApps(req.user.id, input);
+          const user = await userService.bindApps(authUser.id, input);
           return { code: 0, data: { user } };
         }
 
         case 'me': {
           // 拿当前登录 user + config
-          if (!req.user) throw Errors.unauthorized();
-          const user = await userService.getById(req.user.id);
+          const authUser = await requireLogin(req);
+          const user = await userService.getById(authUser.id);
           const config = await (await import('../app-config/app-config.repository.js'))
             .configRepo.getLoginConfig();
           return { code: 0, data: { user, config } };

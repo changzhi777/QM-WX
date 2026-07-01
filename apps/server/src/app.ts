@@ -28,6 +28,8 @@ import { weeklyReportRoutes } from './modules/weekly-report/weekly-report.routes
 import { deviceRoutes } from './modules/device/device.routes.js';
 import { recipeRoutes } from './modules/recipe/recipe.routes.js';
 import { ludongRoutes } from './modules/ludong/ludong.routes.js';
+import { statsRoutes } from './modules/stats/stats.routes.js';
+import { rankingRoutes } from './modules/ranking/ranking.routes.js';
 import { BusinessError } from './common/errors.js';
 
 export async function buildApp() {
@@ -105,6 +107,8 @@ export async function buildApp() {
   await app.register(deviceRoutes, { prefix: '/api/device' });
   await app.register(recipeRoutes, { prefix: '/api/recipe' });
   await app.register(ludongRoutes, { prefix: '/api/ludong' });
+  await app.register(statsRoutes, { prefix: '/api/stats' });
+  await app.register(rankingRoutes, { prefix: '/api/ranking' });
   await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.register(wxpayRoutes, { prefix: '/api/wxpay' });
 

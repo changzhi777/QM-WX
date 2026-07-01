@@ -13,6 +13,7 @@ import { Errors } from '../../common/errors.js';
 import { sportRepo } from './sport.repository.js';
 import { userRepo } from '../user/user.repository.js';
 import { configRepo } from '../app-config/app-config.repository.js';
+import { assertNotBanned } from '../admin/admin.service.js';
 import { Cache } from '../../infra/cache.js';
 import { POINTS_RULES_DEFAULT, type MemberLevel } from '@qm-wx/shared';
 import type {
@@ -94,6 +95,11 @@ export const sportService = {
 
     // 防御性校验：即使 route 已 parse，service 也再 parse 一次防直接调用
     CheckinInputSchema.parse(input);
+
+    // V0.1.18：黑名单拦截
+    const user = await userRepo.findById(userId);
+    if (!user) throw Errors.unauthorized();
+    assertNotBanned(user);
 
     const date = todayCN();
 

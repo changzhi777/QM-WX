@@ -14,6 +14,7 @@ import { configRepo } from '../app-config/app-config.repository.js';
 import { userRepo } from '../user/user.repository.js';
 import { unifiedOrder } from '../wxpay/wxpay.service.js';
 import { assertTransition, type OrderStatus } from '../../domain/order-state.js';
+import { assertNotBanned } from '../admin/admin.service.js';
 import type { UnifiedOrderResp } from '../wxpay/wxpay.schema.js';
 import type { CreateOrderInput, MyOrdersInput } from './mall.schema.js';
 
@@ -48,6 +49,8 @@ export const orderService = {
     // 3. 计算积分抵扣
     const user = await userRepo.findById(userId);
     if (!user) throw Errors.unauthorized();
+    // V0.1.18：黑名单拦截
+    assertNotBanned(user);
 
     let pointsUsed = 0;
     let payAmount = totalAmount;

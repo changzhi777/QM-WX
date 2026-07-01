@@ -10,6 +10,45 @@ import { ENDPOINTS, type ActionRequest, type ApiResponse, type User } from '@qm-
 // actionUrl 走子路径 export，避开根入口的 ESM .js 后缀解析问题
 import { actionUrl } from '@qm-wx/shared/api-contracts';
 
+// 临时 mock 开关（接通公网后默认 false；想再用预览模式改 true 即可）
+// 用途：体验版/真机未配 request 合法域名时，让 UI 仍能预览显示
+// 当前覆盖：首页用到的 2 个 API（user.login / sport.myStats）
+const USE_MOCK_DATA = false;
+
+const MOCK_RESPONSES: Record<string, unknown> = {
+  'user.login': {
+    user: {
+      id: 'mock_user_001',
+      openid: 'mock_openid_001',
+      nickname: '体验用户',
+      avatarUrl: null,
+      points: 1280,
+      createdAt: '2026-06-01T00:00:00Z',
+    },
+    accessToken: 'mock_access_token',
+    refreshToken: 'mock_refresh_token',
+    config: {
+      featureFlags: {
+        wallet: false,
+        payment: false,
+        membershipPurchase: false,
+        smartAgent: false,
+        bindApp: false,
+      },
+      memberLevels: {},
+      pointsRules: {},
+    },
+  },
+  'sport.myStats': {
+    totalDistance: 25.6, // 本周累计公里
+    count: 5, // 打卡次数
+    avgPace: 5.5, // 平均配速（min/km，5'30"）
+  },
+};
+
+const getMock = (module: string, action: string): unknown | undefined =>
+  MOCK_RESPONSES[`${module}.${action}`];
+
 const getBaseUrl = (): string => {
   const base = (wx as unknown as { $apiBase?: string }).$apiBase;
   if (base) return base;
@@ -40,6 +79,16 @@ export const api = {
     payload: unknown = {},
     retried = false,
   ): Promise<T> {
+    // 临时 mock 短路（USE_MOCK_DATA=false 时本段不执行；改 true 一键启用预览模式）
+    // 设计意图：体验版/真机未配 request 合法域名时，让 UI 仍能预览显示
+    // 启用步骤：把顶部 USE_MOCK_DATA 改 true，无需改其他代码
+    if (USE_MOCK_DATA) {
+      const m = getMock(module, action);
+      if (m !== undefined) {
+        return m as T;
+      }
+    }
+
     const url = `${getBaseUrl()}${actionUrl(module, action)}`;
     const token = wx.getStorageSync('accessToken');
 
@@ -53,7 +102,10 @@ export const api = {
           ...(token ? { authorization: `Bearer ${token}` } : {}),
         },
         success: resolve,
-        fail: reject,
+        fail: (err) => {
+          console.error('[api] request FAIL url=', url, err);
+          reject(err);
+        },
       });
     });
 

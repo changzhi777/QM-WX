@@ -29,6 +29,13 @@ const EnvSchema = z.object({
   WX_MCH_SERIAL_NO: z.string().optional(),
   WX_MCH_PRIVATE_KEY_PATH: z.string().optional(),
   WX_PLAT_CERT_PATH: z.string().optional(),
+
+  // 开发态登录旁路：=1 时跳过 code2Session，用固定 dev openid 登录（仅本地调试）。
+  // 仅在 NODE_ENV !== production 时生效（见 user.service.login）；生产环境恒视为 false。
+  DEV_LOGIN_BYPASS: z
+    .string()
+    .optional()
+    .transform((v) => v === '1' || v === 'true'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

@@ -27,6 +27,18 @@ Page({
     isLogin: false,
     error: false,
     errorMsg: '',
+    // 佳明运动数据（B-2，2026-07-01）
+    garminActivities: [] as Array<{ id: string; name: string | null; type: string; startTime: string; distanceKm: string; durationMin: string }>,
+    garminLoading: false,
+    // 跑者数据汇总（参考图 2768，stats.myRunnerStats）
+    runnerStats: {
+      yearDistance: 0,
+      yearCheckins: 0,
+      totalDistance: 0,
+      totalCheckins: 0,
+      monthDistance: 0,
+      avgPace: null as string | null,
+    },
   },
 
   onShow() {
@@ -43,6 +55,11 @@ Page({
       // 2. 确保登录（未登录会自动跳登录 / 触发补资料弹窗）
       await ensureLogin();
       this.applyUser(app.globalData.user!);
+
+      // 佳明运动数据（登录后拉取最近活动）
+      this.loadGarmin();
+      // 跑者数据汇总
+      this.loadRunnerStats();
 
       this.setData({
         flags: (app.globalData.config?.featureFlags ?? this.data.flags) as FeatureFlagsConfig,
@@ -61,6 +78,56 @@ Page({
       user,
       memberLabel: MEMBER_LEVEL_LABEL[user.memberLevel] ?? '免费用户',
     });
+  },
+
+  /** 佳明运动数据：拉取最近活动（B-2，2026-07-01） */
+  async loadGarmin() {
+    this.setData({ garminLoading: true });
+    try {
+      const res = await api.call<{
+        list: Array<{ id: string; name: string | null; type: string; startTime: string; distanceMeters: number | null; durationSec: number | null }>;
+        total: number;
+      }>('device', 'myActivities', { page: 1, pageSize: 3 });
+      this.setData({
+        garminActivities: res.list.map((a) => ({
+          id: a.id,
+          name: a.name,
+          type: a.type,
+          startTime: a.startTime,
+          distanceKm: a.distanceMeters != null ? (a.distanceMeters / 1000).toFixed(1) : '-',
+          durationMin: a.durationSec != null ? Math.round(a.durationSec / 60).toString() : '-',
+        })),
+        garminLoading: false,
+      });
+    } catch {
+      // 佳明数据加载失败不阻塞主页面
+      this.setData({ garminLoading: false });
+    }
+  },
+
+  /** 跑者数据汇总（stats.myRunnerStats） */
+  async loadRunnerStats() {
+    try {
+      const res = await api.call<{
+        yearDistance: number;
+        yearCheckins: number;
+        totalDistance: number;
+        totalCheckins: number;
+        monthDistance: number;
+        avgPace: string | null;
+      }>('stats', 'myRunnerStats', {});
+      this.setData({ runnerStats: res });
+    } catch {
+      // 汇总加载失败不阻塞主页
+    }
+  },
+
+  goGarminData() {
+    wx.navigateTo({ url: '/pages/garmin-data/index' });
+  },
+
+  goRanking() {
+    wx.navigateTo({ url: '/pages/ranking/index' });
   },
 
   goProfile() {

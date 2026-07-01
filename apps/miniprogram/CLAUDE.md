@@ -2,6 +2,7 @@
 
 > 📍 面包屑：`QM-WX/` → [`根 CLAUDE.md`](../../CLAUDE.md) → **apps/miniprogram/**（这里）
 > 架构依据：[docs/ARCHITECTURE-V2.md §7](../../docs/ARCHITECTURE-V2.md)
+> 最近更新：2026-07-01（init-project 增量校验 — 「我的」页接入佳明活动数据展示）
 
 ---
 
@@ -19,7 +20,7 @@ cd ../.. && pnpm install
 
 # 2. 用微信开发者工具打开本目录
 #    路径：apps/miniprogram/
-#    AppID：wx426885831a05f18e（已在 project.config.json 配）
+#    AppID：wx8c37d7ac5b7d0a83（已在 project.config.json 配）
 
 # 3. 配置本地后端地址
 #    编辑 miniprogram/config/env.ts
@@ -124,6 +125,7 @@ wx.request({ url: 'https://...' });
 - ✅ `utils/auth.ts` / `format.ts` / `config/env.ts`
 - ✅ `sitemap.json` + `project.config.json`
 - ✅ 品牌色 #0FAF8E 全局应用
+- ✅ **「我的」页接入佳明活动数据**（2026-07-01）— `api.call('device', 'myActivities', { page:1, pageSize:3 })` 展示最近活动（距离/时长/类型），`garminLoading` / `garminActivities` 状态驱动 wxml 条件渲染
 - 🚧 tabBar 图标待设计替换（当前占位图）
 - 🚧 各页面 UI 待按 Phase 推进完善
 

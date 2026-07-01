@@ -9,6 +9,8 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
+import jwt from '@fastify/jwt';
+import { authPlugin } from '../../../src/common/middleware/auth.js';
 
 const mockService = vi.hoisted(() => ({
   login: vi.fn(),
@@ -159,5 +161,69 @@ describe('POST /api/user', () => {
       payload: { action: 'wat' },
     });
     expect(res.statusCode).toBe(500);
+  });
+});
+
+/**
+ * 真实 auth 链路：注册 authPlugin + @fastify/jwt，复现 production「public 路由跳过 jwtVerify」语义。
+ * 旧实现（if(!req.user) throw）在此链路下 me 恒 401（P0 bug）；requireLogin 修复后带 token → 200。
+ */
+async function buildAppRealAuth() {
+  const app = Fastify();
+  await app.register(jwt, { secret: 'test-secret' });
+  await app.register(authPlugin);
+  // 注意：@fastify/jwt 注册时已 decorateRequest('user')，勿重复 decorate
+  app.setErrorHandler((err, _req, reply) => {
+    if (err instanceof BusinessError) return reply.status(err.statusCode).send({ code: err.code, msg: err.message });
+    return reply.status(500).send({ code: 500, msg: 'unhandled' });
+  });
+  await app.register(userRoutes, { prefix: '/api/user' });
+  return app;
+}
+
+describe('P0 回归：public 路由真实 auth 链路（requireLogin 修复 user 鉴权 bug）', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('me 带真实 Bearer token → 200（修复前因 public 跳过 jwtVerify 恒 401）', async () => {
+    mockService.getById.mockResolvedValue({ id: 'u1', nickname: '张三' });
+    mockGetLoginConfig.mockResolvedValue({ wechatLogin: true });
+    const app = await buildAppRealAuth();
+    await app.ready();
+    const token = app.jwt.sign({ sub: 'u1', id: 'u1', openid: 'o1' });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/user',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { action: 'me' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().data.user).toEqual({ id: 'u1', nickname: '张三' });
+    expect(mockService.getById).toHaveBeenCalledWith('u1');
+  });
+
+  it('me 无 token → 401（requireLogin 兜底）', async () => {
+    const app = await buildAppRealAuth();
+    await app.ready();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/user',
+      payload: { action: 'me' },
+    });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('updateProfile 带真实 token → 200', async () => {
+    mockService.updateProfile.mockResolvedValue({ id: 'u1', nickname: '新名' });
+    const app = await buildAppRealAuth();
+    await app.ready();
+    const token = app.jwt.sign({ sub: 'u1', id: 'u1', openid: 'o1' });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/user',
+      headers: { authorization: `Bearer ${token}` },
+      payload: { action: 'updateProfile', payload: { nickname: '新名' } },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(mockService.updateProfile).toHaveBeenCalledWith('u1', expect.objectContaining({ nickname: '新名' }));
   });
 });

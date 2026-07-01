@@ -14,7 +14,8 @@
 | [06-device-integration.md](06-device-integration.md) | 手表/手环对接：蓝牙 BLE 实时心率 + 各厂商平台 OAuth 授权数据采集（Phase 6 任务表） | 开发 |
 | [07-food-nutrition-apis.md](07-food-nutrition-apis.md) | 国内菜谱/营养 API 选型：菜谱内容、营养成分、AI 菜品识别、缓存代理设计 | 产品 + 开发 |
 | [08-recipe-ingestion-and-ludong.md](08-recipe-ingestion-and-ludong.md) | 菜谱采集 ETL 管道（统一 Schema/去重/审核）+ 内部律动平台双向对接规范（Phase 7） | 开发 + 律动团队 |
-| review-package.html | 以上四份的网页汇总版（可浏览器打开/打印） | 任何人 |
+| [09-code-optimization.md](09-code-optimization.md) | 代码优化清单（重扫）：性能/包体/去重/可维护性，含 before/after 与优先级 | 开发 |
+| review-package.html | 全部文档的网页汇总版（可浏览器打开/打印） | 任何人 |
 | review-package.pdf | PDF 版（可打印/分发） | 任何人 |
 
 ## 30 秒结论
