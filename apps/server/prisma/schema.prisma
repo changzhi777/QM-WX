@@ -42,6 +42,9 @@ model User {
   garminSleeps      GarminSleep[]
   garminFitnessAges GarminFitnessAge[]
   garminMetrics     GarminMetric[]
+  // 购物车 + 签到（V0.1.22 B-核心）
+  carts             Cart[]
+  signinRecords     SigninRecord[]
 
   @@index([openid])
   @@index([isBanned])
@@ -119,8 +122,24 @@ model Product {
   updatedAt      DateTime @updatedAt
 
   orderItems OrderItem[]
+  carts      Cart[]
 
   @@index([category, status])
+}
+
+// ===== 购物车（V0.1.22 B-核心，跨设备持久化）=====
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  qty       Int      @default(1)
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId]) // 同商品合并 qty
+  @@index([userId])
 }
 
 model Order {
@@ -171,7 +190,21 @@ model PointsRecord {
   @@index([userId, createdAt])
 }
 
-// ===== 钱包 =====
+// ===== 签到记录（V0.1.22 B-核心，连续签到）=====
+model SigninRecord {
+  id             String   @id @default(cuid())
+  userId         String
+  date           String // YYYY-MM-DD（东八区）
+  continuousDays Int      @default(1)
+  pointsAwarded  Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date]) // 防同日重复签
+  @@index([userId])
+}
+
 model Wallet {
   id        String   @id @default(cuid())
   userId    String   @unique

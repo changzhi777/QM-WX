@@ -85,6 +85,21 @@
       <view class="arrow">›</view>
     </view>
 
+    <view class="list-item" bindtap="goCategory">
+      <view class="lbl">全部商品</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goCart">
+      <view class="lbl">购物车</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goPoints">
+      <view class="lbl">积分中心</view>
+      <view class="arrow">›</view>
+    </view>
+
     <view class="list-item" bindtap="goContent">
       <view class="lbl">赛事 / 本地服务</view>
       <view class="arrow">›</view>

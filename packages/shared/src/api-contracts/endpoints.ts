@@ -89,6 +89,18 @@ export const ENDPOINTS = {
   ranking: {
     groupRankingMulti: '/api/ranking',
   },
+  cart: {
+    add: '/api/cart',
+    remove: '/api/cart',
+    list: '/api/cart',
+    updateQty: '/api/cart',
+    clear: '/api/cart',
+  },
+  points: {
+    myBalance: '/api/points',
+    signin: '/api/points',
+    myTasks: '/api/points',
+  },
 } as const;
 
 export type EndpointModule = keyof typeof ENDPOINTS;

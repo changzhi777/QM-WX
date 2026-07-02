@@ -162,6 +162,18 @@ Page({
     wx.navigateTo({ url: '/pages/order-list/index' });
   },
 
+  goCategory() {
+    wx.navigateTo({ url: '/pages/category/index' });
+  },
+
+  goCart() {
+    wx.navigateTo({ url: '/pages/cart/index' });
+  },
+
+  goPoints() {
+    wx.navigateTo({ url: '/pages/points/index' });
+  },
+
   goContent() {
     wx.navigateTo({ url: '/pages/content-list/index' });
   },

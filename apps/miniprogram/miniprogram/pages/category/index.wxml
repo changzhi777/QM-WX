@@ -1,0 +1,24 @@
+<view class="page">
+  <view class="layout">
+    <!-- 左侧分类 -->
+    <scroll-view class="sidebar" scroll-y>
+      <view class="cat-item {{currentCategory === item.category ? 'active' : ''}}" wx:for="{{categories}}" wx:key="category" bindtap="switchCategory" data-cat="{{item.category}}">
+        <view class="cat-name">{{item.category}}</view>
+        <view class="count">{{item.count}}</view>
+      </view>
+    </scroll-view>
+
+    <!-- 右侧商品网格 -->
+    <scroll-view class="content" scroll-y>
+      <view wx:if="{{loading}}" class="empty">加载中...</view>
+      <view wx:elif="{{products.length === 0}}" class="empty">该分类暂无商品</view>
+      <view class="product-grid" wx:else>
+        <view class="product-card bg-white" wx:for="{{products}}" wx:key="id" bindtap="goProduct" data-id="{{item.id}}">
+          <view class="product-img-placeholder">📦</view>
+          <view class="product-name">{{item.name}}</view>
+          <view class="product-price">¥{{item.price}}</view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+</view>

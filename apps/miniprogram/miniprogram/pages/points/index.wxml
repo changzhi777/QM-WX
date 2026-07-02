@@ -1,0 +1,41 @@
+<view class="page">
+  <!-- 积分余额卡 -->
+  <view class="balance-card">
+    <view class="balance">{{balance}}</view>
+    <view class="lbl">我的积分</view>
+  </view>
+
+  <!-- 签到卡 -->
+  <view class="signin-card bg-white">
+    <view class="signin-info">
+      <view class="signin-title">每日签到</view>
+      <view class="signin-sub">已连续 {{continuousDays}} 天 · 连续 7 天额外 +50</view>
+    </view>
+    <view class="signin-btn {{todaySigned ? 'done' : ''}}" bindtap="signin">{{todaySigned ? '已签到' : '签到 +10'}}</view>
+  </view>
+
+  <!-- 任务列表 -->
+  <view class="section bg-white">
+    <view class="section-title">做任务领积分</view>
+    <view class="task-item" wx:for="{{tasks}}" wx:key="key" bindtap="goTask" data-route="{{item.route}}">
+      <view class="task-info">
+        <view class="task-name">{{item.title}}</view>
+        <view class="task-pts">+{{item.points}} 积分</view>
+      </view>
+      <view class="task-action {{item.done ? 'done' : ''}}">{{item.done ? '已完成' : '去完成'}}</view>
+    </view>
+  </view>
+
+  <!-- 积分流水 -->
+  <view class="section bg-white">
+    <view class="section-title">积分明细</view>
+    <view wx:if="{{records.length === 0}}" class="empty-row">暂无流水</view>
+    <view class="record-item" wx:for="{{records}}" wx:key="createdAt">
+      <view class="record-info">
+        <view class="record-type">{{item.type}}</view>
+        <view class="record-time">{{item.createdAt}}</view>
+      </view>
+      <view class="record-change {{item.change > 0 ? 'plus' : 'minus'}}">{{item.change > 0 ? '+' : ''}}{{item.change}}</view>
+    </view>
+  </view>
+</view>

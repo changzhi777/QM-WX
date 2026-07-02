@@ -30,6 +30,8 @@ import { recipeRoutes } from './modules/recipe/recipe.routes.js';
 import { ludongRoutes } from './modules/ludong/ludong.routes.js';
 import { statsRoutes } from './modules/stats/stats.routes.js';
 import { rankingRoutes } from './modules/ranking/ranking.routes.js';
+import { cartRoutes } from './modules/cart/cart.routes.js';
+import { pointsRoutes } from './modules/points/points.routes.js';
 import { BusinessError } from './common/errors.js';
 
 export async function buildApp() {
@@ -109,6 +111,8 @@ export async function buildApp() {
   await app.register(ludongRoutes, { prefix: '/api/ludong' });
   await app.register(statsRoutes, { prefix: '/api/stats' });
   await app.register(rankingRoutes, { prefix: '/api/ranking' });
+  await app.register(cartRoutes, { prefix: '/api/cart' });
+  await app.register(pointsRoutes, { prefix: '/api/points' });
   await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.register(wxpayRoutes, { prefix: '/api/wxpay' });
 

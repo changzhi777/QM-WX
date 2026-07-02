@@ -14,7 +14,10 @@
     "pages/weekly-report/index",
     "pages/agreement/index",
     "pages/garmin-data/index",
-    "pages/ranking/index"
+    "pages/ranking/index",
+    "pages/cart/index",
+    "pages/points/index",
+    "pages/category/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",

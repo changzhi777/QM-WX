@@ -1,0 +1,23 @@
+<view class="page">
+  <view class="list" wx:if="{{!loading}}">
+    <view wx:if="{{items.length === 0}}" class="empty">购物车空空如也</view>
+    <view class="card bg-white" wx:for="{{items}}" wx:key="productId">
+      <view class="check {{selected[item.productId] ? 'on' : ''}}" bindtap="toggleSelect" data-id="{{item.productId}}">{{selected[item.productId] ? '✓' : ''}}</view>
+      <view class="info">
+        <view class="name">{{item.product.name}}</view>
+        <view class="price">¥{{item.product.price}}</view>
+        <view class="qty-row">
+          <view class="qty-btn" bindtap="changeQty" data-id="{{item.productId}}" data-delta="-1">-</view>
+          <view class="qty-num">{{item.qty}}</view>
+          <view class="qty-btn" bindtap="changeQty" data-id="{{item.productId}}" data-delta="1">+</view>
+        </view>
+      </view>
+    </view>
+  </view>
+  <view class="loading" wx:else>加载中...</view>
+
+  <view class="footer bg-white" wx:if="{{items.length > 0}}">
+    <view class="total">合计：<text class="amount">¥{{totalAmount}}</text></view>
+    <view class="checkout-btn" bindtap="checkout">去结算({{count}})</view>
+  </view>
+</view>

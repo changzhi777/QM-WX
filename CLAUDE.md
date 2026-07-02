@@ -8,6 +8,12 @@
 
 ## 变更记录 (Changelog)
 
+- **2026-07-02** — 🛒 **B 电商核心 3 页：购物车 + 积分签到 + 分类导航**（`/zcf:workflow` B-核心/方案1）：
+  1. **2 新表**（26→28）：Cart（userId+productId unique 合并 qty）+ SigninRecord（连续签到，unique date 防重）+ 迁移 `20260702060000_cart_signin`
+  2. **2 新后端 module**（16→18）：cart（add/remove/list/updateQty/clear）+ points（myBalance/signin/myTasks，签到 +10/天 + 连续 7 天 +50）
+  3. **3 前端页**（15→18）：购物车（2765）+ 积分中心（2763）+ 全部商品分类（2766）+ mine 入口
+  4. **测试**：cart 6 + points 5 单测；435 单元全绿
+  5. **商品 seed**（V0.1.21，3→8 商品：T恤/水杯/帽子/腿套/毛巾，4 分类）
 - **2026-07-01（晚）** — 🏃 **佳明跑者中心 3 页 + 数据处理 + 统一榜**（`/zcf:workflow` D/乙/①/甲/方案2/2b；**working tree 含未提交改动**）：
   1. **Prisma 加字段**（不新表）— RawActivity +status/importedAt/importCheckinId；Checkin +dataSource/garminActivityId/sportType（迁移 `20260701150000_garmin_import_ranking`）
   2. **2 新后端 module**（14→16）— `stats`（myRunnerStats 年/总跑量汇总 + Cache）+ `ranking`（groupRankingMulti 多维榜单，按成员 userId 聚合 → 佳明无 group 打卡也计入）

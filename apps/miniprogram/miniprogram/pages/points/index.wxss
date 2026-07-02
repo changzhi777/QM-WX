@@ -1,0 +1,25 @@
+/* pages/points/index.wxss — 积分中心（参考图 2763） */
+.page { min-height: 100vh; background: #f5f5f5; padding-bottom: 40rpx; }
+.bg-white { background: #fff; }
+.balance-card { background: linear-gradient(135deg, #0FAF8E, #0d9980); padding: 60rpx 32rpx; text-align: center; color: #fff; }
+.balance { font-size: 72rpx; font-weight: 700; }
+.balance-card .lbl { font-size: 26rpx; opacity: 0.85; margin-top: 8rpx; }
+.signin-card { display: flex; justify-content: space-between; align-items: center; padding: 32rpx; margin: 16rpx; border-radius: 12rpx; }
+.signin-title { font-size: 32rpx; font-weight: 600; color: #333; }
+.signin-sub { font-size: 22rpx; color: #999; margin-top: 4rpx; }
+.signin-btn { background: #0FAF8E; color: #fff; padding: 16rpx 32rpx; border-radius: 24rpx; font-size: 28rpx; }
+.signin-btn.done { background: #e0e0e0; color: #999; }
+.section { margin: 16rpx; border-radius: 12rpx; overflow: hidden; }
+.section-title { padding: 24rpx 32rpx; font-size: 30rpx; font-weight: 600; color: #333; border-bottom: 1rpx solid #f0f0f0; }
+.empty-row { padding: 40rpx; text-align: center; color: #999; font-size: 26rpx; }
+.task-item { display: flex; justify-content: space-between; align-items: center; padding: 24rpx 32rpx; border-bottom: 1rpx solid #f5f5f5; }
+.task-name { font-size: 28rpx; color: #333; }
+.task-pts { font-size: 22rpx; color: #999; margin-top: 4rpx; }
+.task-action { background: #0FAF8E; color: #fff; padding: 8rpx 24rpx; border-radius: 20rpx; font-size: 24rpx; }
+.task-action.done { background: #f0f0f0; color: #999; }
+.record-item { display: flex; justify-content: space-between; align-items: center; padding: 20rpx 32rpx; border-bottom: 1rpx solid #f5f5f5; }
+.record-type { font-size: 28rpx; color: #333; text-transform: capitalize; }
+.record-time { font-size: 22rpx; color: #999; margin-top: 4rpx; }
+.record-change { font-size: 30rpx; font-weight: 600; }
+.record-change.plus { color: #0FAF8E; }
+.record-change.minus { color: #999; }
