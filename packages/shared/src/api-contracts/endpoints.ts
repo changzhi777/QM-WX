@@ -101,6 +101,19 @@ export const ENDPOINTS = {
     signin: '/api/points',
     myTasks: '/api/points',
   },
+  address: {
+    list: '/api/address',
+    create: '/api/address',
+    update: '/api/address',
+    remove: '/api/address',
+    setDefault: '/api/address',
+  },
+  coupon: {
+    templates: '/api/coupon',
+    myCoupons: '/api/coupon',
+    availableCount: '/api/coupon',
+    receive: '/api/coupon',
+  },
 } as const;
 
 export type EndpointModule = keyof typeof ENDPOINTS;

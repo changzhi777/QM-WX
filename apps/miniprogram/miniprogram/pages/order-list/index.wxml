@@ -1,5 +1,8 @@
 <view class="page">
   <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="load" />
+  <scroll-view class="status-tabs" scroll-x>
+    <view wx:for="{{tabs}}" wx:key="key" class="status-tab {{activeStatus === item.key ? 'active' : ''}}" bindtap="switchTab" data-status="{{item.key}}">{{item.label}}</view>
+  </scroll-view>
   <view class="empty" wx:if="{{!loading && !error && list.length === 0}}">暂无订单</view>
   <view
     class="card bg-white m-2 p-4 rounded-lg shadow"

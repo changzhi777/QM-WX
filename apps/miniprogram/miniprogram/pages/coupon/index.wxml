@@ -1,0 +1,41 @@
+<view class="page">
+  <view class="tabs">
+    <view class="tab {{tab === 'center' ? 'active' : ''}}" bindtap="switchTab" data-tab="center">领券中心</view>
+    <view class="tab {{tab === 'mine' ? 'active' : ''}}" bindtap="switchTab" data-tab="mine">我的券</view>
+  </view>
+
+  <!-- 领券中心 -->
+  <view wx:if="{{tab === 'center'}}">
+    <view class="coupon-card" wx:for="{{templates}}" wx:key="templateId">
+      <view class="coupon-left">
+        <view class="amount">{{item.display}}</view>
+        <view class="min">满{{item.minSpend}}可用</view>
+      </view>
+      <view class="coupon-info">
+        <view class="title">{{item.title}}</view>
+        <view class="valid">有效期{{item.validDays}}天</view>
+      </view>
+      <view class="coupon-btn {{item.received ? 'received' : ''}}" bindtap="receive" data-id="{{item.templateId}}">{{item.received ? '已领取' : '立即领取'}}</view>
+    </view>
+  </view>
+
+  <!-- 我的券 -->
+  <view wx:elif="{{tab === 'mine'}}">
+    <view class="sub-tabs">
+      <view class="sub {{couponStatus === 'unused' ? 'active' : ''}}" bindtap="switchCouponStatus" data-status="unused">未使用</view>
+      <view class="sub {{couponStatus === 'used' ? 'active' : ''}}" bindtap="switchCouponStatus" data-status="used">已使用</view>
+      <view class="sub {{couponStatus === 'expired' ? 'active' : ''}}" bindtap="switchCouponStatus" data-status="expired">已过期</view>
+    </view>
+    <view wx:if="{{myCoupons.length === 0}}" class="empty">暂无券</view>
+    <view class="coupon-card {{item.status}}" wx:for="{{myCoupons}}" wx:key="id">
+      <view class="coupon-left">
+        <view class="amount">{{item.display}}</view>
+        <view class="min">满{{item.minSpend}}可用</view>
+      </view>
+      <view class="coupon-info">
+        <view class="title">{{item.title}}</view>
+        <view class="valid">有效期至 {{item.expireShort}}</view>
+      </view>
+    </view>
+  </view>
+</view>

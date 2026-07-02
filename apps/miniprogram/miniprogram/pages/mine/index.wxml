@@ -95,8 +95,18 @@
       <view class="arrow">›</view>
     </view>
 
+    <view class="list-item" bindtap="goCoupon">
+      <view class="lbl">优惠券</view>
+      <view class="arrow">›</view>
+    </view>
+
     <view class="list-item" bindtap="goPoints">
       <view class="lbl">积分中心</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goAddress">
+      <view class="lbl">地址管理</view>
       <view class="arrow">›</view>
     </view>
 

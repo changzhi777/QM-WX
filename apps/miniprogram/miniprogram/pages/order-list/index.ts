@@ -34,8 +34,18 @@ interface Order {
   createdAt: string;
 }
 
+const TABS = [
+  { key: '', label: '全部' },
+  { key: 'pending_pay', label: '待付款' },
+  { key: 'paid', label: '待发货' },
+  { key: 'shipped', label: '待收货' },
+  { key: 'done', label: '已完成' },
+];
+
 Page({
   data: {
+    tabs: TABS,
+    activeStatus: '',
     list: [] as Order[],
     loading: true,
   },
@@ -48,10 +58,18 @@ Page({
     this.load().finally(() => wx.stopPullDownRefresh());
   },
 
+  switchTab(e: WechatMiniprogram.TouchEvent) {
+    const status = e.currentTarget.dataset.status as string;
+    if (status === this.data.activeStatus) return;
+    this.setData({ activeStatus: status });
+    this.load();
+  },
+
   async load() {
     this.setData({ loading: true });
     try {
-      const { list } = await api.call<{ list: Order[] }>('mall', 'myOrders', {});
+      const payload = this.data.activeStatus ? { status: this.data.activeStatus } : {};
+      const { list } = await api.call<{ list: Order[] }>('mall', 'myOrders', payload);
       // 解析 items（JSON 字符串来自 Prisma）
       const parsed = list.map((o) => ({
         ...o,

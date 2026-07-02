@@ -17,7 +17,9 @@
     "pages/ranking/index",
     "pages/cart/index",
     "pages/points/index",
-    "pages/category/index"
+    "pages/category/index",
+    "pages/address/index",
+    "pages/coupon/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",

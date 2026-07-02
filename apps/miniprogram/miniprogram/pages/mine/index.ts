@@ -174,6 +174,14 @@ Page({
     wx.navigateTo({ url: '/pages/points/index' });
   },
 
+  goCoupon() {
+    wx.navigateTo({ url: '/pages/coupon/index' });
+  },
+
+  goAddress() {
+    wx.navigateTo({ url: '/pages/address/index' });
+  },
+
   goContent() {
     wx.navigateTo({ url: '/pages/content-list/index' });
   },

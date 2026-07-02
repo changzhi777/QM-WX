@@ -19,3 +19,8 @@
   padding: 8rpx 24rpx; border-radius: 4rpx; line-height: 1.4;
 }
 .card .btn-cancel::after { border: none; }
+
+/* 订单状态 5 tab（V0.1.23） */
+.status-tabs { display: flex; background: #fff; padding: 16rpx 0; border-bottom: 1rpx solid #f0f0f0; white-space: nowrap; }
+.status-tab { display: inline-block; min-width: 140rpx; text-align: center; font-size: 26rpx; color: #666; padding: 12rpx 0; }
+.status-tab.active { color: #0FAF8E; font-weight: 600; }

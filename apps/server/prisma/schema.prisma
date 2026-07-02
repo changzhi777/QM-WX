@@ -45,6 +45,8 @@ model User {
   // 购物车 + 签到（V0.1.22 B-核心）
   carts             Cart[]
   signinRecords     SigninRecord[]
+  addresses         Address[]
+  coupons           Coupon[]
 
   @@index([openid])
   @@index([isBanned])
@@ -233,6 +235,43 @@ model WalletTransaction {
   wallet Wallet @relation(fields: [walletId], references: [id])
 
   @@index([userId, createdAt])
+}
+
+// ===== 地址（V0.1.23 个人中心电商版）=====
+model Address {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String
+  phone     String
+  province  String
+  city      String
+  district  String
+  detail    String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+// ===== 优惠券（V0.1.23，单表实例；模板用 service 常量）=====
+model Coupon {
+  id         String    @id @default(cuid())
+  userId     String
+  title      String
+  type       String // fixed | percent
+  amount     Float // fixed: 减金额 | percent: 折扣（0.9 = 9折）
+  minSpend   Float // 满减门槛
+  expireAt   DateTime
+  status     String    @default("unused") // unused | used | expired
+  receivedAt DateTime  @default(now())
+  usedAt     DateTime?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
 }
 
 // ===== 内容（赛事/酒店/景区/餐饮/乡村振兴 统一）=====

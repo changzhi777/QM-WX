@@ -8,6 +8,13 @@
 
 ## 变更记录 (Changelog)
 
+- **2026-07-02（晚）** — 🎁 **个人中心电商版：订单 5 tab + 地址 + 优惠券**（`/zcf:workflow` 方案1/2-A）：
+  1. **2 新表**（28→30）：Address（setDefault 事务清他处）+ Coupon（单表实例，模板用常量）
+  2. **2 新 module**（18→20）：address（CRUD + setDefault）+ coupon（templates/myCoupons/receive/availableCount，MVP 领/看不集成下单）
+  3. **order-list 5 tab**（全部/待付/待发/待收/完成，复用 mall.myOrders status）
+  4. **2 新前端页**（18→21）：地址管理（list+form）+ 优惠券（领券中心+我的券）
+  5. mine 加入口（优惠券/地址）；mall.myOrders status 已支持（无需改）
+  6. 测试：address 4 + coupon 5 单测；444 单元全绿
 - **2026-07-02** — 🛒 **B 电商核心 3 页：购物车 + 积分签到 + 分类导航**（`/zcf:workflow` B-核心/方案1）：
   1. **2 新表**（26→28）：Cart（userId+productId unique 合并 qty）+ SigninRecord（连续签到，unique date 防重）+ 迁移 `20260702060000_cart_signin`
   2. **2 新后端 module**（16→18）：cart（add/remove/list/updateQty/clear）+ points（myBalance/signin/myTasks，签到 +10/天 + 连续 7 天 +50）
