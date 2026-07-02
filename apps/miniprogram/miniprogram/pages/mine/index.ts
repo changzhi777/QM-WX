@@ -116,7 +116,17 @@ Page({
         monthDistance: number;
         avgPace: string | null;
       }>('stats', 'myRunnerStats', {});
-      this.setData({ runnerStats: res });
+      // 距离四舍五入取整（避免多位小数撑爆 4 列布局）
+      this.setData({
+        runnerStats: {
+          yearDistance: Math.round(res.yearDistance ?? 0),
+          yearCheckins: res.yearCheckins ?? 0,
+          totalDistance: Math.round(res.totalDistance ?? 0),
+          totalCheckins: res.totalCheckins ?? 0,
+          monthDistance: Math.round(res.monthDistance ?? 0),
+          avgPace: res.avgPace,
+        },
+      });
     } catch {
       // 汇总加载失败不阻塞主页
     }
