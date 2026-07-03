@@ -7,7 +7,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { statsService } from './stats.service.js';
 import { Errors } from '../../common/errors.js';
-import { MyRunnerStatsQuerySchema } from './stats.schema.js';
+import { MyRunnerStatsQuerySchema, MyAnnualReportQuerySchema } from './stats.schema.js';
 
 /** 统一把 Zod 错误转 BusinessError（与 sport.routes 一致） */
 function parseOrBadRequest<S extends z.ZodTypeAny>(schema: S, payload: unknown): z.output<S> {
@@ -32,6 +32,13 @@ export async function statsRoutes(app: FastifyInstance) {
       case 'myRunnerStats': {
         const input = parseOrBadRequest(MyRunnerStatsQuerySchema, payload ?? {});
         return { code: 0, data: await statsService.myRunnerStats(userId, input) };
+      }
+      case 'myAnnualReport': {
+        const input = parseOrBadRequest(MyAnnualReportQuerySchema, payload ?? {});
+        return { code: 0, data: await statsService.myAnnualReport(userId, input) };
+      }
+      case 'myCertificates': {
+        return { code: 0, data: await statsService.myCertificates(userId) };
       }
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });

@@ -20,6 +20,7 @@ import {
   isPaySuccess,
   verifyAndDecryptNotify,
 } from './wxpay.service.js';
+import { settleCommission } from '../distribution/distribution.service.js';
 
 export async function wxpayRoutes(app: FastifyInstance) {
   /**
@@ -153,6 +154,11 @@ export async function wxpayRoutes(app: FastifyInstance) {
             paidAt: new Date(),
           },
         });
+
+        // V0.1.24 分销：订单变 paid → 结算推广佣金（sourceUserId 存在时）
+        if (order.sourceUserId) {
+          await settleCommission(tx, order.id);
+        }
       });
 
       return { code: 0, data: { ok: true } };

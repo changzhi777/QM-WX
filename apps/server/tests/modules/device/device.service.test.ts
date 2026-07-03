@@ -6,7 +6,7 @@
  * - startOAuth 生成 mock authUrl（state 含 userId + vendor + nonce + exp）
  * - startOAuth 厂商端点映射（huawei / garmin / mock fallback）
  * - syncWeRun 返 synced 数（不做 DB 写入）
- * - unbind / submitHeartRate 仍 notImplemented
+ * - unbind / submitHeartRate 已实现（V0.1.25，见 device.bindings.test.ts）
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createPrismaMock } from '../../helpers/mockPrisma.js';
@@ -111,15 +111,7 @@ describe('deviceService.startOAuth (V2 stub 深化)', () => {
   });
 });
 
-describe('deviceService stub actions (仍 notImplemented)', () => {
-  it('unbind → notImplemented', async () => {
-    await expect(deviceService.unbind('u1', 'huawei')).rejects.toThrow(/unbind/);
-  });
-
-  it('submitHeartRate → notImplemented', async () => {
-    await expect(deviceService.submitHeartRate('u1', [])).rejects.toThrow(/submitHeartRate/);
-  });
-});
+// unbind / submitHeartRate 已实现（V0.1.25）— 测试见 device.bindings.test.ts
 
 describe('deviceService.syncWeRun (MVP 简化：返 synced 数)', () => {
   it('返 ok + synced = stepList.length', async () => {

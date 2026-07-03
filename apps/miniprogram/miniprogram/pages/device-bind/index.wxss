@@ -1,0 +1,88 @@
+/* pages/device-bind/index.wxss — 设备绑定中心（参考图 2770） */
+.page { min-height: 100vh; background: #f5f5f5; padding-bottom: 40rpx; }
+.bg-white { background: #fff; }
+
+/* 标题 */
+.header { padding: 32rpx; border-bottom: 1rpx solid #f0f0f0; margin-bottom: 16rpx; }
+.header .title { font-size: 36rpx; font-weight: 600; color: #333; }
+.header .subtitle { font-size: 26rpx; color: #999; margin-top: 8rpx; }
+
+/* 实时心率卡（品牌色渐变） */
+.hr-card {
+  background: linear-gradient(135deg, #0FAF8E, #0d9b7e);
+  margin: 0 16rpx 16rpx;
+  padding: 32rpx;
+  border-radius: 16rpx;
+  color: #fff;
+  text-align: center;
+}
+.hr-label { font-size: 26rpx; opacity: 0.9; }
+.hr-value { font-size: 72rpx; font-weight: 600; margin-top: 8rpx; }
+.hr-value .u { font-size: 28rpx; margin-left: 8rpx; font-weight: 400; }
+
+/* 分段 */
+.section { margin: 0 16rpx 24rpx; }
+.section-title { font-size: 28rpx; color: #666; margin-bottom: 16rpx; padding-left: 8rpx; }
+
+/* 通用卡片 */
+.card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 12rpx; }
+.bound-card, .garmin-card { display: flex; align-items: center; justify-content: space-between; }
+.bound-info { flex: 1; }
+.bound-name { font-size: 30rpx; font-weight: 600; color: #333; }
+.bound-meta { font-size: 24rpx; color: #999; margin-top: 6rpx; }
+.unbind-btn { font-size: 26rpx; color: #e64340; padding: 8rpx 20rpx; border: 1rpx solid #e64340; border-radius: 8rpx; }
+.tag { font-size: 22rpx; color: #0FAF8E; background: #E6F7F2; padding: 6rpx 16rpx; border-radius: 8rpx; }
+
+/* 品牌宫格 */
+.brand-grid { display: flex; flex-wrap: wrap; gap: 16rpx; }
+.brand-card { width: calc(50% - 8rpx); background: #fff; border-radius: 16rpx; padding: 24rpx; box-sizing: border-box; }
+.brand-card.disabled { opacity: 0.5; }
+.brand-name { font-size: 28rpx; font-weight: 600; color: #333; }
+.brand-type { font-size: 22rpx; color: #999; margin-top: 6rpx; }
+.brand-status { font-size: 22rpx; margin-top: 16rpx; }
+.brand-status.on { color: #0FAF8E; }
+.brand-status.off { color: #bbb; }
+
+/* 扫描弹层 */
+.mask {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); z-index: 100;
+  display: flex; align-items: flex-end;
+}
+.scan-panel {
+  background: #fff; width: 100%; border-radius: 24rpx 24rpx 0 0;
+  padding: 24rpx; box-sizing: border-box; max-height: 70vh;
+  display: flex; flex-direction: column;
+}
+.scan-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 16rpx; border-bottom: 1rpx solid #f0f0f0; }
+.scan-title { font-size: 32rpx; font-weight: 600; color: #333; }
+.scan-close { font-size: 36rpx; color: #999; padding: 0 12rpx; }
+.scan-tip { font-size: 26rpx; color: #999; padding: 24rpx 0; text-align: center; }
+.scan-list { max-height: 50vh; }
+.scan-item { padding: 24rpx; border-bottom: 1rpx solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+.scan-main { flex: 1; min-width: 0; }
+.scan-sub { display: flex; align-items: center; gap: 12rpx; margin-top: 8rpx; flex-wrap: wrap; }
+.scan-arrow { color: #ccc; font-size: 36rpx; padding-left: 12rpx; }
+.scan-name { font-size: 28rpx; color: #333; }
+.scan-rssi { font-size: 22rpx; color: #999; }
+.scan-refresh { text-align: center; padding: 24rpx; color: #0FAF8E; font-size: 28rpx; }
+
+/* V0.1.33 品牌标签（扫描结果识别 — 佳明蓝/小米橙/通用灰） */
+.brand-tag { display: inline-block; font-size: 20rpx; padding: 2rpx 12rpx; border-radius: 6rpx; line-height: 1.6; }
+.brand-garmin { background: #E6F4FF; color: #1890ff; }
+.brand-xiaomi { background: #FFF7E6; color: #fa8c16; }
+.brand-ble { background: #f0f0f0; color: #999; }
+
+/* V0.1.33 设备信息（电量/型号/厂商，展示在心率卡内） */
+.hr-meta { margin-top: 20rpx; display: flex; justify-content: center; gap: 16rpx; flex-wrap: wrap; }
+.hr-meta-item { font-size: 24rpx; color: #fff; background: rgba(255,255,255,0.2); padding: 4rpx 16rpx; border-radius: 12rpx; }
+
+/* 联调信息面板（GAP-9，真机调试用） */
+.debug-section { margin: 0 16rpx 24rpx; }
+.debug-toggle { text-align: center; padding: 16rpx; background: #fff; border-radius: 12rpx; font-size: 24rpx; color: #0FAF8E; border: 1rpx dashed #0FAF8E; }
+.debug-panel { background: #fff; border-radius: 12rpx; padding: 24rpx; margin-top: 12rpx; }
+.debug-row { font-size: 24rpx; color: #666; margin-bottom: 12rpx; }
+.debug-num { font-weight: 600; color: #0FAF8E; }
+.debug-logs { background: #f9f9f9; border-radius: 8rpx; padding: 16rpx; max-height: 400rpx; overflow-y: auto; }
+.debug-log { font-size: 22rpx; color: #999; line-height: 1.6; font-family: monospace; word-break: break-all; }
+.debug-empty { font-size: 22rpx; color: #ccc; text-align: center; padding: 20rpx; }

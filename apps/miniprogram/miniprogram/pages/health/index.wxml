@@ -1,0 +1,81 @@
+<view class="page">
+  <!-- 标题 -->
+  <view class="header bg-white">
+    <view class="title">今日健康</view>
+    <view class="subtitle">{{health.date}}</view>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">加载中...</view>
+
+  <block wx:elif="{{health}}">
+    <!-- 今日运动（顶部大卡） -->
+    <view class="card activity-card" wx:if="{{health.todayActivity}}">
+      <view class="card-title">今日运动</view>
+      <view class="activity-grid">
+        <view class="metric"><text class="v">{{health.todayActivity.totalDistanceKm}}</text><text class="u">km</text></view>
+        <view class="metric"><text class="v">{{health.todayActivity.totalDurationMin}}</text><text class="u">min</text></view>
+        <view class="metric"><text class="v">{{health.todayActivity.totalCalories}}</text><text class="u">kcal</text></view>
+        <view class="metric"><text class="v">{{health.todayActivity.count}}</text><text class="u">次</text></view>
+      </view>
+    </view>
+
+    <!-- 健康指标 2 列网格 -->
+    <view class="grid">
+      <!-- 睡眠卡 -->
+      <view class="card metric-card">
+        <view class="card-title">睡眠</view>
+        <block wx:if="{{health.sleep}}">
+          <view class="big-num">{{health.sleep.durationHours || '-'}}<text class="u">h</text></view>
+          <view class="sub-row" wx:if="{{health.sleep.score != null}}">评分 {{health.sleep.score}}</view>
+          <view class="sub-row">深睡 {{health.sleep.deepHours || '-'}}h · 浅睡 {{health.sleep.lightHours || '-'}}h</view>
+          <view class="sub-row">REM {{health.sleep.remHours || '-'}}h</view>
+        </block>
+        <view class="empty" wx:else>暂无数据</view>
+      </view>
+
+      <!-- 健身年龄卡 -->
+      <view class="card metric-card">
+        <view class="card-title">健身年龄</view>
+        <block wx:if="{{health.fitnessAge}}">
+          <view class="big-num">{{health.fitnessAge.currentBioAge || '-'}}<text class="u">岁</text></view>
+          <view class="sub-row" wx:if="{{health.fitnessAge.vo2Max != null}}">VO₂Max {{health.fitnessAge.vo2Max}}</view>
+          <view class="sub-row" wx:if="{{health.fitnessAge.rhr != null}}">静息心率 {{health.fitnessAge.rhr}}</view>
+          <view class="sub-row" wx:if="{{health.fitnessAge.bmi != null}}">BMI {{health.fitnessAge.bmi}}</view>
+        </block>
+        <view class="empty" wx:else>暂无数据</view>
+      </view>
+
+      <!-- 训练准备度 -->
+      <view class="card metric-card">
+        <view class="card-title">训练准备度</view>
+        <view class="big-num" wx:if="{{health.metrics.trainingReadiness != null}}">{{health.metrics.trainingReadiness}}</view>
+        <view class="empty" wx:else>暂无数据</view>
+      </view>
+
+      <!-- 耐力分数 -->
+      <view class="card metric-card">
+        <view class="card-title">耐力分数</view>
+        <view class="big-num" wx:if="{{health.metrics.enduranceScore != null}}">{{health.metrics.enduranceScore}}</view>
+        <view class="empty" wx:else>暂无数据</view>
+      </view>
+
+      <!-- Hill Score -->
+      <view class="card metric-card">
+        <view class="card-title">Hill Score</view>
+        <view class="big-num" wx:if="{{health.metrics.hillScore != null}}">{{health.metrics.hillScore}}</view>
+        <view class="empty" wx:else>暂无数据</view>
+      </view>
+
+      <!-- 占位卡（佳明数据源不支持，显示"连接设备后查看"） -->
+      <view class="card metric-card placeholder" wx:for="{{placeholderCards}}" wx:key="key">
+        <view class="card-title">{{item.label}}</view>
+        <view class="placeholder-text">连接设备后查看</view>
+      </view>
+    </view>
+
+    <!-- 数据来源提示 -->
+    <view class="footer-tip">数据来源：佳明 · 每日自动同步</view>
+  </block>
+
+  <view class="empty-page" wx:else>暂无健康数据</view>
+</view>

@@ -1,0 +1,63 @@
+/* pages/training/index.wxss — 锻炼/训练中心（参考图 2775） */
+.page { min-height: 100vh; background: #f5f5f5; padding-bottom: 40rpx; }
+.bg-white { background: #fff; }
+
+/* 标题 */
+.header { padding: 32rpx; border-bottom: 1rpx solid #f0f0f0; margin-bottom: 16rpx; }
+.header .title { font-size: 36rpx; font-weight: 600; color: #333; }
+.header .subtitle { font-size: 26rpx; color: #999; margin-top: 8rpx; }
+
+/* GO 跑步卡（品牌色渐变） */
+.go-card {
+  background: linear-gradient(135deg, #0FAF8E, #0d9b7e);
+  margin: 0 16rpx 16rpx; padding: 32rpx; border-radius: 16rpx; color: #fff;
+}
+.go-label { font-size: 28rpx; opacity: 0.9; margin-bottom: 20rpx; }
+.target-row { display: flex; gap: 16rpx; margin-bottom: 24rpx; }
+.target-opt { flex: 1; text-align: center; padding: 16rpx 0; background: rgba(255,255,255,0.2); border-radius: 8rpx; font-size: 26rpx; }
+.target-opt.on { background: #fff; color: #0FAF8E; font-weight: 600; }
+.go-btn { background: #fff !important; color: #0FAF8E; font-size: 36rpx; font-weight: 600; border-radius: 12rpx; line-height: 88rpx; }
+
+/* 跑步汇总 */
+.summary-card { background: #fff; margin: 0 16rpx 16rpx; padding: 24rpx; border-radius: 16rpx; display: flex; justify-content: space-around; }
+.sum-item { text-align: center; }
+.sum-item .v { font-size: 36rpx; font-weight: 600; color: #0FAF8E; }
+.sum-item .u { font-size: 22rpx; color: #999; margin-left: 4rpx; }
+
+/* 分段 */
+.section { margin: 0 16rpx 24rpx; }
+.section-title { font-size: 28rpx; color: #666; margin-bottom: 16rpx; padding-left: 8rpx; }
+.loading, .empty { text-align: center; color: #999; padding: 40rpx 0; font-size: 26rpx; background: #fff; border-radius: 16rpx; }
+
+/* 训练计划横向滚动 */
+.plan-scroll { white-space: nowrap; padding-bottom: 8rpx; }
+.plan-card { display: inline-block; width: 280rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; margin-right: 16rpx; vertical-align: top; box-sizing: border-box; }
+.plan-level { font-size: 22rpx; padding: 4rpx 12rpx; border-radius: 6rpx; display: inline-block; margin-bottom: 12rpx; }
+.plan-card.beginner .plan-level { background: #E6F7F2; color: #0FAF8E; }
+.plan-card.intermediate .plan-level { background: #E6F4FF; color: #1890ff; }
+.plan-card.challenge .plan-level { background: #FFF7E6; color: #fa8c16; }
+.plan-card.extreme .plan-level { background: #FFE6E6; color: #e64340; }
+.plan-name { font-size: 30rpx; font-weight: 600; color: #333; }
+.plan-weeks { font-size: 24rpx; color: #999; margin-top: 6rpx; }
+.plan-goal { font-size: 24rpx; color: #666; margin-top: 12rpx; }
+.plan-mileage { font-size: 22rpx; color: #999; margin-top: 8rpx; }
+
+/* 赛事卡 */
+.marathon-card { background: #fff; border-radius: 16rpx; padding: 16rpx; margin-bottom: 12rpx; display: flex; gap: 16rpx; }
+.marathon-cover { width: 160rpx; height: 120rpx; border-radius: 8rpx; flex-shrink: 0; }
+.marathon-info { flex: 1; min-width: 0; }
+.marathon-name { font-size: 28rpx; font-weight: 600; color: #333; }
+.marathon-meta { font-size: 22rpx; color: #999; margin-top: 6rpx; }
+.marathon-summary { font-size: 22rpx; color: #888; margin-top: 6rpx; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* 跑步记录 */
+.record-card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 12rpx; }
+.record-head { display: flex; justify-content: space-between; margin-bottom: 12rpx; }
+.record-source { font-size: 22rpx; padding: 2rpx 12rpx; border-radius: 6rpx; }
+.record-source.garmin { background: #E6F7F2; color: #0FAF8E; }
+.record-source.manual { background: #f5f5f5; color: #999; }
+.record-date { font-size: 22rpx; color: #999; }
+.record-body { display: flex; gap: 40rpx; }
+.metric { display: flex; align-items: baseline; gap: 4rpx; }
+.metric .v { font-size: 32rpx; font-weight: 600; color: #333; }
+.metric .u { font-size: 22rpx; color: #999; }

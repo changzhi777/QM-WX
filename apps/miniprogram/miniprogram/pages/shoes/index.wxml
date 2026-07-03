@@ -1,0 +1,87 @@
+<view class="page">
+  <!-- 标题 + 统计 -->
+  <view class="header bg-white">
+    <view class="title">我的跑鞋</view>
+    <view class="stats-row" wx:if="{{stats.total > 0}}">
+      <view class="stat"><text class="v">{{stats.activeCount}}</text><text class="u">活跃</text></view>
+      <view class="stat"><text class="v">{{stats.totalKm}}</text><text class="u">总里程km</text></view>
+      <view class="stat" wx:if="{{stats.retiringSoonCount > 0}}">
+        <text class="v warn">{{stats.retiringSoonCount}}</text><text class="u">待更换</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 跑鞋列表 -->
+  <view class="list" wx:if="{{!loading}}">
+    <view wx:if="{{shoes.length === 0}}" class="empty">
+      <view class="empty-text">还没有跑鞋记录</view>
+      <view class="empty-tip">添加你的第一双跑鞋，打卡自动累计里程</view>
+    </view>
+
+    <view class="shoe-card {{item.status === 'retired' ? 'retired' : ''}}" wx:for="{{shoes}}" wx:key="id">
+      <view class="shoe-head">
+        <view class="shoe-name">{{item.nickname || (item.brand + ' ' + item.model)}}</view>
+        <view class="shoe-status {{item.status}}">{{item.status === 'active' ? '使用中' : '已退役'}}</view>
+      </view>
+      <view class="shoe-sub">{{item.brand}} · {{item.model}}</view>
+
+      <!-- 里程进度条 -->
+      <view class="progress">
+        <view class="progress-bar">
+          <view
+            class="progress-fill {{item.healthRatio >= 100 ? 'red' : (item.healthRatio >= 70 ? 'yellow' : 'green')}}"
+            style="width: {{item.healthRatio > 100 ? 100 : item.healthRatio}}%;"
+          ></view>
+        </view>
+        <view class="progress-text">
+          <text class="current">{{item.currentKm}}</text> / {{item.thresholdKm}} km
+          <text class="pct">（{{item.healthRatio}}%）</text>
+        </view>
+      </view>
+
+      <!-- 健康度提示 -->
+      <view class="shoe-tip {{item.healthRatio >= 100 ? 'red' : (item.healthRatio >= 70 ? 'yellow' : 'green')}}">
+        <block wx:if="{{item.healthRatio >= 100}}">⚠️ 已超阈值，建议尽快更换（防受伤）</block>
+        <block wx:elif="{{item.healthRatio >= 70}}">⏰ 接近更换阈值，注意规划</block>
+        <block wx:else>✓ 状态良好</block>
+      </view>
+
+      <!-- 退役按钮 -->
+      <view class="shoe-actions" wx:if="{{item.status === 'active'}}">
+        <view class="retire-btn" data-id="{{item.id}}" bindtap="onRetire">退役</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="loading" wx:else>加载中...</view>
+
+  <!-- 悬浮添加按钮 -->
+  <view class="fab" bindtap="onAdd">+ 添加跑鞋</view>
+
+  <!-- 添加弹层 -->
+  <view class="mask" wx:if="{{formVisible}}" bindtap="closeForm">
+    <view class="form-panel" catchtap="">
+      <view class="form-title">添加跑鞋</view>
+      <view class="form-item">
+        <text class="label">品牌 *</text>
+        <input class="input" value="{{form.brand}}" data-field="brand" bindinput="onInput" placeholder="如 Nike / 必迈 / 路征" />
+      </view>
+      <view class="form-item">
+        <text class="label">型号 *</text>
+        <input class="input" value="{{form.model}}" data-field="model" bindinput="onInput" placeholder="如 Vaporfly Next%" />
+      </view>
+      <view class="form-item">
+        <text class="label">昵称</text>
+        <input class="input" value="{{form.nickname}}" data-field="nickname" bindinput="onInput" placeholder="如 战靴一号" />
+      </view>
+      <view class="form-item">
+        <text class="label">更换阈值</text>
+        <input class="input" type="number" value="{{form.thresholdKm}}" data-field="thresholdKm" bindinput="onInput" placeholder="km（默认 800）" />
+      </view>
+      <view class="form-actions">
+        <button class="btn-cancel" bindtap="closeForm">取消</button>
+        <button class="btn-submit" bindtap="onSubmit" loading="{{submitting}}">添加</button>
+      </view>
+    </view>
+  </view>
+</view>

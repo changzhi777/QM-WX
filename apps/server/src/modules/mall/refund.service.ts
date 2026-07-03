@@ -18,6 +18,7 @@ import { prisma } from '../../infra/prisma.js';
 import { Errors } from '../../common/errors.js';
 import { refund as wxpayRefund } from '../wxpay/wxpay.service.js';
 import { walletService } from '../wallet/wallet.service.js';
+import { clawbackCommission } from '../distribution/distribution.service.js';
 import { assertTransition, type OrderStatus } from '../../domain/order-state.js';
 
 export const refundService = {
@@ -103,6 +104,11 @@ export const refundService = {
         refundResp.refundId,
         { allowNegative: true, outRefundNo },
       );
+
+      // V0.1.24 分销：订单退款 → 冲红推广佣金（sourceUserId 存在时）
+      if (order.sourceUserId) {
+        await clawbackCommission(tx, order.id);
+      }
     });
 
     return {

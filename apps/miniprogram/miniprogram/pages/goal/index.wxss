@@ -1,0 +1,51 @@
+/* pages/goal/index.wxss — 跑步目标（V0.1.28） */
+.page { min-height: 100vh; background: #f5f5f5; padding: 16rpx; padding-bottom: 140rpx; box-sizing: border-box; }
+.bg-white { background: #fff; }
+
+.header { padding: 32rpx; border-radius: 16rpx; margin-bottom: 16rpx; }
+.header .title { font-size: 36rpx; font-weight: 600; color: #333; }
+.header .subtitle { font-size: 26rpx; color: #999; margin-top: 8rpx; }
+
+.empty { text-align: center; padding: 120rpx 0; }
+.empty-text { font-size: 30rpx; color: #666; }
+.empty-tip { font-size: 24rpx; color: #bbb; margin-top: 12rpx; }
+.loading { text-align: center; color: #999; padding: 80rpx; font-size: 28rpx; }
+
+/* 目标卡 */
+.goal-card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; }
+.goal-card.completed { border: 2rpx solid #0FAF8E; }
+.goal-head { display: flex; align-items: center; gap: 16rpx; }
+.goal-type { font-size: 22rpx; color: #0FAF8E; background: #E6F7F2; padding: 4rpx 12rpx; border-radius: 6rpx; }
+.goal-title { font-size: 30rpx; font-weight: 600; color: #333; flex: 1; }
+.goal-badge { font-size: 22rpx; color: #fff; background: #0FAF8E; padding: 4rpx 16rpx; border-radius: 12rpx; }
+
+/* 进度条 */
+.progress { margin-top: 20rpx; }
+.progress-bar { height: 16rpx; background: #f0f0f0; border-radius: 8rpx; overflow: hidden; }
+.progress-fill { height: 100%; background: #0FAF8E; border-radius: 8rpx; transition: width 0.3s; }
+.progress-fill.done { background: #0FAF8E; }
+.progress-text { font-size: 24rpx; color: #666; margin-top: 8rpx; }
+.progress-text .current { font-size: 30rpx; font-weight: 600; color: #333; }
+
+.goal-actions { margin-top: 16rpx; padding-top: 16rpx; border-top: 1rpx solid #f0f0f0; display: flex; justify-content: flex-end; }
+.remove-btn { font-size: 24rpx; color: #999; padding: 8rpx 20rpx; border: 1rpx solid #ddd; border-radius: 8rpx; }
+
+/* FAB */
+.fab {
+  position: fixed; bottom: 40rpx; left: 50%; transform: translateX(-50%);
+  background: #0FAF8E; color: #fff; padding: 20rpx 48rpx;
+  border-radius: 40rpx; font-size: 28rpx;
+  box-shadow: 0 4rpx 16rpx rgba(15, 175, 142, 0.4); z-index: 10;
+}
+
+/* 表单弹层 */
+.mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; display: flex; align-items: flex-end; }
+.form-panel { background: #fff; width: 100%; border-radius: 24rpx 24rpx 0 0; padding: 32rpx; box-sizing: border-box; }
+.form-title { font-size: 32rpx; font-weight: 600; color: #333; margin-bottom: 24rpx; }
+.form-item { margin-bottom: 20rpx; }
+.form-item .label { font-size: 26rpx; color: #666; display: block; margin-bottom: 8rpx; }
+.input, .picker { background: #f5f5f5; padding: 16rpx 20rpx; border-radius: 8rpx; font-size: 28rpx; }
+.form-actions { display: flex; gap: 16rpx; margin-top: 32rpx; }
+.btn-cancel, .btn-submit { flex: 1; font-size: 28rpx; border-radius: 8rpx; line-height: 72rpx; padding: 0; margin: 0; }
+.btn-cancel { background: #f5f5f5; color: #666; }
+.btn-submit { background: #0FAF8E; color: #fff; }

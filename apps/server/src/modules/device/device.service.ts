@@ -23,6 +23,8 @@ import { ACTIVITY_TYPE_MAP as TYPE_MAP } from './device.schema.js';
 import type {
   StartOAuthInput,
   SyncWeRunInput,
+  BindBleDeviceInput,
+  SubmitHeartRateInput,
   MyActivitiesQuery,
   MySleepQuery,
   MyMetricsQuery,
@@ -31,6 +33,7 @@ import type {
   IgnoreActivityInput,
   ImportToCheckinInput,
 } from './device.schema.js';
+import { DEVICE_BRANDS } from '@qm-wx/shared';
 
 /** 佳明查询缓存 TTL：300s（历史数据低频变更，比 sport 60s 容忍更长延迟） */
 const GARMIN_CACHE_TTL_SEC = 300;
@@ -90,10 +93,21 @@ export const deviceService = {
     return { authUrl: `${base}?${params.toString()}`, expiresIn: 300 };
   },
 
-  /** 解绑 */
-  async unbind(_userId: string, _vendor: string) {
-    // TODO Phase 6
-    throw Errors.notImplemented('unbind');
+  /**
+   * 解绑（V0.1.25 实现：删 DeviceBinding）
+   *
+   * 蓝牙绑定额外清除实时心率缓存
+   */
+  async unbind(userId: string, vendor: string) {
+    const binding = await prisma.deviceBinding.findFirst({
+      where: { userId, vendor },
+    });
+    if (!binding) throw Errors.notFound('binding not found');
+    await prisma.deviceBinding.delete({ where: { id: binding.id } });
+    if (vendor === 'ble') {
+      await Cache.del(`ble:hr:${userId}`);
+    }
+    return { ok: true };
   },
 
   /**
@@ -106,10 +120,19 @@ export const deviceService = {
     return { ok: true, synced: _input.stepList.length };
   },
 
-  /** 提交 BLE 实时心率采样 */
-  async submitHeartRate(_userId: string, _samples: unknown) {
-    // TODO Phase 6
-    throw Errors.notImplemented('submitHeartRate');
+  /**
+   * 提交实时心率（蓝牙 BLE 心率服务 0x180D notify 回调，V0.1.25）
+   *
+   * MVP：取最新采样写 Redis 缓存（key `ble:hr:{userId}`，TTL 1h）
+   * - 供运动中实时查询（如 sport 打卡页展示实时心率）
+   * - 不持久化（YAGNI；后续若需历史心率轨迹再建 HeartRateSample 表）
+   *
+   * fail-open：Cache.set 静默失败，业务不阻塞
+   */
+  async submitHeartRate(userId: string, input: SubmitHeartRateInput) {
+    const latest = input.samples[input.samples.length - 1];
+    await Cache.set({ key: `ble:hr:${userId}`, ttlSec: 3600, value: latest });
+    return { ok: true, count: input.samples.length, latest: latest.hr };
   },
 
   // ===== 佳明数据查询（B-2，2026-07-01；Cache.wrap 300s）=====
@@ -370,4 +393,224 @@ export const deviceService = {
       queued: input.activityIds.length,
     };
   },
+
+  /**
+   * 今日健康看板（V0.1.25，参考图 2774）
+   *
+   * 聚合 4 类佳明数据 → 一次返回，减少前端多次 round-trip：
+   * - 睡眠：GarminSleep latest（总时长 + 深睡/浅睡/REM + 评分）
+   * - 健身年龄：GarminFitnessAge latest（生理年龄 + VO2Max + 静息心率 + BMI）
+   * - 训练指标：GarminMetric 按 metricType 取 latest（training_readiness / endurance_score / hill_score）
+   * - 今日活动：RawActivity 今日汇总（次数 + 距离 + 时长 + 热量）
+   *
+   * 无数据源指标（步数/血氧/血压/体重/血糖）放入 unavailable，前端显示"连接设备后查看"占位
+   *
+   * 缓存：Cache.wrap + 300s TTL + key 含 userId/今日日期（缓存热路径 14→15）
+   */
+  async myTodayHealth(userId: string) {
+    const { start, end, dateStr } = todayRangeCN();
+    const key = `garmin:today:${userId}:${dateStr}`;
+    return Cache.wrap(key, GARMIN_CACHE_TTL_SEC, async () => {
+      const [sleepLatest, fitnessAgeLatest, metrics, todayActivities] = await Promise.all([
+        prisma.garminSleep.findFirst({ where: { userId }, orderBy: { calendarDate: 'desc' } }),
+        prisma.garminFitnessAge.findFirst({ where: { userId }, orderBy: { asOfDate: 'desc' } }),
+        prisma.garminMetric.findMany({
+          where: {
+            userId,
+            metricType: { in: ['training_readiness', 'endurance_score', 'hill_score'] },
+          },
+          orderBy: { calendarDate: 'desc' },
+        }),
+        prisma.rawActivity.findMany({
+          where: { userId, vendor: 'garmin', startTime: { gte: start, lt: end } },
+        }),
+      ]);
+
+      // 各 metricType 取 latest（已按日期 desc，首次出现即最新）
+      const metricMap = new Map<string, number | null>();
+      for (const m of metrics) {
+        if (!metricMap.has(m.metricType)) metricMap.set(m.metricType, m.value);
+      }
+
+      // 今日活动汇总（距离/时长/热量）
+      let totalDistanceM = 0;
+      let totalDurationSec = 0;
+      let totalCalories = 0;
+      for (const a of todayActivities) {
+        totalDistanceM += a.distanceMeters ?? 0;
+        totalDurationSec += a.durationSec ?? 0;
+        const raw = (a.raw ?? {}) as Record<string, unknown>;
+        if (typeof raw.calories === 'number') totalCalories += raw.calories;
+      }
+
+      return {
+        date: dateStr,
+        sleep: sleepLatest
+          ? {
+              durationHours: sleepDurationHours(sleepLatest),
+              deepHours: secsToHours(sleepLatest.deepSleepSeconds),
+              lightHours: secsToHours(sleepLatest.lightSleepSeconds),
+              remHours: secsToHours(sleepLatest.remSleepSeconds),
+              score: extractSleepScore(sleepLatest.sleepScores),
+              calendarDate: sleepLatest.calendarDate.toISOString(),
+            }
+          : null,
+        fitnessAge: fitnessAgeLatest
+          ? {
+              chronologicalAge: fitnessAgeLatest.chronologicalAge,
+              currentBioAge: fitnessAgeLatest.currentBioAge,
+              vo2Max: fitnessAgeLatest.vo2Max,
+              rhr: fitnessAgeLatest.rhr,
+              bmi: fitnessAgeLatest.bmi,
+              asOfDate: fitnessAgeLatest.asOfDate.toISOString(),
+            }
+          : null,
+        metrics: {
+          trainingReadiness: metricMap.get('training_readiness') ?? null,
+          enduranceScore: metricMap.get('endurance_score') ?? null,
+          hillScore: metricMap.get('hill_score') ?? null,
+        },
+        todayActivity:
+          todayActivities.length > 0
+            ? {
+                count: todayActivities.length,
+                totalDistanceKm: round2(totalDistanceM / 1000),
+                totalDurationMin: Math.round(totalDurationSec / 60),
+                totalCalories: Math.round(totalCalories),
+              }
+            : null,
+        // 佳明数据源不支持的指标 — 前端显示"连接设备后查看"占位
+        unavailable: ['steps', 'spo2', 'bloodPressure', 'weight', 'bloodGlucose'],
+      };
+    });
+  },
+
+  // ===== 设备绑定中心（V0.1.25，参考图 2770）=====
+
+  /**
+   * 我的设备绑定（品牌列表 + 已绑设备）
+   *
+   * 返回 DEVICE_BRANDS（shared 常量，前后端共用）+ 用户 DeviceBinding 列表。
+   * 佳明特殊：数据由脚本灌入 RawActivity（未走 DeviceBinding），
+   * 故基于 RawActivity 计数自动判定"已连接（数据已导入）"。
+   */
+  async myBindings(userId: string) {
+    const [bindings, garminActivityCount] = await Promise.all([
+      prisma.deviceBinding.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      prisma.rawActivity.count({ where: { userId, vendor: 'garmin' } }),
+    ]);
+
+    return {
+      brands: DEVICE_BRANDS,
+      bindings: bindings.map((b) => ({
+        id: b.id,
+        vendor: b.vendor,
+        // ble/garmin/xiaomi：设备名存 accessTokenEnc（复用字段，零 schema 改）；oauth: vendorUserId
+        deviceName:
+          b.vendor === 'ble' || b.vendor === 'garmin' || b.vendor === 'xiaomi'
+            ? b.accessTokenEnc ?? '蓝牙设备'
+            : b.vendorUserId ?? b.vendor,
+        status: b.status,
+        lastSyncAt: b.lastSyncAt?.toISOString() ?? null,
+        createdAt: b.createdAt.toISOString(),
+      })),
+      // V0.1.33：佳明 BLE 绑定优先展示，OAuth 数据降级（前端按两字段判定）
+      // 优化：从 bindings 过滤 garmin，省一次 findUnique DB round-trip（findMany 已含全部）
+      garminBleBound: bindings.some((b) => b.vendor === 'garmin'),
+      garminAutoConnected: garminActivityCount > 0,
+      garminActivityCount,
+    };
+  },
+
+  /**
+   * 绑定蓝牙设备（微信 createBLEConnection 成功后调）
+   *
+   * upsert DeviceBinding（@@unique([userId, vendor])，复绑覆盖旧值）：
+   * - vendor = 'ble'
+   * - vendorUserId = 微信 bleDeviceId
+   * - accessTokenEnc = 设备名（复用字段存展示名，零 schema 改）
+   * - scopes = 支持的 BLE 服务 UUID 列表
+   */
+  async bindBleDevice(userId: string, input: BindBleDeviceInput) {
+    // V0.1.33：vendor 品牌化（garmin/xiaomi 按品牌 upsert，可同时绑多设备；ble 兼容旧通用）
+    // 兜底 'ble'：route 层 Zod default 已处理，service 层再加一道防直接调用（如测试/内部调用）
+    const vendor = input.vendor ?? 'ble';
+    const binding = await prisma.deviceBinding.upsert({
+      where: { userId_vendor: { userId, vendor } },
+      create: {
+        userId,
+        vendor,
+        vendorUserId: input.deviceId,
+        accessTokenEnc: input.name,
+        scopes: input.services,
+        status: 'active',
+        lastSyncAt: new Date(),
+      },
+      update: {
+        vendorUserId: input.deviceId,
+        accessTokenEnc: input.name,
+        scopes: input.services,
+        status: 'active',
+        lastSyncAt: new Date(),
+      },
+    });
+    return {
+      id: binding.id,
+      vendor: binding.vendor,
+      deviceName: input.name,
+      status: binding.status,
+    };
+  },
 };
+
+// ===== 今日健康看板辅助函数（V0.1.25）=====
+
+/** 东八区"今日"范围 [start, end) + dateStr（YYYY-MM-DD） */
+function todayRangeCN(): { start: Date; end: Date; dateStr: string } {
+  const now = new Date();
+  const cn = new Date(now.getTime() + 8 * 3600 * 1000);
+  const dateStr = cn.toISOString().slice(0, 10);
+  const [y, m, d] = dateStr.split('-').map(Number);
+  // 东八区今日 0 点 = UTC 前一日 16 点
+  const start = new Date(Date.UTC(y, m - 1, d) - 8 * 3600 * 1000);
+  const end = new Date(start.getTime() + 24 * 3600 * 1000);
+  return { start, end, dateStr };
+}
+
+/** 秒 → 小时（1 位小数），null 透传 */
+function secsToHours(sec: number | null | undefined): number | null {
+  if (sec == null) return null;
+  return Math.round((sec / 3600) * 10) / 10;
+}
+
+/** 睡眠总时长（深+浅+REM，小时），无数据返 null */
+function sleepDurationHours(s: {
+  deepSleepSeconds: number | null;
+  lightSleepSeconds: number | null;
+  remSleepSeconds: number | null;
+}): number | null {
+  const total =
+    (s.deepSleepSeconds ?? 0) + (s.lightSleepSeconds ?? 0) + (s.remSleepSeconds ?? 0);
+  if (total === 0) return null;
+  return Math.round((total / 3600) * 10) / 10;
+}
+
+/** 从 sleepScores（嵌套 JSON）提取 overall/quality 评分 */
+function extractSleepScore(scores: unknown): number | null {
+  if (!scores || typeof scores !== 'object') return null;
+  const obj = scores as Record<string, unknown>;
+  const overall = obj.overall as Record<string, unknown> | undefined;
+  const quality = obj.quality as Record<string, unknown> | undefined;
+  const v = overall?.value ?? quality?.value ?? obj.value;
+  if (v == null) return null;
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
+/** 保留 2 位小数 */
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
+}

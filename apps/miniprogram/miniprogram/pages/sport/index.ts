@@ -23,9 +23,13 @@ Page({
       heartRate: '',
       cadence: '',
       groupId: '',
+      shoeId: '',
     },
     groupIndex: 0,
     groups: [] as Group[],
+    // 跑鞋选项（V0.1.26 + 1：打卡选跑鞋 → 自动累计里程）
+    shoeIndex: 0,
+    shoes: [] as Array<{ id: string; name: string }>,
 
     submitting: false,
     showCreateGroup: false,
@@ -57,6 +61,31 @@ Page({
         ...groups,
       ];
       this.setData({ groups: groupOptions });
+
+      // 我的跑鞋（active，打卡时选 → 自动累计里程，V0.1.26）
+      try {
+        const shoesRes = await api.call<{
+          shoes: Array<{
+            id: string;
+            brand: string;
+            model: string;
+            nickname: string | null;
+            status: string;
+          }>;
+        }>('shoes', 'list', {});
+        const activeShoes = shoesRes.shoes.filter((s) => s.status === 'active');
+        this.setData({
+          shoes: [
+            { id: '', name: '不选跑鞋' },
+            ...activeShoes.map((s) => ({
+              id: s.id,
+              name: s.nickname || `${s.brand} ${s.model}`,
+            })),
+          ],
+        });
+      } catch {
+        // 跑鞋加载失败不阻塞打卡（向后兼容）
+      }
 
       // 今日状态
       const today = await api.call<{ date: string; done: boolean; checkin: null | { points: number } }>(
@@ -101,6 +130,15 @@ Page({
     });
   },
 
+  /** 选跑鞋（V0.1.26：打卡带 shoeId → 跑鞋自动累计里程） */
+  onShoeChange(e: WechatMiniprogram.CustomEvent) {
+    const idx = Number(e.detail.value);
+    this.setData({
+      shoeIndex: idx,
+      'form.shoeId': this.data.shoes[idx]?.id ?? '',
+    });
+  },
+
   /** 时长（分钟）→ 配速 mm:ss（秒/公里） */
   recalcPace() {
     const d = parseFloat(this.data.form.distance);
@@ -136,13 +174,15 @@ Page({
       if (this.data.form.heartRate) payload.heartRate = Number(this.data.form.heartRate);
       if (this.data.form.cadence) payload.cadence = Number(this.data.form.cadence);
       if (this.data.form.groupId) payload.groupId = this.data.form.groupId;
+      if (this.data.form.shoeId) payload.shoeId = this.data.form.shoeId;
 
       const result = await api.call<{ points: number }>('sport', 'checkin', payload);
 
       this.setData({
         todayDone: true,
         todayPoints: result.points,
-        form: { distance: '', durationMin: '', pace: '', heartRate: '', cadence: '', groupId: '' },
+        form: { distance: '', durationMin: '', pace: '', heartRate: '', cadence: '', groupId: '', shoeId: '' },
+        shoeIndex: 0,
       });
       wx.showToast({ title: `+${result.points} 积分`, icon: 'success' });
     } catch (err) {

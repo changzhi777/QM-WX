@@ -11,6 +11,8 @@ import {
   StartOAuthInputSchema,
   SyncWeRunInputSchema,
   UnbindInputSchema,
+  BindBleDeviceInputSchema,
+  SubmitHeartRateInputSchema,
   MyActivitiesQuerySchema,
   MySleepQuerySchema,
   MyMetricsQuerySchema,
@@ -46,7 +48,15 @@ export async function deviceRoutes(app: FastifyInstance) {
           return { code: 0, data: await deviceService.syncWeRun(userId, input) };
         }
         case 'submitHeartRate': {
-          return { code: 0, data: await deviceService.submitHeartRate(userId, payload) };
+          const input = SubmitHeartRateInputSchema.parse(payload);
+          return { code: 0, data: await deviceService.submitHeartRate(userId, input) };
+        }
+        case 'bindBleDevice': {
+          const input = BindBleDeviceInputSchema.parse(payload);
+          return { code: 0, data: await deviceService.bindBleDevice(userId, input) };
+        }
+        case 'myBindings': {
+          return { code: 0, data: await deviceService.myBindings(userId) };
         }
         // 佳明数据查询（B-2，2026-07-01）
         case 'myActivities': {
@@ -64,6 +74,10 @@ export async function deviceRoutes(app: FastifyInstance) {
         case 'myFitnessAge': {
           const input = MyFitnessAgeQuerySchema.parse(payload ?? {});
           return { code: 0, data: await deviceService.myFitnessAge(userId, input) };
+        }
+        case 'myTodayHealth': {
+          // 无入参 — 后端聚合睡眠/健身年龄/训练指标/今日活动（V0.1.25，参考图 2774）
+          return { code: 0, data: await deviceService.myTodayHealth(userId) };
         }
         case 'myPending': {
           const input = ActivityPageQuerySchema.parse(payload ?? {});

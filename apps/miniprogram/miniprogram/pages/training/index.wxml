@@ -1,0 +1,77 @@
+<view class="page">
+  <!-- 标题 -->
+  <view class="header bg-white">
+    <view class="title">锻炼训练</view>
+    <view class="subtitle">智能训练计划 · 赛事助手 · 跑步记录</view>
+  </view>
+
+  <!-- GO 跑步（目标设置 + 大按钮） -->
+  <view class="go-card">
+    <view class="go-label">立即跑步</view>
+    <view class="target-row">
+      <view class="target-opt {{targetDistance === 3 ? 'on' : ''}}" data-km="3" bindtap="onPickTarget">3K</view>
+      <view class="target-opt {{targetDistance === 5 ? 'on' : ''}}" data-km="5" bindtap="onPickTarget">5K</view>
+      <view class="target-opt {{targetDistance === 10 ? 'on' : ''}}" data-km="10" bindtap="onPickTarget">10K</view>
+      <view class="target-opt {{targetDistance === 21 ? 'on' : ''}}" data-km="21" bindtap="onPickTarget">半马</view>
+    </view>
+    <button class="go-btn" bindtap="onGo">GO</button>
+  </view>
+
+  <!-- 跑步汇总 -->
+  <view class="summary-card" wx:if="{{summary.totalRuns > 0}}">
+    <view class="sum-item"><text class="v">{{summary.totalRuns}}</text><text class="u">次</text></view>
+    <view class="sum-item"><text class="v">{{summary.totalDistanceKm}}</text><text class="u">km</text></view>
+    <view class="sum-item"><text class="v">{{summary.avgDistanceKm}}</text><text class="u">km/次</text></view>
+  </view>
+
+  <!-- 智能训练计划 -->
+  <view class="section">
+    <view class="section-title">智能训练计划</view>
+    <scroll-view scroll-x class="plan-scroll">
+      <view class="plan-card {{plan.levelKey}}" wx:for="{{plans}}" wx:for-item="plan" wx:key="key" data-key="{{plan.key}}" bindtap="onTapPlan">
+        <view class="plan-level">{{plan.level}}</view>
+        <view class="plan-name">{{plan.name}}</view>
+        <view class="plan-weeks">{{plan.weeks}} 周</view>
+        <view class="plan-goal">{{plan.goal}}</view>
+        <view class="plan-mileage">{{plan.weeklyMileage}}</view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 赛事助手 -->
+  <view class="section">
+    <view class="section-title">赛事助手</view>
+    <view wx:if="{{loadingMarathons}}" class="loading">加载中...</view>
+    <view wx:elif="{{marathons.length === 0}}" class="empty">暂无赛事</view>
+    <block wx:else>
+      <view class="marathon-card" wx:for="{{marathons}}" wx:key="id" data-id="{{item.id}}" bindtap="onTapMarathon">
+        <image wx:if="{{item.cover}}" class="marathon-cover" src="{{item.cover}}" mode="aspectFill" />
+        <view class="marathon-info">
+          <view class="marathon-name">{{item.title}}</view>
+          <view class="marathon-meta" wx:if="{{item.date || item.location}}">{{item.date}} {{item.location}}</view>
+          <view class="marathon-summary" wx:if="{{item.summary}}">{{item.summary}}</view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 全部跑步记录 -->
+  <view class="section">
+    <view class="section-title">跑步记录</view>
+    <view wx:if="{{loadingRecords}}" class="loading">加载中...</view>
+    <view wx:elif="{{records.length === 0}}" class="empty">暂无跑步记录</view>
+    <block wx:else>
+      <view class="record-card" wx:for="{{records}}" wx:key="id">
+        <view class="record-head">
+          <text class="record-source {{item.source}}">{{item.source === 'garmin' ? '佳明' : '手动'}}</text>
+          <text class="record-date">{{item.date}}</text>
+        </view>
+        <view class="record-body">
+          <view class="metric"><text class="v">{{item.distanceKm}}</text><text class="u">km</text></view>
+          <view class="metric"><text class="v">{{item.durationMin}}</text><text class="u">min</text></view>
+          <view class="metric" wx:if="{{item.pace}}"><text class="v">{{item.pace}}</text><text class="u">/km</text></view>
+        </view>
+      </view>
+    </block>
+  </view>
+</view>

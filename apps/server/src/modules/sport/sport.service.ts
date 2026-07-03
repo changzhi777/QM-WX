@@ -25,6 +25,7 @@ import type {
   QuitGroupInput,
 } from './sport.schema.js';
 import { CheckinInputSchema } from './sport.schema.js';
+import { incrementShoeKm } from '../shoes/shoes.service.js';
 
 /** sport.today 缓存 TTL：60s（打卡后 60s 内可能仍看到旧态，可接受） */
 const TODAY_CACHE_TTL_SEC = 60;
@@ -120,7 +121,7 @@ export const sportService = {
     const perKm = pointsRules.perKm ?? POINTS_RULES_DEFAULT.perKm;
     const points = Math.floor(clean.distance * perKm);
 
-    // 4. 事务：写 checkin + 写流水 + 加积分 + 加 stats
+    // 4. 事务：写 checkin + 写流水 + 加积分 + 加 stats + 跑鞋累计里程（V0.1.26）
     await prisma.$transaction(async (tx) => {
       await sportRepo.checkinInTx(tx, {
         userId,
@@ -132,8 +133,11 @@ export const sportService = {
         cadence: clean.cadence ?? null,
         points,
         date,
+        shoeId: clean.shoeId ?? null,
       });
       await userRepo.addPoints(tx, userId, points, 'checkin');
+      // 跑鞋里程累计（V0.1.26；shoeId 为空则跳过）
+      await incrementShoeKm(tx, clean.shoeId ?? null, clean.distance);
     });
 
     // 5. 精准失效今日缓存（不等 TTL 过期）

@@ -30,6 +30,8 @@ Page({
     // 佳明运动数据（B-2，2026-07-01）
     garminActivities: [] as Array<{ id: string; name: string | null; type: string; startTime: string; distanceKm: string; durationMin: string }>,
     garminLoading: false,
+    // 消息未读数（V0.1.31 消息中心红点）
+    notifUnread: 0,
     // 跑者数据汇总（参考图 2768，stats.myRunnerStats）
     runnerStats: {
       yearDistance: 0,
@@ -60,6 +62,8 @@ Page({
       this.loadGarmin();
       // 跑者数据汇总
       this.loadRunnerStats();
+      // 消息未读数（V0.1.31 红点）
+      this.loadNotifUnread();
 
       this.setData({
         flags: (app.globalData.config?.featureFlags ?? this.data.flags) as FeatureFlagsConfig,
@@ -132,6 +136,44 @@ Page({
     }
   },
 
+  /** 消息未读数（V0.1.31 消息中心红点） */
+  async loadNotifUnread() {
+    try {
+      const res = await api.call<{ count: number }>('notification', 'unreadCount', {});
+      this.setData({ notifUnread: res.count ?? 0 });
+    } catch {
+      // 未读数加载失败不阻塞主页
+    }
+  },
+
+  goHealth() {
+    wx.navigateTo({ url: '/pages/health/index' });
+  },
+
+  goDeviceBind() {
+    wx.navigateTo({ url: '/pages/device-bind/index' });
+  },
+
+  goTraining() {
+    wx.navigateTo({ url: '/pages/training/index' });
+  },
+
+  goShoes() {
+    wx.navigateTo({ url: '/pages/shoes/index' });
+  },
+
+  goAnnualReport() {
+    wx.navigateTo({ url: '/pages/annual-report/index' });
+  },
+
+  goGoal() {
+    wx.navigateTo({ url: '/pages/goal/index' });
+  },
+
+  goCertificate() {
+    wx.navigateTo({ url: '/pages/certificate/index' });
+  },
+
   goGarminData() {
     wx.navigateTo({ url: '/pages/garmin-data/index' });
   },
@@ -182,8 +224,28 @@ Page({
     wx.navigateTo({ url: '/pages/address/index' });
   },
 
+  goDistribution() {
+    wx.navigateTo({ url: '/pages/distribution/index' });
+  },
+
+  goTiantian() {
+    wx.navigateTo({ url: '/pages/tiantian/index' });
+  },
+
   goContent() {
     wx.navigateTo({ url: '/pages/content-list/index' });
+  },
+
+  goFavorite() {
+    wx.navigateTo({ url: '/pages/favorite/index' });
+  },
+
+  goFeed() {
+    wx.navigateTo({ url: '/pages/feed/index' });
+  },
+
+  goNotification() {
+    wx.navigateTo({ url: '/pages/notification/index' });
   },
 
   goAgreement() {

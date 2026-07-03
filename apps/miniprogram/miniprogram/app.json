@@ -19,7 +19,20 @@
     "pages/points/index",
     "pages/category/index",
     "pages/address/index",
-    "pages/coupon/index"
+    "pages/coupon/index",
+    "pages/distribution/index",
+    "pages/tiantian/index",
+    "pages/health/index",
+    "pages/device-bind/index",
+    "pages/training/index",
+    "pages/shoes/index",
+    "pages/annual-report/index",
+    "pages/goal/index",
+    "pages/certificate/index",
+    "pages/favorite/index",
+    "pages/feed/index",
+    "pages/notification/index",
+    "pages/user/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",

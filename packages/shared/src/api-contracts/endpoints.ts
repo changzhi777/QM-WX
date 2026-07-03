@@ -72,11 +72,16 @@ export const ENDPOINTS = {
     unbind: '/api/device',
     syncWeRun: '/api/device',
     submitHeartRate: '/api/device',
+    // 蓝牙设备绑定（V0.1.25，参考图 2770）
+    bindBleDevice: '/api/device',
+    myBindings: '/api/device',
     // 佳明数据查询（B-2，2026-07-01）
     myActivities: '/api/device',
     mySleep: '/api/device',
     myMetrics: '/api/device',
     myFitnessAge: '/api/device',
+    // 今日健康看板聚合（V0.1.25，参考图 2774）
+    myTodayHealth: '/api/device',
     // 佳明数据处理（导入榜单，2026-07-01）
     myPending: '/api/device',
     myProcessed: '/api/device',
@@ -85,6 +90,8 @@ export const ENDPOINTS = {
   },
   stats: {
     myRunnerStats: '/api/stats',
+    myAnnualReport: '/api/stats',
+    myCertificates: '/api/stats',
   },
   ranking: {
     groupRankingMulti: '/api/ranking',
@@ -113,6 +120,59 @@ export const ENDPOINTS = {
     myCoupons: '/api/coupon',
     availableCount: '/api/coupon',
     receive: '/api/coupon',
+  },
+  distribution: {
+    mySummary: '/api/distribution',
+    myOrders: '/api/distribution',
+    myTeam: '/api/distribution',
+    myCommissionLogs: '/api/distribution',
+    myLevel: '/api/distribution',
+    inviteInfo: '/api/distribution',
+  },
+  training: {
+    myPlans: '/api/training',
+    mySportRecords: '/api/training',
+  },
+  shoes: {
+    list: '/api/shoes',
+    add: '/api/shoes',
+    update: '/api/shoes',
+    retire: '/api/shoes',
+    myStats: '/api/shoes',
+  },
+  goal: {
+    list: '/api/goal',
+    add: '/api/goal',
+    remove: '/api/goal',
+    myProgress: '/api/goal',
+  },
+  favorite: {
+    list: '/api/favorite',
+    add: '/api/favorite',
+    remove: '/api/favorite',
+    isFavorited: '/api/favorite',
+  },
+  feed: {
+    list: '/api/feed',
+    myFeeds: '/api/feed',
+    publish: '/api/feed',
+    like: '/api/feed',
+    unlike: '/api/feed',
+    comment: '/api/feed',
+  },
+  notification: {
+    list: '/api/notification',
+    unreadCount: '/api/notification',
+    markRead: '/api/notification',
+    markAllRead: '/api/notification',
+  },
+  follow: {
+    follow: '/api/follow',
+    unfollow: '/api/follow',
+    isFollowing: '/api/follow',
+    myFollowing: '/api/follow',
+    myFollowers: '/api/follow',
+    myCounts: '/api/follow',
   },
 } as const;
 

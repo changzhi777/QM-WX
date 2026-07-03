@@ -1,0 +1,36 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="loading">加载中…</view>
+
+  <block wx:elif="{{info}}">
+    <!-- 头部：头像 + 昵称 -->
+    <view class="header">
+      <image class="avatar" src="{{info.user.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
+      <view class="nickname">{{info.user.nickname || '匿名跑者'}}</view>
+    </view>
+
+    <!-- 关注数 / 粉丝数 -->
+    <view class="stats">
+      <view class="stat">
+        <view class="num">{{info.followingCount}}</view>
+        <view class="lbl">关注</view>
+      </view>
+      <view class="stat">
+        <view class="num">{{info.followerCount}}</view>
+        <view class="lbl">粉丝</view>
+      </view>
+    </view>
+
+    <!-- 关注按钮（自己不显示） -->
+    <view class="action-row" wx:if="{{!info.isSelf}}">
+      <button
+        class="btn {{info.followingBtn ? 'btn-following' : 'btn-follow'}}"
+        bindtap="onToggleFollow"
+        loading="{{toggling}}"
+        disabled="{{toggling}}"
+      >
+        {{info.followingBtn ? '已关注' : '+ 关注'}}
+      </button>
+    </view>
+    <view class="self-tip" wx:else>这是我本人</view>
+  </block>
+</view>

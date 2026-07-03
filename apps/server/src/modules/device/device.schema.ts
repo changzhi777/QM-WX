@@ -6,7 +6,7 @@
  */
 import { z } from 'zod';
 
-export const DEVICE_VENDORS = ['werun', 'garmin', 'huawei', 'xiaomi', 'honor', 'coros', 'zepp'] as const;
+export const DEVICE_VENDORS = ['werun', 'garmin', 'huawei', 'xiaomi', 'honor', 'coros', 'zepp', 'ble'] as const;
 export type DeviceVendor = (typeof DEVICE_VENDORS)[number];
 
 export const ListBindingsInputSchema = z.object({}).optional();
@@ -66,6 +66,43 @@ export type MyMetricsQuery = z.infer<typeof MyMetricsQuerySchema>;
 export const MyFitnessAgeQuerySchema = z.object(dateRange);
 export type MyFitnessAgeQuery = z.infer<typeof MyFitnessAgeQuerySchema>;
 
+/** 今日健康看板（V0.1.25，参考图 2774；无入参 — 后端聚合 4 类佳明数据） */
+export const MyTodayHealthQuerySchema = z.object({}).optional();
+export type MyTodayHealthQuery = z.infer<typeof MyTodayHealthQuerySchema>;
+
+// ===== 蓝牙设备绑定（V0.1.25，参考图 2770；微信原生 BLE 直连）=====
+
+/** 蓝牙绑定入参（小程序 createBLEConnection 成功后调） */
+export const BindBleDeviceInputSchema = z.object({
+  deviceId: z.string(), // 微信蓝牙 deviceId（iOS 为 UUID，Android 为 MAC）
+  name: z.string(), // 设备名（localName / 广播名，用于展示）
+  services: z.array(z.string()).default([]), // 设备支持的 BLE 服务 UUID（如心率 0000180D-...）
+  // V0.1.33：品牌 vendor（garmin/xiaomi 走品牌 upsert，可同时绑多设备；ble 兼容旧通用）
+  vendor: z.enum(['ble', 'garmin', 'xiaomi']).default('ble'),
+  // V0.1.33：设备信息（0x180A 读到的厂商/型号，MVP 不持久化，透传展示）
+  brandMeta: z
+    .object({
+      manufacturer: z.string().optional(),
+      model: z.string().optional(),
+    })
+    .optional(),
+});
+export type BindBleDeviceInput = z.infer<typeof BindBleDeviceInputSchema>;
+
+/** 提交实时心率（蓝牙心率服务 0x180D notify 回调，V0.1.25） */
+export const SubmitHeartRateInputSchema = z.object({
+  samples: z
+    .array(
+      z.object({
+        hr: z.number().int().min(30).max(250), // 心率合理区间校验
+        ts: z.number().int(), // 毫秒时间戳
+      }),
+    )
+    .min(1)
+    .max(100), // 单次最多 100 采样（防大包）
+});
+export type SubmitHeartRateInput = z.infer<typeof SubmitHeartRateInputSchema>;
+
 // ===== 佳明数据处理（导入榜单，2026-07-01）=====
 
 /** RawActivity.type → Checkin.sportType 映射（导入榜单/数据处理共用，单点维护） */
@@ -108,10 +145,13 @@ export const DeviceActionBodySchema = z.object({
     'unbind',
     'syncWeRun',
     'submitHeartRate',
+    'bindBleDevice',
+    'myBindings',
     'myActivities',
     'mySleep',
     'myMetrics',
     'myFitnessAge',
+    'myTodayHealth',
     'myPending',
     'myProcessed',
     'ignoreActivity',

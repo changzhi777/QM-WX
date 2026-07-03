@@ -42,6 +42,12 @@
             <input class="input" type="number" placeholder="选填" value="{{form.cadence}}" bindinput="onInputCadence" />
           </view>
         </view>
+        <view class="field" wx:if="{{shoes.length > 1}}">
+          <text class="label">跑鞋</text>
+          <picker mode="selector" range="{{shoes}}" range-key="name" value="{{shoeIndex}}" bindchange="onShoeChange">
+            <view class="picker">{{shoes[shoeIndex].name}} <text class="arrow-sm">›</text></view>
+          </picker>
+        </view>
         <view class="field" wx:if="{{groups.length > 1}}">
           <text class="label">归属群</text>
           <picker mode="selector" range="{{groups}}" range-key="name" value="{{groupIndex}}" bindchange="onGroupChange">

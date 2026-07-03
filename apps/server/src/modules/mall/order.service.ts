@@ -15,6 +15,7 @@ import { userRepo } from '../user/user.repository.js';
 import { unifiedOrder } from '../wxpay/wxpay.service.js';
 import { assertTransition, type OrderStatus } from '../../domain/order-state.js';
 import { assertNotBanned } from '../admin/admin.service.js';
+import { levelRate } from '../distribution/distribution.service.js';
 import type { UnifiedOrderResp } from '../wxpay/wxpay.schema.js';
 import type { CreateOrderInput, MyOrdersInput } from './mall.schema.js';
 
@@ -85,7 +86,32 @@ export const orderService = {
       payChannel = 'wxpay';
     }
 
-    // 4. 事务：写 order + 扣积分（如有）
+    // V0.1.24 分销：解析 inviteCode → 推广来源 + 佣金率 + 上线
+    let sourceUserId: string | null = null;
+    let commissionRate = 0;
+    let grandfatherId: string | null = null;
+    if (input.inviteCode) {
+      const inviter = await prisma.user.findFirst({
+        where: { inviteCode: input.inviteCode },
+        select: { id: true, distributorLevel: true },
+      });
+      if (inviter && inviter.id !== userId) {
+        // 防自邀：inviter 存在且非自己才建分销关系
+        sourceUserId = inviter.id;
+        commissionRate = levelRate(inviter.distributorLevel);
+        // 查 inviter 的直推上线（建 level=2 间推关系；间推佣金 MVP 暂不发）
+        const inviterUp = await prisma.team.findFirst({
+          where: { inviteeId: inviter.id, level: 1 },
+          select: { inviterId: true },
+        });
+        grandfatherId = inviterUp?.inviterId ?? null;
+      }
+    }
+
+    // 4. 事务：写 order + 扣积分（如有）+ 分销落单
+    const sourceUserIdFinal = sourceUserId;
+    const commissionRateFinal = commissionRate;
+    const grandfatherIdFinal = grandfatherId;
     const order = await prisma.$transaction(async (tx) => {
       const o = await tx.order.create({
         data: {
@@ -104,6 +130,7 @@ export const orderService = {
           status,
           payChannel,
           address: input.address as never,
+          sourceUserId: sourceUserIdFinal, // V0.1.24 分销来源（可 null）
         },
         include: { items: true },
       });
@@ -111,6 +138,35 @@ export const orderService = {
       // 扣积分（仅积分全额兑换场景）
       if (pointsUsed > 0) {
         await userRepo.addPoints(tx, userId, -pointsUsed, 'order_deduct', o.id);
+      }
+
+      // V0.1.24 分销：落推广订单 + 邀请关系（仅 sourceUserId 有效时）
+      if (sourceUserIdFinal) {
+        const commissionAmount = Math.round(payAmount * commissionRateFinal * 100) / 100;
+        if (commissionAmount > 0) {
+          await tx.distributionOrder.create({
+            data: {
+              userId: sourceUserIdFinal,
+              orderId: o.id,
+              orderAmount: payAmount as never,
+              commissionRate: commissionRateFinal as never,
+              commissionAmount: commissionAmount as never,
+              status: 'pending',
+            },
+          });
+        }
+        // 邀请关系（一人一上线，已存在则跳过）
+        const existTeam = await tx.team.findUnique({ where: { inviteeId: userId } });
+        if (!existTeam) {
+          await tx.team.create({
+            data: { inviterId: sourceUserIdFinal, inviteeId: userId, level: 1 },
+          });
+          if (grandfatherIdFinal && grandfatherIdFinal !== userId) {
+            await tx.team.create({
+              data: { inviterId: grandfatherIdFinal, inviteeId: userId, level: 2 },
+            });
+          }
+        }
       }
 
       return o;

@@ -1,0 +1,150 @@
+/**
+ * 设备品牌元数据（V0.1.25，参考图 2770）
+ *
+ * 前后端共用：后端 device.myBindings 返回、小程序设备绑定页展示。
+ * 绑定方式：ble(蓝牙直连) / oauth(厂商授权) / werun(微信运动)
+ *
+ * 设计意图：品牌列表只在此一处定义（DRY），后端按 vendor 关联 DeviceBinding，
+ * 前端按 category 分组渲染。
+ */
+
+export type DeviceCategory = 'bracelet' | 'watch' | 'strap' | 'app';
+export type DeviceConnectionType = 'ble' | 'oauth' | 'werun';
+
+export interface DeviceBrand {
+  /** 唯一标识（对应 DeviceBinding.vendor） */
+  key: string;
+  /** 中文展示名 */
+  name: string;
+  category: DeviceCategory;
+  connectionType: DeviceConnectionType;
+  /** 是否当前可绑定（false = 敬请期待，前端 feature-gate 占位） */
+  available: boolean;
+  /** 一句话描述 */
+  desc: string;
+}
+
+/**
+ * 设备品牌清单（按设计稿 2770 + schema vendor 枚举对齐）
+ *
+ * MVP 可用（available=true）：ble(通用蓝牙直连) / garmin(已有佳明数据) / werun(微信运动)
+ * 其余品牌占位"敬请期待"——等厂商 OAuth 资质到位后逐个开放
+ */
+export const DEVICE_BRANDS: DeviceBrand[] = [
+  // ===== 蓝牙直连（标准 BLE 心率服务 0x180D，通用）=====
+  {
+    key: 'ble',
+    name: '蓝牙心率设备',
+    category: 'strap',
+    connectionType: 'ble',
+    available: true,
+    desc: '蓝牙手环 / 心率带 / 智能手表（标准 BLE 心率服务）',
+  },
+  // ===== 品牌手表（OAuth 厂商授权）=====
+  {
+    key: 'garmin',
+    name: '佳明 GARMIN',
+    category: 'watch',
+    connectionType: 'oauth',
+    available: true,
+    desc: 'Forerunner / Fenix 系列（BLE 实时心率 + OAuth 历史数据）',
+  },
+  {
+    key: 'coros',
+    name: '高驰 COROS',
+    category: 'watch',
+    connectionType: 'oauth',
+    available: false,
+    desc: 'PACE / APEX 系列',
+  },
+  {
+    key: 'huawei',
+    name: '华为运动健康',
+    category: 'watch',
+    connectionType: 'oauth',
+    available: false,
+    desc: '华为手表 / 手环',
+  },
+  {
+    key: 'suunto',
+    name: '颂拓 Suunto',
+    category: 'watch',
+    connectionType: 'oauth',
+    available: false,
+    desc: 'Suunto 9 / 5 系列（含海外用户绑定）',
+  },
+  // ===== 手环 =====
+  {
+    key: 'xiaomi',
+    name: '小米手环',
+    category: 'bracelet',
+    connectionType: 'ble',
+    available: true,
+    desc: 'Mi Band 系列（BLE 心率 + 电量）',
+  },
+  {
+    key: 'honor',
+    name: '荣耀手环',
+    category: 'bracelet',
+    connectionType: 'ble',
+    available: false,
+    desc: '荣耀手环系列',
+  },
+  // ===== 健康 App =====
+  {
+    key: 'werun',
+    name: '微信运动',
+    category: 'app',
+    connectionType: 'werun',
+    available: true,
+    desc: '同步 30 天步数',
+  },
+  {
+    key: 'zepp',
+    name: '欢太健康',
+    category: 'app',
+    connectionType: 'oauth',
+    available: false,
+    desc: '欢太 / Zepp 健康 App',
+  },
+];
+
+/**
+ * BLE 设备名品牌识别规则（V0.1.33，参考图 2770）
+ *
+ * 用于扫描结果自动识别品牌（佳明手表 / 小米手环）。
+ * 设备广播名按正则匹配；未中返 'ble'（通用蓝牙），前端弹手选兜底。
+ * 连接后读 0x180A Manufacturer Name String 二次验证（更权威）。
+ *
+ * 单一数据源：前后端共用（前端扫描识别 + 后端 vendor 校验）。
+ */
+export const BLE_VENDOR_PATTERNS: Record<string, RegExp[]> = {
+  garmin: [/garmin/i, /forerunner/i, /fenix/i, /vivoactive/i, /edge/i],
+  xiaomi: [/mi\s*band/i, /xiaomi/i, /小米/i, /redmi/i],
+};
+
+/** BLE 品牌识别 type（对应 DeviceBinding.vendor） */
+export type BleVendor = 'ble' | 'garmin' | 'xiaomi';
+
+/**
+ * 按设备名识别 BLE 品牌
+ *
+ * @param name 设备广播名（如 "Forerunner 245"、"Mi Band 7"）
+ * @returns 'garmin' | 'xiaomi' | 'ble'（未识别，前端弹手选）
+ */
+export function matchBleVendor(name: string): BleVendor {
+  for (const [vendor, patterns] of Object.entries(BLE_VENDOR_PATTERNS)) {
+    if (patterns.some((re) => re.test(name))) {
+      return vendor as BleVendor;
+    }
+  }
+  return 'ble';
+}
+
+/** 按分类分组的中文标签（前端 Tab 用） */
+export const DEVICE_CATEGORY_LABEL: Record<DeviceCategory, string> = {
+  bracelet: '手环',
+  watch: '手表',
+  strap: '心率带',
+  app: '健康 App',
+};

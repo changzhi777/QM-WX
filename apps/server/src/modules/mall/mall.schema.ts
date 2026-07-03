@@ -43,6 +43,8 @@ export const CreateOrderInputSchema = z.object({
     })
     .optional(),
   pointsUsed: z.number().int().min(0).default(0),
+  // V0.1.24 分销：邀请码（推广来源，有效则落 sourceUserId + DistrOrder）
+  inviteCode: z.string().min(4).max(16).optional(),
 });
 export type CreateOrderInput = z.infer<typeof CreateOrderInputSchema>;
 

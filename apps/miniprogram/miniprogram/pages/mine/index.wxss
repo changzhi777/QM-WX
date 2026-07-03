@@ -28,6 +28,18 @@
 .list-item:last-child { border-bottom: none; }
 .list-item .lbl { color: var(--text-primary); }
 .list-item .arrow { color: var(--text-tertiary); }
+.list-item .right { display: flex; align-items: center; gap: 12rpx; }
+.badge {
+  background: #ff4d4f;
+  color: #fff;
+  font-size: 22rpx;
+  min-width: 32rpx;
+  height: 32rpx;
+  line-height: 32rpx;
+  border-radius: 16rpx;
+  padding: 0 8rpx;
+  text-align: center;
+}
 
 .list-item.contact { background: #fff; }
 .list-item.contact::after { border: none; }

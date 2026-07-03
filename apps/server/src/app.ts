@@ -34,6 +34,14 @@ import { cartRoutes } from './modules/cart/cart.routes.js';
 import { pointsRoutes } from './modules/points/points.routes.js';
 import { addressRoutes } from './modules/address/address.routes.js';
 import { couponRoutes } from './modules/coupon/coupon.routes.js';
+import { distributionRoutes } from './modules/distribution/distribution.routes.js';
+import { trainingRoutes } from './modules/training/training.routes.js';
+import { shoesRoutes } from './modules/shoes/shoes.routes.js';
+import { goalRoutes } from './modules/goal/goal.routes.js';
+import { favoriteRoutes } from './modules/favorite/favorite.routes.js';
+import { feedRoutes } from './modules/feed/feed.routes.js';
+import { notificationRoutes } from './modules/notification/notification.routes.js';
+import { followRoutes } from './modules/follow/follow.routes.js';
 import { BusinessError } from './common/errors.js';
 
 export async function buildApp() {
@@ -117,6 +125,14 @@ export async function buildApp() {
   await app.register(pointsRoutes, { prefix: '/api/points' });
   await app.register(addressRoutes, { prefix: '/api/address' });
   await app.register(couponRoutes, { prefix: '/api/coupon' });
+  await app.register(distributionRoutes, { prefix: '/api/distribution' });
+  await app.register(trainingRoutes, { prefix: '/api/training' });
+  await app.register(shoesRoutes, { prefix: '/api/shoes' });
+  await app.register(goalRoutes, { prefix: '/api/goal' });
+  await app.register(favoriteRoutes, { prefix: '/api/favorite' });
+  await app.register(feedRoutes, { prefix: '/api/feed' });
+  await app.register(notificationRoutes, { prefix: '/api/notification' });
+  await app.register(followRoutes, { prefix: '/api/follow' });
   await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.register(wxpayRoutes, { prefix: '/api/wxpay' });
 

@@ -1,0 +1,68 @@
+<view class="page">
+  <!-- 搜索栏 -->
+  <view class="search" bindtap="goSearch">
+    <text class="search-ico">🔍</text>
+    <text class="search-ph">搜索商品</text>
+  </view>
+
+  <!-- 3 核心入口（天天跑 / 活动报名 / 立即打卡） -->
+  <view class="entries">
+    <view class="entry entry-run" bindtap="goSport">
+      <view class="entry-title">天天跑</view>
+      <view class="entry-sub">连续打卡赢好礼</view>
+    </view>
+    <view class="entry entry-act" bindtap="goActivity">
+      <view class="entry-title">活动报名</view>
+      <view class="entry-sub">赛事 / 本地服务</view>
+    </view>
+    <view class="entry entry-ck" bindtap="goSport">
+      <view class="entry-title">立即打卡</view>
+      <view class="entry-sub">记录今日运动</view>
+    </view>
+  </view>
+
+  <!-- 促销横幅 -->
+  <view class="banner" bindtap="goMall">
+    <text class="banner-txt">商城实付 69 元包邮 · 跑者专属优惠</text>
+    <text class="banner-act">去逛逛 ›</text>
+  </view>
+
+  <!-- 功能模块宫格 -->
+  <view class="grid">
+    <view class="grid-item" bindtap="comingSoon">
+      <view class="grid-ico">🎁</view><view class="grid-txt">进群有礼</view>
+    </view>
+    <view class="grid-item" bindtap="comingSoon">
+      <view class="grid-ico">🛒</view><view class="grid-txt">团购定制</view>
+    </view>
+    <view class="grid-item" bindtap="goSport">
+      <view class="grid-ico">🏆</view><view class="grid-txt">报名赢大奖</view>
+    </view>
+    <view class="grid-item" bindtap="comingSoon">
+      <view class="grid-ico">⭐</view><view class="grid-txt">新品体验官</view>
+    </view>
+    <view class="grid-item" bindtap="goActivity">
+      <view class="grid-ico">📅</view><view class="grid-txt">马拉松日历</view>
+    </view>
+  </view>
+
+  <!-- 新人专享商品流 -->
+  <view class="section">
+    <view class="section-hd">
+      <text class="section-title">新人专享礼</text>
+      <text class="section-sub">超值优惠 限时专享</text>
+    </view>
+    <view class="loading" wx:if="{{loading}}">加载中…</view>
+    <view wx:elif="{{products.length === 0}}" class="empty">暂无商品</view>
+    <view wx:else class="goods">
+      <view wx:for="{{products}}" wx:key="id" class="good" data-id="{{item.id}}" bindtap="goProduct">
+        <image class="good-img" src="{{item.images[0] || '/images/default-product.png'}}" mode="aspectFill" />
+        <view class="good-name">{{item.name}}</view>
+        <view class="good-price-row">
+          <text class="good-price">¥{{item.price}}</text>
+          <text class="good-orig" wx:if="{{item.originalPrice}}">¥{{item.originalPrice}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

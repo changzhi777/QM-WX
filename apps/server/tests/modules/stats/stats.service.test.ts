@@ -10,7 +10,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('src/infra/prisma.js', () => ({
   prisma: {
-    checkin: { aggregate: vi.fn() },
+    checkin: { aggregate: vi.fn(), findFirst: vi.fn(), groupBy: vi.fn() },
+    enrollment: { findMany: vi.fn() },
   },
 }));
 
@@ -90,5 +91,124 @@ describe('statsService.myRunnerStats', () => {
 
     // 只第一次查 3 次（Promise.all），第二次命中缓存 0 次
     expect(mockedPrisma.checkin.aggregate).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('statsService.myAnnualReport (V0.1.27)', () => {
+  it('年汇总 + 月度分布（groupBy 切月）+ 最长单次 + 活跃天数', async () => {
+    // Promise.all 顺序：yearAgg(aggregate) → longestRun(findFirst) → daily(groupBy)
+    mockedPrisma.checkin.aggregate.mockResolvedValueOnce({
+      _sum: { distance: 55, durationSec: 18000 },
+      _count: 6,
+    } as never);
+    mockedPrisma.checkin.findFirst.mockResolvedValueOnce({
+      distance: 30,
+      date: '2026-03-15',
+    } as never);
+    mockedPrisma.checkin.groupBy.mockResolvedValueOnce([
+      { date: '2026-01-05', _sum: { distance: 10 }, _count: 2 },
+      { date: '2026-02-10', _sum: { distance: 15 }, _count: 3 },
+      { date: '2026-03-15', _sum: { distance: 30 }, _count: 1 },
+    ] as never);
+
+    const r = await statsService.myAnnualReport('u1', { year: 2026 });
+
+    expect(r.year).toBe(2026);
+    expect(r.yearDistance).toBe(55);
+    expect(r.yearCheckins).toBe(6);
+    expect(r.longestRun).toEqual({ distance: 30, date: '2026-03-15' });
+    expect(r.activeDays).toBe(3); // daily 长度
+    // 月度聚合（按 date 切片月份）
+    expect(r.monthly).toHaveLength(12);
+    expect(r.monthly[0]).toEqual({ month: 1, distance: 10, count: 2 });
+    expect(r.monthly[1]).toEqual({ month: 2, distance: 15, count: 3 });
+    expect(r.monthly[2]).toEqual({ month: 3, distance: 30, count: 1 });
+    expect(r.monthly[3]).toEqual({ month: 4, distance: 0, count: 0 });
+  });
+
+  it('无数据 → longestRun null + monthly 全 0 + activeDays 0', async () => {
+    mockedPrisma.checkin.aggregate.mockResolvedValueOnce({
+      _sum: { distance: null, durationSec: null },
+      _count: 0,
+    } as never);
+    mockedPrisma.checkin.findFirst.mockResolvedValueOnce(null);
+    mockedPrisma.checkin.groupBy.mockResolvedValueOnce([]);
+
+    const r = await statsService.myAnnualReport('u1', { year: 2026 });
+
+    expect(r.yearDistance).toBe(0);
+    expect(r.yearCheckins).toBe(0);
+    expect(r.longestRun).toBeNull();
+    expect(r.activeDays).toBe(0);
+    expect(r.monthly).toHaveLength(12);
+    expect(r.monthly.every((m) => m.distance === 0 && m.count === 0)).toBe(true);
+  });
+
+  it('默认 year = 今年（不传 year）', async () => {
+    mockedPrisma.checkin.aggregate.mockResolvedValueOnce({
+      _sum: { distance: 0, durationSec: 0 },
+      _count: 0,
+    } as never);
+    mockedPrisma.checkin.findFirst.mockResolvedValueOnce(null);
+    mockedPrisma.checkin.groupBy.mockResolvedValueOnce([]);
+
+    const r = await statsService.myAnnualReport('u1', {});
+    expect(r.year).toBe(new Date().getFullYear());
+  });
+});
+
+describe('statsService.myCertificates (V0.1.28)', () => {
+  it('里程碑证书（达标的）+ 赛事证书 + 下一里程碑', async () => {
+    // 总跑量 600 → 达 100/500，未达 1000
+    mockedPrisma.checkin.aggregate.mockResolvedValueOnce({
+      _sum: { distance: 600 },
+      _count: 80,
+    } as never);
+    mockedPrisma.enrollment.findMany.mockResolvedValueOnce([
+      {
+        id: 'e1',
+        contentId: 'c1',
+        status: 'confirmed',
+        content: { title: '长沙马拉松', date: '2026-10-01', location: '长沙', cover: null },
+      },
+    ] as never);
+
+    const r = await statsService.myCertificates('u1');
+
+    expect(r.totalDistance).toBe(600);
+    expect(r.totalCheckins).toBe(80);
+    expect(r.milestones).toHaveLength(2); // 100 + 500
+    expect(r.milestones.map((m) => m.km)).toEqual([100, 500]);
+    expect(r.marathons).toHaveLength(1);
+    expect(r.marathons[0].title).toBe('长沙马拉松');
+    expect(r.marathons[0].status).toBe('confirmed');
+    expect(r.nextMilestone?.km).toBe(1000); // 下一里程碑
+  });
+
+  it('总跑量 0 → 无里程碑证书 + nextMilestone=100', async () => {
+    mockedPrisma.checkin.aggregate.mockResolvedValueOnce({
+      _sum: { distance: null },
+      _count: 0,
+    } as never);
+    mockedPrisma.enrollment.findMany.mockResolvedValueOnce([]);
+
+    const r = await statsService.myCertificates('u1');
+
+    expect(r.milestones).toHaveLength(0);
+    expect(r.marathons).toHaveLength(0);
+    expect(r.nextMilestone?.km).toBe(100);
+  });
+
+  it('总跑量 ≥ 3000 → 全部里程碑达成 + nextMilestone null', async () => {
+    mockedPrisma.checkin.aggregate.mockResolvedValueOnce({
+      _sum: { distance: 3500 },
+      _count: 500,
+    } as never);
+    mockedPrisma.enrollment.findMany.mockResolvedValueOnce([]);
+
+    const r = await statsService.myCertificates('u1');
+
+    expect(r.milestones).toHaveLength(4); // 100/500/1000/3000 全达
+    expect(r.nextMilestone).toBeNull();
   });
 });

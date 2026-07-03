@@ -1,0 +1,64 @@
+<view class="page">
+  <view class="list">
+    <view wx:if="{{feeds.length === 0 && !loading}}" class="empty">
+      <view class="empty-text">还没有动态</view>
+      <view class="empty-tip">分享你的第一次跑步吧</view>
+    </view>
+
+    <view class="feed-card" wx:for="{{feeds}}" wx:key="id">
+      <view class="feed-head" data-uid="{{item.user.id}}" bindtap="onTapUser">
+        <image class="avatar" src="{{item.user.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
+        <view class="user-info">
+          <view class="nickname">{{item.user.nickname || '匿名跑者'}}</view>
+          <view class="time">{{item.createdAt}}</view>
+        </view>
+      </view>
+      <view class="feed-content">{{item.content}}</view>
+      <view class="feed-images" wx:if="{{item.images.length > 0}}">
+        <image wx:for="{{item.images}}" wx:for-item="img" wx:key="*this" class="feed-img" src="{{img}}" mode="aspectFill" />
+      </view>
+      <view class="feed-run" wx:if="{{item.distanceKm}}">
+        <text class="run-icon">🏃</text> {{item.distanceKm}} km
+      </view>
+      <view class="feed-actions">
+        <view class="action {{item.liked ? 'liked' : ''}}" data-id="{{item.id}}" bindtap="onToggleLike">
+          {{item.liked ? '❤️' : '🤍'}} {{item.likeCount}}
+        </view>
+        <view class="action" data-id="{{item.id}}" bindtap="onOpenComment">
+          💬 {{item.commentCount}}
+        </view>
+      </view>
+    </view>
+
+    <view class="loading-more" wx:if="{{loading && feeds.length > 0}}">加载中...</view>
+    <view class="no-more" wx:if="{{!hasMore && feeds.length > 0}}">没有更多了</view>
+  </view>
+
+  <view class="loading" wx:if="{{loading && feeds.length === 0}}">加载中...</view>
+
+  <view class="fab" bindtap="onPublish">+ 发布</view>
+
+  <!-- 发布弹层 -->
+  <view class="mask" wx:if="{{publishVisible}}" bindtap="closePublish">
+    <view class="form-panel" catchtap="">
+      <view class="form-title">发布动态</view>
+      <textarea class="textarea" value="{{publishContent}}" bindinput="onInputPublish" placeholder="分享你的跑步心得..." maxlength="500" />
+      <view class="form-actions">
+        <button class="btn-cancel" bindtap="closePublish">取消</button>
+        <button class="btn-submit" bindtap="onSubmitPublish" loading="{{publishing}}">发布</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 评论弹层 -->
+  <view class="mask" wx:if="{{commentVisible}}" bindtap="closeComment">
+    <view class="form-panel" catchtap="">
+      <view class="form-title">评论</view>
+      <textarea class="textarea" value="{{commentContent}}" bindinput="onInputComment" placeholder="说点什么..." maxlength="200" />
+      <view class="form-actions">
+        <button class="btn-cancel" bindtap="closeComment">取消</button>
+        <button class="btn-submit" bindtap="onSubmitComment">发送</button>
+      </view>
+    </view>
+  </view>
+</view>

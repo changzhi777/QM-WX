@@ -18,6 +18,8 @@ export const CheckinInputSchema = z
     heartRate: z.number().int().min(30).max(220).optional(),
     cadence: z.number().int().min(0).max(300).optional(),
     groupId: z.string().optional(),
+    /** 关联跑鞋（V0.1.26，打卡时选 → 跑鞋自动累计里程） */
+    shoeId: z.string().optional(),
     /** ⚠️ 前端可以传，但服务端忽略；防作弊 */
     points: z.number().int().optional(),
   })

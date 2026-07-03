@@ -68,6 +68,7 @@ export const sportRepo = {
       cadence: number | null;
       points: number;
       date: string;
+      shoeId: string | null; // V0.1.26 关联跑鞋
     },
   ) {
     return tx.checkin.create({ data });

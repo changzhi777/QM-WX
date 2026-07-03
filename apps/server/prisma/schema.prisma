@@ -47,6 +47,23 @@ model User {
   signinRecords     SigninRecord[]
   addresses         Address[]
   coupons           Coupon[]
+  shoes             Shoe[]   // V0.1.26 跑鞋
+  goals             Goal[]   // V0.1.28 跑步目标
+  favorites         Favorite[] // V0.1.29 收藏
+  feeds             Feed[]     // V0.1.30 动态
+  feedLikes         FeedLike[] // V0.1.30 点赞
+  feedComments      FeedComment[] // V0.1.30 评论
+  notifications     Notification[] // V0.1.31 收到的通知（接收者视角）
+  notifActions      Notification[] @relation("NotifActor") // V0.1.31 触发的通知（actor 视角）
+  following         Follow[] @relation("Follower") // V0.1.32 我关注的人（follower 视角）
+  followers         Follow[] @relation("Followee") // V0.1.32 关注我的人（followee 视角）
+  // 分销（V0.1.24）
+  inviteCode        String?  @unique
+  distributorLevel  String   @default("V0") // V0 | V1 | V2 | V3
+  distributionOrders DistributionOrder[]
+  teamInvites        Team[]          @relation("TeamInviter")
+  teamInvitees       Team[]          @relation("TeamInvitee")
+  commissionLogs     CommissionLog[]
 
   @@index([openid])
   @@index([isBanned])
@@ -67,10 +84,12 @@ model Checkin {
   dataSource       String   @default("manual") // manual | garmin
   garminActivityId String?  @unique // 佳明去重键（null = 手动打卡）
   sportType        String? // run | hike | ride | other
+  shoeId           String?  // 关联跑鞋（打卡时选 → 跑鞋自动累计里程，V0.1.26）
   createdAt        DateTime @default(now())
 
   user  User   @relation(fields: [userId], references: [id])
   group Group? @relation(fields: [groupId], references: [id])
+  shoe  Shoe?  @relation(fields: [shoeId], references: [id])
 
   @@index([userId, date])
   @@index([groupId, date])
@@ -159,12 +178,16 @@ model Order {
   prepayId        String?
   wxTransactionId String?     @unique // 幂等 key
   paidAt          DateTime?
+  // V0.1.24 分销：推广来源分销人（带 inviteCode 下单时落）
+  sourceUserId    String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
-  user User @relation(fields: [userId], references: [id])
+  user              User                @relation(fields: [userId], references: [id])
+  distributionOrder DistributionOrder?
 
   @@index([userId, createdAt])
+  @@index([sourceUserId])
 }
 
 model OrderItem {
@@ -205,6 +228,147 @@ model SigninRecord {
 
   @@unique([userId, date]) // 防同日重复签
   @@index([userId])
+}
+
+// ===== 跑鞋（V0.1.26，跑者向 — 里程管理 + 更换提醒）=====
+// 打卡时关联跑鞋 → currentKm 自动累计 → 达 thresholdKm 提醒更换（防受伤）
+model Shoe {
+  id           String    @id @default(cuid())
+  userId       String
+  brand        String // 品牌（Nike / 必迈 / 路征 ...）
+  model        String // 型号（如 Vaporfly Next%）
+  nickname     String?  // 用户起的名（如"战靴一号"）
+  currentKm    Float    @default(0) // 当前累计里程（km，打卡自动累计）
+  thresholdKm  Float    @default(800) // 更换阈值（默认 800km，防受伤）
+  status       String    @default("active") // active | retired
+  purchasedAt  DateTime?
+  note         String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id])
+  checkins Checkin[] // 关联打卡（里程来源）
+
+  @@index([userId, status])
+}
+
+// ===== 跑步目标（V0.1.28，跑者向 — 月度/年度/自定义 + 进度跟踪）=====
+// 进度由 Checkin aggregate 动态算（periodStart-End 范围内 distance 之和）
+model Goal {
+  id             String   @id @default(cuid())
+  userId         String
+  type           String   // monthly | yearly | custom
+  title          String?  // 自定义标题（optional）
+  targetDistance Float    // 目标距离 km
+  periodStart    DateTime // 周期开始（东八区 0 点）
+  periodEnd      DateTime // 周期结束（exclusive）
+  status         String   @default("active") // active | archived
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+}
+
+// ===== 收藏（V0.1.29，社交向 — Content/Product 收藏）=====
+// targetType: content | product；unique 防重复收藏
+model Favorite {
+  id         String   @id @default(cuid())
+  userId     String
+  targetType String   // content | product
+  targetId   String
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, targetType, targetId])
+  @@index([userId, targetType])
+}
+
+// ===== 关注关系（V0.1.32，社交向深化 — 关注/粉丝）=====
+// followerId 关注 followeeId；unique 防重；onDelete Cascade（任一用户删除→关系级联）
+model Follow {
+  id         String   @id @default(cuid())
+  followerId String // 关注者
+  followeeId String // 被关注者
+  createdAt  DateTime @default(now())
+
+  follower User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followee User @relation("Followee", fields: [followeeId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followeeId]) // 防重复关注
+  @@index([followeeId]) // 查粉丝列表
+  @@index([followerId]) // 查关注列表
+}
+
+// ===== 通知（V0.1.31，社交向 — 点赞/评论/系统消息提醒）=====
+// feed.like / feed.comment 触发时落库；自己触发自己不发（userId === actorId）
+model Notification {
+  id         String   @id @default(cuid())
+  userId     String // 接收者（看到通知的人）
+  actorId    String // 触发者（点赞/评论的人）
+  type       String // like | comment | follow | system
+  targetType String? // feed | goal | ...（点击跳转用）
+  targetId   String? // 对应实体 id（feedId 等）
+  content    String? // 通知文案/评论摘要
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  actor User @relation("NotifActor", fields: [actorId], references: [id])
+
+  @@index([userId, isRead, createdAt])
+  @@index([userId, createdAt])
+}
+
+// ===== 动态（V0.1.30，社交向 — 运动动态发布/点赞/评论）=====
+model Feed {
+  id           String   @id @default(cuid())
+  userId       String
+  content      String   // 文字内容（最长 500）
+  images       String[] // 图片 URL 列表（最多 9）
+  checkinId    String?  // 关联打卡（可选，运动动态）
+  distanceKm   Float?   // 冗余跑量（避免 join，展示用）
+  likeCount    Int      @default(0)
+  commentCount Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user     User         @relation(fields: [userId], references: [id])
+  likes    FeedLike[]
+  comments FeedComment[]
+
+  @@index([createdAt])
+  @@index([userId, createdAt])
+}
+
+// 动态点赞（unique 防重复）
+model FeedLike {
+  id        String   @id @default(cuid())
+  feedId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  feed Feed @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([feedId, userId])
+  @@index([feedId])
+}
+
+// 动态评论
+model FeedComment {
+  id        String   @id @default(cuid())
+  feedId    String
+  userId    String
+  content   String   // 评论内容（最长 200）
+  createdAt DateTime @default(now())
+
+  feed Feed @relation(fields: [feedId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([feedId, createdAt])
 }
 
 model Wallet {
@@ -272,6 +436,56 @@ model Coupon {
   user User @relation(fields: [userId], references: [id])
 
   @@index([userId, status])
+}
+
+// ===== 分销（V0.1.24，方案 1 全持久化）=====
+// 推广订单：分销人 ↔ 订单关联 + 佣金快照（下单时落 pending，支付回调结算 settled）
+model DistributionOrder {
+  id               String    @id @default(cuid())
+  userId           String // 分销人（拿佣金的）
+  orderId          String    @unique // 关联订单（一单一记）
+  orderAmount      Decimal   @db.Decimal(10, 2) // 订单实付金额快照
+  commissionRate   Decimal   @db.Decimal(4, 3) // 佣金比例快照（0.100=10%）
+  commissionAmount Decimal   @db.Decimal(10, 2) // 佣金金额快照
+  status           String    @default("pending") // pending | settled | cancelled
+  settledAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([userId, status])
+  @@index([userId, createdAt])
+}
+
+// 邀请关系（团队树，inviteeId 一人一上线）
+model Team {
+  id         String   @id @default(cuid())
+  inviterId  String // 邀请人（上线）
+  inviteeId  String   @unique // 被邀请人（下线，一人仅一个直接上线）
+  level      Int      @default(1) // 1=直推 2=间推（冗余便于查询）
+  joinedAt   DateTime @default(now())
+
+  inviter User @relation("TeamInviter", fields: [inviterId], references: [id])
+  invitee User @relation("TeamInvitee", fields: [inviteeId], references: [id])
+
+  @@index([inviterId])
+}
+
+// 佣金流水（分销专用；正=结算入账，负=退款冲红）
+model CommissionLog {
+  id           String   @id @default(cuid())
+  userId       String // 归属分销人
+  orderId      String? // 关联订单（结算/冲红同单）
+  amount       Decimal  @db.Decimal(10, 2) // 正=入账 负=扣减
+  type         String // settle | clawback | adjust
+  balanceAfter Decimal  @db.Decimal(10, 2) // 入账后佣金累计快照
+  note         String?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
 }
 
 // ===== 内容（赛事/酒店/景区/餐饮/乡村振兴 统一）=====

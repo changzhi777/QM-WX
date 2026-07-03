@@ -22,6 +22,15 @@ const mockPrisma = vi.hoisted(() => ({
 
 const mockInvalidate = vi.fn();
 vi.mock('src/infra/prisma.js', () => ({ prisma: mockPrisma }));
+// Mock Redis — 避免 ioredis 真实连接 unhandled error（admin 缓存失效走 Cache.delByPattern）
+vi.mock('src/infra/redis.js', () => ({
+  redis: {
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue('OK'),
+    del: vi.fn().mockResolvedValue(1),
+    scan: vi.fn().mockResolvedValue(['0', []]),
+  },
+}));
 vi.mock('src/common/middleware/feature-gate.js', () => ({
   featureGatePlugin: (app: import('fastify').FastifyInstance) => app, // no-op
   invalidateFeatureFlagsCache: () => mockInvalidate(),

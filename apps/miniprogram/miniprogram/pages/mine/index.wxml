@@ -61,6 +61,14 @@
 
   <!-- 功能列表 -->
   <view class="list bg-white mt-2">
+    <view class="list-item" bindtap="goNotification">
+      <view class="lbl">消息中心</view>
+      <view class="right">
+        <view class="badge" wx:if="{{notifUnread > 0}}">{{notifUnread > 99 ? '99+' : notifUnread}}</view>
+        <view class="arrow">›</view>
+      </view>
+    </view>
+
     <feature-gate flag="wallet">
       <view class="list-item" bindtap="goWallet">
         <view class="lbl">我的钱包</view>
@@ -110,13 +118,68 @@
       <view class="arrow">›</view>
     </view>
 
+    <view class="list-item" bindtap="goDistribution">
+      <view class="lbl">分销中心</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goTiantian">
+      <view class="lbl">天天跑</view>
+      <view class="arrow">›</view>
+    </view>
+
     <view class="list-item" bindtap="goContent">
       <view class="lbl">赛事 / 本地服务</view>
       <view class="arrow">›</view>
     </view>
 
+    <view class="list-item" bindtap="goFavorite">
+      <view class="lbl">我的收藏</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goFeed">
+      <view class="lbl">运动动态</view>
+      <view class="arrow">›</view>
+    </view>
+
     <view class="list-item" bindtap="goWeeklyReport">
       <view class="lbl">跑群周报</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goHealth">
+      <view class="lbl">今日健康</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goDeviceBind">
+      <view class="lbl">设备绑定</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goTraining">
+      <view class="lbl">锻炼训练</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goShoes">
+      <view class="lbl">我的跑鞋</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goAnnualReport">
+      <view class="lbl">年度报告</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goGoal">
+      <view class="lbl">跑步目标</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goCertificate">
+      <view class="lbl">我的证书</view>
       <view class="arrow">›</view>
     </view>
 

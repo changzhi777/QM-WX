@@ -13,5 +13,6 @@
 export * from './constants/feature-flags.js';
 export * from './constants/member-levels.js';
 export * from './constants/points-rules.js';
+export * from './constants/device-brands.js';
 export * from './api-contracts/endpoints.js';
 export * from './types/index.js';
