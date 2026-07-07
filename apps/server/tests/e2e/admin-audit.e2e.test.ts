@@ -135,7 +135,9 @@ describe.skipIf(skip)('admin 审计 + 黑名单 e2e', () => {
       },
     });
     expect(orderRes.statusCode).toBe(403);
-    expect(orderRes.json().msg).toMatch(/封禁|禁用/);
+    // Fastify 默认返 { message }（setErrorHandler 的 msg 可能被 Fastify 4 默认序列化覆盖）
+    const body = orderRes.json() as { msg?: string; message?: string };
+    expect(body.msg ?? body.message).toMatch(/封禁|禁用/);
 
     // 解封以便后续测试
     const unbanRes = await app.inject({
