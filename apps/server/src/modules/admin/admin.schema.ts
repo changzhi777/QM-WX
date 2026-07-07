@@ -56,6 +56,24 @@ export const ListGroupBuysSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+// ===== 训练计划（V0.1.41 配置化）=====
+export const UpsertTrainingPlanSchema = z.object({
+  id: z.string().optional(), // 有则 update
+  key: z.string().min(1), // '5k' / '10k' / 'half' / 'full' / 自定义（@unique，admin CRUD 幂等）
+  name: z.string().min(1),
+  weeks: z.number().int().min(1).max(52),
+  level: z.enum(['beginner', 'intermediate', 'challenge', 'extreme']),
+  goal: z.string().min(1),
+  desc: z.string().min(1),
+  weeklyMileage: z.string().min(1),
+  targetKm: z.number().positive(), // 计划总目标跑量 km（进度分母）
+  status: z.enum(['active', 'archived']).optional(),
+});
+
+export const ListTrainingPlansSchema = z.object({
+  status: z.enum(['active', 'archived']).optional(),
+});
+
 // ===== 配置 =====
 export const SetConfigSchema = z.object({
   id: z.enum(['feature_flags', 'member_levels', 'points_rules']),
@@ -145,6 +163,8 @@ export type UpsertContentInput = z.infer<typeof UpsertContentSchema>;
 export type UpsertProductInput = z.infer<typeof UpsertProductSchema>;
 export type UpsertGroupBuyInput = z.infer<typeof UpsertGroupBuySchema>;
 export type ListGroupBuysInput = z.infer<typeof ListGroupBuysSchema>;
+export type UpsertTrainingPlanInput = z.infer<typeof UpsertTrainingPlanSchema>;
+export type ListTrainingPlansInput = z.infer<typeof ListTrainingPlansSchema>;
 export type SetConfigInput = z.infer<typeof SetConfigSchema>;
 export type ListOrdersInput = z.infer<typeof ListOrdersSchema>;
 export type UpdateOrderStatusInput = z.infer<typeof UpdateOrderStatusSchema>;

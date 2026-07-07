@@ -10,8 +10,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('src/infra/prisma.js', () => ({
   prisma: {
-    checkin: { findMany: vi.fn() },
+    checkin: { findMany: vi.fn(), aggregate: vi.fn() },
     rawActivity: { findMany: vi.fn() },
+    trainingPlan: { findMany: vi.fn(), findUnique: vi.fn() },
+    userPlanEnrollment: { upsert: vi.fn(), findUnique: vi.fn(), deleteMany: vi.fn() },
   },
 }));
 
@@ -44,13 +46,83 @@ beforeEach(() => {
   setupMockRedis();
 });
 
-describe('trainingService.myPlans (V0.1.25)', () => {
-  it('返回 4 套训练计划（5K/10K/半马/全马）', async () => {
+describe('trainingService.myPlans (V0.1.41 改读 DB)', () => {
+  it('返回 DB active 计划列表（按 weeks 升序）', async () => {
+    mockedPrisma.trainingPlan.findMany.mockResolvedValue([
+      { id: 'p1', key: '5k', name: '5公里入门', weeks: 8, level: 'beginner', goal: '完成 5 公里', desc: '...', weeklyMileage: '8-15 km/周', targetKm: 80 },
+      { id: 'p2', key: 'full', name: '全程马拉松 42K', weeks: 16, level: 'extreme', goal: '完赛全马', desc: '...', weeklyMileage: '40-60 km/周', targetKm: 800 },
+    ] as never);
+
     const r = await trainingService.myPlans();
-    expect(r.plans).toHaveLength(4);
-    expect(r.plans.map((p) => p.key)).toEqual(['5k', '10k', 'half', 'full']);
-    expect(r.plans[0]).toMatchObject({ name: '5公里入门', level: '入门' });
-    expect(r.plans[3]).toMatchObject({ name: '全程马拉松 42K', level: '极限' });
+    expect(r.plans).toHaveLength(2);
+    expect(r.plans[0]).toMatchObject({ key: '5k', level: 'beginner' });
+    expect(r.plans[1]).toMatchObject({ key: 'full', level: 'extreme' });
+    expect(mockedPrisma.trainingPlan.findMany).toHaveBeenCalledWith({
+      where: { status: 'active' },
+      orderBy: [{ weeks: 'asc' }, { createdAt: 'desc' }],
+    });
+  });
+});
+
+describe('trainingService 计划加入/进度/离开 (V0.1.41)', () => {
+  it('joinPlan：计划存在 + active → upsert enrollment（1人1活跃，切换=替换）', async () => {
+    mockedPrisma.trainingPlan.findUnique.mockResolvedValue({
+      id: 'p1', key: '5k', name: '5公里入门', status: 'active', targetKm: 80,
+    } as never);
+    mockedPrisma.userPlanEnrollment.upsert.mockResolvedValue({
+      id: 'e1', planId: 'p1', joinedAt: new Date('2026-07-01'),
+    } as never);
+
+    const r = await trainingService.joinPlan('u1', { planId: 'p1' });
+    expect(r.planId).toBe('p1');
+    expect(r.planName).toBe('5公里入门');
+    expect(mockedPrisma.userPlanEnrollment.upsert).toHaveBeenCalledWith({
+      where: { userId: 'u1' },
+      create: { userId: 'u1', planId: 'p1' },
+      update: { planId: 'p1', joinedAt: expect.any(Date) },
+    });
+  });
+
+  it('joinPlan：计划不存在 → notFound', async () => {
+    mockedPrisma.trainingPlan.findUnique.mockResolvedValue(null);
+    await expect(trainingService.joinPlan('u1', { planId: 'x' })).rejects.toThrow('计划不存在');
+  });
+
+  it('joinPlan：计划 archived → badRequest 已下架', async () => {
+    mockedPrisma.trainingPlan.findUnique.mockResolvedValue({ id: 'p1', status: 'archived' } as never);
+    await expect(trainingService.joinPlan('u1', { planId: 'p1' })).rejects.toThrow('已下架');
+  });
+
+  it('myActivePlan：无加入记录 → plan:null', async () => {
+    mockedPrisma.userPlanEnrollment.findUnique.mockResolvedValue(null);
+    const r = await trainingService.myActivePlan('u1');
+    expect(r.plan).toBeNull();
+  });
+
+  it('myActivePlan：含进度（joinedAt 起 Checkin run 累计 / targetKm）', async () => {
+    const joinedAt = new Date('2026-07-01');
+    mockedPrisma.userPlanEnrollment.findUnique.mockResolvedValue({
+      userId: 'u1', joinedAt,
+      plan: { id: 'p1', key: '5k', name: '5公里入门', weeks: 8, level: 'beginner', goal: 'g', desc: 'd', weeklyMileage: 'w', targetKm: 80 },
+    } as never);
+    mockedPrisma.checkin.aggregate.mockResolvedValue({ _sum: { distance: 40 } } as never);
+
+    const r = await trainingService.myActivePlan('u1');
+    expect(r.plan).toMatchObject({ key: '5k', targetKm: 80 });
+    expect(r.currentDistance).toBe(40);
+    expect(r.percent).toBe(50); // 40/80
+    expect(r.completed).toBe(false);
+    expect(mockedPrisma.checkin.aggregate).toHaveBeenCalledWith({
+      where: { userId: 'u1', sportType: 'run', createdAt: { gte: joinedAt } },
+      _sum: { distance: true },
+    });
+  });
+
+  it('leavePlan：deleteMany 幂等（不存在也 ok）', async () => {
+    mockedPrisma.userPlanEnrollment.deleteMany.mockResolvedValue({ count: 0 } as never);
+    const r = await trainingService.leavePlan('u1');
+    expect(r.ok).toBe(true);
+    expect(mockedPrisma.userPlanEnrollment.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u1' } });
   });
 });
 

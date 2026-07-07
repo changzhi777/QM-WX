@@ -5,7 +5,7 @@
  */
 import { z } from 'zod';
 
-/** 训练计划查询（无入参，返 4 套模板） */
+/** 训练计划查询（无入参，返 active 计划列表） */
 export const MyPlansQuerySchema = z.object({}).optional();
 export type MyPlansQuery = z.infer<typeof MyPlansQuerySchema>;
 
@@ -15,7 +15,13 @@ export const MySportRecordsQuerySchema = z.object({
 });
 export type MySportRecordsQuery = z.infer<typeof MySportRecordsQuerySchema>;
 
+/** 加入训练计划（V0.1.41） */
+export const JoinPlanSchema = z.object({
+  planId: z.string().min(1),
+});
+export type JoinPlanInput = z.infer<typeof JoinPlanSchema>;
+
 export const TrainingActionBodySchema = z.object({
-  action: z.enum(['myPlans', 'mySportRecords']),
+  action: z.enum(['myPlans', 'mySportRecords', 'joinPlan', 'myActivePlan', 'leavePlan']),
   payload: z.unknown().optional(),
 });

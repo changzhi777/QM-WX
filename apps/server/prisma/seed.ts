@@ -45,6 +45,14 @@ const SEED_PRODUCTS = [
   { name: '青沐运动毛巾', category: '配件', brand: '青沐', price: 29.0, memberDiscount: 0.95, description: '超细纤维 + 强吸水 + 便携挂环', stock: 400, images: [] },
 ];
 
+// V0.1.41 训练计划模板（替 training.service 原硬编码常量；按 key 幂等）
+const SEED_TRAINING_PLANS = [
+  { key: '5k', name: '5公里入门', weeks: 8, level: 'beginner', goal: '完成 5 公里', desc: '从跑走结合到连续跑完 5 公里，适合零基础跑者', weeklyMileage: '8-15 km/周', targetKm: 80 },
+  { key: '10k', name: '10公里进阶', weeks: 10, level: 'intermediate', goal: '完赛 10 公里', desc: '提升耐力与配速，掌握节奏跑与间歇训练', weeklyMileage: '15-25 km/周', targetKm: 200 },
+  { key: 'half', name: '半程马拉松 21K', weeks: 12, level: 'challenge', goal: '完赛半马 21.0975 km', desc: '系统训练长距离，挑战半马完赛', weeklyMileage: '25-40 km/周', targetKm: 400 },
+  { key: 'full', name: '全程马拉松 42K', weeks: 16, level: 'extreme', goal: '完赛全马 42.195 km', desc: '科学备战全马，含 LSD + tempo + recovery', weeklyMileage: '40-60 km/周', targetKm: 800 },
+];
+
 async function main() {
   console.log('🌱 Seeding AppConfig...');
 
@@ -78,6 +86,17 @@ async function main() {
     }
   }
   console.log(`✅ Products seed done（新增 ${productInserted}，定义 ${SEED_PRODUCTS.length}）`);
+
+  // 训练计划 seed：按 key 幂等（只补缺失，不覆盖 admin 改动 — 同商品范式）
+  let planInserted = 0;
+  for (const p of SEED_TRAINING_PLANS) {
+    const exists = await prisma.trainingPlan.findUnique({ where: { key: p.key } });
+    if (!exists) {
+      await prisma.trainingPlan.create({ data: p });
+      planInserted++;
+    }
+  }
+  console.log(`✅ TrainingPlans seed done（新增 ${planInserted}，定义 ${SEED_TRAINING_PLANS.length}）`);
 
   console.log({
     feature_flags: DEFAULT_FEATURE_FLAGS,

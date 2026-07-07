@@ -65,6 +65,7 @@ model User {
   followers         Follow[] @relation("Followee") // V0.1.32 关注我的人（followee 视角）
   familiesOwned     Family[] @relation("FamilyOwner") // V0.1.34 创建的家庭（owner 视角）
   familyMember      FamilyMember? // V0.1.34 我的家庭关系（1:1，一人一家庭）
+  trainingEnrollment UserPlanEnrollment? // V0.1.41 当前训练计划（1:1，一人一活跃计划）
   groupBuyMembers   GroupBuyMember[] // V0.1.37 团购参与记录
   // 分销（V0.1.24）
   inviteCode        String?  @unique
@@ -847,4 +848,38 @@ model GarminMetric {
 
   @@unique([userId, metricType, sport, calendarDate])
   @@index([userId, metricType, calendarDate])
+}
+
+// ===== 训练计划（V0.1.41，配置化 — admin CRUD + 用户加入）=====
+// TrainingPlan：admin 维护的计划模板（替 V0.1.25 硬编码常量）；key @unique 幂等
+// UserPlanEnrollment：用户加入记录，userId @unique 强制 1 人 1 活跃计划（切换=替换）
+model TrainingPlan {
+  id            String   @id @default(cuid())
+  key           String   @unique // '5k' / '10k' / 'half' / 'full' / 自定义（admin CRUD 幂等 + seed 安全复跑）
+  name          String
+  weeks         Int
+  level         String   // beginner | intermediate | challenge | extreme（英文 key，wxss 中文 selector 坑）
+  goal          String
+  desc          String
+  weeklyMileage String
+  targetKm      Float    // 计划总目标跑量（进度计算分母）
+  status        String   @default("active") // active | archived
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  enrollments UserPlanEnrollment[]
+
+  @@index([status])
+}
+
+model UserPlanEnrollment {
+  id       String   @id @default(cuid())
+  userId   String   @unique // 1 人 1 活跃计划（切换 = delete 旧 + create 新）
+  planId   String
+  joinedAt DateTime @default(now())
+
+  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan TrainingPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@index([planId])
 }

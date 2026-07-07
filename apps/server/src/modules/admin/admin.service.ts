@@ -30,6 +30,8 @@ import type {
   ExportUsersInput,
   UpsertGroupBuyInput,
   ListGroupBuysInput,
+  UpsertTrainingPlanInput,
+  ListTrainingPlansInput,
 } from './admin.schema.js';
 
 // ===== admin 白名单缓存（TTL 兜底：多实例部署本进程 invalidate 不通知其它实例）=====
@@ -226,6 +228,40 @@ export async function listProducts(input: ListProductsInput) {
       createdAt: p.createdAt.toISOString(), updatedAt: p.updatedAt.toISOString(),
     })),
     total, page: input.page, pageSize: input.pageSize,
+  };
+}
+
+// ===== 训练计划（V0.1.41 配置化 — admin CRUD）=====
+export async function upsertTrainingPlan(input: UpsertTrainingPlanInput) {
+  const data = {
+    key: input.key,
+    name: input.name,
+    weeks: input.weeks,
+    level: input.level,
+    goal: input.goal,
+    desc: input.desc,
+    weeklyMileage: input.weeklyMileage,
+    targetKm: input.targetKm,
+    ...(input.status ? { status: input.status } : {}),
+  };
+  const plan = input.id
+    ? await prisma.trainingPlan.update({ where: { id: input.id }, data })
+    : await prisma.trainingPlan.create({ data });
+  return { id: plan.id };
+}
+
+export async function listTrainingPlans(input: ListTrainingPlansInput) {
+  const where = { ...(input.status ? { status: input.status } : {}) };
+  const list = await prisma.trainingPlan.findMany({
+    where,
+    orderBy: [{ weeks: 'asc' }, { createdAt: 'desc' }],
+  });
+  return {
+    list: list.map((p) => ({
+      ...p,
+      createdAt: p.createdAt.toISOString(),
+      updatedAt: p.updatedAt.toISOString(),
+    })),
   };
 }
 

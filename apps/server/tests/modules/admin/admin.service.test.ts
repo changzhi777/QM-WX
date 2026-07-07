@@ -12,6 +12,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const mockPrisma = vi.hoisted(() => ({
   user: { findUnique: vi.fn(), update: vi.fn() },
   auditLog: { create: vi.fn(), findMany: vi.fn(), count: vi.fn() },
+  trainingPlan: { create: vi.fn(), update: vi.fn(), findMany: vi.fn() },
 }));
 
 vi.mock('src/infra/prisma.js', () => ({ prisma: mockPrisma }));
@@ -27,6 +28,8 @@ import {
   recordAudit,
   listAuditLogs,
   assertNotBanned,
+  upsertTrainingPlan,
+  listTrainingPlans,
 } from '../../../src/modules/admin/admin.service.js';
 import { BusinessError } from '../../../src/common/errors.js';
 
@@ -241,5 +244,48 @@ describe('admin.service · assertNotBanned', () => {
     expect(() => assertNotBanned({})).not.toThrow();
     expect(() => assertNotBanned(null)).not.toThrow();
     expect(() => assertNotBanned(undefined)).not.toThrow();
+  });
+});
+
+describe('admin.service · 训练计划 CRUD (V0.1.41)', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('upsertTrainingPlan：无 id → create', async () => {
+    mockPrisma.trainingPlan.create.mockResolvedValue({ id: 'p1' });
+    const r = await upsertTrainingPlan({
+      key: '5k', name: '5公里入门', weeks: 8, level: 'beginner',
+      goal: '完成 5 公里', desc: '...', weeklyMileage: '8-15 km/周', targetKm: 80,
+    });
+    expect(r).toEqual({ id: 'p1' });
+    expect(mockPrisma.trainingPlan.create).toHaveBeenCalled();
+    expect(mockPrisma.trainingPlan.update).not.toHaveBeenCalled();
+  });
+
+  it('upsertTrainingPlan：有 id → update', async () => {
+    mockPrisma.trainingPlan.update.mockResolvedValue({ id: 'p1' });
+    const r = await upsertTrainingPlan({
+      id: 'p1', key: '5k', name: '5K 入门改', weeks: 8, level: 'beginner',
+      goal: 'g', desc: 'd', weeklyMileage: 'w', targetKm: 100,
+    });
+    expect(r).toEqual({ id: 'p1' });
+    expect(mockPrisma.trainingPlan.update).toHaveBeenCalledWith({
+      where: { id: 'p1' },
+      data: expect.objectContaining({ name: '5K 入门改', targetKm: 100 }),
+    });
+    expect(mockPrisma.trainingPlan.create).not.toHaveBeenCalled();
+  });
+
+  it('listTrainingPlans：where status 过滤 + ISO 序列化', async () => {
+    const ts = new Date('2026-07-01T00:00:00.000Z');
+    mockPrisma.trainingPlan.findMany.mockResolvedValue([
+      { id: 'p1', key: '5k', name: '5K', weeks: 8, level: 'beginner', goal: 'g', desc: 'd', weeklyMileage: 'w', targetKm: 80, status: 'active', createdAt: ts, updatedAt: ts },
+    ] as never);
+    const r = await listTrainingPlans({ status: 'active' });
+    expect(r.list).toHaveLength(1);
+    expect(r.list[0].createdAt).toBe('2026-07-01T00:00:00.000Z');
+    expect(mockPrisma.trainingPlan.findMany).toHaveBeenCalledWith({
+      where: { status: 'active' },
+      orderBy: [{ weeks: 'asc' }, { createdAt: 'desc' }],
+    });
   });
 });

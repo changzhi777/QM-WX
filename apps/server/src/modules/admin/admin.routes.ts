@@ -35,6 +35,8 @@ import {
   ExportUsersSchema,
   UpsertGroupBuySchema,
   ListGroupBuysSchema,
+  UpsertTrainingPlanSchema,
+  ListTrainingPlansSchema,
 } from './admin.schema.js';
 
 export async function adminRoutes(app: FastifyInstance) {
@@ -81,6 +83,11 @@ export async function adminRoutes(app: FastifyInstance) {
         return { code: 0, data: await adminService.upsertGroupBuy(UpsertGroupBuySchema.parse(payload)) };
       case 'listGroupBuys':
         return { code: 0, data: await adminService.listGroupBuys(ListGroupBuysSchema.parse(payload ?? {})) };
+      // ===== 训练计划管理（V0.1.41 新增）=====
+      case 'upsertTrainingPlan':
+        return { code: 0, data: await adminService.upsertTrainingPlan(UpsertTrainingPlanSchema.parse(payload)) };
+      case 'listTrainingPlans':
+        return { code: 0, data: await adminService.listTrainingPlans(ListTrainingPlansSchema.parse(payload ?? {})) };
       case 'stats':
         return { code: 0, data: await adminService.stats() };
       // ===== 黑名单 + 审计（V0.1.18 新增）=====

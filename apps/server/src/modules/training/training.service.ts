@@ -10,69 +10,104 @@
 import { prisma } from '../../infra/prisma.js';
 import { Cache } from '../../infra/cache.js';
 import { calcPace } from '../device/device.schema.js';
-import type { MySportRecordsQuery } from './training.schema.js';
+import { Errors } from '../../common/errors.js';
+import type { MySportRecordsQuery, JoinPlanInput } from './training.schema.js';
 
 /** 跑步记录缓存 TTL：60s（打卡后短延迟可见，与 sport.myStats 同档） */
 const RECORDS_CACHE_TTL_SEC = 60;
 
-/** 训练计划模板（MVP 硬编码；后续若要个性化推荐再建 TrainingPlan 表） */
-export interface TrainingPlan {
-  key: string;
-  name: string;
-  weeks: number;
-  level: '入门' | '进阶' | '挑战' | '极限';
-  goal: string;
-  desc: string;
-  weeklyMileage: string;
-}
-
-export const TRAINING_PLANS: TrainingPlan[] = [
-  {
-    key: '5k',
-    name: '5公里入门',
-    weeks: 8,
-    level: '入门',
-    goal: '完成 5 公里',
-    desc: '从跑走结合到连续跑完 5 公里，适合零基础跑者',
-    weeklyMileage: '8-15 km/周',
-  },
-  {
-    key: '10k',
-    name: '10公里进阶',
-    weeks: 10,
-    level: '进阶',
-    goal: '完赛 10 公里',
-    desc: '提升耐力与配速，掌握节奏跑与间歇训练',
-    weeklyMileage: '15-25 km/周',
-  },
-  {
-    key: 'half',
-    name: '半程马拉松 21K',
-    weeks: 12,
-    level: '挑战',
-    goal: '完赛半马 21.0975 km',
-    desc: '系统训练长距离，挑战半马完赛',
-    weeklyMileage: '25-40 km/周',
-  },
-  {
-    key: 'full',
-    name: '全程马拉松 42K',
-    weeks: 16,
-    level: '极限',
-    goal: '完赛全马 42.195 km',
-    desc: '科学备战全马，含 LSD + tempo + recovery',
-    weeklyMileage: '40-60 km/周',
-  },
-];
+// V0.1.41：训练计划模板已迁移到 DB（TrainingPlan 表），seed 见 prisma/seed.ts SEED_TRAINING_PLANS
+// 原 TRAINING_PLANS 硬编码常量已删（运行时改读 DB，DRY 单一数据源）
 
 export const trainingService = {
   /**
-   * 我的训练计划（4 套模板）
+   * 我的训练计划（V0.1.41：改读 DB active 计划，替原硬编码常量）
    *
-   * MVP：硬编码常量，所有用户一致；后续可按用户能力 + 历史跑量个性化推荐
+   * admin 通过 upsertTrainingPlan 维护；status=archived 不返
    */
   async myPlans() {
-    return { plans: TRAINING_PLANS };
+    const plans = await prisma.trainingPlan.findMany({
+      where: { status: 'active' },
+      orderBy: [{ weeks: 'asc' }, { createdAt: 'desc' }],
+    });
+    return {
+      plans: plans.map((p) => ({
+        id: p.id,
+        key: p.key,
+        name: p.name,
+        weeks: p.weeks,
+        level: p.level, // 英文 key（beginner/...），前端直接作 class
+        goal: p.goal,
+        desc: p.desc,
+        weeklyMileage: p.weeklyMileage,
+        targetKm: p.targetKm,
+      })),
+    };
+  },
+
+  /**
+   * 加入训练计划（V0.1.41）
+   *
+   * UserPlanEnrollment.userId @unique → upsert 自动替换旧计划（1 人 1 活跃计划）
+   * 切换计划时 joinedAt 重置（进度从新计划加入日重新计）
+   */
+  async joinPlan(userId: string, input: JoinPlanInput) {
+    const plan = await prisma.trainingPlan.findUnique({ where: { id: input.planId } });
+    if (!plan) throw Errors.notFound('计划不存在');
+    if (plan.status !== 'active') throw Errors.badRequest('计划已下架');
+
+    const enrollment = await prisma.userPlanEnrollment.upsert({
+      where: { userId },
+      create: { userId, planId: plan.id },
+      update: { planId: plan.id, joinedAt: new Date() },
+    });
+    return {
+      id: enrollment.id,
+      planId: plan.id,
+      planName: plan.name,
+      joinedAt: enrollment.joinedAt.toISOString(),
+    };
+  },
+
+  /**
+   * 我的当前计划 + 进度（V0.1.41）
+   *
+   * 进度：calcPlanProgress（Checkin run aggregate 自 joinedAt 起 → / targetKm）
+   * 无加入记录返 { plan: null }，前端隐藏进度卡
+   */
+  async myActivePlan(userId: string) {
+    const enrollment = await prisma.userPlanEnrollment.findUnique({
+      where: { userId },
+      include: { plan: true },
+    });
+    if (!enrollment) return { plan: null };
+
+    const { plan } = enrollment;
+    const progress = await calcPlanProgress(userId, enrollment.joinedAt, plan.targetKm);
+    return {
+      plan: {
+        id: plan.id,
+        key: plan.key,
+        name: plan.name,
+        weeks: plan.weeks,
+        level: plan.level,
+        goal: plan.goal,
+        desc: plan.desc,
+        weeklyMileage: plan.weeklyMileage,
+        targetKm: plan.targetKm,
+      },
+      joinedAt: enrollment.joinedAt.toISOString(),
+      daysJoined: Math.max(0, Math.floor((Date.now() - enrollment.joinedAt.getTime()) / 86_400_000)),
+      ...progress,
+    };
+  },
+
+  /**
+   * 离开训练计划（V0.1.41，deleteMany 幂等 — 不存在也 ok）
+   */
+  async leavePlan(userId: string) {
+    await prisma.userPlanEnrollment.deleteMany({ where: { userId } });
+    return { ok: true };
   },
 
   /**
@@ -157,6 +192,22 @@ export const trainingService = {
     });
   },
 };
+
+/**
+ * 训练计划进度（V0.1.41）
+ *
+ * 自 joinedAt 起 Checkin(run) 累计跑量 / plan.targetKm → percent + completed
+ * 不复用 goal.calcGoalProgress（goal 固定周期 periodStart-End；plan 从 joinedAt 动态起算，KISS 不耦合）
+ */
+async function calcPlanProgress(userId: string, joinedAt: Date, targetKm: number) {
+  const agg = await prisma.checkin.aggregate({
+    where: { userId, sportType: 'run', createdAt: { gte: joinedAt } },
+    _sum: { distance: true },
+  });
+  const currentDistance = round2(agg._sum.distance ?? 0);
+  const percent = targetKm > 0 ? Math.min(100, Math.round((currentDistance / targetKm) * 100)) : 0;
+  return { currentDistance, targetKm, percent, completed: currentDistance >= targetKm };
+}
 
 /** 保留 2 位小数 */
 function round2(n: number): number {

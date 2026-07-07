@@ -65,6 +65,9 @@ export const ENDPOINTS = {
     listOrders: '/api/admin',
     updateOrderStatus: '/api/admin',
     listAdmins: '/api/admin',
+    // 训练计划管理（V0.1.41）
+    upsertTrainingPlan: '/api/admin',
+    listTrainingPlans: '/api/admin',
   },
   device: {
     listBindings: '/api/device',
@@ -132,6 +135,9 @@ export const ENDPOINTS = {
   training: {
     myPlans: '/api/training',
     mySportRecords: '/api/training',
+    joinPlan: '/api/training', // V0.1.41 加入训练计划（1 人 1 活跃，upsert 替换）
+    myActivePlan: '/api/training', // V0.1.41 当前计划 + 进度（joinedAt 起 Checkin run 累计 / targetKm）
+    leavePlan: '/api/training', // V0.1.41 离开计划（deleteMany 幂等）
   },
   shoes: {
     list: '/api/shoes',
