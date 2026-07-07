@@ -63,7 +63,6 @@
       <view class="owner-btn dissolve" bindtap="onDissolve">解散家庭</view>
     </view>
   </block>
-  </block>
 
   <!-- 无家庭：创建/加入 -->
   <view wx:elif="{{!loading}}" class="no-family">
