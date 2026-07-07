@@ -19,6 +19,7 @@ import type {
   CreateFamilyInput,
   JoinFamilyInput,
   FamilyRankingInput,
+  TransferOwnerInput,
 } from './family.schema.js';
 
 /** CN 时区本月范围 [start, end) "YYYY-MM-DD" */
@@ -183,6 +184,85 @@ export const familyService = {
     return {
       name: member.family.name,
       inviteCode: member.family.inviteCode,
+    };
+  },
+
+  /**
+   * V0.1.39 转让家长（owner → member，newOwner → owner）
+   *
+   * 校验：当前 owner + newOwner 同家庭 + 非自己
+   * 事务：旧 owner role=member + 新 owner role=owner + Family.ownerId 更新
+   */
+  async transferOwner(userId: string, input: TransferOwnerInput) {
+    const member = await prisma.familyMember.findUnique({ where: { userId } });
+    if (!member) throw Errors.notFound('未加入家庭');
+    if (member.role !== 'owner') throw Errors.forbidden('仅家长可转让');
+
+    const newOwner = await prisma.familyMember.findUnique({
+      where: { userId: input.newOwnerId },
+    });
+    if (!newOwner || newOwner.familyId !== member.familyId) {
+      throw Errors.badRequest('目标用户不是家庭成员');
+    }
+    if (newOwner.userId === userId) throw Errors.badRequest('不能转让给自己');
+
+    await prisma.$transaction(async (tx) => {
+      await tx.familyMember.update({ where: { userId }, data: { role: 'member' } });
+      await tx.familyMember.update({
+        where: { userId: input.newOwnerId },
+        data: { role: 'owner' },
+      });
+      await tx.family.update({
+        where: { id: member.familyId },
+        data: { ownerId: input.newOwnerId },
+      });
+    });
+    return { ok: true };
+  },
+
+  /** V0.1.39 解散家庭（owner 删 Family，级联成员/家庭目标）*/
+  async dissolveFamily(userId: string) {
+    const member = await prisma.familyMember.findUnique({ where: { userId } });
+    if (!member) throw Errors.notFound('未加入家庭');
+    if (member.role !== 'owner') throw Errors.forbidden('仅家长可解散');
+
+    await prisma.family.delete({ where: { id: member.familyId } });
+    // 级联：FamilyMember + Goal.familyId（onDelete Cascade）自动删
+    return { ok: true };
+  },
+
+  /**
+   * V0.1.39 家庭成就（全家累计跑量里程碑，动态生成零建表）
+   *
+   * 复用 stats.myCertificates 范式（MILESTONES 常量 + Checkin aggregate）
+   * 全家成员 userIds → aggregate sum distance → 里程碑 achieved/progress
+   */
+  async familyAchievements(userId: string) {
+    const member = await prisma.familyMember.findUnique({ where: { userId } });
+    if (!member) return { totalDistance: 0, achievements: [] };
+
+    const members = await prisma.familyMember.findMany({
+      where: { familyId: member.familyId },
+      select: { userId: true },
+    });
+    const memberIds = members.map((m) => m.userId);
+
+    const agg = await prisma.checkin.aggregate({
+      _sum: { distance: true },
+      where: { userId: { in: memberIds } },
+    });
+    const total = agg._sum.distance ?? 0;
+
+    const MILESTONES = [100, 500, 1000, 2000, 5000];
+    const achievements = MILESTONES.map((km) => ({
+      km,
+      achieved: total >= km,
+      progress: Math.min(100, Math.round((total / km) * 100)),
+    }));
+
+    return {
+      totalDistance: Math.round(total * 10) / 10,
+      achievements,
     };
   },
 };

@@ -27,10 +27,17 @@ interface FamilyGoal {
   completed: boolean;
 }
 
+interface Achievement {
+  km: number;
+  achieved: boolean;
+  progress: number;
+}
+
 Page({
   data: {
     family: null as FamilyInfo | null,
     familyGoals: [] as FamilyGoal[],
+    achievements: [] as Achievement[], // V0.1.39 家庭里程碑
     loading: false,
     // 创建/加入
     createName: '',
@@ -52,7 +59,10 @@ Page({
     try {
       const res = await api.call<{ family: FamilyInfo | null }>('family', 'myFamily', {});
       this.setData({ family: res.family, loading: false });
-      if (res.family) this.loadFamilyGoals();
+      if (res.family) {
+        this.loadFamilyGoals();
+        this.loadAchievements(); // V0.1.39 家庭成就
+      }
     } catch {
       this.setData({ loading: false });
       wx.showToast({ title: '加载失败', icon: 'none' });
@@ -66,6 +76,20 @@ Page({
       this.setData({ familyGoals: res.goals });
     } catch {
       /* 失败不阻塞主页面 */
+    }
+  },
+
+  /** V0.1.39 家庭成就（family.familyAchievements）*/
+  async loadAchievements() {
+    try {
+      const res = await api.call<{ totalDistance: number; achievements: Achievement[] }>(
+        'family',
+        'familyAchievements',
+        {},
+      );
+      this.setData({ achievements: res.achievements });
+    } catch {
+      /* 失败不阻塞 */
     }
   },
 
@@ -132,6 +156,55 @@ Page({
           this.loadFamily();
         } catch (e) {
           wx.showToast({ title: (e as Error).message || '离开失败', icon: 'none' });
+        }
+      },
+    });
+  },
+
+  /** V0.1.39 转让家长（showActionSheet 选成员 + 确认）*/
+  async onTransferOwner() {
+    const members = this.data.family?.members.filter((m) => m.role !== 'owner') ?? [];
+    if (members.length === 0) {
+      wx.showToast({ title: '没有其他成员可转让', icon: 'none' });
+      return;
+    }
+    wx.showActionSheet({
+      itemList: members.map((m) => m.nickname || '跑者'),
+      success: (res) => {
+        const target = members[res.tapIndex];
+        if (!target) return;
+        wx.showModal({
+          title: '转让家长',
+          content: `确定将家长转让给「${target.nickname || '跑者'}」吗？你将变为普通成员。`,
+          success: async (m) => {
+            if (!m.confirm) return;
+            try {
+              await api.call('family', 'transferOwner', { newOwnerId: target.userId });
+              wx.showToast({ title: '已转让', icon: 'success' });
+              this.loadFamily();
+            } catch (e) {
+              wx.showToast({ title: (e as Error).message || '转让失败', icon: 'none' });
+            }
+          },
+        });
+      },
+    });
+  },
+
+  /** V0.1.39 解散家庭（owner 确认 + delete Family 级联）*/
+  onDissolve() {
+    wx.showModal({
+      title: '解散家庭',
+      content: '确定解散当前家庭吗？所有成员和目标将被删除，不可恢复！',
+      confirmColor: '#e64340',
+      success: async (r) => {
+        if (!r.confirm) return;
+        try {
+          await api.call('family', 'dissolveFamily', {});
+          wx.showToast({ title: '已解散', icon: 'success' });
+          this.loadFamily();
+        } catch (e) {
+          wx.showToast({ title: (e as Error).message || '解散失败', icon: 'none' });
         }
       },
     });

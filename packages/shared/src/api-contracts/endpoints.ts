@@ -184,6 +184,9 @@ export const ENDPOINTS = {
     leaveFamily: '/api/family',
     familyRanking: '/api/family',
     inviteInfo: '/api/family',
+    transferOwner: '/api/family',
+    dissolveFamily: '/api/family',
+    familyAchievements: '/api/family',
   },
   groupBuy: {
     list: '/api/group-buy',

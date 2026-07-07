@@ -50,6 +50,21 @@
 
 /* 离开 */
 .leave-btn { margin: 32rpx 16rpx; padding: 24rpx; text-align: center; background: #fff; color: #e64340; border-radius: 12rpx; font-size: 28rpx; }
+
+/* V0.1.39 家庭成就（里程碑）*/
+.achieve-item { display: flex; align-items: center; padding: 16rpx 0; border-bottom: 1rpx solid #f0f0f0; }
+.achieve-item:last-child { border-bottom: none; }
+.achieve-icon { width: 56rpx; height: 56rpx; line-height: 56rpx; text-align: center; font-size: 36rpx; margin-right: 16rpx; flex-shrink: 0; }
+.achieve-info { flex: 1; min-width: 0; }
+.achieve-km { font-size: 26rpx; color: #333; font-weight: 600; margin-bottom: 8rpx; }
+.achieve-bar { height: 12rpx; background: #f0f0f0; border-radius: 6rpx; overflow: hidden; }
+.achieve-fill { height: 100%; background: linear-gradient(90deg, #fa8c16, #ffa940); }
+
+/* V0.1.39 owner 操作（转让/解散）*/
+.owner-actions { display: flex; gap: 16rpx; margin: 32rpx 16rpx; }
+.owner-btn { flex: 1; text-align: center; padding: 24rpx; border-radius: 12rpx; font-size: 28rpx; background: #fff; }
+.owner-btn.transfer { color: #666; border: 1rpx solid #ddd; }
+.owner-btn.dissolve { color: #e64340; border: 1rpx solid #e64340; }
 .leave-tip { text-align: center; color: #bbb; font-size: 24rpx; margin-top: 32rpx; }
 
 /* 无家庭 */

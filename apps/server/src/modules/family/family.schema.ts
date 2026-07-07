@@ -20,6 +20,10 @@ export const FamilyRankingSchema = z.object({
 });
 export type FamilyRankingInput = z.infer<typeof FamilyRankingSchema>;
 
+/** V0.1.39 转让家长（owner 把家长转给某成员）*/
+export const TransferOwnerSchema = z.object({ newOwnerId: z.string().min(1) });
+export type TransferOwnerInput = z.infer<typeof TransferOwnerSchema>;
+
 export const FamilyActionBodySchema = z.object({
   action: z.enum([
     'createFamily',
@@ -28,6 +32,9 @@ export const FamilyActionBodySchema = z.object({
     'leaveFamily',
     'familyRanking',
     'inviteInfo',
+    'transferOwner',
+    'dissolveFamily',
+    'familyAchievements',
   ]),
   payload: z.unknown().optional(),
 });

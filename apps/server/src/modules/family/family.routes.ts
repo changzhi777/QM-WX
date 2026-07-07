@@ -10,6 +10,7 @@ import {
   CreateFamilySchema,
   JoinFamilySchema,
   FamilyRankingSchema,
+  TransferOwnerSchema,
 } from './family.schema.js';
 
 export async function familyRoutes(app: FastifyInstance) {
@@ -37,6 +38,14 @@ export async function familyRoutes(app: FastifyInstance) {
       }
       case 'inviteInfo':
         return { code: 0, data: await familyService.inviteInfo(userId) };
+      case 'transferOwner': {
+        const input = TransferOwnerSchema.parse(payload);
+        return { code: 0, data: await familyService.transferOwner(userId, input) };
+      }
+      case 'dissolveFamily':
+        return { code: 0, data: await familyService.dissolveFamily(userId) };
+      case 'familyAchievements':
+        return { code: 0, data: await familyService.familyAchievements(userId) };
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
     }

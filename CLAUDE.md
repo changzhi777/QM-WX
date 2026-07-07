@@ -8,6 +8,10 @@
 
 ## 变更记录 (Changelog)
 
+- **2026-07-07** — 👨‍👩‍👧 **family 后续（转让家长 + 解散 + 家庭成就，V0.1.39）**：
+  1. **family module +3 action**：transferOwner（owner 转让 → 事务 3 update：旧 owner member + 新 owner owner + family.ownerId）+ dissolveFamily（owner 解散 → delete Family 级联成员/目标）+ familyAchievements（全家累计跑量里程碑 100/500/1000/2000/5000km，动态生成零建表，复用 myCertificates 范式）
+  2. 前端 family 页：owner 操作区（转让 showActionSheet 选成员 + 解散确认 dialog）+ 家庭成就卡（🏆达成/🎯进度条）
+  3. **0 新表/module/页**（family 现有页加内容）；测试 **557→563**（family +6）；范式：owner 闭环（转让/解散解锁 leaveFamily）+ 动态成就复用
 - **2026-07-07** — 🛒 **2764 团购深化（admin + 成团下单，V0.1.37 续）**：
   1. **Order +groupBuyId**（迁移 `20260707030000_order_groupbuy`，关联团购订单，onDelete SET NULL）
   2. **admin +2 action**：upsertGroupBuy（创建/编辑团购：校验商品 + groupPrice/targetCount/endDate）+ listGroupBuys（admin 列表含 product+进度）

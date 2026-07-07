@@ -190,3 +190,79 @@ describe('familyService.inviteInfo (V0.1.34)', () => {
     expect(r.inviteCode).toBe('ABC12345');
   });
 });
+
+describe('familyService.transferOwner (V0.1.39)', () => {
+  it('owner 转让 → 事务内 3 update（旧 owner member + 新 owner owner + family.ownerId）', async () => {
+    mocks.prisma.familyMember.findUnique
+      .mockResolvedValueOnce({ familyId: 'f1', role: 'owner' } as never) // 当前 owner
+      .mockResolvedValueOnce({ userId: 'u2', familyId: 'f1' } as never); // newOwner 同家庭
+    mocks.tx.familyMember.update.mockResolvedValue({} as never);
+    mocks.tx.family.update.mockResolvedValue({} as never);
+
+    const r = await familyService.transferOwner('u1', { newOwnerId: 'u2' });
+
+    expect(r.ok).toBe(true);
+    expect(mocks.tx.familyMember.update).toHaveBeenCalledTimes(2); // 旧 owner + 新 owner
+    expect(mocks.tx.family.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'f1' }, data: { ownerId: 'u2' } }),
+    );
+  });
+
+  it('非 owner → forbidden', async () => {
+    mocks.prisma.familyMember.findUnique.mockResolvedValue({
+      familyId: 'f1',
+      role: 'member',
+    } as never);
+    await expect(familyService.transferOwner('u1', { newOwnerId: 'u2' })).rejects.toThrow();
+  });
+});
+
+describe('familyService.dissolveFamily (V0.1.39)', () => {
+  it('owner 解散 → delete Family（级联成员/目标）', async () => {
+    mocks.prisma.familyMember.findUnique.mockResolvedValue({
+      familyId: 'f1',
+      role: 'owner',
+    } as never);
+    mocks.prisma.family.delete.mockResolvedValue({} as never);
+
+    const r = await familyService.dissolveFamily('u1');
+
+    expect(r.ok).toBe(true);
+    expect(mocks.prisma.family.delete).toHaveBeenCalledWith({ where: { id: 'f1' } });
+  });
+
+  it('非 owner → forbidden', async () => {
+    mocks.prisma.familyMember.findUnique.mockResolvedValue({
+      familyId: 'f1',
+      role: 'member',
+    } as never);
+    await expect(familyService.dissolveFamily('u1')).rejects.toThrow();
+  });
+});
+
+describe('familyService.familyAchievements (V0.1.39 家庭成就)', () => {
+  it('返全家累计跑量 + 里程碑 achieved/progress', async () => {
+    mocks.prisma.familyMember.findUnique.mockResolvedValue({ familyId: 'f1' } as never);
+    mocks.prisma.familyMember.findMany.mockResolvedValue([
+      { userId: 'u1' },
+      { userId: 'u2' },
+    ] as never);
+    mocks.prisma.checkin.aggregate.mockResolvedValue({ _sum: { distance: 600 } } as never);
+
+    const r = await familyService.familyAchievements('u1');
+
+    expect(r.totalDistance).toBe(600);
+    expect(r.achievements).toHaveLength(5); // 100/500/1000/2000/5000
+    expect(r.achievements[0]).toEqual({ km: 100, achieved: true, progress: 100 }); // 600>=100
+    expect(r.achievements[1]).toEqual({ km: 500, achieved: true, progress: 100 }); // 600>=500
+    expect(r.achievements[2].achieved).toBe(false); // 600<1000
+    expect(r.achievements[2].progress).toBe(60); // 600/1000*100
+  });
+
+  it('未加入家庭 → 空 achievements', async () => {
+    mocks.prisma.familyMember.findUnique.mockResolvedValue(null);
+    const r = await familyService.familyAchievements('u1');
+    expect(r.achievements).toEqual([]);
+    expect(r.totalDistance).toBe(0);
+  });
+});

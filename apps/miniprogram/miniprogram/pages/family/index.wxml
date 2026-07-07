@@ -40,9 +40,29 @@
       </view>
     </view>
 
-    <!-- 离开家庭 -->
+    <!-- V0.1.39 家庭成就（里程碑，全家累计跑量）-->
+    <view class="section">
+      <view class="section-title">🏆 家庭成就</view>
+      <view wx:if="{{achievements.length === 0}}" class="empty">成就加载中…</view>
+      <view class="achieve-item" wx:for="{{achievements}}" wx:key="km">
+        <view class="achieve-icon {{item.achieved ? 'done' : ''}}">{{item.achieved ? '🏆' : '🎯'}}</view>
+        <view class="achieve-info">
+          <view class="achieve-km">{{item.km}} km</view>
+          <view class="achieve-bar">
+            <view class="achieve-fill" style="width: {{item.progress}}%;"></view>
+          </view>
+        </view>
+        <view class="achieve-pct">{{item.achieved ? '已达成' : item.progress + '%'}}</view>
+      </view>
+    </view>
+
+    <!-- 离开/转让/解散家庭（V0.1.39 owner 加转让/解散）-->
     <view class="leave-btn" wx:if="{{!family.isOwner}}" bindtap="onLeave">离开家庭</view>
-    <view class="leave-tip" wx:else>家长需转让或解散家庭才能退出</view>
+    <view wx:else class="owner-actions">
+      <view class="owner-btn transfer" bindtap="onTransferOwner">转让家长</view>
+      <view class="owner-btn dissolve" bindtap="onDissolve">解散家庭</view>
+    </view>
+  </block>
   </block>
 
   <!-- 无家庭：创建/加入 -->
