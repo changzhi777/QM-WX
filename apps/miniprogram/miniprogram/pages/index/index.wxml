@@ -1,62 +1,77 @@
 <view class="page">
-  <!-- Error 状态：加载失败时显示，可重试 -->
   <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="loadData" />
 
-  <!-- 正常内容（error 时隐藏） -->
   <block wx:if="{{!error}}">
-  <!-- Hero -->
-  <view class="hero bg-white p-4 m-2 rounded-lg shadow">
-    <view class="text-xl">欢迎来到青沐运动</view>
-    <view class="text-sm text-secondary mt-2">运动 · 社群 · 商城</view>
-    <view class="hero-actions" wx:if="{{!isLogin}}">
-      <view class="link" bindtap="goMine">登录享更多 →</view>
+  <!-- Hero 品牌色渐变（V0.1.35 视觉锚点）-->
+  <view class="hero">
+    <block wx:if="{{isLogin && user}}">
+      <view class="hero-user" bindtap="goProfile">
+        <image class="hero-avatar" src="{{user.avatarUrl || 'images/default-avatar.png'}}" mode="aspectFill" />
+        <view class="hero-info">
+          <view class="hero-name">{{user.nickname || '跑者'}}</view>
+          <view class="hero-desc">欢迎来到青沐运动 · 继续奔跑 🏃</view>
+        </view>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="hero-title">欢迎来到青沐运动</view>
+      <view class="hero-desc">运动 · 社群 · 商城</view>
+      <view class="hero-actions">
+        <view class="link" bindtap="goMine">登录享更多 →</view>
+      </view>
+    </block>
+  </view>
+
+  <!-- 本周数据卡（覆盖 hero 底部，悬浮效果）-->
+  <view class="stats-card" wx:if="{{isLogin}}">
+    <view class="stats-label">本周数据</view>
+    <view class="stats-row" bindtap="goSport">
+      <view class="stats-item">
+        <view class="stats-num">{{userStats.totalDistance}}</view>
+        <view class="stats-unit">公里</view>
+      </view>
+      <view class="stats-item">
+        <view class="stats-num">{{userStats.totalCheckins}}</view>
+        <view class="stats-unit">打卡</view>
+      </view>
+      <view class="stats-item">
+        <view class="stats-num">{{userStats.totalPoints}}</view>
+        <view class="stats-unit">积分</view>
+      </view>
+      <view class="stats-item">
+        <view class="stats-num">{{userStats.avgPace || '-'}}</view>
+        <view class="stats-unit">配速</view>
+      </view>
     </view>
   </view>
 
-  <!-- 数据概览（真实） -->
-  <view class="stats bg-white p-4 m-2 rounded-lg shadow">
-    <view class="text-secondary text-sm">本周数据</view>
-    <view class="flex mt-2" bindtap="goSport">
-      <view class="flex-1 text-center">
-        <view class="text-xl text-brand">{{userStats.totalDistance}}</view>
-        <view class="text-sm text-secondary">公里</view>
+  <!-- 两大中心引导（运动/商城，导流 tab）-->
+  <view class="redirect-card">
+    <view class="redirect-row" bindtap="goSport">
+      <view class="redirect-icon">🏃</view>
+      <view class="redirect-text">
+        <view class="redirect-title">运动中心</view>
+        <view class="redirect-desc">打卡 · 跑鞋 · 目标 · 健康 · 训练</view>
       </view>
-      <view class="flex-1 text-center">
-        <view class="text-xl text-brand">{{userStats.totalCheckins}}</view>
-        <view class="text-sm text-secondary">打卡</view>
+      <view class="redirect-arrow">›</view>
+    </view>
+    <view class="redirect-row" bindtap="goMall">
+      <view class="redirect-icon">🛒</view>
+      <view class="redirect-text">
+        <view class="redirect-title">商城中心</view>
+        <view class="redirect-desc">商品 · 购物车 · 优惠券 · 订单</view>
       </view>
-      <view class="flex-1 text-center">
-        <view class="text-xl text-brand">{{userStats.totalPoints}}</view>
-        <view class="text-sm text-secondary">积分</view>
-      </view>
+      <view class="redirect-arrow">›</view>
     </view>
   </view>
 
-  <!-- 快捷入口 -->
-  <view class="quick bg-white m-2 p-4 rounded-lg shadow">
-    <view class="text-secondary text-sm mb-2">快捷</view>
-    <view class="quick-grid">
-      <view class="quick-item" bindtap="goSport">
-        <view class="q-icon">🏃</view>
-        <view class="q-text">去打卡</view>
-      </view>
-      <view class="quick-item" bindtap="goMine">
-        <view class="q-icon">👥</view>
-        <view class="q-text">我的群</view>
-      </view>
-      <view class="quick-item" wx:if="{{isLogin}}" bindtap="goProfile">
-        <view class="q-icon">👤</view>
-        <view class="q-text">资料</view>
-      </view>
-    </view>
-  </view>
+  <!-- 快捷入口（高频 page，entry-grid 渲染）-->
+  <entry-grid title="⚡ 快捷入口" items="{{quickEntries}}" />
 
   <feature-gate flag="wallet">
-    <view class="m-2 p-4 bg-white rounded-lg shadow" bindtap="goMine">
-      <view class="flex justify-between">
-        <view>我的钱包</view>
-        <view class="text-secondary">›</view>
-      </view>
+    <view class="wallet-card" bindtap="goMine">
+      <view class="wallet-text">💰 我的钱包</view>
+      <view class="wallet-arrow">›</view>
     </view>
   </feature-gate>
   </block>

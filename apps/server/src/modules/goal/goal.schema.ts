@@ -17,9 +17,15 @@ export const AddGoalInputSchema = z.object({
 });
 export type AddGoalInput = z.infer<typeof AddGoalInputSchema>;
 
+/** V0.1.34 家庭目标（复用 AddGoalInput + familyId） */
+export const AddFamilyGoalSchema = AddGoalInputSchema.extend({
+  familyId: z.string().min(1),
+});
+export type AddFamilyGoalInput = z.infer<typeof AddFamilyGoalSchema>;
+
 export const GoalIdInputSchema = z.object({ id: z.string() });
 
 export const GoalActionBodySchema = z.object({
-  action: z.enum(['list', 'add', 'remove', 'myProgress']),
+  action: z.enum(['list', 'add', 'remove', 'myProgress', 'addFamilyGoal', 'myFamilyGoals']),
   payload: z.unknown().optional(),
 });

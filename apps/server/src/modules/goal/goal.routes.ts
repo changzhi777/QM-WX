@@ -6,7 +6,7 @@
 import type { FastifyInstance } from 'fastify';
 import { goalService } from './goal.service.js';
 import { Errors } from '../../common/errors.js';
-import { AddGoalInputSchema, GoalIdInputSchema } from './goal.schema.js';
+import { AddGoalInputSchema, AddFamilyGoalSchema, GoalIdInputSchema } from './goal.schema.js';
 
 export async function goalRoutes(app: FastifyInstance) {
   app.post('/', async (req, reply) => {
@@ -27,6 +27,12 @@ export async function goalRoutes(app: FastifyInstance) {
       }
       case 'myProgress':
         return { code: 0, data: await goalService.myProgress(userId) };
+      case 'addFamilyGoal': {
+        const input = AddFamilyGoalSchema.parse(payload);
+        return { code: 0, data: await goalService.addFamilyGoal(userId, input) };
+      }
+      case 'myFamilyGoals':
+        return { code: 0, data: await goalService.myFamilyGoals(userId) };
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
     }

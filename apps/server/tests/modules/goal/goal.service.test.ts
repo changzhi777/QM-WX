@@ -10,6 +10,7 @@ vi.mock('src/infra/prisma.js', () => ({
   prisma: {
     goal: { findMany: vi.fn(), create: vi.fn(), findFirst: vi.fn(), delete: vi.fn() },
     checkin: { aggregate: vi.fn() },
+    familyMember: { findUnique: vi.fn(), findMany: vi.fn() }, // V0.1.34 家庭目标
   },
 }));
 vi.mock('src/common/errors.js', () => ({ Errors: mockErrors }));
@@ -140,5 +141,80 @@ describe('goalService.myProgress (V0.1.28)', () => {
     const r = await goalService.myProgress('u1');
     expect(r.goals).toHaveLength(1);
     expect(r.goals[0].percent).toBe(30);
+  });
+});
+
+describe('goalService.addFamilyGoal (V0.1.34 家庭目标)', () => {
+  it('创建家庭目标（familyId 落库）', async () => {
+    mockedPrisma.familyMember.findUnique.mockResolvedValue({ familyId: 'f1' } as never);
+    mockedPrisma.goal.create.mockResolvedValue({ id: 'g3' } as never);
+
+    const r = await goalService.addFamilyGoal('u1', {
+      type: 'monthly',
+      targetDistance: 200,
+      familyId: 'f1',
+    });
+
+    expect(r.id).toBe('g3');
+    expect(mockedPrisma.goal.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: 'u1', familyId: 'f1', targetDistance: 200 }),
+      }),
+    );
+  });
+
+  it('未加入家庭 → notFound', async () => {
+    mockedPrisma.familyMember.findUnique.mockResolvedValue(null);
+    await expect(
+      goalService.addFamilyGoal('u1', { type: 'monthly', targetDistance: 100, familyId: 'f1' }),
+    ).rejects.toThrow();
+  });
+
+  it('familyId 不属于自己家庭 → forbidden', async () => {
+    mockedPrisma.familyMember.findUnique.mockResolvedValue({ familyId: 'f1' } as never);
+    await expect(
+      goalService.addFamilyGoal('u1', { type: 'monthly', targetDistance: 100, familyId: 'fX' }),
+    ).rejects.toThrow();
+  });
+});
+
+describe('goalService.myFamilyGoals (V0.1.34)', () => {
+  it('返家庭目标（按家庭成员聚合进度，where userId in members）', async () => {
+    mockedPrisma.familyMember.findUnique.mockResolvedValue({ familyId: 'f1' } as never);
+    mockedPrisma.goal.findMany.mockResolvedValue([
+      {
+        id: 'g3',
+        type: 'monthly',
+        title: '全家100km',
+        targetDistance: 100,
+        periodStart: new Date('2026-07-01T00:00:00Z'),
+        periodEnd: new Date('2026-08-01T00:00:00Z'),
+        familyId: 'f1',
+        status: 'active',
+        createdAt: new Date(),
+      },
+    ] as never);
+    mockedPrisma.familyMember.findMany.mockResolvedValue([
+      { userId: 'u1' },
+      { userId: 'u2' },
+    ] as never);
+    mockedPrisma.checkin.aggregate.mockResolvedValue({ _sum: { distance: 80 } } as never);
+
+    const r = await goalService.myFamilyGoals('u1');
+
+    expect(r.goals).toHaveLength(1);
+    expect(r.goals[0].currentDistance).toBe(80);
+    expect(r.goals[0].familyId).toBe('f1');
+    // 进度按家庭成员 userIds 聚合
+    const call = mockedPrisma.checkin.aggregate.mock.calls[0][0] as {
+      where: { userId: { in: string[] } };
+    };
+    expect(call.where.userId.in).toEqual(['u1', 'u2']);
+  });
+
+  it('无家庭 → 空 goals', async () => {
+    mockedPrisma.familyMember.findUnique.mockResolvedValue(null);
+    const r = await goalService.myFamilyGoals('u1');
+    expect(r.goals).toEqual([]);
   });
 });

@@ -9,14 +9,19 @@ export const PublishFeedInputSchema = z.object({
   images: z.array(z.string()).max(9).default([]),
   checkinId: z.string().optional(),
   distanceKm: z.number().min(0).max(200).optional(),
+  topic: z.string().max(30).optional(), // V0.1.36 话题
+  videoUrl: z.string().url().optional(), // V0.1.36 外部视频链接（mp4 URL）
 });
 export type PublishFeedInput = z.infer<typeof PublishFeedInputSchema>;
 
-/** 分页 */
+/** 分页 + 排序 + 话题过滤（V0.1.36）*/
 export const FeedPageSchema = z.object({
   page: z.number().int().min(1).default(1),
   pageSize: z.number().int().min(1).max(50).default(20),
+  sort: z.enum(['latest', 'hot']).default('latest'), // hot=按 likeCount desc（红心广场）
+  topic: z.string().optional(), // 话题过滤（话题页用）
 });
+export type FeedPageInput = z.infer<typeof FeedPageSchema>;
 
 /** 动态 id */
 export const FeedIdInputSchema = z.object({ feedId: z.string() });
@@ -28,6 +33,6 @@ export const CommentInputSchema = z.object({
 });
 
 export const FeedActionBodySchema = z.object({
-  action: z.enum(['list', 'myFeeds', 'publish', 'like', 'unlike', 'comment']),
+  action: z.enum(['list', 'myFeeds', 'publish', 'like', 'unlike', 'comment', 'hotTopics']),
   payload: z.unknown().optional(),
 });

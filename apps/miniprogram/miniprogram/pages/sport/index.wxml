@@ -97,6 +97,12 @@
     </block>
   </view>
 
+  <!-- V0.1.35 运动入口网格（功能从 mine 分散到运动 tab）-->
+  <entry-grid title="🏃 运动工具" items="{{sportTools}}" />
+  <entry-grid title="📊 数据榜单" items="{{dataRanks}}" />
+  <entry-grid title="💊 健康设备" items="{{healthDevices}}" />
+  <entry-grid title="🎯 社交赛事" items="{{socialEvents}}" />
+
   <!-- 创建群弹窗 -->
   <view class="mask" wx:if="{{showCreateGroup}}" bindtap="onCancelCreate">
     <view class="card" catchtap="">

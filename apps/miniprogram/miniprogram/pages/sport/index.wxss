@@ -4,6 +4,11 @@
   display: flex; justify-content: space-between; align-items: center;
   margin-bottom: 16rpx;
 }
+/* V0.1.35 UI 优化：打卡卡标题加品牌色底边（视觉锚点，突出主功能）*/
+.checkin-card .title-row {
+  border-bottom: 3rpx solid var(--brand);
+  padding-bottom: 12rpx;
+}
 .title-row .title { font-size: 32rpx; font-weight: 600; }
 .title-row .date { font-size: 24rpx; color: var(--text-tertiary); }
 .title-row .actions { display: flex; gap: 24rpx; }

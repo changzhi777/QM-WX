@@ -59,7 +59,27 @@
     <view wx:else style="color:#999;font-size:26rpx;">暂无佳明数据</view>
   </view>
 
-  <!-- 功能列表 -->
+  <!-- V0.1.35 入口分散引导（运动/商城功能已移到对应 tab）-->
+  <view class="redirect-card">
+    <view class="redirect-row" bindtap="goSportTab">
+      <view class="redirect-icon">🏃</view>
+      <view class="redirect-text">
+        <view class="redirect-title">运动功能</view>
+        <view class="redirect-desc">跑鞋 · 目标 · 证书 · 健康 · 训练 · 动态</view>
+      </view>
+      <view class="redirect-arrow">前往运动 tab ›</view>
+    </view>
+    <view class="redirect-row" bindtap="goMallTab">
+      <view class="redirect-icon">🛒</view>
+      <view class="redirect-text">
+        <view class="redirect-title">商城功能</view>
+        <view class="redirect-desc">购物车 · 优惠券 · 订单 · 钱包 · 积分</view>
+      </view>
+      <view class="redirect-arrow">前往商城 tab ›</view>
+    </view>
+  </view>
+
+  <!-- V0.1.35 精简：仅保留个人/设置入口 -->
   <view class="list bg-white mt-2">
     <view class="list-item" bindtap="goNotification">
       <view class="lbl">消息中心</view>
@@ -69,133 +89,19 @@
       </view>
     </view>
 
-    <feature-gate flag="wallet">
-      <view class="list-item" bindtap="goWallet">
-        <view class="lbl">我的钱包</view>
-        <view class="arrow">›</view>
-      </view>
-    </feature-gate>
-
-    <feature-gate flag="membershipPurchase">
-      <view class="list-item" bindtap="goMembership">
-        <view class="lbl">会员中心</view>
-        <view class="arrow">›</view>
-      </view>
-    </feature-gate>
+    <view class="list-item" bindtap="goFamily">
+      <view class="lbl">家庭空间</view>
+      <view class="arrow">›</view>
+    </view>
 
     <view class="list-item" bindtap="goProfile">
       <view class="lbl">个人资料</view>
       <view class="arrow">›</view>
     </view>
 
-    <view class="list-item" bindtap="goOrderList">
-      <view class="lbl">我的订单</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goCategory">
-      <view class="lbl">全部商品</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goCart">
-      <view class="lbl">购物车</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goCoupon">
-      <view class="lbl">优惠券</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goPoints">
-      <view class="lbl">积分中心</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goAddress">
-      <view class="lbl">地址管理</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goDistribution">
-      <view class="lbl">分销中心</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goTiantian">
-      <view class="lbl">天天跑</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goContent">
-      <view class="lbl">赛事 / 本地服务</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goFavorite">
-      <view class="lbl">我的收藏</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goFeed">
-      <view class="lbl">运动动态</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goWeeklyReport">
-      <view class="lbl">跑群周报</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goHealth">
-      <view class="lbl">今日健康</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goDeviceBind">
-      <view class="lbl">设备绑定</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goTraining">
-      <view class="lbl">锻炼训练</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goShoes">
-      <view class="lbl">我的跑鞋</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goAnnualReport">
-      <view class="lbl">年度报告</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goGoal">
-      <view class="lbl">跑步目标</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goCertificate">
-      <view class="lbl">我的证书</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goGarminData">
-      <view class="lbl">佳明数据处理</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goRanking">
-      <view class="lbl">我的榜单</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <feature-gate flag="bindApp">
-      <view class="list-item" bindtap="goBindApp">
-        <view class="lbl">绑定运动 APP</view>
+    <feature-gate flag="membershipPurchase">
+      <view class="list-item" bindtap="goMembership">
+        <view class="lbl">会员中心</view>
         <view class="arrow">›</view>
       </view>
     </feature-gate>

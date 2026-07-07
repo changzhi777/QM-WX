@@ -14,9 +14,13 @@
         </view>
       </view>
       <view class="feed-content">{{item.content}}</view>
+      <!-- V0.1.36 话题标签（点跳话题页）-->
+      <view class="feed-topic" wx:if="{{item.topic}}" data-topic="{{item.topic}}" catchtap="onTapTopic">#{{item.topic}}</view>
       <view class="feed-images" wx:if="{{item.images.length > 0}}">
         <image wx:for="{{item.images}}" wx:for-item="img" wx:key="*this" class="feed-img" src="{{img}}" mode="aspectFill" />
       </view>
+      <!-- V0.1.36 视频（外部链接，<video> 组件播放）-->
+      <video wx:if="{{item.videoUrl}}" class="feed-video" src="{{item.videoUrl}}" controls show-fullscreen-btn />
       <view class="feed-run" wx:if="{{item.distanceKm}}">
         <text class="run-icon">🏃</text> {{item.distanceKm}} km
       </view>
@@ -27,6 +31,7 @@
         <view class="action" data-id="{{item.id}}" bindtap="onOpenComment">
           💬 {{item.commentCount}}
         </view>
+        <button class="action share-btn" open-type="share" data-id="{{item.id}}">📤 分享</button>
       </view>
     </view>
 
@@ -43,6 +48,8 @@
     <view class="form-panel" catchtap="">
       <view class="form-title">发布动态</view>
       <textarea class="textarea" value="{{publishContent}}" bindinput="onInputPublish" placeholder="分享你的跑步心得..." maxlength="500" />
+      <input class="publish-input" placeholder="话题（如：马拉松，选填）" value="{{publishTopic}}" bindinput="onInputPublishTopic" />
+      <input class="publish-input" placeholder="视频链接（mp4 URL，选填）" value="{{publishVideo}}" bindinput="onInputPublishVideo" />
       <view class="form-actions">
         <button class="btn-cancel" bindtap="closePublish">取消</button>
         <button class="btn-submit" bindtap="onSubmitPublish" loading="{{publishing}}">发布</button>

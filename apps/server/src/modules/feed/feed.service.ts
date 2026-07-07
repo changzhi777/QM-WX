@@ -1,26 +1,32 @@
 /**
- * feed module business logic（V0.1.30，社交向 — 运动动态）
+ * feed module business logic（V0.1.30 社交向；V0.1.31 +notify；V0.1.36 +topic/video/sort/hotTopics）
  *
- * Actions：
- * - list：动态流（分页，含作者 + 当前用户是否点赞 liked）
- * - myFeeds：我的动态
- * - publish：发布动态（可关联 checkinId + 跑量）
- * - like / unlike：点赞/取消（事务维护 likeCount + unique 防重）
- * - comment：评论（事务维护 commentCount）
+ * V0.1.36 增强（2771 社交深化）：
+ * - list 加 sort（latest/hot）+ topic 过滤（红心广场 + 话题页）
+ * - publish 接受 topic + videoUrl（外部视频链接）
+ * - hotTopics：热门话题列表（groupBy topic 按 feed 数量 desc，红心广场发现用）
  *
  * $transaction 用回调形式（测试 mock 友好，复用 createPrismaMock）
  */
 import { prisma } from '../../infra/prisma.js';
 import { Errors } from '../../common/errors.js';
 import { notify } from '../notification/notification.service.js';
-import type { PublishFeedInput } from './feed.schema.js';
+import type { PublishFeedInput, FeedPageInput } from './feed.schema.js';
 
 export const feedService = {
-  /** 动态流（分页，含作者 + 当前用户是否点赞） */
-  async list(userId: string, page: number, pageSize: number) {
+  /**
+   * 动态流（分页，含作者 + liked）
+   *
+   * V0.1.36：sort=hot 按 likeCount desc（红心广场）；topic 过滤（话题页）
+   */
+  async list(userId: string, input: FeedPageInput) {
+    const { page, pageSize, sort, topic } = input;
+    const where = topic ? { topic } : {};
+    const orderBy = sort === 'hot' ? { likeCount: 'desc' as const } : { createdAt: 'desc' as const };
     const [feeds, total] = await Promise.all([
       prisma.feed.findMany({
-        orderBy: { createdAt: 'desc' },
+        where,
+        orderBy,
         skip: (page - 1) * pageSize,
         take: pageSize,
         include: {
@@ -28,7 +34,7 @@ export const feedService = {
           likes: { where: { userId }, select: { id: true } },
         },
       }),
-      prisma.feed.count(),
+      prisma.feed.count({ where }),
     ]);
     return {
       list: feeds.map((f) => ({
@@ -36,6 +42,8 @@ export const feedService = {
         content: f.content,
         images: f.images,
         distanceKm: f.distanceKm,
+        topic: f.topic,
+        videoUrl: f.videoUrl,
         likeCount: f.likeCount,
         commentCount: f.commentCount,
         createdAt: f.createdAt.toISOString(),
@@ -49,7 +57,7 @@ export const feedService = {
     };
   },
 
-  /** 我的动态 */
+  /** 我的动态（V0.1.36 map 加 topic/videoUrl）*/
   async myFeeds(userId: string, page: number, pageSize: number) {
     const [feeds, total] = await Promise.all([
       prisma.feed.findMany({
@@ -70,6 +78,8 @@ export const feedService = {
         content: f.content,
         images: f.images,
         distanceKm: f.distanceKm,
+        topic: f.topic,
+        videoUrl: f.videoUrl,
         likeCount: f.likeCount,
         commentCount: f.commentCount,
         createdAt: f.createdAt.toISOString(),
@@ -83,7 +93,7 @@ export const feedService = {
     };
   },
 
-  /** 发布动态 */
+  /** 发布动态（V0.1.36 +topic +videoUrl）*/
   async publish(userId: string, input: PublishFeedInput) {
     const feed = await prisma.feed.create({
       data: {
@@ -92,6 +102,8 @@ export const feedService = {
         images: input.images,
         checkinId: input.checkinId,
         distanceKm: input.distanceKm,
+        topic: input.topic,
+        videoUrl: input.videoUrl,
       },
     });
     return { id: feed.id };
@@ -173,5 +185,25 @@ export const feedService = {
       /* 通知写库失败不影响评论结果 */
     }
     return { id: comment.id };
+  },
+
+  /**
+   * V0.1.36 热门话题（红心广场发现用）
+   *
+   * groupBy topic（not null）按 feed 数量 desc，take 10
+   */
+  async hotTopics() {
+    const topics = await prisma.feed.groupBy({
+      by: ['topic'],
+      where: { topic: { not: null } },
+      _count: { _all: true },
+      orderBy: { _count: { topic: 'desc' } },
+      take: 10,
+    });
+    return {
+      topics: topics
+        .filter((t) => t.topic) // 排除 null（TS 收窄 + 防御）
+        .map((t) => ({ topic: t.topic as string, count: t._count._all })),
+    };
   },
 };

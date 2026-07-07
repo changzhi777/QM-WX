@@ -32,7 +32,12 @@
     "pages/favorite/index",
     "pages/feed/index",
     "pages/notification/index",
-    "pages/user/index"
+    "pages/user/index",
+    "pages/family/index",
+    "pages/hot/index",
+    "pages/topic/index",
+    "pages/group-buy/index",
+    "pages/group-buy-detail/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",

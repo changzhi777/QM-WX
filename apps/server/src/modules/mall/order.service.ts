@@ -24,6 +24,26 @@ const POINTS_TO_YUAN = 0.01;
 
 export const orderService = {
   async create(userId: string, input: CreateOrderInput) {
+    // V0.1.37 团购校验（groupBuyId 存在 → reached + 已参与 + 单一团购商品）
+    let groupBuyId: string | null = null;
+    let groupBuyPrice: number | null = null;
+    let groupBuyProductId: string | null = null;
+    if (input.groupBuyId) {
+      const gb = await prisma.groupBuy.findUnique({ where: { id: input.groupBuyId } });
+      if (!gb) throw Errors.notFound('团购不存在');
+      if (gb.status !== 'reached') throw Errors.badRequest('团购未成团，无法下单');
+      const member = await prisma.groupBuyMember.findUnique({
+        where: { groupBuyId_userId: { groupBuyId: gb.id, userId } },
+      });
+      if (!member) throw Errors.forbidden('未参与该团购，无法下单');
+      if (input.items.length !== 1 || input.items[0].productId !== gb.productId) {
+        throw Errors.badRequest('团购订单仅含团购商品 1 件');
+      }
+      groupBuyId = gb.id;
+      groupBuyPrice = Number(gb.groupPrice);
+      groupBuyProductId = gb.productId;
+    }
+
     // 1. 校验所有 product 存在 + 计算金额
     const products = await prisma.product.findMany({
       where: { id: { in: input.items.map((i) => i.productId) }, status: 'on' },
@@ -34,10 +54,12 @@ export const orderService = {
 
     const items = input.items.map((i) => {
       const p = products.find((x) => x.id === i.productId)!;
+      // V0.1.37 团购：团购商品用团购价（groupPrice），否则原价
+      const useGroupPrice = groupBuyId !== null && p.id === groupBuyProductId;
       return {
         productId: p.id,
         name: p.name,
-        price: p.price,
+        price: useGroupPrice ? (groupBuyPrice as never) : p.price,
         qty: i.qty,
       };
     });
@@ -131,6 +153,7 @@ export const orderService = {
           payChannel,
           address: input.address as never,
           sourceUserId: sourceUserIdFinal, // V0.1.24 分销来源（可 null）
+          groupBuyId, // V0.1.37 团购订单关联（可 null）
         },
         include: { items: true },
       });

@@ -1,0 +1,47 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+
+  <block wx:elif="{{detail}}">
+    <image class="hero-img" src="{{detail.product.images[0] || '/images/default-product.png'}}" mode="aspectFill" />
+
+    <view class="info-card">
+      <view class="name">{{detail.product.name}}</view>
+      <view class="price-row">
+        <view class="group-price">¥{{detail.groupPrice}}</view>
+        <view class="origin">原价 ¥{{detail.product.price}}</view>
+      </view>
+
+      <view class="progress-section">
+        <view class="progress-text">{{detail.currentCount}} / {{detail.targetCount}} 人</view>
+        <view class="progress-bar">
+          <view class="progress-fill" style="width: {{detail.currentCount / detail.targetCount * 100}}%;"></view>
+        </view>
+        <view class="progress-status {{detail.status}}">
+          {{detail.status === 'reached' ? '🎉 已成团' : '还差 ' + (detail.targetCount - detail.currentCount) + ' 人成团'}}
+        </view>
+      </view>
+
+      <view class="desc" wx:if="{{detail.product.description}}">{{detail.product.description}}</view>
+    </view>
+
+    <view class="action-bar">
+      <button class="btn-buy" bindtap="onBuy">原价购买</button>
+      <!-- V0.1.37 团购下单（成团 reached + 已参与时显示）-->
+      <button
+        wx:if="{{detail.status === 'reached' && detail.isJoined}}"
+        class="btn-gb"
+        bindtap="onGroupBuyOrder"
+      >
+        团购下单 ¥{{detail.groupPrice}}
+      </button>
+      <button
+        class="btn-join {{detail.isJoined ? 'joined' : ''}}"
+        bindtap="onJoin"
+        disabled="{{detail.isJoined || joining}}"
+        loading="{{joining}}"
+      >
+        {{detail.isJoined ? '✓ 已参与' : '参与团购'}}
+      </button>
+    </view>
+  </block>
+</view>

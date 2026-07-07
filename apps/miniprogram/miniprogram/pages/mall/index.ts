@@ -27,6 +27,19 @@ Page({
     errorMsg: '',
     page: 1,
     hasMore: true,
+
+    // V0.1.35 商城入口网格（8 项，从 mine 分散到商城 tab）
+    mallEntries: [
+      { icon: '🛒', label: '团购', url: '/pages/group-buy/index' },
+      { icon: '📦', label: '购物车', url: '/pages/cart/index' },
+      { icon: '🎁', label: '优惠券', url: '/pages/coupon/index' },
+      { icon: '📋', label: '我的订单', url: '/pages/order-list/index' },
+      { icon: '📍', label: '地址管理', url: '/pages/address/index' },
+      { icon: '🔍', label: '商品分类', url: '/pages/category/index' },
+      { icon: '💰', label: '我的钱包', url: '/pages/wallet/index' },
+      { icon: '🎯', label: '积分中心', url: '/pages/points/index' },
+      { icon: '🏷️', label: '分销中心', url: '/pages/distribution/index' },
+    ],
   },
 
   onShow() {

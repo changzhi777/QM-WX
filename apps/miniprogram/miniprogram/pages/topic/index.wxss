@@ -1,0 +1,32 @@
+/* pages/topic/index.wxss — 话题页（V0.1.36）*/
+.page { min-height: 100vh; background: #f5f5f5; padding-bottom: 40rpx; }
+
+/* 话题头部（品牌色渐变）*/
+.topic-header {
+  background: linear-gradient(135deg, #1890ff 0%, #0faf8e 100%);
+  padding: 48rpx 32rpx;
+  color: #fff;
+}
+.topic-title { font-size: 44rpx; font-weight: 600; }
+.topic-desc { font-size: 24rpx; opacity: 0.9; margin-top: 12rpx; }
+
+/* 动态卡 */
+.feed-list { padding: 16rpx; }
+.feed-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-bottom: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+.card-head { display: flex; align-items: center; gap: 16rpx; margin-bottom: 16rpx; }
+.avatar { width: 72rpx; height: 72rpx; border-radius: 50%; background: #f0f0f0; }
+.user-info { flex: 1; }
+.nickname { font-size: 28rpx; font-weight: 600; color: #333; }
+.time { font-size: 22rpx; color: #999; margin-top: 4rpx; }
+.card-content { font-size: 28rpx; color: #333; line-height: 1.6; }
+.card-meta { font-size: 22rpx; color: #999; margin-top: 12rpx; }
+
+.loading, .end { text-align: center; color: #999; padding: 40rpx; font-size: 24rpx; }
+.empty { text-align: center; padding: 160rpx 0; color: #999; font-size: 28rpx; }
+.empty-icon { font-size: 96rpx; margin-bottom: 16rpx; }

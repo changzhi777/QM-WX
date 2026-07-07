@@ -27,6 +27,9 @@
     </view>
   </view>
 
+  <!-- V0.1.35 商城入口网格（从 mine 分散到商城 tab）-->
+  <entry-grid title="🛒 商城服务" items="{{mallEntries}}" />
+
   <view class="grid">
     <view
       class="card bg-white"

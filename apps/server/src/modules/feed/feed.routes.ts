@@ -21,8 +21,11 @@ export async function feedRoutes(app: FastifyInstance) {
 
     switch (action) {
       case 'list': {
-        const { page, pageSize } = FeedPageSchema.parse(payload ?? {});
-        return { code: 0, data: await feedService.list(userId, page, pageSize) };
+        const input = FeedPageSchema.parse(payload ?? {});
+        return { code: 0, data: await feedService.list(userId, input) };
+      }
+      case 'hotTopics': {
+        return { code: 0, data: await feedService.hotTopics() };
       }
       case 'myFeeds': {
         const { page, pageSize } = FeedPageSchema.parse(payload ?? {});

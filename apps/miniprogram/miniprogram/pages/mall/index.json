@@ -3,6 +3,7 @@
   "enablePullDownRefresh": true,
   "onReachBottomDistance": 50,
   "usingComponents": {
-    "error-state": "/components/error-state/index"
+    "error-state": "/components/error-state/index",
+    "entry-grid": "/components/entry-grid/index"
   }
 }

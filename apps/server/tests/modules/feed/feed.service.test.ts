@@ -47,7 +47,7 @@ describe('feedService.list (V0.1.30)', () => {
     ] as never);
     mocks.prisma.feed.count.mockResolvedValue(1 as never);
 
-    const r = await feedService.list('u1', 1, 20);
+    const r = await feedService.list('u1', { page: 1, pageSize: 20 });
 
     expect(r.list).toHaveLength(1);
     expect(r.list[0].content).toBe('今天跑了 10km');
@@ -68,18 +68,36 @@ describe('feedService.list (V0.1.30)', () => {
     ] as never);
     mocks.prisma.feed.count.mockResolvedValue(1 as never);
 
-    const r = await feedService.list('u1', 1, 20);
+    const r = await feedService.list('u1', { page: 1, pageSize: 20 });
     expect(r.list[0].liked).toBe(true);
   });
 });
 
-describe('feedService.publish (V0.1.30)', () => {
+describe('feedService.publish (V0.1.30 + V0.1.36 topic/video)', () => {
   it('创建动态', async () => {
     mocks.prisma.feed.create.mockResolvedValue({ id: 'f1' } as never);
     const r = await feedService.publish('u1', { content: 'hi', images: [] });
     expect(r.id).toBe('f1');
     expect(mocks.prisma.feed.create).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ userId: 'u1', content: 'hi' }) }),
+    );
+  });
+
+  it('V0.1.36 +topic +videoUrl', async () => {
+    mocks.prisma.feed.create.mockResolvedValue({ id: 'f2' } as never);
+    await feedService.publish('u1', {
+      content: '马拉松完赛',
+      images: [],
+      topic: '马拉松',
+      videoUrl: 'https://example.com/run.mp4',
+    });
+    expect(mocks.prisma.feed.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          topic: '马拉松',
+          videoUrl: 'https://example.com/run.mp4',
+        }),
+      }),
     );
   });
 });
@@ -165,5 +183,41 @@ describe('feedService.comment (V0.1.30 + V0.1.31 notify)', () => {
     mocks.prisma.feed.findUnique.mockResolvedValue(null);
     await expect(feedService.comment('u1', 'f1', 'x')).rejects.toThrow();
     expect(notify).not.toHaveBeenCalled();
+  });
+});
+
+describe('feedService.hotTopics (V0.1.36 红心广场)', () => {
+  it('返热门话题（groupBy topic desc，过滤 null）', async () => {
+    mocks.prisma.feed.groupBy.mockResolvedValue([
+      { topic: '马拉松', _count: { _all: 5 } },
+      { topic: '晨跑', _count: { _all: 3 } },
+      { topic: null, _count: { _all: 10 } }, // null 应被过滤
+    ] as never);
+
+    const r = await feedService.hotTopics();
+
+    expect(r.topics).toHaveLength(2); // null 过滤
+    expect(r.topics[0]).toEqual({ topic: '马拉松', count: 5 });
+    expect(r.topics[1]).toEqual({ topic: '晨跑', count: 3 });
+  });
+});
+
+describe('feedService.list V0.1.36 sort/topic', () => {
+  it('sort=hot → orderBy likeCount desc', async () => {
+    mocks.prisma.feed.findMany.mockResolvedValue([] as never);
+    mocks.prisma.feed.count.mockResolvedValue(0 as never);
+    await feedService.list('u1', { page: 1, pageSize: 20, sort: 'hot' });
+    expect(mocks.prisma.feed.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: { likeCount: 'desc' } }),
+    );
+  });
+
+  it('topic 过滤 → where topic', async () => {
+    mocks.prisma.feed.findMany.mockResolvedValue([] as never);
+    mocks.prisma.feed.count.mockResolvedValue(0 as never);
+    await feedService.list('u1', { page: 1, pageSize: 20, topic: '马拉松' });
+    expect(mocks.prisma.feed.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { topic: '马拉松' } }),
+    );
   });
 });

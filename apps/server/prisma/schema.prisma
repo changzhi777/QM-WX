@@ -57,6 +57,9 @@ model User {
   notifActions      Notification[] @relation("NotifActor") // V0.1.31 触发的通知（actor 视角）
   following         Follow[] @relation("Follower") // V0.1.32 我关注的人（follower 视角）
   followers         Follow[] @relation("Followee") // V0.1.32 关注我的人（followee 视角）
+  familiesOwned     Family[] @relation("FamilyOwner") // V0.1.34 创建的家庭（owner 视角）
+  familyMember      FamilyMember? // V0.1.34 我的家庭关系（1:1，一人一家庭）
+  groupBuyMembers   GroupBuyMember[] // V0.1.37 团购参与记录
   // 分销（V0.1.24）
   inviteCode        String?  @unique
   distributorLevel  String   @default("V0") // V0 | V1 | V2 | V3
@@ -144,8 +147,42 @@ model Product {
 
   orderItems OrderItem[]
   carts      Cart[]
+  groupBuys  GroupBuy[] // V0.1.37 团购
 
   @@index([category, status])
+}
+
+// ===== 团购（V0.1.37，2764 电商团购 — 简化 MVP）=====
+// admin 创建团购活动（团购价 + 目标人数）；用户参与（join）达目标 → reached + notify 参与者
+// MVP：参与 = 记录意向（无支付/退款）；达目标后通知引导下单（复用 mall）
+model GroupBuy {
+  id           String    @id @default(cuid())
+  productId    String
+  groupPrice   Decimal   @db.Decimal(10, 2) // 团购价（低于商品原价）
+  targetCount  Int       // 成团目标人数
+  currentCount Int       @default(0) // 当前参与人数
+  status       String    @default("active") // active | reached
+  endDate      DateTime? // 团购截止（MVP 不强制，仅展示）
+  createdAt    DateTime  @default(now())
+
+  product Product          @relation(fields: [productId], references: [id])
+  members GroupBuyMember[]
+  orders  Order[]          // V0.1.37 团购订单
+
+  @@index([status])
+}
+
+model GroupBuyMember {
+  id         String   @id @default(cuid())
+  groupBuyId String
+  userId     String
+  joinedAt   DateTime @default(now())
+
+  groupBuy GroupBuy @relation(fields: [groupBuyId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupBuyId, userId]) // 防同一团购重复参与
+  @@index([userId])
 }
 
 // ===== 购物车（V0.1.22 B-核心，跨设备持久化）=====
@@ -180,14 +217,18 @@ model Order {
   paidAt          DateTime?
   // V0.1.24 分销：推广来源分销人（带 inviteCode 下单时落）
   sourceUserId    String?
+  // V0.1.37 团购订单关联（null=普通订单；有值=团购价订单）
+  groupBuyId      String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
   user              User                @relation(fields: [userId], references: [id])
+  groupBuy          GroupBuy?           @relation(fields: [groupBuyId], references: [id], onDelete: SetNull)
   distributionOrder DistributionOrder?
 
   @@index([userId, createdAt])
   @@index([sourceUserId])
+  @@index([groupBuyId]) // V0.1.37 团购订单查询
 }
 
 model OrderItem {
@@ -252,6 +293,35 @@ model Shoe {
   @@index([userId, status])
 }
 
+// ===== 家庭空间（V0.1.34，pic 2776 家庭方向）=====
+// 一家一组，owner 创建 + 邀请家人加入；FamilyMember.userId @@unique 强制一人一家庭
+model Family {
+  id          String   @id @default(cuid())
+  name        String
+  ownerId     String
+  inviteCode  String   @unique // 邀请码（家人 joinFamily 输入）
+  createdAt   DateTime @default(now())
+
+  owner   User           @relation("FamilyOwner", fields: [ownerId], references: [id])
+  members FamilyMember[]
+  goals   Goal[]
+
+  @@index([ownerId])
+}
+
+model FamilyMember {
+  id        String   @id @default(cuid())
+  familyId  String
+  userId    String   @unique // 一人一家庭（@@unique 强制）
+  role      String   @default("member") // owner | member
+  joinedAt  DateTime @default(now())
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+}
+
 // ===== 跑步目标（V0.1.28，跑者向 — 月度/年度/自定义 + 进度跟踪）=====
 // 进度由 Checkin aggregate 动态算（periodStart-End 范围内 distance 之和）
 model Goal {
@@ -262,13 +332,16 @@ model Goal {
   targetDistance Float    // 目标距离 km
   periodStart    DateTime // 周期开始（东八区 0 点）
   periodEnd      DateTime // 周期结束（exclusive）
+  familyId       String?  // V0.1.34 家庭目标（null=个人；有值=家庭目标，进度按家庭成员算）
   status         String   @default("active") // active | archived
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id])
+  user   User    @relation(fields: [userId], references: [id])
+  family Family? @relation(fields: [familyId], references: [id], onDelete: Cascade)
 
   @@index([userId, status])
+  @@index([familyId]) // V0.1.34 家庭目标查询
 }
 
 // ===== 收藏（V0.1.29，社交向 — Content/Product 收藏）=====
@@ -330,6 +403,8 @@ model Feed {
   images       String[] // 图片 URL 列表（最多 9）
   checkinId    String?  // 关联打卡（可选，运动动态）
   distanceKm   Float?   // 冗余跑量（避免 join，展示用）
+  topic        String?  // V0.1.36 话题（如 "马拉松"；null=无话题）
+  videoUrl     String?  // V0.1.36 外部视频链接（mp4 URL，<video> 播放）
   likeCount    Int      @default(0)
   commentCount Int      @default(0)
   createdAt    DateTime @default(now())
@@ -341,6 +416,7 @@ model Feed {
 
   @@index([createdAt])
   @@index([userId, createdAt])
+  @@index([topic]) // V0.1.36 话题聚合查询
 }
 
 // 动态点赞（unique 防重复）

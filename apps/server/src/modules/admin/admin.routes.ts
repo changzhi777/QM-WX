@@ -33,6 +33,8 @@ import {
   StatsByTimeRangeSchema,
   ExportOrdersSchema,
   ExportUsersSchema,
+  UpsertGroupBuySchema,
+  ListGroupBuysSchema,
 } from './admin.schema.js';
 
 export async function adminRoutes(app: FastifyInstance) {
@@ -74,6 +76,11 @@ export async function adminRoutes(app: FastifyInstance) {
         return { code: 0, data: await adminService.listContents(ListContentsSchema.parse(payload ?? {})) };
       case 'listProducts':
         return { code: 0, data: await adminService.listProducts(ListProductsSchema.parse(payload ?? {})) };
+      // ===== 团购管理（V0.1.37 新增）=====
+      case 'upsertGroupBuy':
+        return { code: 0, data: await adminService.upsertGroupBuy(UpsertGroupBuySchema.parse(payload)) };
+      case 'listGroupBuys':
+        return { code: 0, data: await adminService.listGroupBuys(ListGroupBuysSchema.parse(payload ?? {})) };
       case 'stats':
         return { code: 0, data: await adminService.stats() };
       // ===== 黑名单 + 审计（V0.1.18 新增）=====

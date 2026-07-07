@@ -1,4 +1,4 @@
-// pages/feed/index.ts — 运动动态（V0.1.30，社交向 — 发布/点赞/评论）
+// pages/feed/index.ts — 运动动态（V0.1.30 + V0.1.32 onTapUser + V0.1.36 topic/video/share）
 import { api } from '../../services/api';
 
 interface FeedItem {
@@ -6,6 +6,8 @@ interface FeedItem {
   content: string;
   images: string[];
   distanceKm: number | null;
+  topic: string | null; // V0.1.36 话题
+  videoUrl: string | null; // V0.1.36 外部视频链接
   likeCount: number;
   commentCount: number;
   createdAt: string;
@@ -28,6 +30,8 @@ Page({
     publishing: false,
     publishVisible: false,
     publishContent: '',
+    publishTopic: '', // V0.1.36 话题
+    publishVideo: '', // V0.1.36 视频链接
     commentVisible: false,
     commentFeedId: '',
     commentContent: '',
@@ -38,6 +42,14 @@ Page({
   onShow() {
     this.setData({ feeds: [], page: 1 });
     this.loadFeeds();
+  },
+
+  /** V0.1.36 转发微信群（button open-type="share" 触发）*/
+  onShareAppMessage() {
+    return {
+      title: '来青沐运动，一起奔跑！🏃',
+      path: '/pages/feed/index',
+    };
   },
 
   /** 拉取动态流（feed.list） */
@@ -67,12 +79,23 @@ Page({
     }
   },
 
-  /** 发布动态 */
+  /** 发布动态（V0.1.36 +topic +videoUrl） */
   onPublish() {
-    this.setData({ publishVisible: true, publishContent: '' });
+    this.setData({
+      publishVisible: true,
+      publishContent: '',
+      publishTopic: '',
+      publishVideo: '',
+    });
   },
   onInputPublish(e: WechatMiniprogram.Input) {
     this.setData({ publishContent: e.detail.value });
+  },
+  onInputPublishTopic(e: WechatMiniprogram.Input) {
+    this.setData({ publishTopic: e.detail.value });
+  },
+  onInputPublishVideo(e: WechatMiniprogram.Input) {
+    this.setData({ publishVideo: e.detail.value });
   },
   async onSubmitPublish() {
     const content = this.data.publishContent.trim();
@@ -82,8 +105,18 @@ Page({
     }
     this.setData({ publishing: true });
     try {
-      await api.call('feed', 'publish', { content, images: [] });
-      this.setData({ publishing: false, publishVisible: false, publishContent: '', page: 1, feeds: [] });
+      const topic = this.data.publishTopic.trim() || undefined;
+      const videoUrl = this.data.publishVideo.trim() || undefined;
+      await api.call('feed', 'publish', { content, images: [], topic, videoUrl });
+      this.setData({
+        publishing: false,
+        publishVisible: false,
+        publishContent: '',
+        publishTopic: '',
+        publishVideo: '',
+        page: 1,
+        feeds: [],
+      });
       wx.showToast({ title: '已发布', icon: 'success' });
       this.loadFeeds();
     } catch {
@@ -93,6 +126,12 @@ Page({
   },
   closePublish() {
     this.setData({ publishVisible: false });
+  },
+
+  /** V0.1.36 点话题标签 → 跳话题页 */
+  onTapTopic(e: WechatMiniprogram.TouchEvent) {
+    const topic = e.currentTarget.dataset.topic as string;
+    if (topic) wx.navigateTo({ url: `/pages/topic/index?topic=${encodeURIComponent(topic)}` });
   },
 
   /** 点赞/取消（乐观更新） */
@@ -118,7 +157,11 @@ Page({
 
   /** 评论 */
   onOpenComment(e: WechatMiniprogram.TouchEvent) {
-    this.setData({ commentVisible: true, commentFeedId: e.currentTarget.dataset.id as string, commentContent: '' });
+    this.setData({
+      commentVisible: true,
+      commentFeedId: e.currentTarget.dataset.id as string,
+      commentContent: '',
+    });
   },
   onInputComment(e: WechatMiniprogram.Input) {
     this.setData({ commentContent: e.detail.value });

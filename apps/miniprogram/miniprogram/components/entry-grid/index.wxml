@@ -1,0 +1,10 @@
+<view class="entry-grid-wrap">
+  <view class="entry-grid-title" wx:if="{{title}}">{{title}}</view>
+  <view class="entry-grid">
+    <view class="entry-item" wx:for="{{items}}" wx:key="url" data-url="{{item.url}}" bindtap="onTap">
+      <view class="entry-icon">{{item.icon}}</view>
+      <view class="entry-label">{{item.label}}</view>
+      <view class="entry-badge" wx:if="{{item.badge}}">{{item.badge > 99 ? '99+' : item.badge}}</view>
+    </view>
+  </view>
+</view>

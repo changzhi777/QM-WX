@@ -4,6 +4,7 @@
   "usingComponents": {
     "feature-gate": "/components/feature-gate/index",
     "privacy-popup": "/components/privacy-popup/index",
-    "error-state": "/components/error-state/index"
+    "error-state": "/components/error-state/index",
+    "entry-grid": "/components/entry-grid/index"
   }
 }

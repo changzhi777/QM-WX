@@ -1,0 +1,28 @@
+<view class="page">
+  <view class="list">
+    <view class="gb-card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}" bindtap="onTapItem">
+      <image class="gb-img" src="{{item.product.images[0] || '/images/default-product.png'}}" mode="aspectFill" />
+      <view class="gb-info">
+        <view class="gb-name">{{item.product.name}}</view>
+        <view class="gb-price-row">
+          <view class="gb-group-price">¥{{item.groupPrice}}</view>
+          <view class="gb-origin">¥{{item.product.price}}</view>
+        </view>
+        <view class="gb-progress">
+          <view class="gb-progress-text">{{item.currentCount}}/{{item.targetCount}} 人</view>
+          <view class="gb-progress-bar">
+            <view class="gb-progress-fill" style="width: {{item.currentCount / item.targetCount * 100}}%;"></view>
+          </view>
+        </view>
+        <view class="gb-joined-tag" wx:if="{{item.isJoined}}">✓ 已参与</view>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+  <view wx:elif="{{!hasMore && list.length > 0}}" class="end">— 没有更多了 —</view>
+  <view wx:elif="{{!loading && list.length === 0}}" class="empty">
+    <view class="empty-icon">🛒</view>
+    <view>暂无团购活动</view>
+  </view>
+</view>

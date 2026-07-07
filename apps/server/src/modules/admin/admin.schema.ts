@@ -41,6 +41,21 @@ export const UpsertProductSchema = z.object({
   sort: z.number().int().default(0),
 });
 
+// ===== 团购（V0.1.37 admin 管理）=====
+export const UpsertGroupBuySchema = z.object({
+  id: z.string().optional(), // 有则 update
+  productId: z.string().min(1),
+  groupPrice: z.number().positive(), // 团购价（元）
+  targetCount: z.number().int().min(2).max(1000), // 成团目标人数
+  endDate: z.string().datetime().optional(), // 截止时间（ISO）
+});
+
+export const ListGroupBuysSchema = z.object({
+  status: z.enum(['active', 'reached']).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+
 // ===== 配置 =====
 export const SetConfigSchema = z.object({
   id: z.enum(['feature_flags', 'member_levels', 'points_rules']),
@@ -128,6 +143,8 @@ export const ExportUsersSchema = z.object({
 // ===== 推导类型（供 service 参数）=====
 export type UpsertContentInput = z.infer<typeof UpsertContentSchema>;
 export type UpsertProductInput = z.infer<typeof UpsertProductSchema>;
+export type UpsertGroupBuyInput = z.infer<typeof UpsertGroupBuySchema>;
+export type ListGroupBuysInput = z.infer<typeof ListGroupBuysSchema>;
 export type SetConfigInput = z.infer<typeof SetConfigSchema>;
 export type ListOrdersInput = z.infer<typeof ListOrdersSchema>;
 export type UpdateOrderStatusInput = z.infer<typeof UpdateOrderStatusSchema>;

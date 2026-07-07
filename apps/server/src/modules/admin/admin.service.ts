@@ -28,6 +28,8 @@ import type {
   StatsByTimeRangeInput,
   ExportOrdersInput,
   ExportUsersInput,
+  UpsertGroupBuyInput,
+  ListGroupBuysInput,
 } from './admin.schema.js';
 
 // ===== admin 白名单缓存（TTL 兜底：多实例部署本进程 invalidate 不通知其它实例）=====
@@ -519,4 +521,51 @@ export async function exportUsers(input: ExportUsersInput): Promise<string> {
     ]));
   }
   return UTF8_BOM + lines.join('\n');
+}
+
+// ===== 团购管理（V0.1.37 admin）=====
+/** 创建/编辑团购活动（校验商品存在 + upsert）*/
+export async function upsertGroupBuy(input: UpsertGroupBuyInput) {
+  const product = await prisma.product.findUnique({ where: { id: input.productId } });
+  if (!product) throw Errors.notFound('商品不存在');
+
+  const data = {
+    productId: input.productId,
+    groupPrice: input.groupPrice as never, // number → Decimal
+    targetCount: input.targetCount,
+    endDate: input.endDate ? new Date(input.endDate) : null,
+  };
+
+  let gb;
+  if (input.id) {
+    gb = await prisma.groupBuy.update({ where: { id: input.id }, data });
+  } else {
+    gb = await prisma.groupBuy.create({ data: { ...data, status: 'active' } as never });
+  }
+  return { id: gb.id };
+}
+
+/** 团购列表（admin，含商品名 + 进度）*/
+export async function listGroupBuys(input: ListGroupBuysInput) {
+  const where = input.status ? { status: input.status } : {};
+  const [list, total] = await Promise.all([
+    prisma.groupBuy.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (input.page - 1) * input.pageSize,
+      take: input.pageSize,
+      include: { product: { select: { id: true, name: true, price: true } } },
+    }),
+    prisma.groupBuy.count({ where }),
+  ]);
+  return {
+    list: list.map((g) => ({
+      ...g,
+      groupPrice: g.groupPrice.toString(),
+      product: { ...g.product, price: g.product.price.toString() },
+    })),
+    total,
+    page: input.page,
+    pageSize: input.pageSize,
+  };
 }

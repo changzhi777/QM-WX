@@ -145,6 +145,8 @@ export const ENDPOINTS = {
     add: '/api/goal',
     remove: '/api/goal',
     myProgress: '/api/goal',
+    addFamilyGoal: '/api/goal',
+    myFamilyGoals: '/api/goal',
   },
   favorite: {
     list: '/api/favorite',
@@ -159,6 +161,7 @@ export const ENDPOINTS = {
     like: '/api/feed',
     unlike: '/api/feed',
     comment: '/api/feed',
+    hotTopics: '/api/feed',
   },
   notification: {
     list: '/api/notification',
@@ -173,6 +176,20 @@ export const ENDPOINTS = {
     myFollowing: '/api/follow',
     myFollowers: '/api/follow',
     myCounts: '/api/follow',
+  },
+  family: {
+    createFamily: '/api/family',
+    joinFamily: '/api/family',
+    myFamily: '/api/family',
+    leaveFamily: '/api/family',
+    familyRanking: '/api/family',
+    inviteInfo: '/api/family',
+  },
+  groupBuy: {
+    list: '/api/group-buy',
+    detail: '/api/group-buy',
+    join: '/api/group-buy',
+    myJoined: '/api/group-buy',
   },
 } as const;
 

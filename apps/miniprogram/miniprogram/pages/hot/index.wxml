@@ -1,0 +1,31 @@
+<view class="page">
+  <!-- 热门话题（横滚 chip）-->
+  <scroll-view scroll-x class="topic-bar" wx:if="{{topics.length > 0}}">
+    <view class="topic-chip" wx:for="{{topics}}" wx:key="topic" data-topic="{{item.topic}}" bindtap="onTapTopic">
+      #{{item.topic}} <text class="topic-count">{{item.count}}</text>
+    </view>
+  </scroll-view>
+
+  <!-- 热门动态列表 -->
+  <view class="feed-list">
+    <view class="feed-card" wx:for="{{feeds}}" wx:key="id">
+      <view class="card-head">
+        <image class="avatar" src="{{item.user.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
+        <view class="user-info">
+          <view class="nickname">{{item.user.nickname || '跑者'}}</view>
+          <view class="time">{{item.createdAt}}</view>
+        </view>
+        <view class="hot-badge">🔥 {{item.likeCount}}</view>
+      </view>
+      <view class="card-content">{{item.content}}</view>
+      <view class="card-topic" wx:if="{{item.topic}}" data-topic="{{item.topic}}" catchtap="onTapTopic">#{{item.topic}}</view>
+    </view>
+  </view>
+
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+  <view wx:elif="{{!hasMore && feeds.length > 0}}" class="end">— 没有更多了 —</view>
+  <view wx:elif="{{!loading && feeds.length === 0}}" class="empty">
+    <view class="empty-icon">🔥</view>
+    <view>暂无热门动态</view>
+  </view>
+</view>
