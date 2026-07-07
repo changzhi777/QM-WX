@@ -21,7 +21,7 @@
       bindtap="goDetail"
     >
       <view class="cover-wrap">
-        <image class="cover" src="{{item.cover || 'images/default-cover.png'}}" mode="aspectFill" />
+        <image class="cover" src="{{item.cover || '/images/default-cover.png'}}" mode="aspectFill" />
         <view class="type-badge">{{item.type}}</view>
       </view>
       <view class="info">

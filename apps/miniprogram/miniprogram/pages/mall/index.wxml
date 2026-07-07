@@ -38,7 +38,7 @@
       data-id="{{item.id}}"
       bindtap="goDetail"
     >
-      <image class="cover" src="{{item.images[0] || 'images/default-product.png'}}" mode="aspectFill" />
+      <image class="cover" src="{{item.images[0] || '/images/default-product.png'}}" mode="aspectFill" />
       <view class="info">
         <view class="name">{{item.name}}</view>
         <view class="price-row">

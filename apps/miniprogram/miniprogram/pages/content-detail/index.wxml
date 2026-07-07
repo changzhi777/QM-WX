@@ -1,5 +1,5 @@
 <view class="page" wx:if="{{content}}">
-  <image class="hero" src="{{content.cover || 'images/default-cover.png'}}" mode="aspectFill" />
+  <image class="hero" src="{{content.cover || '/images/default-cover.png'}}" mode="aspectFill" />
 
   <view class="info bg-white p-4">
     <view class="title">{{content.title}}</view>

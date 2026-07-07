@@ -1,7 +1,7 @@
 <view class="page" wx:if="{{product}}">
   <!-- 商品 -->
   <view class="goods bg-white m-2 p-4 rounded-lg shadow flex">
-    <image class="cover" src="{{product.images[0] || 'images/default-product.png'}}" mode="aspectFill" />
+    <image class="cover" src="{{product.images[0] || '/images/default-product.png'}}" mode="aspectFill" />
     <view class="info">
       <view class="name">{{product.name}}</view>
       <view class="price-row">

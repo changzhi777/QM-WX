@@ -6,7 +6,7 @@
     bindchange="onSwiperChange"
   >
     <swiper-item wx:for="{{product.images}}" wx:key="*this">
-      <image class="hero-img" src="{{item || 'images/default-product.png'}}" mode="aspectFill" />
+      <image class="hero-img" src="{{item || '/images/default-product.png'}}" mode="aspectFill" />
     </swiper-item>
   </swiper>
 
@@ -44,7 +44,7 @@
   <!-- 数量选择弹窗 -->
   <view class="mask" wx:if="{{showSku}}" bindtap="onCloseSku">
     <view class="sku-card" catchtap="">
-      <image class="sku-img" src="{{product.images[0] || 'images/default-product.png'}}" mode="aspectFill" />
+      <image class="sku-img" src="{{product.images[0] || '/images/default-product.png'}}" mode="aspectFill" />
       <view class="sku-info">
         <view class="sku-price">
           <text class="num">{{product.price}}</text>
