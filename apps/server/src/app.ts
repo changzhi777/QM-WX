@@ -142,8 +142,10 @@ export async function buildApp() {
 
   // ===== 统一错误处理 =====
   app.setErrorHandler((err, req, reply) => {
-    if (err instanceof BusinessError) {
-      return reply.status(err.statusCode).send({ code: err.code, msg: err.message });
+    // duck-typing 兜底（Fastify 4 可能破坏 instanceof 链，同 ZodError 处理）
+    if (err instanceof BusinessError || (err as { name?: string }).name === 'BusinessError') {
+      const be = err as BusinessError;
+      return reply.status(be.statusCode).send({ code: be.code, msg: be.message });
     }
     // duck-typing 检查 ZodError（fastify 4 可能破坏 instanceof 链）
     const issues = (err as { issues?: unknown[]; errors?: unknown[] }).issues
