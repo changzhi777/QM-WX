@@ -19,7 +19,7 @@
       wx:key="userId"
     >
       <view class="rank rank-{{item.rank <= 3 ? 'top' : 'normal'}}">{{item.rank}}</view>
-      <image class="avatar" src="{{item.avatarUrl || 'images/default-avatar.png'}}" mode="aspectFill" />
+      <image class="avatar" src="{{item.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
       <view class="info">
         <view class="name">{{item.nickname}}</view>
         <view class="meta">{{item.count}} 次打卡</view>

@@ -7,7 +7,7 @@
   <view class="header bg-white p-4">
     <view class="row" bindtap="onTapEditName">
       <view class="key">头像</view>
-      <image class="avatar" src="{{user.avatarUrl || 'images/default-avatar.png'}}" mode="aspectFill" />
+      <image class="avatar" src="{{user.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
       <view class="arrow">›</view>
     </view>
     <view class="divider" />

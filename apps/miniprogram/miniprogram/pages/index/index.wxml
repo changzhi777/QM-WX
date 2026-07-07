@@ -6,7 +6,7 @@
   <view class="hero">
     <block wx:if="{{isLogin && user}}">
       <view class="hero-user" bindtap="goProfile">
-        <image class="hero-avatar" src="{{user.avatarUrl || 'images/default-avatar.png'}}" mode="aspectFill" />
+        <image class="hero-avatar" src="{{user.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
         <view class="hero-info">
           <view class="hero-name">{{user.nickname || '跑者'}}</view>
           <view class="hero-desc">欢迎来到青沐运动 · 继续奔跑 🏃</view>

@@ -7,7 +7,7 @@
   <view class="header">
     <block wx:if="{{user}}">
       <view class="user-row" bindtap="goProfile">
-        <image class="avatar" src="{{user.avatarUrl || 'images/default-avatar.png'}}" mode="aspectFill" />
+        <image class="avatar" src="{{user.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
         <view class="info">
           <view class="nickname">{{user.nickname || '未设置昵称'}}</view>
           <view class="member">{{memberLabel}} · {{user.points}} 积分</view>
@@ -17,7 +17,7 @@
     </block>
     <block wx:else>
       <view class="user-row" bindtap="onTapLogin">
-        <image class="avatar" src="images/default-avatar.png" mode="aspectFill" />
+        <image class="avatar" src="/images/default-avatar.png" mode="aspectFill" />
         <view class="info">
           <view class="nickname">点击登录</view>
           <view class="member">登录后享受更多服务</view>
