@@ -109,6 +109,25 @@ export async function buildApp() {
     timestamp: new Date().toISOString(),
   }));
 
+  // ===== 统一错误处理（必须在 route 注册前，Fastify 4 才会对 hook/route 抛错生效）=====
+  app.setErrorHandler((err, req, reply) => {
+    // duck-typing 兜底（Fastify 4 可能破坏 instanceof 链，同 ZodError 处理）
+    if (err instanceof BusinessError || (err as { name?: string }).name === 'BusinessError') {
+      const be = err as unknown as BusinessError;
+      return reply.status(be.statusCode).send({ code: be.code, msg: be.message });
+    }
+    // duck-typing 检查 ZodError（fastify 4 可能破坏 instanceof 链）
+    const issues = (err as { issues?: unknown[]; errors?: unknown[] }).issues
+      ?? (err as { errors?: unknown[] }).errors;
+    if (Array.isArray(issues) && issues.length > 0) {
+      const first = issues[0] as { path: (string | number)[]; message: string };
+      const path = first.path.join('.');
+      return reply.status(400).send({ code: 400, msg: `${path}: ${first.message}` });
+    }
+    req.log.error({ err: { name: err?.name, type: (err as { type?: string })?.type, msg: String(err?.message).slice(0, 200) } }, 'unhandled error');
+    return reply.status(500).send({ code: 500, msg: '服务器内部错误' });
+  });
+
   // ===== 业务路由 =====
   await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(uploadRoutes, { prefix: '/api/upload' });
@@ -139,25 +158,6 @@ export async function buildApp() {
   await app.register(groupBuyRoutes, { prefix: '/api/group-buy' });
   await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.register(wxpayRoutes, { prefix: '/api/wxpay' });
-
-  // ===== 统一错误处理 =====
-  app.setErrorHandler((err, req, reply) => {
-    // duck-typing 兜底（Fastify 4 可能破坏 instanceof 链，同 ZodError 处理）
-    if (err instanceof BusinessError || (err as { name?: string }).name === 'BusinessError') {
-      const be = err as unknown as BusinessError;
-      return reply.status(be.statusCode).send({ code: be.code, msg: be.message });
-    }
-    // duck-typing 检查 ZodError（fastify 4 可能破坏 instanceof 链）
-    const issues = (err as { issues?: unknown[]; errors?: unknown[] }).issues
-      ?? (err as { errors?: unknown[] }).errors;
-    if (Array.isArray(issues) && issues.length > 0) {
-      const first = issues[0] as { path: (string | number)[]; message: string };
-      const path = first.path.join('.');
-      return reply.status(400).send({ code: 400, msg: `${path}: ${first.message}` });
-    }
-    req.log.error({ err: { name: err?.name, type: (err as { type?: string })?.type, msg: String(err?.message).slice(0, 200) } }, 'unhandled error');
-    return reply.status(500).send({ code: 500, msg: '服务器内部错误' });
-  });
 
   return app;
 }
