@@ -22,6 +22,12 @@ model User {
   memberExpireAt DateTime?
   points         Int       @default(0)
   certified      Boolean   @default(false)
+  // V0.1.40 个人资料扩展（profile 完整实现）
+  gender         String?   // male | female | unknown
+  birthday       String?   // YYYY-MM-DD
+  region         String?   // 如"北京"
+  height         Int?      // cm
+  weight         Float?    // kg
   stats          Json      @default("{\"totalDistance\":0,\"totalCheckins\":0,\"totalPoints\":0}")
   // V0.1.18：黑名单字段（admin banUser/unbanUser 维护）
   isBanned       Boolean   @default(false)

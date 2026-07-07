@@ -17,6 +17,12 @@ export interface User {
   memberExpireAt: string | null; // ISO 8601
   points: number;
   certified: boolean;
+  // V0.1.40 个人资料扩展
+  gender: string | null; // male | female | unknown
+  birthday: string | null; // YYYY-MM-DD
+  region: string | null;
+  height: number | null; // cm
+  weight: number | null; // kg
   stats: {
     totalDistance: number;
     totalCheckins: number;

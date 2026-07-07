@@ -48,18 +48,17 @@ Page({
   },
 
   applyUser(user: User) {
-    const stats = user.stats ?? { totalDistance: 0, totalCheckins: 0, totalPoints: 0 };
+    // V0.1.40 回填已有 profile 字段（之前每次重置空）
     this.setData({
       user,
       form: {
-        gender: 'unknown',
-        birthday: '',
-        region: '',
-        height: '',
-        weight: '',
+        gender: (user.gender as 'male' | 'female' | 'unknown') ?? 'unknown',
+        birthday: user.birthday ?? '',
+        region: user.region ?? '',
+        height: user.height != null ? String(user.height) : '',
+        weight: user.weight != null ? String(user.weight) : '',
       },
     });
-    void stats;
   },
 
   onTapEditName() {

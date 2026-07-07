@@ -91,11 +91,19 @@ export const userService = {
 
   /** 更新资料（字段白名单，V0.1.8 增 me 缓存失效） */
   async updateProfile(userId: string, input: UpdateProfileInput) {
+    const profile = input.profile ?? {};
     const updated = await userRepo.updateProfile(userId, {
       ...(input.nickname !== undefined && { nickname: input.nickname }),
       ...(input.avatarFileID !== undefined && { avatarUrl: input.avatarFileID }),
+      // V0.1.40 profile 扩展字段（之前完全忽略，现已修）
+      ...(profile.gender !== undefined && { gender: profile.gender }),
+      ...(profile.birthday !== undefined && { birthday: profile.birthday }),
+      ...(profile.region !== undefined && { region: profile.region }),
+      ...(profile.height !== undefined && { height: profile.height }),
+      ...(profile.weight !== undefined && { weight: profile.weight }),
+      ...(profile.name !== undefined && { nickname: profile.name }),
+      ...(profile.phone !== undefined && { phone: profile.phone }),
     });
-    // 写后精准失效 me 缓存（资料变更 → 下次 me 必拿到新值）
     await Cache.del(meCacheKey(userId));
     return toUserOutput(updated);
   },
@@ -139,13 +147,16 @@ function toUserOutput(u: {
   memberExpireAt: Date | null;
   points: number;
   certified: boolean;
+  gender: string | null;
+  birthday: string | null;
+  region: string | null;
+  height: number | null;
+  weight: number | null;
   stats: unknown;
   createdAt: Date;
   updatedAt: Date;
 }) {
   const rawStats = (u.stats as { totalDistance?: number; totalCheckins?: number } | null) ?? {};
-  // totalPoints 由权威字段 points 派生（不再依赖 stats JSON 里的镜像值），
-  // 与 user.repository.addPoints 的"不写 stats"改动配套，保证展示值始终准确。
   const stats = {
     totalDistance: rawStats.totalDistance ?? 0,
     totalCheckins: rawStats.totalCheckins ?? 0,
@@ -161,6 +172,11 @@ function toUserOutput(u: {
     memberExpireAt: u.memberExpireAt?.toISOString() ?? null,
     points: u.points,
     certified: u.certified,
+    gender: u.gender,
+    birthday: u.birthday,
+    region: u.region,
+    height: u.height,
+    weight: u.weight,
     stats,
     createdAt: u.createdAt.toISOString(),
     updatedAt: u.updatedAt.toISOString(),

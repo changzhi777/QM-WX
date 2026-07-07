@@ -188,7 +188,9 @@ export const api = {
     if (body.code !== 0) {
       throw new Error((body as { msg: string }).msg ?? 'upload failed');
     }
-    return (body as { data: { url: string } }).data.url;
+    // V0.1.40：拼完整 URL（upload 返相对 /uploads/，小程序 image 需完整 https URL）
+    const relativeUrl = (body as { data: { url: string } }).data.url;
+    return `${getBaseUrl()}${relativeUrl}`;
   },
 };
 

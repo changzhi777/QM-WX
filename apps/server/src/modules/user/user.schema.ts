@@ -61,6 +61,11 @@ export const UserOutputSchema = z.object({
   memberExpireAt: z.string().nullable(),
   points: z.number().int(),
   certified: z.boolean(),
+  gender: z.string().nullable(),
+  birthday: z.string().nullable(),
+  region: z.string().nullable(),
+  height: z.number().nullable(),
+  weight: z.number().nullable(),
   stats: z.object({
     totalDistance: z.number(),
     totalCheckins: z.number().int(),

@@ -11,7 +11,7 @@
       >
         <image
           class="avatar"
-          src="{{avatarUrl || 'images/default-avatar.png'}}"
+          src="{{avatarUrl || '/images/default-avatar.png'}}"
           mode="aspectFill"
         />
         <view class="avatar-tip">点击选择头像</view>
