@@ -24,14 +24,17 @@ export type UnbindInput = z.infer<typeof UnbindInputSchema>;
 
 /** 同步微信运动（前端传 cloudID 解密后的步数列表） */
 export const SyncWeRunInputSchema = z.object({
-  stepList: z.array(
-    z.object({
-      timestamp: z.number().int(),
-      step: z.number().int().min(0),
-    }),
-  ),
+  encryptedData: z.string().min(1), // wx.getWeRunData 返回的密文（Base64，后端用 session_key 解密）
+  iv: z.string().min(1), // wx.getWeRunData 返回的 iv（Base64）
 });
 export type SyncWeRunInput = z.infer<typeof SyncWeRunInputSchema>;
+
+/** V0.1.43 微信运动历史查询（日期范围 YYYY-MM-DD）*/
+export const MyWeRunQuerySchema = z.object({
+  startDate: z.string().min(1),
+  endDate: z.string().min(1),
+});
+export type MyWeRunQuery = z.infer<typeof MyWeRunQuerySchema>;
 
 // ===== 佳明数据查询（B-2，2026-07-01）=====
 // 数据来源：佳明账户导出包；查询 action 挂 device 模块，复用 RawActivity + 3 新表
@@ -144,6 +147,7 @@ export const DeviceActionBodySchema = z.object({
     'startOAuth',
     'unbind',
     'syncWeRun',
+    'myWeRun',
     'submitHeartRate',
     'bindBleDevice',
     'myBindings',

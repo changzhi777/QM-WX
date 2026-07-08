@@ -13,9 +13,10 @@
  * - 各厂商企业开发者账号（华为/佳明/小米/荣耀）
  * - AES 密钥（用于 token 加密存储）
  */
-import { randomUUID } from 'node:crypto';
+import { randomUUID, createDecipheriv } from 'node:crypto';
 import { Errors } from '../../common/errors.js';
 import { prisma } from '../../infra/prisma.js';
+import { redis } from '../../infra/redis.js';
 import { Cache } from '../../infra/cache.js';
 import { env } from '../../config/env.js';
 import { enqueueGarminImport } from '../../jobs/queue.js';
@@ -23,6 +24,7 @@ import { ACTIVITY_TYPE_MAP as TYPE_MAP } from './device.schema.js';
 import type {
   StartOAuthInput,
   SyncWeRunInput,
+  MyWeRunQuery,
   BindBleDeviceInput,
   SubmitHeartRateInput,
   MyActivitiesQuery,
@@ -116,8 +118,78 @@ export const deviceService = {
    * MVP 简化：只返 ok + 同步条数（不真做 upsert）
    * Phase 6：upsert raw_activities(vendor:werun, ...)
    */
-  async syncWeRun(_userId: string, _input: SyncWeRunInput) {
-    return { ok: true, synced: _input.stepList.length };
+  /**
+   * 同步微信运动步数（V0.1.43 实现，替 stub）
+   *
+   * 前端 wx.getWeRunData → encryptedData + iv → 后端用 session_key AES 解密 → stepInfoList
+   * timestamp 毫秒 → CN 时区 date，同日聚合取 max step
+   * upsert by userId+date（同一日取 max step 防回退）
+   */
+  async syncWeRun(userId: string, input: SyncWeRunInput) {
+    // 1. 查 user.openid
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { openid: true } });
+    if (!user) throw Errors.notFound('user not found');
+
+    // 2. get session_key from Redis（code2Session 时缓存，TTL 7000s）
+    const sessionKey = await redis.get(`wx:session:${user.openid}`);
+    if (!sessionKey) throw Errors.badRequest('session_key 已过期，请重新进入小程序');
+
+    // 3. AES 解密 encryptedData（微信 WXBizDataCrypt：AES-128-CBC）
+    const decrypted = decryptWeRunData(sessionKey, input.encryptedData, input.iv);
+    if (!decrypted?.stepInfoList?.length) throw Errors.badRequest('微信运动数据解密失败');
+    const stepList = decrypted.stepInfoList;
+
+    // 4. timestamp → CN 时区 date，同日取 max step
+    const dayMap = new Map<string, number>();
+    for (const item of stepList) {
+      const date = cnDateFromTs(item.timestamp);
+      const prev = dayMap.get(date) ?? 0;
+      if (item.step > prev) dayMap.set(date, item.step);
+    }
+
+    // 5. upsert（按 userId+date unique，取 max 防回退）
+    let synced = 0;
+    for (const [date, step] of dayMap) {
+      const existing = await prisma.weRunRecord.findUnique({ where: { userId_date: { userId, date } } });
+      if (!existing || step > existing.step) {
+        await prisma.weRunRecord.upsert({
+          where: { userId_date: { userId, date } },
+          create: { userId, date, step },
+          update: { step },
+        });
+      }
+      synced++;
+    }
+
+    return { synced, days: dayMap.size };
+  },
+
+  /**
+   * 我的微信运动历史（V0.1.43）
+   *
+   * 按日期范围返步数列表 + km 估算（步数 × 0.7m）+ 汇总
+   * Cache 60s（syncWeRun 后失效）
+   */
+  async myWeRun(userId: string, input: MyWeRunQuery) {
+    const key = `werun:${userId}:${input.startDate}:${input.endDate}`;
+    return Cache.wrap(key, 60, async () => {
+      const records = await prisma.weRunRecord.findMany({
+        where: { userId, date: { gte: input.startDate, lte: input.endDate } },
+        orderBy: { date: 'asc' },
+      });
+      const totalSteps = records.reduce((s, r) => s + r.step, 0);
+      const STEP_TO_KM = 0.0007; // 平均步幅 0.7m
+      return {
+        records: records.map((r) => ({
+          date: r.date,
+          step: r.step,
+          km: Math.round(r.step * STEP_TO_KM * 100) / 100,
+        })),
+        totalSteps,
+        totalKm: Math.round(totalSteps * STEP_TO_KM * 100) / 100,
+        days: records.length,
+      };
+    });
   },
 
   /**
@@ -613,4 +685,39 @@ function extractSleepScore(scores: unknown): number | null {
 /** 保留 2 位小数 */
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+/**
+ * 毫秒时间戳 → CN 时区 date "YYYY-MM-DD"（V0.1.43 syncWeRun 用）
+ */
+function cnDateFromTs(ts: number): string {
+  const cn = new Date(ts + 8 * 3600 * 1000);
+  const y = cn.getUTCFullYear();
+  const m = cn.getUTCMonth();
+  const d = cn.getUTCDate();
+  return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+}
+
+/**
+ * 微信运动数据解密（V0.1.43）
+ *
+ * 微信 WXBizDataCrypt：session_key 作 AES-128-CBC 密钥，解密 encryptedData
+ * 返 JSON：{ stepInfoList: [{timestamp, step}], watermark: {appid, ...} }
+ */
+function decryptWeRunData(
+  sessionKey: string,
+  encryptedData: string,
+  iv: string,
+): { stepInfoList?: { timestamp: number; step: number }[] } | null {
+  try {
+    const key = Buffer.from(sessionKey, 'base64');
+    const ivBuf = Buffer.from(iv, 'base64');
+    const encrypted = Buffer.from(encryptedData, 'base64');
+    const decipher = createDecipheriv('aes-128-cbc', key, ivBuf);
+    decipher.setAutoPadding(true);
+    const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);
+    return JSON.parse(decrypted.toString('utf8'));
+  } catch {
+    return null;
+  }
 }

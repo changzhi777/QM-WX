@@ -86,3 +86,19 @@
 .debug-logs { background: #f9f9f9; border-radius: 8rpx; padding: 16rpx; max-height: 400rpx; overflow-y: auto; }
 .debug-log { font-size: 22rpx; color: #999; line-height: 1.6; font-family: monospace; word-break: break-all; }
 .debug-empty { font-size: 22rpx; color: #ccc; text-align: center; padding: 20rpx; }
+
+/* V0.1.43 微信运动步数（方案 3）*/
+.werun-section { background: #fff; margin: 16rpx; padding: 24rpx; border-radius: 16rpx; box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06); }
+.werun-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
+.werun-title { font-size: 30rpx; font-weight: 600; color: #333; }
+.werun-sync-btn { font-size: 26rpx; color: #fff; background: #0FAF8E; padding: 8rpx 24rpx; border-radius: 24rpx; }
+.werun-summary { display: flex; gap: 32rpx; padding: 16rpx 0; border-top: 1rpx solid #f0f0f0; }
+.werun-stat { display: flex; align-items: baseline; gap: 6rpx; }
+.werun-stat .v { font-size: 36rpx; font-weight: 600; color: #0FAF8E; }
+.werun-stat .u { font-size: 22rpx; color: #999; }
+.werun-empty { font-size: 24rpx; color: #999; text-align: center; padding: 24rpx 0; }
+.werun-list { white-space: nowrap; padding: 8rpx 0; }
+.werun-row { display: inline-flex; flex-direction: column; align-items: center; width: 140rpx; padding: 16rpx 8rpx; margin-right: 8rpx; background: #f9f9f9; border-radius: 8rpx; vertical-align: top; }
+.werun-date { font-size: 20rpx; color: #999; }
+.werun-step { font-size: 28rpx; font-weight: 600; color: #333; margin-top: 4rpx; }
+.werun-km { font-size: 20rpx; color: #0FAF8E; margin-top: 2rpx; }

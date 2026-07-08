@@ -70,10 +70,14 @@ Page({
     debugVisible: false,
     debugLog: [] as string[],
     hrCount: 0,
+    // V0.1.43 微信运动步数（方案 3）
+    werunRecords: [] as { date: string; step: number; km: number }[],
+    werunSummary: { totalSteps: 0, totalKm: 0, days: 0 } as { totalSteps: number; totalKm: number; days: number },
   },
 
   onShow() {
     this.loadBindings();
+    this.loadWeRun(); // V0.1.43 微信运动步数
   },
 
   onHide() {
@@ -279,6 +283,56 @@ Page({
     const time = new Date().toTimeString().slice(0, 8);
     const log = [...this.data.debugLog, `[${time}] ${msg}`].slice(-20);
     this.setData({ debugLog: log });
+  },
+
+  /** V0.1.43 同步微信运动步数（wx.getWeRunData → 后端 session_key 解密入库）*/
+  async onSyncWeRun() {
+    wx.showLoading({ title: '同步中...' });
+    try {
+      const res = await new Promise<WechatMiniprogram.GetWeRunDataSuccessCallbackResult>((resolve, reject) => {
+        wx.getWeRunData({ success: resolve, fail: reject });
+      });
+      const result = await api.call<{ synced: number; days: number }>('device', 'syncWeRun', {
+        encryptedData: res.encryptedData,
+        iv: res.iv,
+      });
+      wx.hideLoading();
+      wx.showToast({ title: `同步 ${result.synced} 条`, icon: 'success' });
+      this.loadWeRun();
+    } catch (err) {
+      wx.hideLoading();
+      const msg = (err as Error).message || '同步失败';
+      if (msg.includes('auth') || msg.includes('deny') || msg.includes('authorize')) {
+        wx.showModal({
+          title: '需授权微信运动',
+          content: '请在设置中开启"微信运动"权限以读取步数',
+          confirmText: '去设置',
+          success: (r) => r.confirm && wx.openSetting({}),
+        });
+      } else {
+        wx.showToast({ title: msg, icon: 'none' });
+      }
+    }
+  },
+
+  /** V0.1.43 加载微信运动历史（最近 30 天）*/
+  async loadWeRun() {
+    try {
+      const end = new Date();
+      const start = new Date(end.getTime() - 30 * 86400 * 1000);
+      const fmt = (d: Date) =>
+        `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const res = await api.call<{
+        records: { date: string; step: number; km: number }[];
+        totalSteps: number; totalKm: number; days: number;
+      }>('device', 'myWeRun', { startDate: fmt(start), endDate: fmt(end) });
+      this.setData({
+        werunRecords: res.records.slice().reverse(),
+        werunSummary: { totalSteps: res.totalSteps, totalKm: res.totalKm, days: res.days },
+      });
+    } catch {
+      // 静默（未同步时无数据）
+    }
   },
 
   /** 折叠/展开调试面板 */

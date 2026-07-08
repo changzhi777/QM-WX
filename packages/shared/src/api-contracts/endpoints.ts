@@ -77,6 +77,7 @@ export const ENDPOINTS = {
     startOAuth: '/api/device',
     unbind: '/api/device',
     syncWeRun: '/api/device',
+    myWeRun: '/api/device', // V0.1.43 微信运动历史步数（日期范围）
     submitHeartRate: '/api/device',
     // 蓝牙设备绑定（V0.1.25，参考图 2770）
     bindBleDevice: '/api/device',

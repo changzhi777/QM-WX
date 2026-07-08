@@ -107,4 +107,24 @@
       <view class="scan-refresh" bindtap="startScan">重新扫描</view>
     </view>
   </view>
+
+  <!-- V0.1.43 微信运动步数（方案 3，合规数据源）-->
+  <view class="werun-section">
+    <view class="werun-head">
+      <view class="werun-title">📱 微信运动步数</view>
+      <view class="werun-sync-btn" bindtap="onSyncWeRun">同步</view>
+    </view>
+    <view class="werun-summary" wx:if="{{werunSummary.days > 0}}">
+      <view class="werun-stat"><text class="v">{{werunSummary.totalSteps}}</text><text class="u">步（{{werunSummary.days}}天）</text></view>
+      <view class="werun-stat"><text class="v">{{werunSummary.totalKm}}</text><text class="u">km</text></view>
+    </view>
+    <view class="werun-empty" wx:elif="{{werunRecords.length === 0}}">点击「同步」拉取微信运动步数（需授权）</view>
+    <scroll-view scroll-x wx:else class="werun-list">
+      <view class="werun-row" wx:for="{{werunRecords}}" wx:key="date">
+        <text class="werun-date">{{item.date}}</text>
+        <text class="werun-step">{{item.step}}</text>
+        <text class="werun-km">{{item.km}}km</text>
+      </view>
+    </scroll-view>
+  </view>
 </view>

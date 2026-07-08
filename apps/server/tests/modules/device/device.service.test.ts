@@ -15,8 +15,15 @@ import { mockErrors } from '../../helpers/mockErrors.js';
 const mocks = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const helpers = require('../../helpers/mockPrisma.ts') as typeof import('../../helpers/mockPrisma.js');
-  return helpers.createPrismaMock({ models: ['deviceBinding'], txModels: [] });
+  return helpers.createPrismaMock({ models: ['deviceBinding', 'weRunRecord', 'user'], txModels: [] });
 });
+
+// Mock Redis（Cache.wrap + syncWeRun session_key 都走 redis）
+const _redisMockState = vi.hoisted(() => ({
+  store: new Map<string, string>(),
+  redis: { get: vi.fn(), set: vi.fn(), setex: vi.fn(), del: vi.fn(), scan: vi.fn() },
+}));
+vi.mock('src/infra/redis.js', () => ({ redis: _redisMockState.redis }));
 
 vi.mock('src/infra/prisma.js', () => ({ prisma: mocks.prisma }));
 vi.mock('src/common/errors.js', () => ({ Errors: mockErrors }));
@@ -24,13 +31,25 @@ vi.mock('src/config/env.js', () => ({
   env: {
     WX_APPID: 'wx-test-appid',
     WX_NOTIFY_URL: 'https://api.example.com/api/wxpay',
+    NODE_ENV: 'test',
   },
 }));
 
 import { deviceService } from '../../../src/modules/device/device.service.js';
 
+function setupMockRedis() {
+  const { store, redis } = _redisMockState;
+  redis.get.mockImplementation(async (k: string) => store.get(k) ?? null);
+  redis.set.mockImplementation(async (k: string, v: string) => { store.set(k, v); return 'OK'; });
+  redis.setex.mockImplementation(async (k: string, _s: number, v: string) => { store.set(k, v); return 'OK'; });
+  redis.del.mockImplementation(async (k: string) => { const h = store.has(k); store.delete(k); return h ? 1 : 0; });
+  redis.scan.mockImplementation(async () => ['0', []] as [string, string[]]);
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
+  _redisMockState.store.clear();
+  setupMockRedis();
 });
 
 describe('deviceService.listBindings (V2 stub 深化)', () => {
@@ -113,14 +132,40 @@ describe('deviceService.startOAuth (V2 stub 深化)', () => {
 
 // unbind / submitHeartRate 已实现（V0.1.25）— 测试见 device.bindings.test.ts
 
-describe('deviceService.syncWeRun (MVP 简化：返 synced 数)', () => {
-  it('返 ok + synced = stepList.length', async () => {
-    const result = await deviceService.syncWeRun('u1', {
-      stepList: [
-        { date: '2026-06-01', steps: 8000 },
-        { date: '2026-06-02', steps: 10000 },
-      ],
-    });
-    expect(result).toEqual({ ok: true, synced: 2 });
+describe('deviceService.syncWeRun (V0.1.43 encryptedData 解密)', () => {
+  it('session_key 过期（Redis 无）→ badRequest', async () => {
+    mocks.prisma.user.findUnique.mockResolvedValue({ openid: 'o-test' });
+    await expect(
+      deviceService.syncWeRun('u1', { encryptedData: 'fake', iv: 'fake' }),
+    ).rejects.toThrow('session_key 已过期');
+  });
+
+  it('解密失败（假 session_key + 假 encryptedData）→ badRequest', async () => {
+    mocks.prisma.user.findUnique.mockResolvedValue({ openid: 'o-test' });
+    _redisMockState.store.set('wx:session:o-test', 'fake-session-key-base64==');
+    await expect(
+      deviceService.syncWeRun('u1', { encryptedData: 'fake-data', iv: 'fake-iv' }),
+    ).rejects.toThrow('微信运动数据解密失败');
+  });
+});
+
+describe('deviceService.myWeRun (V0.1.43)', () => {
+  it('返步数列表 + km 估算 + 汇总', async () => {
+    mocks.prisma.weRunRecord.findMany.mockResolvedValue([
+      { date: '2026-07-01', step: 10000 },
+      { date: '2026-07-02', step: 20000 },
+    ]);
+    const r = await deviceService.myWeRun('u1', { startDate: '2026-07-01', endDate: '2026-07-02' });
+    expect(r.records).toHaveLength(2);
+    expect(r.totalSteps).toBe(30000);
+    expect(r.totalKm).toBe(21); // 30000 × 0.0007 = 21
+    expect(r.days).toBe(2);
+  });
+
+  it('Cache 命中：第二次不查 DB', async () => {
+    mocks.prisma.weRunRecord.findMany.mockResolvedValue([]);
+    await deviceService.myWeRun('u1', { startDate: '2026-07-03', endDate: '2026-07-04' });
+    await deviceService.myWeRun('u1', { startDate: '2026-07-03', endDate: '2026-07-04' });
+    expect(mocks.prisma.weRunRecord.findMany).toHaveBeenCalledTimes(1);
   });
 });

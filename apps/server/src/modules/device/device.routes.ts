@@ -10,6 +10,7 @@ import {
   ListBindingsInputSchema,
   StartOAuthInputSchema,
   SyncWeRunInputSchema,
+  MyWeRunQuerySchema,
   UnbindInputSchema,
   BindBleDeviceInputSchema,
   SubmitHeartRateInputSchema,
@@ -78,6 +79,11 @@ export async function deviceRoutes(app: FastifyInstance) {
         case 'myTodayHealth': {
           // 无入参 — 后端聚合睡眠/健身年龄/训练指标/今日活动（V0.1.25，参考图 2774）
           return { code: 0, data: await deviceService.myTodayHealth(userId) };
+        }
+        case 'myWeRun': {
+          // V0.1.43 微信运动历史步数
+          const input = MyWeRunQuerySchema.parse(payload ?? {});
+          return { code: 0, data: await deviceService.myWeRun(userId, input) };
         }
         case 'myPending': {
           const input = ActivityPageQuerySchema.parse(payload ?? {});
