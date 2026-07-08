@@ -36,6 +36,14 @@ const EnvSchema = z.object({
     .string()
     .optional()
     .transform((v) => v === '1' || v === 'true'),
+
+  // 律动(RHYTHMIND)同步对接:qmwx → 律动 /open/v1/events 出站投递
+  LUDONG_SYNC_ENABLED: z
+    .string()
+    .optional()
+    .transform((v) => v === '1' || v === 'true'),
+  LUDONG_WEBHOOK_SECRET: z.string().default(''),
+  LUDONG_BASE_URL: z.string().url().default('http://localhost:8000'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);
@@ -52,6 +60,17 @@ if (parsed.data.NODE_ENV === 'production') {
   if (looksWeak) {
     console.error(
       '❌ 生产环境 JWT_SECRET 过弱：需 ≥32 字符且不含占位词（changeme/secret/default 等）',
+    );
+    process.exit(1);
+  }
+
+  // 律动同步:启用时密钥必须配置(≥16 字符,防弱密钥上线)
+  if (
+    parsed.data.LUDONG_SYNC_ENABLED &&
+    parsed.data.LUDONG_WEBHOOK_SECRET.length < 16
+  ) {
+    console.error(
+      '❌ 生产环境 LUDONG_SYNC_ENABLED=true 时 LUDONG_WEBHOOK_SECRET 需 ≥16 字符',
     );
     process.exit(1);
   }

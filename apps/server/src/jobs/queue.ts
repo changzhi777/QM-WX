@@ -4,11 +4,13 @@
  * 当前队列：
  * - weekly-report：周报自动生成（每周日 20:00 触发）
  * - close-order：超时关单（订单创建后 30 分钟触发）
+ * - refresh-certs：微信平台证书刷新（12h）
+ * - garmin-import：佳明活动导入
+ * - ludong-sync：律动 outbox 投递（5min,LUDONG_SYNC_ENABLED=true 时启用）
  *
  * 未来扩展：
  * - email-notify：邮件通知
  * - image-render：战报图生成
- * - ludong-sync：律动 outbox 投递
  */
 import { Queue, Worker, type Processor } from 'bullmq';
 import { redis } from '../infra/redis.js';
@@ -17,6 +19,7 @@ import { processWeeklyReport } from './weekly-report.job.js';
 import { processCloseOrder, type CloseOrderJobData } from './close-order.job.js';
 import { processRefreshPlatformCerts } from './refresh-certs.job.js';
 import { processGarminImport, type GarminImportJobData } from './garmin-import.job.js';
+import { processLudongSync } from './ludong-sync.job.js';
 import { logger } from '../common/logger.js';
 
 const QUEUE_PREFIX = 'qmwx';
@@ -26,6 +29,9 @@ export const CLOSE_ORDER_DELAY_MS = 30 * 60 * 1000;
 
 /** 平台证书刷新周期（毫秒）— 12 小时 */
 export const REFRESH_CERTS_EVERY_MS = 12 * 60 * 60 * 1000;
+
+/** 律动 outbox 投递周期（毫秒）— 5 分钟 */
+export const LUDONG_SYNC_EVERY_MS = 5 * 60 * 1000;
 
 // ===== 队列定义 =====
 export const weeklyReportQueue = new Queue('weekly-report', {
@@ -72,6 +78,17 @@ export const garminImportQueue = new Queue('garmin-import', {
   },
 });
 
+export const ludongSyncQueue = new Queue('ludong-sync', {
+  connection: redis,
+  prefix: QUEUE_PREFIX,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: { type: 'exponential', delay: 60_000 },
+    removeOnComplete: { count: 200, age: 86400 },
+    removeOnFail: { count: 500, age: 7 * 86400 },
+  },
+});
+
 // ===== Worker 集合 =====
 const workers: Worker[] = [];
 
@@ -110,6 +127,10 @@ export function startWorkers() {
   startWorker('garmin-import', async (job) => {
     return processGarminImport(job.data as GarminImportJobData);
   }, 2);
+
+  startWorker('ludong-sync', async () => {
+    return processLudongSync();
+  }, 1);
 }
 
 /** 优雅关闭 */
@@ -120,6 +141,7 @@ export async function stopWorkers() {
     closeOrderQueue.close(),
     refreshCertsQueue.close(),
     garminImportQueue.close(),
+    ludongSyncQueue.close(),
   ]);
 }
 
@@ -147,6 +169,29 @@ async function scheduleRefreshCerts() {
   // 启动时立即拉一次，确保证书缓存预热（不阻塞启动）
   await refreshCertsQueue.add('refresh-now', {});
   logger.info('refresh-certs scheduler registered (every 12h)');
+}
+
+/**
+ * 注册律动 outbox 投递的 5min repeatable job。
+ * 仅在 LUDONG_SYNC_ENABLED=true 时注册；否则不投递（worker 仍空跑但 flushOutbox 直接返回 0）。
+ */
+async function scheduleLudongSync() {
+  if (env.NODE_ENV === 'test') {
+    logger.info('ludong-sync scheduler skipped (test env)');
+    return;
+  }
+  if (!env.LUDONG_SYNC_ENABLED) {
+    logger.info('ludong-sync scheduler skipped (LUDONG_SYNC_ENABLED=false)');
+    return;
+  }
+  await ludongSyncQueue.add(
+    'sync',
+    {},
+    { repeat: { every: LUDONG_SYNC_EVERY_MS }, jobId: 'ludong-sync-repeat' },
+  );
+  // 启动时立即投一次（防止上次宕机期间积压）
+  await ludongSyncQueue.add('sync-now', {});
+  logger.info({ everyMs: LUDONG_SYNC_EVERY_MS }, 'ludong-sync scheduler registered');
 }
 
 /** 工具：手动 trigger 周报（admin endpoint / 测试用） */
@@ -187,6 +232,11 @@ export async function enqueueGarminImport(data: GarminImportJobData) {
   });
 }
 
+/** 工具：手动触发一次律动 outbox 投递（admin / 运维用,不等 5min tick） */
+export async function enqueueLudongSync() {
+  return ludongSyncQueue.add('sync-now', {});
+}
+
 // ===== 启动 / 关闭集成 =====
 let started = false;
 let schedulerHandle: NodeJS.Timeout | null = null;
@@ -209,6 +259,10 @@ export async function startJobs() {
   // 平台证书刷新（12h repeatable + 启动预热）
   scheduleRefreshCerts().catch((err) => {
     logger.error({ err }, 'schedule refresh-certs failed');
+  });
+  // 律动 outbox 投递（5min repeatable + 启动预热）
+  scheduleLudongSync().catch((err) => {
+    logger.error({ err }, 'schedule ludong-sync failed');
   });
   logger.info('jobs system started');
 }
