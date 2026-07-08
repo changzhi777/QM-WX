@@ -88,12 +88,14 @@ Page({
   },
 
   onHide() {
-    // 离开页面释放蓝牙资源 + 停心率上传定时器
+    // 离开页面前 flush 残留心率（防数据丢）+ 停定时器 + 释放蓝牙
+    this.uploadHrBuffer();
     this.stopHrUpload();
     closeBleAdapter();
   },
 
   onUnload() {
+    this.uploadHrBuffer();
     this.stopHrUpload();
   },
 
@@ -251,6 +253,8 @@ Page({
             // V0.1.43 累积心率采样，定时批量上传后端（避免高频请求）
             const buf = [...this.data.hrBuffer, { hr, ts: Date.now() }].slice(-100);
             this.setData({ hrBuffer: buf });
+            // 首次心率立即上传（确保心率尽快入库，首页 onShow 能查到 — A 修复）
+            if (buf.length === 1) this.uploadHrBuffer();
           });
           hrSubscribed = true;
           this.pushLog('✓ 心率订阅成功');
@@ -324,10 +328,10 @@ Page({
     this.setData({ debugLog: log });
   },
 
-  /** V0.1.43 启动心率定时上传（10s 批量 flush，避免高频请求）*/
+  /** V0.1.43 启动心率定时上传（5s 批量 flush，平衡实时性与请求频次）*/
   startHrUpload() {
-    this.stopHrUpload(); // 防重复启动
-    const timer = setInterval(() => this.uploadHrBuffer(), 10000);
+    this.stopHrUpload();
+    const timer = setInterval(() => this.uploadHrBuffer(), 5000);
     this.setData({ hrUploadTimer: timer });
   },
 
@@ -339,15 +343,29 @@ Page({
     }
   },
 
-  /** V0.1.43 批量上传心率缓冲（flush 后立即清空，防并发重复）*/
+  /** V0.1.43 批量上传心率缓冲（flush 后立即清空；成功后存本地缓存供首页秒开）*/
   async uploadHrBuffer() {
     const samples = this.data.hrBuffer;
     if (samples.length === 0) return;
     this.setData({ hrBuffer: [] });
     try {
       await api.call('device', 'submitHeartRate', { samples });
+      const latest = samples[samples.length - 1];
+      this.cacheHealth('hr', { value: latest.hr, timestamp: new Date(latest.ts).toISOString() });
     } catch {
       // 失败丢弃（实时心率非关键历史，YAGNI 不重试）
+    }
+  },
+
+  /** V0.1.43 健康数据存本地（首页秒开 + 离线可看）*/
+  cacheHealth(key: string, value: unknown) {
+    try {
+      const cached = (wx.getStorageSync('todayHealth') as Record<string, unknown>) || {};
+      cached[key] = value;
+      cached.lastUpdate = Date.now();
+      wx.setStorageSync('todayHealth', cached);
+    } catch {
+      // 静默（缓存失败不阻塞）
     }
   },
 
@@ -360,6 +378,7 @@ Page({
         this.pushLog(`✓ 血氧 ${result.spo2}% · 脉率 ${result.pr}`);
         try {
           await api.call('device', 'submitSpO2', { value: result.spo2 });
+          this.cacheHealth('spo2', { value: result.spo2, timestamp: new Date().toISOString() });
         } catch {
           // 上传失败静默
         }

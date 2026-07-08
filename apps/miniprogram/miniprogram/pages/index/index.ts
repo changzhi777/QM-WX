@@ -21,6 +21,7 @@ Page({
       spo2: null as { value: number; timestamp: string } | null,
       steps: null as { value: number; date: string } | null,
     },
+    healthTimer: null as ReturnType<typeof setInterval> | null,
     showPrivacy: false,
     // V0.1.35 快捷入口（高频 page，entry-grid 渲染；V0.1.36 +红心广场）
     quickEntries: [
@@ -34,23 +35,77 @@ Page({
     ],
   },
 
+  onLoad() {
+    // V0.1.43 读本地缓存秒开（不等网络，先显示上次值）
+    try {
+      const cached = wx.getStorageSync('todayHealth');
+      if (cached) this.setData({ todayHealth: cached });
+    } catch {
+      // 静默
+    }
+  },
+
   onShow() {
     // 1. 检查隐私协议
     if (getApp().globalData.needPrivacyAgree) {
       this.setData({ showPrivacy: true });
     } else {
       this.loadData();
+      this.startHealthRefresh(); // V0.1.43 定时刷今日健康（15s，首页准实时）
     }
+  },
+
+  onHide() {
+    this.stopHealthRefresh();
+  },
+
+  onUnload() {
+    this.stopHealthRefresh();
   },
 
   onPrivacyAgree() {
     getApp().globalData.needPrivacyAgree = false;
     this.setData({ showPrivacy: false });
     this.loadData();
+    this.startHealthRefresh();
+  },
+
+  /** V0.1.43 启动今日健康定时刷新（15s）*/
+  startHealthRefresh() {
+    this.stopHealthRefresh();
+    const timer = setInterval(() => this.loadTodayHealth(), 15000);
+    this.setData({ healthTimer: timer });
+  },
+
+  stopHealthRefresh() {
+    if (this.data.healthTimer) {
+      clearInterval(this.data.healthTimer);
+      this.setData({ healthTimer: null });
+    }
+  },
+
+  /** V0.1.43 单独刷今日健康（定时器 + loadData 复用，成功存本地，失败静默）*/
+  async loadTodayHealth() {
+    try {
+      const todayHealth = await api.call<{
+        hr: { value: number; timestamp: string } | null;
+        spo2: { value: number; timestamp: string } | null;
+        steps: { value: number; date: string } | null;
+      }>('device', 'myTodayHealth', {});
+      this.setData({ todayHealth });
+      try {
+        wx.setStorageSync('todayHealth', todayHealth);
+      } catch {
+        // 静默
+      }
+    } catch {
+      // 静默（无设备数据，首页不报错）
+    }
   },
 
   onPullDownRefresh() {
     this.loadData().finally(() => wx.stopPullDownRefresh());
+    this.loadTodayHealth();
   },
 
   async loadData() {
@@ -79,18 +134,12 @@ Page({
         stats = await api.call<typeof stats>('sport', 'myStats', { period: 'week' });
       }
 
-      // V0.1.43 今日健康（BLE 心率/血氧 + 微信运动步数；失败静默，不阻塞首页）
-      let todayHealth = { hr: null, spo2: null, steps: null };
+      // V0.1.43 今日健康（登录态时异步刷，不阻塞首页 setData；成功存本地）
       if (isLogin) {
-        try {
-          todayHealth = await api.call('device', 'myTodayHealth', {});
-        } catch {
-          // 静默（无设备数据，首页不报错）
-        }
+        this.loadTodayHealth();
       }
 
       this.setData({
-        todayHealth,
         userStats: {
           totalDistance: stats.totalDistance,
           totalCheckins: stats.count,
