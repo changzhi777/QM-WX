@@ -37,6 +37,21 @@
 .stats-num { font-size: 40rpx; font-weight: 600; color: var(--brand); }
 .stats-unit { font-size: 22rpx; color: var(--text-secondary); margin-top: 4rpx; }
 
+/* V0.1.43 今日健康卡（心率/血氧/步数，BLE + 微信运动）*/
+.health-card {
+  margin: 16rpx 16rpx 0;
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+.health-label { font-size: 26rpx; color: var(--text-secondary); margin-bottom: 16rpx; }
+.health-row { display: flex; }
+.health-item { flex: 1; text-align: center; }
+.health-icon { font-size: 36rpx; }
+.health-num { font-size: 40rpx; font-weight: 600; color: var(--brand); margin-top: 4rpx; }
+.health-unit { font-size: 22rpx; color: var(--text-secondary); margin-top: 4rpx; }
+
 /* 两大中心引导卡 */
 .redirect-card {
   margin: 16rpx;

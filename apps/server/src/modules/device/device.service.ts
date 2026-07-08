@@ -27,6 +27,8 @@ import type {
   MyWeRunQuery,
   BindBleDeviceInput,
   SubmitHeartRateInput,
+  SubmitSpO2Input,
+  MyHealthHistoryQuery,
   MyActivitiesQuery,
   MySleepQuery,
   MyMetricsQuery,
@@ -193,18 +195,89 @@ export const deviceService = {
   },
 
   /**
-   * 提交实时心率（蓝牙 BLE 心率服务 0x180D notify 回调，V0.1.25）
+   * 提交实时心率（蓝牙 BLE 心率服务 0x180D notify 回调，V0.1.25；V0.1.43 加持久化）
    *
-   * MVP：取最新采样写 Redis 缓存（key `ble:hr:{userId}`，TTL 1h）
-   * - 供运动中实时查询（如 sport 打卡页展示实时心率）
-   * - 不持久化（YAGNI；后续若需历史心率轨迹再建 HeartRateSample 表）
+   * 双写：
+   * - Redis 缓存 ble:hr:{userId} TTL 1h（实时，供 sport 打卡页秒级展示）
+   * - HeartRateRecord createMany（历史，供 myHealthHistory / myTodayHealth latest 查询）
    *
-   * fail-open：Cache.set 静默失败，业务不阻塞
+   * fail-open：Cache.set 静默失败不阻塞；createMany 失败抛错（历史数据重要）
+   * 写后失效 myTodayHealth 缓存（latestHr 变化）
    */
   async submitHeartRate(userId: string, input: SubmitHeartRateInput) {
     const latest = input.samples[input.samples.length - 1];
     await Cache.set({ key: `ble:hr:${userId}`, ttlSec: 3600, value: latest });
+    await prisma.heartRateRecord.createMany({
+      data: input.samples.map((s) => ({
+        userId,
+        value: s.hr,
+        timestamp: new Date(s.ts),
+        source: 'ble',
+      })),
+    });
+    await Cache.del(`garmin:today:${userId}:${todayRangeCN().dateStr}`);
     return { ok: true, count: input.samples.length, latest: latest.hr };
+  },
+
+  /**
+   * 提交血氧（BLE 0x1822 / 0x2A5F spot-check 测量结果，V0.1.43）
+   *
+   * 单次测量值落 SpO2Record；myTodayHealth 取今日 latest
+   */
+  async submitSpO2(userId: string, input: SubmitSpO2Input) {
+    const record = await prisma.spO2Record.create({
+      data: {
+        userId,
+        value: input.value,
+        timestamp: input.ts ? new Date(input.ts) : new Date(),
+      },
+    });
+    await Cache.del(`garmin:today:${userId}:${todayRangeCN().dateStr}`);
+    return { ok: true, value: record.value, timestamp: record.timestamp.toISOString() };
+  },
+
+  /**
+   * 健康历史（心率/血氧，V0.1.43）
+   *
+   * 按 type + dateRange 分页查询；type 决定查 HeartRateRecord 还是 SpO2Record
+   */
+  async myHealthHistory(userId: string, input: MyHealthHistoryQuery) {
+    const where = {
+      userId,
+      ...(input.start || input.end
+        ? {
+            timestamp: {
+              ...(input.start ? { gte: new Date(input.start) } : {}),
+              ...(input.end ? { lte: new Date(input.end) } : {}),
+            },
+          }
+        : {}),
+    };
+    const isHr = input.type === 'hr';
+    const [rows, total] = await Promise.all([
+      isHr
+        ? prisma.heartRateRecord.findMany({
+            where,
+            orderBy: { timestamp: 'desc' },
+            skip: (input.page - 1) * input.pageSize,
+            take: input.pageSize,
+          })
+        : prisma.spO2Record.findMany({
+            where,
+            orderBy: { timestamp: 'desc' },
+            skip: (input.page - 1) * input.pageSize,
+            take: input.pageSize,
+          }),
+      isHr ? prisma.heartRateRecord.count({ where }) : prisma.spO2Record.count({ where }),
+    ]);
+    return {
+      type: input.type,
+      list: rows.map((r) => ({ id: r.id, value: r.value, timestamp: r.timestamp.toISOString() })),
+      total,
+      page: input.page,
+      pageSize: input.pageSize,
+      hasMore: input.page * input.pageSize < total,
+    };
   },
 
   // ===== 佳明数据查询（B-2，2026-07-01；Cache.wrap 300s）=====
@@ -483,7 +556,7 @@ export const deviceService = {
     const { start, end, dateStr } = todayRangeCN();
     const key = `garmin:today:${userId}:${dateStr}`;
     return Cache.wrap(key, GARMIN_CACHE_TTL_SEC, async () => {
-      const [sleepLatest, fitnessAgeLatest, metrics, todayActivities] = await Promise.all([
+      const [sleepLatest, fitnessAgeLatest, metrics, todayActivities, latestHrRow, latestSpO2Row, todayWeRun] = await Promise.all([
         prisma.garminSleep.findFirst({ where: { userId }, orderBy: { calendarDate: 'desc' } }),
         prisma.garminFitnessAge.findFirst({ where: { userId }, orderBy: { asOfDate: 'desc' } }),
         prisma.garminMetric.findMany({
@@ -496,6 +569,16 @@ export const deviceService = {
         prisma.rawActivity.findMany({
           where: { userId, vendor: 'garmin', startTime: { gte: start, lt: end } },
         }),
+        // V0.1.43 BLE 心率/血氧今日 latest + 微信运动今日步数
+        prisma.heartRateRecord.findFirst({
+          where: { userId, timestamp: { gte: start, lt: end } },
+          orderBy: { timestamp: 'desc' },
+        }),
+        prisma.spO2Record.findFirst({
+          where: { userId, timestamp: { gte: start, lt: end } },
+          orderBy: { timestamp: 'desc' },
+        }),
+        prisma.weRunRecord.findUnique({ where: { userId_date: { userId, date: dateStr } } }),
       ]);
 
       // 各 metricType 取 latest（已按日期 desc，首次出现即最新）
@@ -517,6 +600,14 @@ export const deviceService = {
 
       return {
         date: dateStr,
+        // V0.1.43 BLE 心率/血氧 + 微信运动步数（首页今日健康卡数据源）
+        hr: latestHrRow
+          ? { value: latestHrRow.value, timestamp: latestHrRow.timestamp.toISOString() }
+          : null,
+        spo2: latestSpO2Row
+          ? { value: latestSpO2Row.value, timestamp: latestSpO2Row.timestamp.toISOString() }
+          : null,
+        steps: todayWeRun ? { value: todayWeRun.step, date: todayWeRun.date } : null,
         sleep: sleepLatest
           ? {
               durationHours: sleepDurationHours(sleepLatest),
@@ -552,7 +643,8 @@ export const deviceService = {
               }
             : null,
         // 佳明数据源不支持的指标 — 前端显示"连接设备后查看"占位
-        unavailable: ['steps', 'spo2', 'bloodPressure', 'weight', 'bloodGlucose'],
+        // V0.1.43：steps/spo2 已接入（BLE/微信运动），从未可用列表移除
+        unavailable: ['bloodPressure', 'weight', 'bloodGlucose'],
       };
     });
   },

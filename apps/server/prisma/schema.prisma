@@ -67,6 +67,8 @@ model User {
   familyMember      FamilyMember? // V0.1.34 我的家庭关系（1:1，一人一家庭）
   trainingEnrollment UserPlanEnrollment? // V0.1.41 当前训练计划（1:1，一人一活跃计划）
   weRunRecords      WeRunRecord[] // V0.1.43 微信运动步数（每日）
+  heartRateRecords  HeartRateRecord[] // V0.1.43 心率历史（BLE 0x180D + 微信运动）
+  spo2Records       SpO2Record[] // V0.1.43 血氧历史（BLE 0x1822）
   groupBuyMembers   GroupBuyMember[] // V0.1.37 团购参与记录
   // 分销（V0.1.24）
   inviteCode        String?  @unique
@@ -899,4 +901,33 @@ model WeRunRecord {
 
   @@unique([userId, date]) // 同一日只一条（upsert 防重）
   @@index([userId, date])
+}
+
+// ===== 心率历史（V0.1.43，BLE 心率 0x180D notify 批量落库）=====
+// submitHeartRate 写 Redis（实时 ble:hr:{userId}）+ createMany 落历史
+// myHealthHistory 按 type=hr + dateRange 查询；myTodayHealth 取今日 latest
+model HeartRateRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  value     Int      // 心率 bpm
+  timestamp DateTime // 测量时间（前端上报，BLE notify 时间）
+  source    String   @default("ble") // ble | werun | manual
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
+}
+
+// ===== 血氧历史（V0.1.43，BLE 血氧 0x1822 / 0x2A5F spot-check）=====
+model SpO2Record {
+  id        String   @id @default(cuid())
+  userId    String
+  value     Int      // 血氧百分比 0-100
+  timestamp DateTime // 测量时间
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
 }

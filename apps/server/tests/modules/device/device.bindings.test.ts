@@ -16,6 +16,8 @@ vi.mock('src/infra/prisma.js', () => ({
       delete: vi.fn(),
     },
     rawActivity: { count: vi.fn() },
+    // V0.1.43 submitHeartRate 加 createMany 落库
+    heartRateRecord: { createMany: vi.fn() },
   },
 }));
 

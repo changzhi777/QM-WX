@@ -20,6 +20,9 @@
 .hr-value { font-size: 72rpx; font-weight: 600; margin-top: 8rpx; }
 .hr-value .u { font-size: 28rpx; margin-left: 8rpx; font-weight: 400; }
 
+/* V0.1.43 血氧卡（粉红渐变区分心率卡）*/
+.spo2-card { background: linear-gradient(135deg, #e91e63, #ad1457); }
+
 /* 分段 */
 .section { margin: 0 16rpx 24rpx; }
 .section-title { font-size: 28rpx; color: #666; margin-bottom: 16rpx; padding-left: 8rpx; }

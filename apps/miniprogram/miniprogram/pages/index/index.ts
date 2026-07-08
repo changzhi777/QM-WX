@@ -15,6 +15,12 @@ Page({
     },
     user: null as null | { nickname: string; avatarUrl: string | null; points: number },
     isLogin: false,
+    // V0.1.43 今日健康（BLE 心率/血氧 + 微信运动步数，device.myTodayHealth）
+    todayHealth: {
+      hr: null as { value: number; timestamp: string } | null,
+      spo2: null as { value: number; timestamp: string } | null,
+      steps: null as { value: number; date: string } | null,
+    },
     showPrivacy: false,
     // V0.1.35 快捷入口（高频 page，entry-grid 渲染；V0.1.36 +红心广场）
     quickEntries: [
@@ -73,7 +79,18 @@ Page({
         stats = await api.call<typeof stats>('sport', 'myStats', { period: 'week' });
       }
 
+      // V0.1.43 今日健康（BLE 心率/血氧 + 微信运动步数；失败静默，不阻塞首页）
+      let todayHealth = { hr: null, spo2: null, steps: null };
+      if (isLogin) {
+        try {
+          todayHealth = await api.call('device', 'myTodayHealth', {});
+        } catch {
+          // 静默（无设备数据，首页不报错）
+        }
+      }
+
       this.setData({
+        todayHealth,
         userStats: {
           totalDistance: stats.totalDistance,
           totalCheckins: stats.count,

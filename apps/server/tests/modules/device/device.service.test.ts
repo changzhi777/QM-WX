@@ -15,7 +15,7 @@ import { mockErrors } from '../../helpers/mockErrors.js';
 const mocks = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const helpers = require('../../helpers/mockPrisma.ts') as typeof import('../../helpers/mockPrisma.js');
-  return helpers.createPrismaMock({ models: ['deviceBinding', 'weRunRecord', 'user'], txModels: [] });
+  return helpers.createPrismaMock({ models: ['deviceBinding', 'weRunRecord', 'user', 'heartRateRecord', 'spO2Record'], txModels: [] });
 });
 
 // Mock Redis（Cache.wrap + syncWeRun session_key 都走 redis）
@@ -167,5 +167,66 @@ describe('deviceService.myWeRun (V0.1.43)', () => {
     await deviceService.myWeRun('u1', { startDate: '2026-07-03', endDate: '2026-07-04' });
     await deviceService.myWeRun('u1', { startDate: '2026-07-03', endDate: '2026-07-04' });
     expect(mocks.prisma.weRunRecord.findMany).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('deviceService.submitHeartRate (V0.1.43 持久化)', () => {
+  it('写 Redis + createMany 落 HeartRateRecord', async () => {
+    const r = await deviceService.submitHeartRate('u1', {
+      samples: [
+        { hr: 72, ts: 1000 },
+        { hr: 75, ts: 2000 },
+      ],
+    });
+    expect(r.latest).toBe(75);
+    expect(r.count).toBe(2);
+    expect(mocks.prisma.heartRateRecord.createMany).toHaveBeenCalledWith({
+      data: [
+        { userId: 'u1', value: 72, timestamp: new Date(1000), source: 'ble' },
+        { userId: 'u1', value: 75, timestamp: new Date(2000), source: 'ble' },
+      ],
+    });
+  });
+});
+
+describe('deviceService.submitSpO2 (V0.1.43)', () => {
+  it('落 SpO2Record + 返 value/timestamp', async () => {
+    mocks.prisma.spO2Record.create.mockResolvedValue({
+      id: 's1',
+      value: 98,
+      timestamp: new Date(1000),
+    });
+    const r = await deviceService.submitSpO2('u1', { value: 98 });
+    expect(r.ok).toBe(true);
+    expect(r.value).toBe(98);
+    expect(mocks.prisma.spO2Record.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ userId: 'u1', value: 98 }),
+    });
+  });
+});
+
+describe('deviceService.myHealthHistory (V0.1.43)', () => {
+  it('type=hr 查 HeartRateRecord 分页', async () => {
+    mocks.prisma.heartRateRecord.findMany.mockResolvedValue([
+      { id: 'h1', value: 72, timestamp: new Date(1000) },
+    ]);
+    mocks.prisma.heartRateRecord.count.mockResolvedValue(1);
+    const r = await deviceService.myHealthHistory('u1', { type: 'hr', page: 1, pageSize: 50 });
+    expect(r.type).toBe('hr');
+    expect(r.list).toHaveLength(1);
+    expect(r.list[0]).toMatchObject({ value: 72 });
+    expect(mocks.prisma.heartRateRecord.findMany).toHaveBeenCalled();
+  });
+
+  it('type=spo2 查 SpO2Record', async () => {
+    mocks.prisma.spO2Record.findMany.mockResolvedValue([
+      { id: 's1', value: 98, timestamp: new Date(1000) },
+    ]);
+    mocks.prisma.spO2Record.count.mockResolvedValue(1);
+    const r = await deviceService.myHealthHistory('u1', { type: 'spo2', page: 1, pageSize: 50 });
+    expect(r.type).toBe('spo2');
+    expect(r.list).toHaveLength(1);
+    expect(mocks.prisma.spO2Record.findMany).toHaveBeenCalled();
+    expect(mocks.prisma.spO2Record.count).toHaveBeenCalled();
   });
 });

@@ -13,6 +13,16 @@
       <text wx:if="{{liveBattery !== null}}" class="hr-meta-item">🔋 {{liveBattery}}%</text>
       <text wx:if="{{liveManufacturer}}" class="hr-meta-item">{{liveManufacturer}}</text>
       <text wx:if="{{liveModel}}" class="hr-meta-item">{{liveModel}}</text>
+      <text wx:if="{{liveBodyLocation}}" class="hr-meta-item">佩戴·{{liveBodyLocation === 'Wrist' ? '手腕' : liveBodyLocation}}</text>
+    </view>
+  </view>
+
+  <!-- V0.1.43 血氧卡（0x1822 / 0x2A5F spot-check 测量结果）-->
+  <view class="hr-card spo2-card" wx:if="{{liveSpO2 !== null}}">
+    <view class="hr-label">血氧 SpO2</view>
+    <view class="hr-value">{{liveSpO2.spo2}}<text class="u">%</text></view>
+    <view class="hr-meta">
+      <text class="hr-meta-item">❤️ 脉率 {{liveSpO2.pr}}</text>
     </view>
   </view>
 

@@ -106,6 +106,23 @@ export const SubmitHeartRateInputSchema = z.object({
 });
 export type SubmitHeartRateInput = z.infer<typeof SubmitHeartRateInputSchema>;
 
+/** 提交血氧（BLE 0x1822 / 0x2A5F spot-check 测量结果，V0.1.43）*/
+export const SubmitSpO2InputSchema = z.object({
+  value: z.number().int().min(50).max(100), // 血氧百分比合理区间 50-100
+  ts: z.number().int().optional(), // 毫秒时间戳（缺省取服务端 now）
+});
+export type SubmitSpO2Input = z.infer<typeof SubmitSpO2InputSchema>;
+
+/** 健康历史查询（心率/血氧，V0.1.43）*/
+export const MyHealthHistoryQuerySchema = z.object({
+  type: z.enum(['hr', 'spo2']),
+  start: z.string().datetime().optional(),
+  end: z.string().datetime().optional(),
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(200).default(50),
+});
+export type MyHealthHistoryQuery = z.infer<typeof MyHealthHistoryQuerySchema>;
+
 // ===== 佳明数据处理（导入榜单，2026-07-01）=====
 
 /** RawActivity.type → Checkin.sportType 映射（导入榜单/数据处理共用，单点维护） */
@@ -149,6 +166,8 @@ export const DeviceActionBodySchema = z.object({
     'syncWeRun',
     'myWeRun',
     'submitHeartRate',
+    'submitSpO2',
+    'myHealthHistory',
     'bindBleDevice',
     'myBindings',
     'myActivities',

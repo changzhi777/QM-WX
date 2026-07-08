@@ -8,6 +8,8 @@ import {
   subscribeHeartRate,
   readBattery,
   readDeviceInfo,
+  readSpO2SpotCheck,
+  readBodySensorLocation,
   getDeviceServices,
   closeBleAdapter,
   type BleDevice,
@@ -65,6 +67,11 @@ Page({
     liveBattery: null as number | null,
     liveModel: null as string | null,
     liveManufacturer: null as string | null,
+    liveSpO2: null as { spo2: number; pr: number } | null,
+    liveBodyLocation: null as string | null,
+    // V0.1.43 心率批量上传缓冲 + 定时器（10s flush，避免高频请求）
+    hrBuffer: [] as { hr: number; ts: number }[],
+    hrUploadTimer: null as ReturnType<typeof setInterval> | null,
     boundBleDeviceId: '' as string,
     // 蓝牙联调辅助（GAP-9，真机调试可观测性）
     debugVisible: false,
@@ -81,8 +88,13 @@ Page({
   },
 
   onHide() {
-    // 离开页面释放蓝牙资源（不断开绑定，只停扫描/订阅）
+    // 离开页面释放蓝牙资源 + 停心率上传定时器
+    this.stopHrUpload();
     closeBleAdapter();
+  },
+
+  onUnload() {
+    this.stopHrUpload();
   },
 
   /** 拉取品牌列表 + 已绑设备（device.myBindings） */
@@ -176,28 +188,34 @@ Page({
       // V0.1.42：查服务列表（诊断小米手环支持哪些服务，决定心率策略）
       // V0.1.43：hasHr 提到外层 — 不支持 0x180D 时直接跳过标准订阅（避免无效重试）
       let hasHr = false;
+      let hasSpO2 = false;
       try {
         const services = await getDeviceServices(device.deviceId);
         const sl = services.map((s) => s.replace(/-/g, '').toLowerCase());
         hasHr = sl.some((s) => s.includes('180d'));
+        hasSpO2 = sl.some((s) => s.includes('1822'));
         const hasMi = sl.some((s) => s.includes('fee0') || s.includes('fee1'));
         const hasBat = sl.some((s) => s.includes('180f'));
         const hasInfo = sl.some((s) => s.includes('180a'));
         this.pushLog(
-          `服务 ${services.length} 个 | 心率0x180D ${hasHr ? '✓' : '✗'} | 小米0xFEE0 ${hasMi ? '✓' : '✗'} | 电量0x180F ${hasBat ? '✓' : '✗'} | 设备信息0x180A ${hasInfo ? '✓' : '✗'}`,
+          `服务 ${services.length} 个 | 心率0x180D ${hasHr ? '✓' : '✗'} | 血氧0x1822 ${hasSpO2 ? '✓' : '✗'} | 小米0xFEE0 ${hasMi ? '✓' : '✗'} | 电量0x180F ${hasBat ? '✓' : '✗'} | 设备信息0x180A ${hasInfo ? '✓' : '✗'}`,
         );
+        // V0.1.43 全量服务短码（诊断 10 Pro 完整能力，决策依据）
+        this.pushLog(`服务全集: ${services.map((s) => s.replace(/-/g, '').slice(4, 8)).join(', ')}`);
       } catch (e) {
         this.pushLog(`⚠ 获取服务列表失败：${(e as Error).message}`);
       }
 
-      // V0.1.33：读电量 + 设备信息（0x180F + 0x180A）
-      const [battery, deviceInfo] = await Promise.all([
+      // V0.1.33 读电量 + 设备信息；V0.1.43 加体感位置（0x2A38）
+      const [battery, deviceInfo, bodyLocation] = await Promise.all([
         readBattery(device.deviceId),
         readDeviceInfo(device.deviceId),
+        readBodySensorLocation(device.deviceId),
       ]);
       this.pushLog(
-        `电量 ${battery ?? '?'}% · 厂商 ${deviceInfo.manufacturer ?? '未知'} · 型号 ${deviceInfo.model ?? '未知'}`,
+        `电量 ${battery ?? '?'}% · 厂商 ${deviceInfo.manufacturer ?? '未知'} · 型号 ${deviceInfo.model ?? '未知'} · 佩戴 ${bodyLocation ?? '?'}`,
       );
+      if (bodyLocation) this.setData({ liveBodyLocation: bodyLocation });
 
       // V0.1.33 品牌识别：扫描时识别 + manufacturer 二次验证 + 手选兜底
       let vendor = device.detectedBrand as 'ble' | 'garmin' | 'xiaomi';
@@ -230,12 +248,25 @@ Page({
         try {
           await subscribeHeartRate(device.deviceId, (hr) => {
             this.setData({ liveHr: hr, hrCount: this.data.hrCount + 1 });
+            // V0.1.43 累积心率采样，定时批量上传后端（避免高频请求）
+            const buf = [...this.data.hrBuffer, { hr, ts: Date.now() }].slice(-100);
+            this.setData({ hrBuffer: buf });
           });
           hrSubscribed = true;
           this.pushLog('✓ 心率订阅成功');
+          // V0.1.43 启动定时上传（10s 批量 flush）
+          this.startHrUpload();
         } catch (hrErr) {
           this.pushLog(`⚠ 心率订阅失败（重试 3 次仍失败）：${(hrErr as Error).message}`);
         }
+      }
+
+      // V0.1.43 血氧读取（hasSpO2 时订阅，需用户在手环上测血氧触发推送）
+      if (hasSpO2) {
+        this.pushLog('检测到血氧服务 0x1822，订阅中（请在手环上测血氧）...');
+        this.readSpO2(device.deviceId);
+      } else {
+        this.pushLog('⚠ 未检测到血氧服务 0x1822（小米可能私有，不可得）');
       }
 
       // 落库绑定（即使心率订阅失败，仍绑定设备 — V0.1.42 容错）
@@ -291,6 +322,53 @@ Page({
     const time = new Date().toTimeString().slice(0, 8);
     const log = [...this.data.debugLog, `[${time}] ${msg}`].slice(-20);
     this.setData({ debugLog: log });
+  },
+
+  /** V0.1.43 启动心率定时上传（10s 批量 flush，避免高频请求）*/
+  startHrUpload() {
+    this.stopHrUpload(); // 防重复启动
+    const timer = setInterval(() => this.uploadHrBuffer(), 10000);
+    this.setData({ hrUploadTimer: timer });
+  },
+
+  /** V0.1.43 停止心率定时上传 */
+  stopHrUpload() {
+    if (this.data.hrUploadTimer) {
+      clearInterval(this.data.hrUploadTimer);
+      this.setData({ hrUploadTimer: null });
+    }
+  },
+
+  /** V0.1.43 批量上传心率缓冲（flush 后立即清空，防并发重复）*/
+  async uploadHrBuffer() {
+    const samples = this.data.hrBuffer;
+    if (samples.length === 0) return;
+    this.setData({ hrBuffer: [] });
+    try {
+      await api.call('device', 'submitHeartRate', { samples });
+    } catch {
+      // 失败丢弃（实时心率非关键历史，YAGNI 不重试）
+    }
+  },
+
+  /** V0.1.43 读血氧（订阅 0x2A5F，等用户在手环测血氧推送；30s 超时）*/
+  async readSpO2(deviceId: string) {
+    try {
+      const result = await readSpO2SpotCheck(deviceId, 30000);
+      if (result) {
+        this.setData({ liveSpO2: result });
+        this.pushLog(`✓ 血氧 ${result.spo2}% · 脉率 ${result.pr}`);
+        try {
+          await api.call('device', 'submitSpO2', { value: result.spo2 });
+        } catch {
+          // 上传失败静默
+        }
+      } else {
+        this.pushLog('⚠ 血氧测量超时（30s 未推送，请确认手环已测血氧）');
+      }
+    } catch (e) {
+      this.pushLog(`⚠ 血氧读取失败：${(e as Error).message}`);
+    }
   },
 
   /** V0.1.43 同步微信运动步数（wx.getWeRunData → 后端 session_key 解密入库）*/

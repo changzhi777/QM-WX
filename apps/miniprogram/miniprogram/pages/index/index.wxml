@@ -45,6 +45,28 @@
     </view>
   </view>
 
+  <!-- V0.1.43 今日健康卡（心率/血氧/步数，BLE + 微信运动）-->
+  <view class="health-card" wx:if="{{isLogin && (todayHealth.hr || todayHealth.spo2 || todayHealth.steps)}}">
+    <view class="health-label">今日健康</view>
+    <view class="health-row">
+      <view class="health-item" wx:if="{{todayHealth.hr}}">
+        <view class="health-icon">❤️</view>
+        <view class="health-num">{{todayHealth.hr.value}}</view>
+        <view class="health-unit">心率 bpm</view>
+      </view>
+      <view class="health-item" wx:if="{{todayHealth.spo2}}">
+        <view class="health-icon">🩸</view>
+        <view class="health-num">{{todayHealth.spo2.value}}</view>
+        <view class="health-unit">血氧 %</view>
+      </view>
+      <view class="health-item" wx:if="{{todayHealth.steps}}">
+        <view class="health-icon">👟</view>
+        <view class="health-num">{{todayHealth.steps.value}}</view>
+        <view class="health-unit">步数</view>
+      </view>
+    </view>
+  </view>
+
   <!-- 两大中心引导（运动/商城，导流 tab）-->
   <view class="redirect-card">
     <view class="redirect-row" bindtap="goSport">

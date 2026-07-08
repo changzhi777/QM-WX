@@ -16,6 +16,7 @@ export const BLE_SERVICES = {
   heartRate: '0000180D-0000-1000-8000-00805F9B34FB',
   battery: '0000180F-0000-1000-8000-00805F9B34FB',
   deviceInfo: '0000180A-0000-1000-8000-00805F9B34FB',
+  pulseOximeter: '00001822-0000-1000-8000-00805F9B34FB', // V0.1.43 血氧服务（PLX）
 } as const;
 
 /** 心率测量值特征 UUID（心率服务 0x180D 下） */
@@ -25,6 +26,10 @@ const BATTERY_LEVEL_CHAR = '00002A19-0000-1000-8000-00805F9B34FB';
 /** 设备信息特征 UUID（设备信息服务 0x180A 下，V0.1.33 品牌识别验证） */
 const MANUFACTURER_NAME_CHAR = '00002A29-0000-1000-8000-00805F9B34FB';
 const MODEL_NUMBER_CHAR = '00002A24-0000-1000-8000-00805F9B34FB';
+/** 体感位置特征（心率服务 0x180D 下，V0.1.43，read）*/
+const BODY_SENSOR_LOCATION_CHAR = '00002A38-0000-1000-8000-00805F9B34FB';
+/** 血氧 Spot-Check 测量特征（血氧服务 0x1822 下，V0.1.43，notify）*/
+const SPO2_SPOT_CHAR = '00002A5F-0000-1000-8000-00805F9B34FB';
 
 export interface BleDevice {
   deviceId: string; // 微信 deviceId（iOS=UUID，Android=MAC）
@@ -261,6 +266,100 @@ export async function readDeviceInfo(deviceId: string): Promise<{
     manufacturer: mfgBuf ? decodeUtf8(mfgBuf) : null,
     model: modelBuf ? decodeUtf8(modelBuf) : null,
   };
+}
+
+// ===== V0.1.43 血氧（PLX 0x1822）+ 体感位置（0x2A38）=====
+
+/**
+ * IEEE 11073-20601 SFLOAT 解析（2 字节，血氧值编码）
+ *
+ * 低 12 位尾数（补码）+ 高 4 位指数（补码）。血氧 SpO2 / 脉率 PR 均用此编码。
+ * 特殊值 0x07FF(2047) / 0x0800(-2048) = NaN/INFINITY，返 null。
+ */
+function parseSFLOAT(data: DataView, offset: number): number | null {
+  if (offset + 2 > data.byteLength) return null;
+  const raw = data.getUint16(offset, true); // little-endian
+  let mantissa = raw & 0x0fff; // 低 12 位尾数
+  let exponent = (raw >> 12) & 0x0f; // 高 4 位指数
+  if (mantissa & 0x0800) mantissa -= 0x1000; // 12 位补码符号扩展
+  if (exponent & 0x0008) exponent -= 0x10; // 4 位补码符号扩展
+  if (mantissa === 2047 || mantissa === -2048) return null; // NaN/保留值
+  return mantissa * Math.pow(10, exponent);
+}
+
+/** 解析血氧 Spot-Check 测量值（0x2A5F：flags + SpO2 SFLOAT + PR SFLOAT）*/
+function parseSpO2Measurement(buffer: ArrayBuffer): { spo2: number; pr: number } | null {
+  const data = new DataView(buffer);
+  if (data.byteLength < 5) return null;
+  // byte 0: flags（bit0=timestamp present, bit1=status, bit2=device sensor）— offset 从 1 开始
+  const spo2 = parseSFLOAT(data, 1);
+  const pr = parseSFLOAT(data, 3);
+  if (spo2 == null || pr == null) return null;
+  return { spo2: Math.round(spo2), pr: Math.round(pr) };
+}
+
+const BODY_SENSOR_LOCATIONS = ['Other', 'Chest', 'Wrist', 'Finger', 'Hand', 'EarLobe', 'Foot'] as const;
+
+/** 解析体感位置（0x2A38 单字节枚举）*/
+function parseBodySensorLocation(buffer: ArrayBuffer): string | null {
+  const data = new DataView(buffer);
+  if (data.byteLength < 1) return null;
+  const v = data.getUint8(0);
+  return BODY_SENSOR_LOCATIONS[v] ?? 'Unknown';
+}
+
+/**
+ * 读体感位置（心率服务 0x180D 的 0x2A38，read）
+ *
+ * 小米手环应返 "Wrist"。静态值，低频读取。
+ */
+export async function readBodySensorLocation(deviceId: string): Promise<string | null> {
+  const buf = await readCharValue(deviceId, BLE_SERVICES.heartRate, BODY_SENSOR_LOCATION_CHAR);
+  return buf ? parseBodySensorLocation(buf) : null;
+}
+
+/**
+ * 读血氧单次测量（血氧服务 0x1822 的 0x2A5F，notify）
+ *
+ * 0x2A5F 是 notify-only 特征，订阅后等设备推送（用户在手环上测血氧时触发）。
+ * 超时返 null（设备未推送/不支持）。10s 超时（血氧测量较慢）。
+ */
+export function readSpO2SpotCheck(
+  deviceId: string,
+  timeout = 10000,
+): Promise<{ spo2: number; pr: number } | null> {
+  return new Promise((resolve) => {
+    let settled = false;
+    type CharValueResult = { serviceId: string; characteristicId: string; value: ArrayBuffer };
+    const finish = (val: { spo2: number; pr: number } | null) => {
+      if (settled) return;
+      settled = true;
+      // @ts-ignore：offBLECharacteristicValueChange 运行时支持 cb 参数
+      wx.offBLECharacteristicValueChange(handler);
+      resolve(val);
+    };
+    const handler = (res: CharValueResult) => {
+      const s = (res.serviceId || '').toLowerCase();
+      const c = (res.characteristicId || '').toLowerCase();
+      if (
+        s === BLE_SERVICES.pulseOximeter.toLowerCase() &&
+        c === SPO2_SPOT_CHAR.toLowerCase() &&
+        res.value
+      ) {
+        finish(parseSpO2Measurement(res.value));
+      }
+    };
+    // @ts-ignore：handler 结构与微信回调兼容
+    wx.onBLECharacteristicValueChange(handler);
+    wx.notifyBLECharacteristicValueChange({
+      deviceId,
+      serviceId: BLE_SERVICES.pulseOximeter,
+      characteristicId: SPO2_SPOT_CHAR,
+      state: true,
+      success: () => setTimeout(() => finish(null), timeout),
+      fail: () => finish(null),
+    });
+  });
 }
 
 /**

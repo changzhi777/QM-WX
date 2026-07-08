@@ -14,6 +14,10 @@ vi.mock('src/infra/prisma.js', () => ({
     garminFitnessAge: { findFirst: vi.fn() },
     garminMetric: { findMany: vi.fn() },
     rawActivity: { findMany: vi.fn() },
+    // V0.1.43 myTodayHealth 加 BLE 心率/血氧 latest + 微信运动今日步数
+    heartRateRecord: { findFirst: vi.fn() },
+    spO2Record: { findFirst: vi.fn() },
+    weRunRecord: { findUnique: vi.fn() },
   },
 }));
 
@@ -99,7 +103,8 @@ describe('deviceService.myTodayHealth (V0.1.25)', () => {
     expect(r.todayActivity?.totalDistanceKm).toBe(8); // (5000+3000)/1000
     expect(r.todayActivity?.totalCalories).toBe(480); // 300+180
     // 无数据源占位
-    expect(r.unavailable).toEqual(['steps', 'spo2', 'bloodPressure', 'weight', 'bloodGlucose']);
+    // V0.1.43：steps/spo2 已接入（BLE/微信运动），从未可用列表移除
+    expect(r.unavailable).toEqual(['bloodPressure', 'weight', 'bloodGlucose']);
   });
 
   it('无任何数据 → sleep/fitnessAge/todayActivity 为 null，metrics 全 null', async () => {
