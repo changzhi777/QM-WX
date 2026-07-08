@@ -174,10 +174,12 @@ Page({
       this.pushLog('✓ 已连接，读取电量/设备信息...');
 
       // V0.1.42：查服务列表（诊断小米手环支持哪些服务，决定心率策略）
+      // V0.1.43：hasHr 提到外层 — 不支持 0x180D 时直接跳过标准订阅（避免无效重试）
+      let hasHr = false;
       try {
         const services = await getDeviceServices(device.deviceId);
         const sl = services.map((s) => s.replace(/-/g, '').toLowerCase());
-        const hasHr = sl.some((s) => s.includes('180d'));
+        hasHr = sl.some((s) => s.includes('180d'));
         const hasMi = sl.some((s) => s.includes('fee0') || s.includes('fee1'));
         const hasBat = sl.some((s) => s.includes('180f'));
         const hasInfo = sl.some((s) => s.includes('180a'));
@@ -218,16 +220,22 @@ Page({
       }
 
       this.pushLog(`品牌识别：${vendor}，订阅心率服务...`);
-      // V0.1.42：心率订阅容错（小米手环用私有 0xFEE0，可能不支持标准 0x180D）
+      // V0.1.43：基于 hasHr 决定订阅策略（小米手环无 0x180D，盲目订阅浪费 3s 重试超时）
       let hrSubscribed = false;
-      try {
-        await subscribeHeartRate(device.deviceId, (hr) => {
-          this.setData({ liveHr: hr, hrCount: this.data.hrCount + 1 });
-        });
-        hrSubscribed = true;
-        this.pushLog('✓ 心率订阅成功');
-      } catch (hrErr) {
-        this.pushLog(`⚠ 心率订阅失败（${vendor} 可能不支持标准 0x180D）：${(hrErr as Error).message}`);
+      if (!hasHr) {
+        this.pushLog(
+          `⚠ ${BRAND_LABEL[vendor] || vendor} 不支持标准心率服务 0x180D（小米用私有 0xFEE0），心率订阅跳过`,
+        );
+      } else {
+        try {
+          await subscribeHeartRate(device.deviceId, (hr) => {
+            this.setData({ liveHr: hr, hrCount: this.data.hrCount + 1 });
+          });
+          hrSubscribed = true;
+          this.pushLog('✓ 心率订阅成功');
+        } catch (hrErr) {
+          this.pushLog(`⚠ 心率订阅失败（重试 3 次仍失败）：${(hrErr as Error).message}`);
+        }
       }
 
       // 落库绑定（即使心率订阅失败，仍绑定设备 — V0.1.42 容错）

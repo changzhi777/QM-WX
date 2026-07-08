@@ -108,28 +108,47 @@ export function disconnectDevice(deviceId: string): Promise<void> {
 /**
  * 订阅心率测量值（心率服务 0x180D 的 2A37 特征）
  *
+ * V0.1.43 改进：
+ * 1. **订阅前 off 清理旧监听** — 用户重复绑定（解绑再绑）时避免累积 onBLECharacteristicValueChange 监听器
+ *    （readCharValue 的临时监听在 finish 时已自行 off，此处无参 off 安全）
+ * 2. **3 次重试 + 500ms 间隔** — createBLEConnection 后服务发现有延迟，首次 notifyBLECharacteristicValueChange
+ *    常因服务未就绪失败（标准手环常见，非设备不支持）；retry 给服务发现留时间
+ *
  * @param deviceId 已连接的设备 ID
  * @param onHr 心率回调（每次收到测量值触发）
  */
-export function subscribeHeartRate(deviceId: string, onHr: (hr: number) => void): Promise<void> {
-  return new Promise((resolve, reject) => {
-    wx.notifyBLECharacteristicValueChange({
-      deviceId,
-      serviceId: BLE_SERVICES.heartRate,
-      characteristicId: HR_MEASUREMENT_CHAR,
-      state: true,
-      success: () => {
-        wx.onBLECharacteristicValueChange((res) => {
-          if (res.value && res.serviceId === BLE_SERVICES.heartRate) {
-            const hr = parseHeartRateValue(res.value);
-            if (hr !== null) onHr(hr);
-          }
-        });
-        resolve();
-      },
-      fail: (err) => reject(new Error(err.errMsg || '订阅心率失败')),
-    });
+export async function subscribeHeartRate(deviceId: string, onHr: (hr: number) => void): Promise<void> {
+  // 防御性：清理旧监听器（readCharValue 已自管生命周期，此处清的是上次 subscribeHeartRate 残留）
+  // @ts-ignore：无参 off 清所有监听，微信运行时支持，typings 签名 `()`
+  wx.offBLECharacteristicValueChange();
+  wx.onBLECharacteristicValueChange((res) => {
+    if (res.value && res.serviceId === BLE_SERVICES.heartRate) {
+      const hr = parseHeartRateValue(res.value);
+      if (hr !== null) onHr(hr);
+    }
   });
+
+  // 重试：连接后服务发现延迟，首次订阅常失败
+  let lastErr: Error | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      await new Promise<void>((resolve, reject) => {
+        wx.notifyBLECharacteristicValueChange({
+          deviceId,
+          serviceId: BLE_SERVICES.heartRate,
+          characteristicId: HR_MEASUREMENT_CHAR,
+          state: true,
+          success: () => resolve(),
+          fail: (err) => reject(new Error(err.errMsg || '订阅心率失败')),
+        });
+      });
+      return; // 订阅成功
+    } catch (e) {
+      lastErr = e as Error;
+      if (attempt < 2) await new Promise((r) => setTimeout(r, 500));
+    }
+  }
+  throw lastErr ?? new Error('订阅心率失败');
 }
 
 /**
