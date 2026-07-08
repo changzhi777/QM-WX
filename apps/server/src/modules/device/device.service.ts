@@ -144,9 +144,15 @@ export const deviceService = {
     );
     if (!decrypted?.stepInfoList?.length) throw Errors.badRequest('微信运动数据解密失败');
     const stepList = decrypted.stepInfoList;
+    const steps = stepList.map((i) => i.step);
     logger.info(
-      { firstItem: stepList[0], firstItemKeys: stepList[0] ? Object.keys(stepList[0]) : [] },
-      'syncWeRun[2.5] stepList[0] 结构',
+      {
+        firstItem: stepList[0],
+        totalStep: steps.reduce((s, n) => s + n, 0),
+        maxStep: steps.length ? Math.max(...steps) : 0,
+        nonZeroCount: steps.filter((n) => n > 0).length,
+      },
+      'syncWeRun[2.5] stepList 结构 + 步数汇总',
     );
 
     // 4. timestamp → CN 时区 date，同日取 max step
