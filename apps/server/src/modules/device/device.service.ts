@@ -144,6 +144,10 @@ export const deviceService = {
     );
     if (!decrypted?.stepInfoList?.length) throw Errors.badRequest('微信运动数据解密失败');
     const stepList = decrypted.stepInfoList;
+    logger.info(
+      { firstItem: stepList[0], firstItemKeys: stepList[0] ? Object.keys(stepList[0]) : [] },
+      'syncWeRun[2.5] stepList[0] 结构',
+    );
 
     // 4. timestamp → CN 时区 date，同日取 max step
     const dayMap = new Map<string, number>();
