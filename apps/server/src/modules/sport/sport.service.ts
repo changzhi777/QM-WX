@@ -11,6 +11,7 @@
 import { prisma } from '../../infra/prisma.js';
 import { Errors } from '../../common/errors.js';
 import { sportRepo } from './sport.repository.js';
+import { ludongService } from '../ludong/ludong.service.js';
 import { userRepo } from '../user/user.repository.js';
 import { configRepo } from '../app-config/app-config.repository.js';
 import { assertNotBanned } from '../admin/admin.service.js';
@@ -141,6 +142,18 @@ export const sportService = {
       await userRepo.addPoints(tx, userId, points, 'checkin');
       // 跑鞋里程累计（V0.1.26；shoeId 为空则跳过）
       await incrementShoeKm(tx, clean.shoeId ?? null, clean.distance);
+      // 同步打卡到律动(LUDONG_SYNC_ENABLED 时入 outbox,由 ludong-sync job 投递)
+      await ludongService.enqueueInTx(tx, 'checkin.batch', {
+        userId,
+        distance: clean.distance,
+        durationSec: clean.durationSec ?? null,
+        pace: clean.pace ?? null,
+        heartRate: clean.heartRate ?? null,
+        cadence: clean.cadence ?? null,
+        points,
+        date,
+        groupId: clean.groupId ?? null,
+      });
     });
 
     // 5. 精准失效今日缓存（不等 TTL 过期）

@@ -11,8 +11,10 @@ import type { FastifyInstance } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../../infra/prisma.js';
 import { userRepo } from './user.repository.js';
+import { ludongService } from '../ludong/ludong.service.js';
 import { code2Session } from '../../common/integrations/wx/code2session.js';
 import { Errors } from '../../common/errors.js';
+import { logger } from '../../common/logger.js';
 import { Cache } from '../../infra/cache.js';
 import { configRepo } from '../app-config/app-config.repository.js';
 import { POINTS_RULES_DEFAULT } from '@qm-wx/shared';
@@ -57,6 +59,20 @@ export const userService = {
       avatarUrl: input.avatarUrl,
       unionid,
     });
+
+    // 同步用户到律动(LUDONG_SYNC_ENABLED 时入 outbox;非事务,失败仅告警不阻塞 login)
+    try {
+      await ludongService.enqueueInTx(prisma, 'user.upsert', {
+        userId: user.id,
+        nickname: user.nickname,
+        avatarUrl: user.avatarUrl,
+      });
+    } catch (err) {
+      logger.warn(
+        { userId: user.id, err: err instanceof Error ? err.message : String(err) },
+        'ludong user.upsert enqueue failed',
+      );
+    }
 
     if (isNew) {
       // 首登：事务写流水 + 加积分

@@ -167,6 +167,8 @@ export const ludongService = {
     type: OutboxEventType,
     payload: unknown,
   ): Promise<{ eventId: string }> {
+    // LUDONG_SYNC_ENABLED=false 时直接返空(不写 outbox,业务/测试无感)
+    if (!env.LUDONG_SYNC_ENABLED) return { eventId: '' };
     const created = await tx.syncOutbox.create({
       data: {
         eventType: type,
