@@ -688,10 +688,13 @@ function round2(n: number): number {
 }
 
 /**
- * 毫秒时间戳 → CN 时区 date "YYYY-MM-DD"（V0.1.43 syncWeRun 用）
+ * 秒时间戳 → CN 时区 date "YYYY-MM-DD"（V0.1.43 syncWeRun 用）
+ *
+ * ⚠️ 微信运动 stepInfoList[].timestamp 是 Unix 秒（非毫秒）！
+ *    错当毫秒会导致 date 全是 1970 年，myWeRun 查当月查不到。
  */
-function cnDateFromTs(ts: number): string {
-  const cn = new Date(ts + 8 * 3600 * 1000);
+function cnDateFromTs(tsSec: number): string {
+  const cn = new Date(tsSec * 1000 + 8 * 3600 * 1000);
   const y = cn.getUTCFullYear();
   const m = cn.getUTCMonth();
   const d = cn.getUTCDate();
