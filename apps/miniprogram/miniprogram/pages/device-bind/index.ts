@@ -123,21 +123,29 @@ Page({
     }
   },
 
-  /** 开始蓝牙扫描（过滤心率服务 0x180D） */
+  /** 开始蓝牙扫描（V0.1.42 无过滤扫描 + 品牌识别筛选）*/
   async startScan() {
     this.setData({ scanVisible: true, scanning: true, foundDevices: [], liveHr: null, hrCount: 0 });
     this.pushLog('开启蓝牙适配器...');
     try {
       await openBleAdapter();
-      this.pushLog('✓ 适配器已开，扫描中（5s）...');
+      this.pushLog('✓ 适配器已开，扫描中（5s，无过滤）...');
       const devices = await scanBleDevices(5000);
-      // V0.1.33：扫描结果品牌识别（设备名前缀匹配）
-      const enriched: FoundDevice[] = devices.map((d) => {
-        const detectedBrand = matchBleVendor(d.name);
-        return { ...d, detectedBrand, brandLabel: BRAND_LABEL[detectedBrand] ?? '通用' };
-      });
+      // V0.1.42：扫所有 BLE 设备 + 品牌识别筛选（小米手环不广播 0x180D，需无过滤扫描）
+      const enriched: FoundDevice[] = devices
+        .filter((d) => d.name && d.name !== '未知设备') // 过滤空名/未命名设备
+        .map((d) => {
+          const detectedBrand = matchBleVendor(d.name);
+          return { ...d, detectedBrand, brandLabel: BRAND_LABEL[detectedBrand] ?? '通用' };
+        })
+        .sort((a, b) => {
+          // 品牌命中的排前（garmin/xiaomi 优先于 ble 通用）
+          const score = (v: string) => (v === 'ble' ? 1 : 0);
+          return score(a.detectedBrand) - score(b.detectedBrand);
+        });
       this.setData({ foundDevices: enriched, scanning: false });
-      this.pushLog(`扫描完成，发现 ${enriched.length} 个心率设备`);
+      const identified = enriched.filter((d) => d.detectedBrand !== 'ble').length;
+      this.pushLog(`扫描完成，发现 ${enriched.length} 个设备（品牌识别 ${identified} 个）`);
       if (enriched.length === 0) {
         wx.showToast({ title: '未发现蓝牙心率设备', icon: 'none' });
       }
@@ -190,11 +198,19 @@ Page({
       }
 
       this.pushLog(`品牌识别：${vendor}，订阅心率服务...`);
-      await subscribeHeartRate(device.deviceId, (hr) => {
-        this.setData({ liveHr: hr, hrCount: this.data.hrCount + 1 });
-      });
+      // V0.1.42：心率订阅容错（小米手环用私有 0xFEE0，可能不支持标准 0x180D）
+      let hrSubscribed = false;
+      try {
+        await subscribeHeartRate(device.deviceId, (hr) => {
+          this.setData({ liveHr: hr, hrCount: this.data.hrCount + 1 });
+        });
+        hrSubscribed = true;
+        this.pushLog('✓ 心率订阅成功');
+      } catch (hrErr) {
+        this.pushLog(`⚠ 心率订阅失败（${vendor} 可能不支持标准 0x180D）：${(hrErr as Error).message}`);
+      }
 
-      // 落库绑定（V0.1.33 传 vendor + brandMeta，按品牌 upsert）
+      // 落库绑定（即使心率订阅失败，仍绑定设备 — V0.1.42 容错）
       await api.call('device', 'bindBleDevice', {
         deviceId: device.deviceId,
         name: device.name,
@@ -215,7 +231,10 @@ Page({
         liveModel: deviceInfo.model,
         liveManufacturer: deviceInfo.manufacturer,
       });
-      wx.showToast({ title: '绑定成功', icon: 'success' });
+      wx.showToast({
+        title: hrSubscribed ? '绑定成功' : '已绑定（心率暂不可用）',
+        icon: hrSubscribed ? 'success' : 'none',
+      });
       this.pushLog(`✓ 已绑定（${BRAND_LABEL[vendor]}）`);
       this.loadBindings();
     } catch (e) {

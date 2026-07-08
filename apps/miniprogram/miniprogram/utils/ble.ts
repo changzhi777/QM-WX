@@ -43,8 +43,10 @@ export function openBleAdapter(): Promise<void> {
 }
 
 /**
- * 扫描 BLE 设备（过滤有心率服务的，扫描 timeout 毫秒）
+ * 扫描 BLE 设备（V0.1.42：无 services 过滤，扫所有 — 小米手环不广播 0x180D）
  *
+ * 小米手环用私有服务 0xFEE0/0xFEE1，不广播标准心率服务 0x180D，
+ * 按 services 过滤会扫不到。改为扫所有 BLE 设备，调用方用 matchBleVendor 筛选品牌。
  * 返回去重后的设备列表（按 deviceId 去重）
  */
 export function scanBleDevices(timeout = 5000): Promise<BleDevice[]> {
@@ -61,7 +63,7 @@ export function scanBleDevices(timeout = 5000): Promise<BleDevice[]> {
     };
 
     wx.startBluetoothDevicesDiscovery({
-      services: [BLE_SERVICES.heartRate],
+      // V0.1.42：不传 services = 扫所有（小米手环用私有 0xFEE0，不广播 0x180D 心率服务）
       allowDuplicatesKey: false,
       success: () => {
         wx.onBluetoothDeviceFound((res) => {
