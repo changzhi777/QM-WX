@@ -349,8 +349,12 @@ graph TD
     Srv --> Shoes["shoes/ (跑鞋里程+800km提醒, V0.1.26)"]
     Srv --> Goal["goal/ (跑步目标+进度, V0.1.28)"]
     Srv --> Favorite["favorite/ (内容/商品收藏+批量红心, V0.1.29)"]
-    Srv --> Feed["feed/ (运动动态+点赞+评论, V0.1.30)"]
-    Srv -. V2 .-> Device["device/ (佳明+蓝牙+今日健康+V0.1.27 调试面板)"]
+    Srv --> Feed["feed/ (运动动态+点赞+评论+话题+视频, V0.1.30/36)"]
+    Srv --> Notification["notification/ (消息中心+notify()集成, V0.1.31)"]
+    Srv --> Follow["follow/ (关注关系+myCounts, V0.1.32)"]
+    Srv --> Family["family/ (家庭空间+转让/解散/成就, V0.1.34/39)"]
+    Srv --> GroupBuy["group-buy/ (团购+成团下单, V0.1.37/38)"]
+    Srv -. V2 .-> Device["device/ (佳明+蓝牙+今日健康+V0.1.27 调试面板+V0.1.33 品牌识别)"]
     Srv -. V2 .-> Recipe["recipe/ (stub)"]
     Srv -. V2 .-> Ludong["ludong/ (stub)"]
     Srv --> Jobs["jobs/ (BullMQ: 周报/关单/刷证书/garmin-import)"]
@@ -434,6 +438,10 @@ graph TD
     style Goal fill:#00897b,color:#fff
     style Favorite fill:#00897b,color:#fff
     style Feed fill:#00897b,color:#fff
+    style Notification fill:#00897b,color:#fff
+    style Follow fill:#00897b,color:#fff
+    style Family fill:#00897b,color:#fff
+    style GroupBuy fill:#00897b,color:#fff
     style Device fill:#1565c0,color:#888,stroke-dasharray: 4 4
     style Recipe fill:#1565c0,color:#888,stroke-dasharray: 4 4
     style Ludong fill:#1565c0,color:#888,stroke-dasharray: 4 4
