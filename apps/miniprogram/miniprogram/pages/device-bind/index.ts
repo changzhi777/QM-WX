@@ -8,6 +8,7 @@ import {
   subscribeHeartRate,
   readBattery,
   readDeviceInfo,
+  getDeviceServices,
   closeBleAdapter,
   type BleDevice,
 } from '../../utils/ble';
@@ -167,6 +168,21 @@ Page({
     try {
       await connectDevice(device.deviceId);
       this.pushLog('✓ 已连接，读取电量/设备信息...');
+
+      // V0.1.42：查服务列表（诊断小米手环支持哪些服务，决定心率策略）
+      try {
+        const services = await getDeviceServices(device.deviceId);
+        const sl = services.map((s) => s.replace(/-/g, '').toLowerCase());
+        const hasHr = sl.some((s) => s.includes('180d'));
+        const hasMi = sl.some((s) => s.includes('fee0') || s.includes('fee1'));
+        const hasBat = sl.some((s) => s.includes('180f'));
+        const hasInfo = sl.some((s) => s.includes('180a'));
+        this.pushLog(
+          `服务 ${services.length} 个 | 心率0x180D ${hasHr ? '✓' : '✗'} | 小米0xFEE0 ${hasMi ? '✓' : '✗'} | 电量0x180F ${hasBat ? '✓' : '✗'} | 设备信息0x180A ${hasInfo ? '✓' : '✗'}`,
+        );
+      } catch (e) {
+        this.pushLog(`⚠ 获取服务列表失败：${(e as Error).message}`);
+      }
 
       // V0.1.33：读电量 + 设备信息（0x180F + 0x180A）
       const [battery, deviceInfo] = await Promise.all([

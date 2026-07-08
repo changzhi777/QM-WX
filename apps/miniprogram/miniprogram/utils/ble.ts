@@ -244,6 +244,36 @@ export async function readDeviceInfo(deviceId: string): Promise<{
   };
 }
 
+/**
+ * 获取设备服务列表（V0.1.42 诊断小米手环支持哪些服务）
+ *
+ * 小米手环可能不支持标准 0x180D 心率服务（用私有 0xFEE0/0xFEE1）。
+ * 连接后查服务列表，判断是否支持 0x180D，决定心率订阅策略。
+ */
+export function getDeviceServices(deviceId: string): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    wx.getBLEDeviceServices({
+      deviceId,
+      success: (res) => resolve(res.services.map((s) => s.uuid)),
+      fail: (err) => reject(new Error(err.errMsg || '获取服务失败')),
+    });
+  });
+}
+
+/**
+ * 获取某服务下的特征列表（V0.1.42 诊断 + 私有协议探索）
+ */
+export function getDeviceCharacteristics(deviceId: string, serviceId: string): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    wx.getBLEDeviceCharacteristics({
+      deviceId,
+      serviceId,
+      success: (res) => resolve(res.characteristics.map((c) => c.uuid)),
+      fail: (err) => reject(new Error(err.errMsg || '获取特征失败')),
+    });
+  });
+}
+
 /** 关闭蓝牙适配器（退出页面/解绑时调，释放资源） */
 export function closeBleAdapter(): void {
   wx.stopBluetoothDevicesDiscovery();
