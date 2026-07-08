@@ -8,6 +8,12 @@
 
 ## 变更记录 (Changelog)
 
+- **2026-07-08** — 🎯 **训练计划配置化 + 跑群深化 + setErrorHandler 时机修（V0.1.40~42）**：
+  1. **V0.1.40 profile 完整实现**（/zcf:workflow 全链路审查）：User +5 字段（gender/birthday/region/height/weight）+ service updateProfile 处理 profile + uploadFile 拼 baseUrl + UserOutputSchema +5 + applyUser 回填；1 迁移；7 问题全修（Phase 1 半成品全链路断裂修复）
+  2. **V0.1.41 训练计划配置化**（/zcf:workflow 方案2 轻量配置化）：2 新表 TrainingPlan+UserPlanEnrollment（1人1活跃 @unique）+ admin +2 action（upsertTrainingPlan/listTrainingPlans）+ training +3 action（joinPlan/myActivePlan/leavePlan）+ myPlans 改读 DB + calcPlanProgress 内部 helper（不耦合 goal.calcGoalProgress）+ seed 4 套模板 + 前端进度卡；修 V0.1.40 app.ts typecheck + 删 training.service 死代码；**43→45 表 / 29→30 module / 34→38 页 / 545→572 单元 / 17→18 迁移**
+  3. **V0.1.42 跑群深化**（sport group 补全 3 缺口）：Group +announce 字段 + sport +3 action（groupDetail 群卡+汇总 总跑量/打卡数/活跃天数 / groupMembers 成员列表含本月跑量复用 familyRanking groupBy 范式 N+1 规避 / announceGroup owner 鉴权）+ 前端 group-detail 改造（群卡+公告+汇总+成员列表 role 标+joinedAt+monthDistance）；**45 表（Group +字段）/ sport 5→8 action / 38 页（group-detail 改造）/ 572→577 单元 / 18→19 迁移**
+  4. **🐛 setErrorHandler 时机修**（pre-existing 大 bug，V0.1.41 部署发现）：setErrorHandler 必须在 route 注册前（Fastify 4 要求），原在 route 后导致所有 BusinessError 返默认格式 {statusCode, code:string, error, message}；前端 api.ts body.code===401（number）不匹配 string "401" → 401 不触发 refresh → toast '请求失败' 而非 '未登录'；V0.1.40 duck-typing 修了 instanceof 但漏修注册时机，V0.1.41 修；本地 buildApp+inject 调试范式沉淀（memory `fastify-sethandler-timing`）
+  5. **部署 + CT400**：V0.1.41+42 生产部署（scp 直传，CT400 VPN 断）+ setErrorHandler 修重新部署；CT400 恢复后推 main + v0.1.40/41/42 tag；**45 表 / 30 module / 38 页 / 577 单元 / 19 迁移 / 15 缓存热路径**
 - **2026-07-07** — 👨‍👩‍👧 **family 后续（转让家长 + 解散 + 家庭成就，V0.1.39）**：
   1. **family module +3 action**：transferOwner（owner 转让 → 事务 3 update：旧 owner member + 新 owner owner + family.ownerId）+ dissolveFamily（owner 解散 → delete Family 级联成员/目标）+ familyAchievements（全家累计跑量里程碑 100/500/1000/2000/5000km，动态生成零建表，复用 myCertificates 范式）
   2. 前端 family 页：owner 操作区（转让 showActionSheet 选成员 + 解散确认 dialog）+ 家庭成就卡（🏆达成/🎯进度条）
@@ -183,9 +189,9 @@
   （战报图转发回微信群=零成本裂变）
 ```
 
-**当前阶段**：V1.0 后端核心模块 + V2 stub + CI/CD + Staging + **生产部署**（qingmulife.cn / 腾讯云 106.53.168.73）+ **P0 全修** + **Phase 3 核心补全** + **Phase 4/4.1**（微信支付 V3 完整闭环）+ **V0.1.17**（部署加固）+ **云端链路打通**（公网 API↔DB↔微信，真 AppID/WX_SECRET）+ **佳明数据全链路**（26 表 / device 部分实现 / 14 缓存热路径 / 15723 条真数据灌入，2026-07-01）+ **B 电商三连击**（2026-07-02~03：购物车/积分签到/分类 + 地址/优惠券 + 分销中心/天天跑；33 表 / 21 module / 23 页 / 461 单元）+ **pic 全新功能页 3 张**（2026-07-03：今日健康 + 蓝牙绑定 + 锻炼训练；22 module / 26 页 / 472 单元 / 15 缓存热路径 / 33 表不变）+ **我的跑鞋**（V0.1.26，2026-07-03，pic 2768：跑者里程管理 + 800km 更换提醒；34 表 / 23 module / 27 页 / 479 单元）+ **V0.1.27**（2026-07-03：sport 跑鞋 picker 闭环 + 年度报告页 + 蓝牙调试面板；**零 schema 改**；28 页 / 34 表 / 23 module / 479 单元不变）+ **V0.1.28**（2026-07-03：跑步目标 + 我的证书；新表 Goal；35 表 / 24 module / 29 页 / 487 单元 / 12 迁移）+ **V0.1.29**（2026-07-03：收藏 pic 3 向社交向首功能；新表 Favorite；36 表 / 25 module / 30 页 / 499 单元 / 13 迁移；stats.service 覆盖 39→100%，总覆盖 80.66→82.11%）+ **V0.1.30**（2026-07-03：运动动态 feed，pic 2 社交向核心；3 新表 Feed+FeedLike+FeedComment；**39 表 / 26 module / 31 页 / 509 单元 / 14 迁移**）+ **V0.1.31**（2026-07-03：消息中心 notification，pic 2 社交向收尾；新表 Notification + notify() 集成函数；**40 表 / 27 module / 32 页 / 517 单元 / 15 迁移**）+ **V0.1.32**（2026-07-03：关注关系 follow，pic 2 社交向深化 + training wxss 中文 selector 修复；新表 Follow + 用户主页 pages/user；**41 表 / 28 module / 33 页 / 527 单元 / 16 迁移**）+ **V0.1.33**（2026-07-03：BLE 设备品牌识别，/zcf:workflow 方案1 MVP；佳明手表+小米手环 BLE 扫描绑定 + 电量/设备信息；**41 表 / 28 module / 33 页 / 530 单元 / 16 迁移，零 schema 改**）+ **V0.1.34**（2026-07-04：家庭空间，pic 2776 家庭方向，/zcf:workflow 方案1；Family+FamilyMember 表 + 家庭目标复用 Goal+familyId；**43 表 / 29 module / 34 页 / 545 单元 / 17 迁移**）。
+**当前阶段**：V1.0 后端核心模块 + V2 stub + CI/CD + Staging + **生产部署**（qingmulife.cn / 腾讯云 106.53.168.73）+ **P0 全修** + **Phase 3 核心补全** + **Phase 4/4.1**（微信支付 V3 完整闭环）+ **V0.1.17**（部署加固）+ **云端链路打通**（公网 API↔DB↔微信，真 AppID/WX_SECRET）+ **佳明数据全链路**（26 表 / device 部分实现 / 14 缓存热路径 / 15723 条真数据灌入，2026-07-01）+ **B 电商三连击**（2026-07-02~03：购物车/积分签到/分类 + 地址/优惠券 + 分销中心/天天跑；33 表 / 21 module / 23 页 / 461 单元）+ **pic 全新功能页 3 张**（2026-07-03：今日健康 + 蓝牙绑定 + 锻炼训练；22 module / 26 页 / 472 单元 / 15 缓存热路径 / 33 表不变）+ **我的跑鞋**（V0.1.26，2026-07-03，pic 2768：跑者里程管理 + 800km 更换提醒；34 表 / 23 module / 27 页 / 479 单元）+ **V0.1.27**（2026-07-03：sport 跑鞋 picker 闭环 + 年度报告页 + 蓝牙调试面板；**零 schema 改**；28 页 / 34 表 / 23 module / 479 单元不变）+ **V0.1.28**（2026-07-03：跑步目标 + 我的证书；新表 Goal；35 表 / 24 module / 29 页 / 487 单元 / 12 迁移）+ **V0.1.29**（2026-07-03：收藏 pic 3 向社交向首功能；新表 Favorite；36 表 / 25 module / 30 页 / 499 单元 / 13 迁移；stats.service 覆盖 39→100%，总覆盖 80.66→82.11%）+ **V0.1.30**（2026-07-03：运动动态 feed，pic 2 社交向核心；3 新表 Feed+FeedLike+FeedComment；**39 表 / 26 module / 31 页 / 509 单元 / 14 迁移**）+ **V0.1.31**（2026-07-03：消息中心 notification，pic 2 社交向收尾；新表 Notification + notify() 集成函数；**40 表 / 27 module / 32 页 / 517 单元 / 15 迁移**）+ **V0.1.32**（2026-07-03：关注关系 follow，pic 2 社交向深化 + training wxss 中文 selector 修复；新表 Follow + 用户主页 pages/user；**41 表 / 28 module / 33 页 / 527 单元 / 16 迁移**）+ **V0.1.33**（2026-07-03：BLE 设备品牌识别，/zcf:workflow 方案1 MVP；佳明手表+小米手环 BLE 扫描绑定 + 电量/设备信息；**41 表 / 28 module / 33 页 / 530 单元 / 16 迁移，零 schema 改**）+ **V0.1.34**（2026-07-04：家庭空间，pic 2776 家庭方向，/zcf:workflow 方案1；Family+FamilyMember 表 + 家庭目标复用 Goal+familyId；**43 表 / 29 module / 34 页 / 545 单元 / 17 迁移**）。+ **V0.1.35**（2026-07-06：mine 重构 4 tab + index 首页优化，纯前端零后端；entry-grid 组件 4→5；34 页/545 测试不变）+ **V0.1.36**（2026-07-07：2771 社交深化，Feed+topic+videoUrl + hotTopics + 红心广场+话题 2 新页；41 表不变 / 36 页 / 549 单元 / 1 迁移）+ **V0.1.37~38**（2026-07-07：2764 团购 MVP+深化，GroupBuy+GroupBuyMember 表 + Order +groupBuyId；43→45 表 / 30 module / 38 页 / 557 单元 / 1 迁移）+ **V0.1.39**（2026-07-07：family 后续 转让/解散/家庭成就；563 单元 / 0 新表页）+ **V0.1.40**（2026-07-07：profile 完整实现，User +5 字段；45 表 / 30 module / 38 页 / 563 单元 / 1 迁移）+ **V0.1.41**（2026-07-08：训练计划配置化，TrainingPlan+UserPlanEnrollment 表 + admin +2/training +3 action；45 表 / 30 module / 38 页 / 572 单元 / 18 迁移；修 setErrorHandler 时机 pre-existing 大 bug）+ **V0.1.42**（2026-07-08：跑群深化，Group +announce + sport +3 action；**45 表 / 30 module / 38 页 / 577 单元 / 19 迁移**）
 
-**下一步**：① commit working tree（V0.1.24~34，V0.1.34 家庭空间；545 测试绿）→ 推 tag；② device 查询 userId 兜底改真用户切换（当前默认张晨）；③ 等 4 件外部依赖（商户号 / APIv3 密钥 / 商户 API 证书 + 序列号 / 微信平台证书）切真支付生产 — 见 `docs/PHASE-4-2-PREP.md`；④ GAP-3 覆盖率阈值门禁（**本次中途已审查：总覆盖 82.11%，差阈值 1.89%**）+ GAP-6 分销二次上线（间推佣金 / 提现 / 自提收货）；⑤ CT400 推 V0.1.18~30 tag；⑥ 蓝牙 BLE 真机联调（心率订阅 0x180D 实测，V0.1.27 调试面板已就绪）+ 训练计划模板可配置化；⑦ 跑鞋：可选阈值个性化（按品牌/型号推荐）+ 历史里程曲线；⑧ 目标/证书增强（自定义里程碑 / 多种证书类型）；⑨ **收藏 + 动态社交向扩展**（分享收藏单/合集/红心广场 + feed 图文/视频/带打卡/带跑鞋/话题/转发）。
+**下一步**：① 真机验证 V0.1.40~42（profile + 训练计划配置化 + 跑群深化）；② device 查询 userId 兜底改真用户切换（当前默认张晨）；③ 等 4 件外部依赖（商户号 / APIv3 密钥 / 商户 API 证书 + 序列号 / 微信平台证书）切真支付生产 — 见 `docs/PHASE-4-2-PREP.md`；④ GAP-3 覆盖率阈值门禁（总覆盖 82.11%）+ GAP-6 分销二次上线（间推佣金 / 提现 / 自提收货）；⑤ ✅ CT400 已推到 V0.1.42（v0.1.40/41/42 tag 已推）；⑥ 蓝牙 BLE 真机联调（心率订阅 0x180D 实测，V0.1.27 调试面板 + V0.1.33 品牌识别就位）+ ✅ 训练计划配置化（V0.1.41）；⑦ 跑鞋：可选阈值个性化 + 历史里程曲线；⑧ 目标/证书增强（自定义里程碑 / 多种证书类型）；⑨ **收藏 + 动态社交向扩展**（分享收藏单/合集/红心广场 + feed 图文/视频/带打卡/带跑鞋/话题/转发）；⑩ **赛事服务 MVP**（业务闭环第 3 块，0 实现）+ 评价系统（电商闭环最后一块）。
 
 **P0 致命问题**（来自 `01-code-review.md`）：
 1. ✅ 钱包余额客户端可篡改 → V2 已修：服务端权威 + 功能开关
@@ -216,7 +222,7 @@
 | 小程序 | 微信原生（TS） | 已定 | 不上 Taro/uni-app，避免跨端复杂度 |
 | 后端框架 | **Fastify 4.x** | ✅ 已确认 | 比 Express 快、原生 TS、schema 驱动 |
 | 语言 | **TypeScript 5.x** | 已定 | 全栈 TS |
-| ORM | **Prisma** | ✅ 已确认 | 成熟、迁移友好，**39 张表** + 迁移历史（V0.1.18~30 电商三连击 + pic 3 页 + 跑鞋 + 跑步目标 + 收藏 + 运动动态；V0.1.30 +Feed+FeedLike+FeedComment） |
+| ORM | **Prisma** | ✅ 已确认 | 成熟、迁移友好，**45 张表** + 迁移历史（V0.1.18~42 电商三连击 + pic + 跑鞋 + 目标/收藏/动态 + 消息/关注/家庭/团购 + 训练计划配置化；V0.1.42 +Group.announce） |
 | 主数据库 | **PostgreSQL 16** | ✅ 已确认 | JSONB 灵活，事务强 |
 | 缓存 | **Redis 7** | 已定 | 会话 / 限流 / 排行榜 / 心率缓存（ble:hr:{userId}） |
 | 鉴权 | **JWT（access + refresh）** + 微信 `code2Session` | 已定 | 不用云开发，靠 wx.login → 自家后端换 openid |
@@ -261,8 +267,8 @@ QM-WX/
 
 | 路径 | 职责 | 状态 | 本地 CLAUDE.md |
 | --- | --- | --- | --- |
-| `apps/miniprogram/` | 微信小程序前端（**31 页面** + 4 组件 + **utils/ble.ts 蓝牙工具**） | ✅ V1.0 + Phase 4 + 佳明 3 页 + **电商 8 页**（cart/points/category/address/coupon/distribution/tiantian 等）+ **pic 3 页**（health/device-bind/training，V0.1.25）+ **跑鞋页**（shoes，V0.1.26）+ **年度报告页**（annual-report，V0.1.27）+ **目标/证书 2 页**（goal/certificate，V0.1.28）+ **收藏页**（favorite，V0.1.29）+ **运动动态页**（feed，V0.1.30，点赞乐观更新+评论+FAB）+ sport 跑鞋 picker + device-bind 调试面板（V0.1.27） | [→ apps/miniprogram/CLAUDE.md](apps/miniprogram/CLAUDE.md) |
-| `apps/server/` | Node + TS 后端（**26 module** + BullMQ jobs + 状态机 + 对账 + **infra/cache 15 热路径 + OpenAPI spec** + **分销全闭环** + **training 模块** + **跑鞋里程管理** + **跑步目标/证书** + **收藏** + **运动动态**） | ✅ V1.0 + V2 stub + **Phase 4.1** + **V0.1.x Cache 15 热路径** + **佳明全链路** + **B 电商三连击** + **V0.1.25 pic（training + device 扩 5 action）** + **V0.1.26 跑鞋**（Shoe 表 + sport.checkin 集成 incrementShoeKm）+ **V0.1.27**（stats +myAnnualReport；零 schema 改）+ **V0.1.28**（goal module + stats +myCertificates + Goal 表）+ **V0.1.29**（favorite module + Favorite 表 + stats.service 覆盖 100%）+ **V0.1.30**（feed module + Feed+FeedLike+FeedComment 3 表 + $transaction 回调维护计数） | [→ apps/server/CLAUDE.md](apps/server/CLAUDE.md) |
+| `apps/miniprogram/` | 微信小程序前端（**38 页面** + 5 组件含 entry-grid + **utils/ble.ts 蓝牙工具**） | ✅ V1.0 + Phase 4 + 佳明 3 页 + **电商 8 页** + **pic 3 页**（V0.1.25）+ 跑鞋/年度报告/目标/证书/收藏/动态 6 页（V0.1.26~30）+ **消息中心/用户主页**（V0.1.31~32）+ **家庭空间**（V0.1.34）+ **红心广场/话题 2 页**（V0.1.36）+ **团购 2 页**（V0.1.37）+ **训练计划配置化**（V0.1.41 进度卡）+ **跑群深化**（V0.1.42 group-detail 改造）+ profile 完整（V0.1.40）| [→ apps/miniprogram/CLAUDE.md](apps/miniprogram/CLAUDE.md) |
+| `apps/server/` | Node + TS 后端（**30 module** + BullMQ jobs + 状态机 + 对账 + **infra/cache 15 热路径 + OpenAPI spec** + **分销全闭环** + **训练计划配置化** + **跑鞋里程管理** + **跑步目标/证书** + **收藏/动态/消息/关注/家庭/团购**） | ✅ V1.0 + V2 stub + Phase 4.1 + V0.1.x Cache 15 热路径 + 佳明全链路 + B 电商三连击 + V0.1.25~30 pic/跑鞋/目标/收藏/动态 + **V0.1.31 notification** + **V0.1.32 follow** + **V0.1.33 BLE 品牌识别** + **V0.1.34 family** + **V0.1.36 社交深化** + **V0.1.37~38 团购** + **V0.1.39 family 后续** + **V0.1.40 profile 完整** + **V0.1.41 训练计划配置化** + **V0.1.42 跑群深化** + setErrorHandler 时机修 | [→ apps/server/CLAUDE.md](apps/server/CLAUDE.md) |
 | `apps/server/src/modules/distribution/` | 分销中心 module（6 action + settle/clawback 闭环 + LEVEL_RULES） | ✅ V0.1.24 | [→ apps/server/src/modules/distribution/CLAUDE.md](apps/server/src/modules/distribution/CLAUDE.md) |
 | `apps/admin/` | 运营管理后台 | ✅ **独立 repo** `qingmu/qm-admin` (CT400 Gitea，React+UmiMax+antd5 + 35 tests) | — |
 | `packages/shared/` | 前后端共享（类型 / Zod / 端点常量 / 积分规则 / **DEVICE_BRANDS 9 品牌**） | ✅ V1.0 + vitest 3.2.6 + **6 测试** + build:mp-shared 注入 + **V0.1.27 stats +myAnnualReport** + **V0.1.28 +goal + stats.myCertificates** + **V0.1.29 +favorite** + **V0.1.30 +feed** | [→ packages/shared/CLAUDE.md](packages/shared/CLAUDE.md) |
@@ -277,11 +283,11 @@ QM-WX/
 | `src/` | **已废弃** | ⚠️ 废弃 | — |
 | `.vscode/` | 编辑器配置 | 🚧 空 | — |
 
-**26 个后端 module 清单**（V1 11 个 + Phase 4 wxpay + 佳明 2 个 + V2 3 个 + 电商 5 个 + 训练 1 个 + 跑鞋 1 个 + 目标 1 个 + 收藏 1 个 + 动态 1 个）：
+**30 个后端 module 清单**（V1 11 个 + Phase 4 wxpay + 佳明 2 个 + V2 3 个 + 电商 5 个 + 训练 1 个 + 跑鞋 1 个 + 目标 1 个 + 收藏 1 个 + 动态 1 个 + 消息 1 个 + 关注 1 个 + 家庭 1 个 + 团购 1 个）：
 
-`auth` / `user`（**+goals relation V0.1.28 / +favorites relation V0.1.29 / +feeds/feedLikes/feedComments relation V0.1.30**）/ `sport`（**+shoeId 集成 incrementShoeKm + V0.1.27 前端 picker 联动**）/ `mall` / `content` / `wallet` / `weekly-report` / `upload` / `admin` / `app-config` / **`wxpay`**（Phase 4 + 4.1） + **佳明**: `device`（✅ 部分实现 — 佳明 4 查询 + 数据处理 + **今日健康聚合 myTodayHealth** + 蓝牙绑定 + 心率缓存）/ `stats`（跑者汇总 + **V0.1.27 +myAnnualReport 年度报告** + **V0.1.28 +myCertificates 我的证书**；**V0.1.29 覆盖 39→100%**）/ `ranking`（多维榜单） + **V2 stub**: `recipe`（stub）/ `ludong`（stub） + **B 电商**（2026-07-02~03）: `cart`（购物车）/ `points`（积分签到）/ `address`（地址管理）/ `coupon`（优惠券）/ **`distribution`**（分销中心 + 全闭环集成）+ **pic 训练**（V0.1.25）: **`training`**（myPlans 4 套硬编码 + mySportRecords 聚合 run，importCheckinId 去重）+ **跑鞋**（V0.1.26）: **`shoes`**（list/add/update/retire/myStats，thresholdKm 默认 800 + healthRatio 计算 + incrementShoeKm 导出供 sport 复用）+ **跑步目标**（V0.1.28）: **`goal`**（list/add/remove/myProgress 4 action + calcGoalProgress 进度复用 Checkin aggregate DRY + type 自动算周期 monthly 本月1号-下月1号 / yearly 今年1/1-明年1/1 / custom 手传 periodStart/End）+ **收藏**（V0.1.29）: **`favorite`**（list 含详情 **批量关联避免 N+1** / add upsert 幂等 / remove / isFavorited 批量红心 — 4 action，content|product 通用）+ **运动动态**（V0.1.30）: **`feed`**（list 含作者+liked 状态 / myFeeds / publish 可关联 checkinId+distanceKm / like / unlike / comment — 6 action，$transaction 回调维护 likeCount/commentCount）
+`auth` / `user`（**+goals relation V0.1.28 / +favorites relation V0.1.29 / +feeds/feedLikes/feedComments relation V0.1.30**）/ `sport`（**+shoeId 集成 incrementShoeKm + V0.1.27 前端 picker 联动**）/ `mall` / `content` / `wallet` / `weekly-report` / `upload` / `admin` / `app-config` / **`wxpay`**（Phase 4 + 4.1） + **佳明**: `device`（✅ 部分实现 — 佳明 4 查询 + 数据处理 + **今日健康聚合 myTodayHealth** + 蓝牙绑定 + 心率缓存）/ `stats`（跑者汇总 + **V0.1.27 +myAnnualReport 年度报告** + **V0.1.28 +myCertificates 我的证书**；**V0.1.29 覆盖 39→100%**）/ `ranking`（多维榜单） + **V2 stub**: `recipe`（stub）/ `ludong`（stub） + **B 电商**（2026-07-02~03）: `cart`（购物车）/ `points`（积分签到）/ `address`（地址管理）/ `coupon`（优惠券）/ **`distribution`**（分销中心 + 全闭环集成）+ **pic 训练**（V0.1.25）: **`training`**（myPlans 4 套硬编码 + mySportRecords 聚合 run，importCheckinId 去重）+ **跑鞋**（V0.1.26）: **`shoes`**（list/add/update/retire/myStats，thresholdKm 默认 800 + healthRatio 计算 + incrementShoeKm 导出供 sport 复用）+ **跑步目标**（V0.1.28）: **`goal`**（list/add/remove/myProgress 4 action + calcGoalProgress 进度复用 Checkin aggregate DRY + type 自动算周期 monthly 本月1号-下月1号 / yearly 今年1/1-明年1/1 / custom 手传 periodStart/End）+ **收藏**（V0.1.29）: **`favorite`**（list 含详情 **批量关联避免 N+1** / add upsert 幂等 / remove / isFavorited 批量红心 — 4 action，content|product 通用）+ **运动动态**（V0.1.30）: **`feed`**（list 含作者+liked 状态 / myFeeds / publish 可关联 checkinId+distanceKm / like / unlike / comment — 6 action，$transaction 回调维护 likeCount/commentCount；V0.1.36 +topic+videoUrl+hotTopics）+ **消息中心**（V0.1.31）: **`notification`**（list/unreadCount/markRead/markAllRead + 导出 `notify()` 集成函数被 feed/follow 复用）+ **关注关系**（V0.1.32）: **`follow`**（follow/unfollow/isFollowing/myFollowing/myFollowers/myCounts 6 action）+ **家庭空间**（V0.1.34）: **`family`**（createFamily/joinFamily/myFamily/leaveFamily/familyRanking/inviteInfo 6 action + V0.1.39 transferOwner/dissolveFamily/familyAchievements）+ **团购**（V0.1.37）: **`group-buy`**（list/detail/join/myJoined 4 action + 达目标循环 notify）+ **训练计划配置化**（V0.1.41）: training +joinPlan/myActivePlan/leavePlan + myPlans 改读 DB + admin upsertTrainingPlan/listTrainingPlans + **跑群深化**（V0.1.42）: sport +groupDetail/groupMembers/announceGroup
 
-> 💡 module 数：14（佳明前）→ 16（+stats/ranking）→ 18（+cart/points）→ 20（+address/coupon）→ 21（+distribution）→ 22（+training，V0.1.25）→ 23（+shoes，V0.1.26）→ 24（+goal，V0.1.28）→ 25（+favorite，V0.1.29）→ **26**（+feed，V0.1.30）；V0.1.27 不增 module（stats 加 action）
+> 💡 module 数：14（佳明前）→ 16（+stats/ranking）→ 18（+cart/points）→ 20（+address/coupon）→ 21（+distribution）→ 22（+training，V0.1.25）→ 23（+shoes，V0.1.26）→ 24（+goal，V0.1.28）→ 25（+favorite，V0.1.29）→ 26（+feed，V0.1.30）→ 27（+notification，V0.1.31）→ 28（+follow，V0.1.32）→ 29（+family，V0.1.34）→ **30**（+group-buy，V0.1.37）；V0.1.27/33/35/36/38~42 不增 module（加 action 或前端改造）
 
 **Domain layer**：`apps/server/src/domain/order-state.ts` — Order 状态机白名单（7 态 + assertTransition 统一）
 
@@ -315,8 +321,8 @@ graph TD
     Root --> GH[".github/workflows/"]
     Root --> Config["pnpm-workspace.yaml + docker-compose.yml"]
 
-    Apps --> Mp["apps/miniprogram/ 微信小程序<br/>(31 页面 + utils/ble.ts)"]
-    Apps --> Srv["apps/server/ Fastify+TS+BullMQ<br/>(26 module + 39 表)"]
+    Apps --> Mp["apps/miniprogram/ 微信小程序<br/>(38 页面 + utils/ble.ts)"]
+    Apps --> Srv["apps/server/ Fastify+TS+BullMQ<br/>(30 module + 45 表)"]
     Apps -. 独立repo .-> Adm["qm-admin (CT400 Gitea<br/>React+Umi Max+antd5)"]
 
     Pkgs --> Shared["packages/shared/ 共享类型+Zod+DEVICE_BRANDS"]
@@ -526,7 +532,7 @@ graph TD
 9. ⏳ **微信商户号 + 实名认证** — 申请中（Phase 4.2 切真生产前置条件）
 10. ✅ **CI / 部署流程** — GitHub Actions ci.yml + deploy-staging.yml（已完成，拆 4 parallel job）
 11. ✅ **品牌色定稿** — #0FAF8E（青沐绿，已全局应用）
-12. ⏳ **CT400 推 tag** — V0.1.22/23 已 push 远端；V0.1.18~30 待推 CT400 Gitea（见 memory `gitea-ssh-ct400-push`）
+12. ✅ **CT400 推 tag** — V0.1.40/41/42 tag 已推 CT400（main 推到 bc34aff；见 memory `gitea-ssh-ct400-push`）
 13. ⏳ **测试覆盖率阈值**（建议参考 04 任务的 AC 走最小验收）— **本次中途审查（V0.1.29）：总覆盖 80.66→82.11%**（stats.service 39→100%）；距 80% 阈值已超，距 84% 还差 1.89%；当前 **509 单元**，建议设阈值 80%
 14. ✅ **API-AUDIT P0-1/P1**（working tree 已修，部分 commit）— user 鉴权三处 `requireLogin` + admin service/schema 抽离 + 黑名单/审计/报表/导出；GAP-3 覆盖率阈值仍待
 15. ✅ **CHANGELOG 版本段对齐** — 已补 V0.1.13~23 段
@@ -545,7 +551,50 @@ graph TD
 
 ---
 
-## 📊 2026-07-03 V0.1.30 文档同步覆盖率报告（增量 #12）
+## 📊 2026-07-08 V0.1.42 文档同步覆盖率报告（增量 #13，GAP-11 断点续扫）
+
+> 完整数据见 [`.claude/index.json`](.claude/index.json)（V0.1.42 全量重写）。本节为人类可读摘要。
+
+### 关键数据（2026-07-08 V0.1.42 实测核验）
+
+| 项 | V0.1.30 | V0.1.42 | 变化 |
+|---|---:|---:|---|
+| Prisma 表 | 39 | **45** | +6（Notification/Follow/Family/FamilyMember/GroupBuy/GroupBuyMember/TrainingPlan/UserPlanEnrollment，减 Group +announce 字段非新表）|
+| 后端 module | 26 | **30** | +4（notification/follow/family/group-buy）|
+| 小程序页面 | 31 | **38** | +7（notification/user/family/hot/topic/group-buy/group-buy-detail）|
+| 后端单元测试 | 509 | **577** | +68（V0.1.31~42 各 module +N）|
+| 缓存热路径 | 15 | 15（持平）| family/group-buy/training 等暂未接 Cache |
+| Prisma 迁移数 | 14 | **19** | +5（notification/follow/family/group_buy/group_announce + training_plan/order_groupbuy/feed_topic_video 等）|
+
+### V0.1.40~42 三件事
+
+1. **V0.1.40 profile 完整实现**：User +5 字段（gender/birthday/region/height/weight）+ service updateProfile 处理 profile + uploadFile 拼 baseUrl + UserOutputSchema +5 + applyUser 回填；7 问题全修（Phase 1 半成品全链路断裂修复）
+2. **V0.1.41 训练计划配置化**：2 新表 TrainingPlan+UserPlanEnrollment + admin +2/training +3 action + myPlans 改读 DB + calcPlanProgress + setErrorHandler 时机修（pre-existing 大 bug）
+3. **V0.1.42 跑群深化**：Group +announce + sport +3 action（groupDetail/groupMembers/announceGroup）+ 前端 group-detail 改造
+
+### 产物
+
+- **`.claude/index.json`**：V0.1.42 全量重写 — 45 表 / 30 module / 38 页 / 577 单元 / 19 迁移 / V0.1.42 / GAP-7 关闭 / GAP-11 断点续扫
+- **CT400**：main 推到 bc34aff，v0.1.40/41/42 tag 已推
+- **生产**：qingmulife.cn 运行 V0.1.42
+
+### GAP 清单（GAP-7 关闭；GAP-11 断点续扫中）
+
+1. ✅ ~~GAP-1（P0）user 鉴权~~（已修）
+2. ✅ ~~GAP-2（P1）admin schema 抽离~~（已落地）
+3. ⏳ GAP-3（🟡 P2）覆盖率阈值门禁 — 总覆盖 82.11%
+4. ✅ ~~GAP-4（P3）CHANGELOG 版本段~~（已补）
+5. ⏳ GAP-5（P2）device userId 兜底改真用户切换
+6. ⏳ GAP-6（🟡 P2）分销二次上线（间推佣金/提现/自提）
+7. ✅ ~~GAP-7 CT400 tag 推送~~（V0.1.40/41/42 已推）
+8. ⏳ GAP-8（🟢 P3）电商/训练/跑鞋/目标/收藏/动态 module 级 CLAUDE.md（仅 distribution 有）
+9. ⏳ GAP-9（🟢 P3）蓝牙 BLE 真机联调
+10. ✅ ~~GAP-10 sport.checkin 前端选鞋入口~~（V0.1.27 闭环）
+11. 🚧 **GAP-11（🟢 P3，本次）**：子 CLAUDE.md 详细段 + 根残留段落断点续扫 — 本次已完成根 CLAUDE.md 关键段 + 4 文件顶部 + index.json；子 CLAUDE.md 详细段（module/表/页面清单）留下次
+
+---
+
+## 📊 2026-07-03 V0.1.30 文档同步覆盖率报告（增量 #12，历史归档）
 
 > 完整数据见 [`.claude/index.json`](.claude/index.json)。本节为人类可读摘要。**本轮有 schema 改动（3 新表 Feed+FeedLike+FeedComment）+ 新 module feed + 新前端页 + 新单测**。
 
@@ -599,7 +648,7 @@ graph TD
 4. ✅ ~~**GAP-4（P3）**：CHANGELOG 版本段~~（已补 V0.1.13~23）
 5. ⏳ **GAP-5（P2）**：device 查询 userId 兜底（临时默认张晨，2026-07-01 引入）— 待改真用户切换（小程序登录态 → req.user.id）
 6. ⏳ **GAP-6（🟡 P2）**：分销二次上线 — 间推佣金（关系已记录，MVP 仅发直推）/ 提现到微信 / 自提收货确认 / 结算单导出
-7. ⏳ **GAP-7（🟢 P3）**：CT400 tag 推送 — V0.1.18~30 待推 Gitea（V0.1.22/23 已 push 远端 GitHub）
+7. ✅ ~~**GAP-7**：CT400 tag 推送~~（V0.1.40/41/42 tag 已推 CT400，main 推到 bc34aff）
 8. ⏳ **GAP-8（🟢 P3）**：电商/训练/跑鞋/目标/收藏/动态 module 级 CLAUDE.md — 目前仅 distribution 有，cart/points/address/coupon/training/shoes/goal/favorite/feed 暂在 server 总 CLAUDE.md 覆盖；后续按需补建
 9. ⏳ **GAP-9（🟢 P3，V0.1.25 引入；V0.1.27 提升可观测性）**：蓝牙 BLE 真机联调 — `utils/ble.ts` 已就位（扫描/连接/订阅心率 0x180D/解析心率值），**V0.1.27 device-bind 已加调试面板**（操作日志 + 心率回调计数 hrCount + 折叠默认隐藏）；心率值走 Redis 缓存 `ble:hr:{userId}` TTL 1h；待真手环/手表实测扫描/订阅链路
 10. ✅ ~~**GAP-10（🟢 P3，V0.1.26 引入；V0.1.27 关闭）**：sport.checkin 前端选鞋入口~~（V0.1.27 已闭环 — sport 打卡页加跑鞋 picker，调 shoes.list 取 active，传 shoeId → incrementShoeKm 自动累计跑鞋里程）
@@ -619,4 +668,4 @@ graph TD
 
 ---
 
-🤙 *Be water, my friend.* V0.1.23 已 push；working tree 待 commit V0.1.24（分销 + 天天跑）+ V0.1.25（pic 3 页 + training + 蓝牙）+ V0.1.26（跑鞋 + sport.checkin 集成）+ V0.1.27（sport 跑鞋 picker + 年度报告 + 蓝牙调试面板，零 schema 改）+ V0.1.28（跑步目标 Goal 表 + goal module + stats.myCertificates + 目标/证书 2 前端页 + 7 单测）+ V0.1.29（收藏 Favorite 表 + favorite module + 收藏前端页 + 6 单测 + stats.service 覆盖 39→100% + 总覆盖 82.11%）+ **V0.1.30（运动动态 Feed+FeedLike+FeedComment 3 表 + feed module 6 action + 动态前端页（点赞乐观更新+评论+FAB）+ feed +10 单测 + vi.hoisted 修复）**；**39 表 / 26 module / 31 页 / 509 单元 / 15 缓存热路径 / 14 迁移**；真支付生产等商户号；下一个 patch 段：commit + CT400 推 tag + 蓝牙真机联调（调试面板已就位）+ 覆盖率阈值门禁（已超 80%，待落地）+ 动态社交向扩展（图文/视频/话题/转发）。
+🤙 *Be water, my friend.* **V0.1.42 已推 CT400 + 生产部署**（v0.1.40/41/42 tag，main 推到 bc34aff）；V0.1.40 profile 完整（User +5 字段）+ V0.1.41 训练计划配置化（TrainingPlan+UserPlanEnrollment 表 + training +3 action）+ V0.1.42 跑群深化（Group +announce + sport +3 action）+ setErrorHandler 时机修（Fastify 4 route 前注册，修 401/403/404 返默认格式 bug）；**45 表 / 30 module / 38 页 / 577 单元 / 19 迁移 / 15 缓存热路径**；working tree 已 commit V0.1.24~42；下一个 patch 段：真机验证 + 赛事服务 MVP（业务闭环第 3 块）+ 评价系统（电商闭环最后一块）+ 蓝牙真机联调 + 覆盖率阈值门禁。
