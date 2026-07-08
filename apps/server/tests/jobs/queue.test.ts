@@ -104,8 +104,8 @@ function getWorkerDelta(action: () => void | Promise<void>) {
 }
 
 describe('模块导入副作用', () => {
-  it('import 后已构造 4 个 Queue（weekly-report + close-order + refresh-certs + garmin-import, prefix=qmwx, 默认 jobOptions）', () => {
-    expect(state.queueCtorCalls).toBe(4);
+  it('import 后已构造 5 个 Queue（weekly-report + close-order + refresh-certs + garmin-import + ludong-sync, prefix=qmwx, 默认 jobOptions）', () => {
+    expect(state.queueCtorCalls).toBe(5);
     const opts = state.queues[0]._opts as Record<string, unknown>;
     expect(opts).toMatchObject({
       prefix: 'qmwx',
@@ -119,11 +119,12 @@ describe('模块导入副作用', () => {
 
   it('导出 weeklyReportQueue 单例', () => {
     expect(weeklyReportQueue).toBeDefined();
-    expect(state.queues).toHaveLength(4);
+    expect(state.queues).toHaveLength(5);
     expect(state.queues[0].name).toBe('weekly-report');
     expect(state.queues[1].name).toBe('close-order');
     expect(state.queues[2].name).toBe('refresh-certs');
     expect(state.queues[3].name).toBe('garmin-import');
+    expect(state.queues[4].name).toBe('ludong-sync');
   });
 });
 
@@ -165,10 +166,10 @@ describe('startJobs / stopJobs 生命周期', () => {
     vi.clearAllMocks();
   });
 
-  it('startJobs() 第一次：启 4 个 worker（weekly-report=2 + close-order=4 + refresh-certs=1 + garmin-import=2）', async () => {
+  it('startJobs() 第一次：启 5 个 worker（weekly-report + close-order + refresh-certs + garmin-import + ludong-sync）', async () => {
     const before = state.workerCtorCalls;
     await startJobs();
-    expect(state.workerCtorCalls - before).toBe(4);
+    expect(state.workerCtorCalls - before).toBe(5);
 
     // close-order worker concurrency=4（按名字定位，避免依赖启动顺序）
     const closeOrderWorker = state.workers.find((w) => w._name === 'close-order');
@@ -183,7 +184,7 @@ describe('startJobs / stopJobs 生命周期', () => {
     await startJobs();
     await startJobs();
     await startJobs();
-    expect(state.workerCtorCalls - before).toBe(4);
+    expect(state.workerCtorCalls - before).toBe(5);
   });
 
   it('stopJobs() 后 startJobs() 可再次启 worker', async () => {
@@ -191,7 +192,7 @@ describe('startJobs / stopJobs 生命周期', () => {
     await startJobs();
     await stopJobs();
     await startJobs();
-    expect(state.workerCtorCalls - before).toBe(8);
+    expect(state.workerCtorCalls - before).toBe(10);
   });
 
   it('stopJobs() 关 worker + queue', async () => {
