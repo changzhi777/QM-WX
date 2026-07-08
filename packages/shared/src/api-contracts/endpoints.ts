@@ -34,6 +34,9 @@ export const ENDPOINTS = {
     joinGroup: '/api/sport',
     quitGroup: '/api/sport',
     groupRanking: '/api/sport',
+    groupDetail: '/api/sport', // V0.1.42 群详情+公告+汇总
+    groupMembers: '/api/sport', // V0.1.42 成员列表含本月跑量
+    announceGroup: '/api/sport', // V0.1.42 owner 发公告
   },
   mall: {
     listProducts: '/api/mall',

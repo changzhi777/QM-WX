@@ -23,6 +23,9 @@ import type {
   JoinGroupInput,
   MyStatsOutput,
   QuitGroupInput,
+  GroupDetailQuery,
+  GroupMembersQuery,
+  AnnounceGroupInput,
 } from './sport.schema.js';
 import { CheckinInputSchema } from './sport.schema.js';
 import { incrementShoeKm } from '../shoes/shoes.service.js';
@@ -361,7 +364,106 @@ export const sportService = {
       };
     });
   },
+
+  /**
+   * 群详情（V0.1.42）：群卡 + 公告 + 汇总（总跑量/打卡总数/活跃天数）
+   *
+   * 汇总：全周期 Checkin aggregate（群累计数据，无 period 限制）
+   */
+  async groupDetail(userId: string, input: GroupDetailQuery) {
+    const member = await sportRepo.isMember(input.groupId, userId);
+    if (!member) throw Errors.forbidden('你不在该群中');
+
+    const group = await prisma.group.findUnique({
+      where: { id: input.groupId },
+      include: { owner: { select: { id: true, nickname: true, avatarUrl: true } } },
+    });
+    if (!group) throw Errors.notFound('群不存在');
+
+    const [distAgg, countAgg, activeDaysAgg] = await Promise.all([
+      prisma.checkin.aggregate({ where: { groupId: input.groupId }, _sum: { distance: true } }),
+      prisma.checkin.count({ where: { groupId: input.groupId } }),
+      prisma.checkin.groupBy({ by: ['date'], where: { groupId: input.groupId } }),
+    ]);
+
+    return {
+      id: group.id,
+      name: group.name,
+      owner: group.owner,
+      memberCount: group.memberCount,
+      announce: group.announce,
+      myRole: member.role,
+      summary: {
+        totalDistance: round(distAgg._sum.distance ?? 0, 2),
+        totalCheckins: countAgg,
+        activeDays: activeDaysAgg.length,
+      },
+    };
+  },
+
+  /**
+   * 群成员列表（V0.1.42）：含本月跑量，按跑量降序
+   *
+   * 复用 familyRanking groupBy userId 范式（N+1 规避：1 次 groupBy 替代 N 次 aggregate）
+   */
+  async groupMembers(userId: string, input: GroupMembersQuery) {
+    const member = await sportRepo.isMember(input.groupId, userId);
+    if (!member) throw Errors.forbidden('你不在该群中');
+
+    const members = await prisma.groupMember.findMany({
+      where: { groupId: input.groupId },
+      include: { user: { select: { id: true, nickname: true, avatarUrl: true } } },
+      orderBy: { joinedAt: 'asc' },
+    });
+
+    const range = cnMonthRange();
+    const memberIds = members.map((m) => m.userId);
+    const grouped = await prisma.checkin.groupBy({
+      by: ['userId'],
+      where: { userId: { in: memberIds }, date: { gte: range.start, lt: range.end } },
+      _sum: { distance: true },
+    });
+    const distMap = new Map(grouped.map((g) => [g.userId, g._sum.distance ?? 0]));
+
+    return {
+      members: members
+        .map((m) => ({
+          userId: m.userId,
+          nickname: m.user.nickname ?? '匿名',
+          avatarUrl: m.user.avatarUrl,
+          role: m.role,
+          joinedAt: m.joinedAt.toISOString(),
+          monthDistance: round(distMap.get(m.userId) ?? 0, 2),
+        }))
+        .sort((a, b) => b.monthDistance - a.monthDistance),
+    };
+  },
+
+  /**
+   * 发群公告（V0.1.42）：仅 owner（announce 空串/null = 清空公告）
+   */
+  async announceGroup(userId: string, input: AnnounceGroupInput) {
+    const member = await sportRepo.isMember(input.groupId, userId);
+    if (!member) throw Errors.forbidden('你不在该群中');
+    if (member.role !== 'owner') throw Errors.forbidden('仅群主可发公告');
+
+    await prisma.group.update({
+      where: { id: input.groupId },
+      data: { announce: input.announce?.trim() || null },
+    });
+    return { ok: true };
+  },
 };
+
+/** CN 时区本月范围 [start, end) "YYYY-MM-DD"（复制自 family.service，KISS 不跨 module 依赖） */
+function cnMonthRange(): { start: string; end: string } {
+  const cn = new Date(Date.now() + 8 * 3600 * 1000);
+  const y = cn.getUTCFullYear();
+  const m = cn.getUTCMonth();
+  const start = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+  const end = m + 1 > 11 ? `${y + 1}-01-01` : `${y}-${String(m + 2).padStart(2, '0')}-01`;
+  return { start, end };
+}
 
 function round(n: number, p: number): number {
   const f = 10 ** p;

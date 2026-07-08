@@ -13,8 +13,8 @@ vi.mock('src/infra/prisma.js', () => {
   // 事务内复用顶级 mock
   const userMethods = { findUnique: vi.fn(), findUniqueOrThrow: vi.fn(), update: vi.fn() };
   const pointsRecordMethods = { create: vi.fn() };
-  const checkinMethods = { create: vi.fn(), findFirst: vi.fn(), findMany: vi.fn() };
-  const groupMemberMethods = { findUnique: vi.fn(), count: vi.fn(), create: vi.fn(), delete: vi.fn() };
+  const checkinMethods = { create: vi.fn(), findFirst: vi.fn(), findMany: vi.fn(), aggregate: vi.fn(), count: vi.fn(), groupBy: vi.fn() };
+  const groupMemberMethods = { findUnique: vi.fn(), count: vi.fn(), create: vi.fn(), delete: vi.fn(), findMany: vi.fn() };
   const groupMethods = { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() };
   const txMock = {
     checkin: checkinMethods,
@@ -500,5 +500,64 @@ describe('sportService.checkin → 写后失效 myStats/groupRanking（V0.1.11�
     // weeklyReport aggregate 也失效（同一次 checkin，V0.1.12）
     expect(_redisMockState.cacheStore.has('qmwx:cache:weeklyReport:aggregate:g1:2026-W25')).toBe(false);
     expect(_redisMockState.cacheStore.has('qmwx:cache:weeklyReport:aggregate:g2:2026-W25')).toBe(true);
+  });
+});
+
+describe('sportService.groupDetail (V0.1.42)', () => {
+  it('非成员 → forbidden', async () => {
+    mockedPrisma.groupMember.findUnique.mockResolvedValue(null);
+    await expect(sportService.groupDetail('u1', { groupId: 'g1' })).rejects.toThrow('你不在该群中');
+  });
+
+  it('返群卡 + 公告 + 汇总（总跑量/打卡数/活跃天数）', async () => {
+    mockedPrisma.groupMember.findUnique.mockResolvedValue({ groupId: 'g1', userId: 'u1', role: 'member' });
+    mockedPrisma.group.findUnique.mockResolvedValue({
+      id: 'g1', name: '跑群A', memberCount: 5, announce: '一起跑',
+      owner: { id: 'u-owner', nickname: '队长', avatarUrl: null },
+    });
+    mockedPrisma.checkin.aggregate.mockResolvedValue({ _sum: { distance: 123.4 } });
+    mockedPrisma.checkin.count.mockResolvedValue(20);
+    mockedPrisma.checkin.groupBy.mockResolvedValue([{ date: '2026-07-01' }, { date: '2026-07-02' }]);
+
+    const r = await sportService.groupDetail('u1', { groupId: 'g1' });
+    expect(r.name).toBe('跑群A');
+    expect(r.announce).toBe('一起跑');
+    expect(r.myRole).toBe('member');
+    expect(r.summary).toEqual({ totalDistance: 123.4, totalCheckins: 20, activeDays: 2 });
+  });
+});
+
+describe('sportService.groupMembers (V0.1.42)', () => {
+  it('成员列表含本月跑量，按跑量降序', async () => {
+    mockedPrisma.groupMember.findUnique.mockResolvedValue({ groupId: 'g1', userId: 'u1', role: 'member' });
+    mockedPrisma.groupMember.findMany.mockResolvedValue([
+      { userId: 'u-a', role: 'owner', joinedAt: new Date('2026-06-01'), user: { id: 'u-a', nickname: 'Alice', avatarUrl: null } },
+      { userId: 'u-b', role: 'member', joinedAt: new Date('2026-07-01'), user: { id: 'u-b', nickname: 'Bob', avatarUrl: null } },
+    ]);
+    mockedPrisma.checkin.groupBy.mockResolvedValue([
+      { userId: 'u-a', _sum: { distance: 30 } },
+      { userId: 'u-b', _sum: { distance: 50 } },
+    ]);
+
+    const r = await sportService.groupMembers('u1', { groupId: 'g1' });
+    expect(r.members).toHaveLength(2);
+    expect(r.members[0].userId).toBe('u-b'); // 50 > 30，降序
+    expect(r.members[0].monthDistance).toBe(50);
+    expect(r.members[1].role).toBe('owner');
+  });
+});
+
+describe('sportService.announceGroup (V0.1.42)', () => {
+  it('owner → 更新公告', async () => {
+    mockedPrisma.groupMember.findUnique.mockResolvedValue({ groupId: 'g1', userId: 'u1', role: 'owner' });
+    mockedPrisma.group.update.mockResolvedValue({ id: 'g1' });
+    const r = await sportService.announceGroup('u1', { groupId: 'g1', announce: '新公告' });
+    expect(r.ok).toBe(true);
+    expect(mockedPrisma.group.update).toHaveBeenCalledWith({ where: { id: 'g1' }, data: { announce: '新公告' } });
+  });
+
+  it('非 owner → forbidden', async () => {
+    mockedPrisma.groupMember.findUnique.mockResolvedValue({ groupId: 'g1', userId: 'u1', role: 'member' });
+    await expect(sportService.announceGroup('u1', { groupId: 'g1', announce: 'x' })).rejects.toThrow('仅群主可发公告');
   });
 });

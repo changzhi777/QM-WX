@@ -113,6 +113,7 @@ model Group {
   name        String
   ownerId     String
   memberCount Int      @default(0)
+  announce   String?  // V0.1.42 群公告（owner 发，可选）
   createdAt   DateTime @default(now())
 
   owner    User          @relation("GroupOwner", fields: [ownerId], references: [id])

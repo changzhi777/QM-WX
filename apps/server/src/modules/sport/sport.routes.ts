@@ -12,6 +12,9 @@ import {
   JoinGroupInputSchema,
   MyStatsInputSchema,
   QuitGroupInputSchema,
+  GroupDetailQuerySchema,
+  GroupMembersQuerySchema,
+  AnnounceGroupSchema,
 } from './sport.schema.js';
 import { z } from 'zod';
 
@@ -73,6 +76,19 @@ export async function sportRoutes(app: FastifyInstance) {
         case 'groupRanking': {
           const input = parseOrBadRequest(GroupRankingInputSchema, payload);
           return { code: 0, data: await sportService.groupRanking(userId, input) };
+        }
+        // ===== V0.1.42 跑群深化（群详情/成员/公告）=====
+        case 'groupDetail': {
+          const input = parseOrBadRequest(GroupDetailQuerySchema, payload);
+          return { code: 0, data: await sportService.groupDetail(userId, input) };
+        }
+        case 'groupMembers': {
+          const input = parseOrBadRequest(GroupMembersQuerySchema, payload);
+          return { code: 0, data: await sportService.groupMembers(userId, input) };
+        }
+        case 'announceGroup': {
+          const input = parseOrBadRequest(AnnounceGroupSchema, payload);
+          return { code: 0, data: await sportService.announceGroup(userId, input) };
         }
         default:
           return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });

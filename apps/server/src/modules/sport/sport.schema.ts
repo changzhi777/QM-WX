@@ -58,6 +58,19 @@ export const GroupRankingInputSchema = z.object({
 export type GroupRankingInput = z.infer<typeof GroupRankingInputSchema>;
 export type GroupRankingOutput = z.output<typeof GroupRankingInputSchema>;
 
+// ===== V0.1.42 跑群深化（群详情/成员/公告）=====
+export const GroupDetailQuerySchema = z.object({ groupId: z.string().min(1) });
+export type GroupDetailQuery = z.infer<typeof GroupDetailQuerySchema>;
+
+export const GroupMembersQuerySchema = z.object({ groupId: z.string().min(1) });
+export type GroupMembersQuery = z.infer<typeof GroupMembersQuerySchema>;
+
+export const AnnounceGroupSchema = z.object({
+  groupId: z.string().min(1),
+  announce: z.string().max(500).optional(),
+});
+export type AnnounceGroupInput = z.infer<typeof AnnounceGroupSchema>;
+
 // ===== action body =====
 export const SportActionBodySchema = z.object({
   action: z.enum([
@@ -69,6 +82,9 @@ export const SportActionBodySchema = z.object({
     'groupRanking',
     'myGroups',
     'today',
+    'groupDetail', // V0.1.42
+    'groupMembers', // V0.1.42
+    'announceGroup', // V0.1.42
   ]),
   payload: z.unknown().optional(),
 });
