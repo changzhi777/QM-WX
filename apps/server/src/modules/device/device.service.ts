@@ -19,6 +19,7 @@ import { prisma } from '../../infra/prisma.js';
 import { redis } from '../../infra/redis.js';
 import { Cache } from '../../infra/cache.js';
 import { env } from '../../config/env.js';
+import { logger } from '../../common/logger.js';
 import { enqueueGarminImport } from '../../jobs/queue.js';
 import { ACTIVITY_TYPE_MAP as TYPE_MAP } from './device.schema.js';
 import type {
@@ -132,10 +133,15 @@ export const deviceService = {
 
     // 2. get session_key from Redis（code2Session 时缓存，TTL 7000s）
     const sessionKey = await redis.get(`wx:session:${user.openid}`);
+    logger.info({ userId, openid: user.openid, hasSessionKey: !!sessionKey }, 'syncWeRun[1] session_key 检查');
     if (!sessionKey) throw Errors.badRequest('session_key 已过期，请重新进入小程序');
 
     // 3. AES 解密 encryptedData（微信 WXBizDataCrypt：AES-128-CBC）
     const decrypted = decryptWeRunData(sessionKey, input.encryptedData, input.iv);
+    logger.info(
+      { hasDecrypted: !!decrypted, stepInfoListLen: decrypted?.stepInfoList?.length ?? 0 },
+      'syncWeRun[2] AES 解密结果',
+    );
     if (!decrypted?.stepInfoList?.length) throw Errors.badRequest('微信运动数据解密失败');
     const stepList = decrypted.stepInfoList;
 
@@ -146,6 +152,10 @@ export const deviceService = {
       const prev = dayMap.get(date) ?? 0;
       if (item.step > prev) dayMap.set(date, item.step);
     }
+    logger.info(
+      { dayMapSize: dayMap.size, sampleDates: Array.from(dayMap.keys()).slice(-3) },
+      'syncWeRun[3] dayMap 构建',
+    );
 
     // 5. upsert（按 userId+date unique，取 max 防回退）
     let synced = 0;
@@ -161,6 +171,7 @@ export const deviceService = {
       synced++;
     }
 
+    logger.info({ synced, days: dayMap.size }, 'syncWeRun[4] 完成');
     return { synced, days: dayMap.size };
   },
 
