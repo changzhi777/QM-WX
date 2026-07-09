@@ -95,11 +95,16 @@ Page({
             try {
               const data = JSON.parse(r.data);
               if (data.code === 0) {
-                this.setData({
-                  xiaomiFiles: data.data.files,
-                  xiaomiCount: data.data.count,
+                const d = data.data;
+                // 阶段 2：返回入库数 { hr, spo2, sleep, steps }
+                this.setData({ xiaomiFiles: [], xiaomiCount: 0 });
+                wx.showModal({
+                  title: '✅ 导入成功',
+                  content: `心率 ${d.hr} 条\n血氧 ${d.spo2} 条\n睡眠 ${d.sleep} 天\n步数 ${d.steps} 天`,
+                  confirmText: '看历史',
+                  cancelText: '关闭',
+                  success: (m) => m.confirm && wx.navigateTo({ url: '/pages/health-history/index' }),
                 });
-                wx.showToast({ title: `解析 ${data.data.count} 个文件`, icon: 'success' });
               } else {
                 wx.showToast({ title: data.msg || '上传失败', icon: 'none' });
               }
