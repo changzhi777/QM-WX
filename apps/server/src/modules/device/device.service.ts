@@ -15,6 +15,7 @@
  */
 import { randomUUID, createDecipheriv } from 'node:crypto';
 import AdmZip from 'adm-zip';
+import unzipper from 'unzipper';
 import { parse as parseCsv } from 'csv-parse/sync';
 import { Errors } from '../../common/errors.js';
 import { prisma } from '../../infra/prisma.js';
@@ -834,14 +835,14 @@ export const deviceService = {
     sleep: number;
     steps: number;
   }> {
-    const zip = new AdmZip(buffer);
-    // 找 aggregated CSV（每日聚合数据，最核心）
-    const aggEntry = zip.getEntries().find(
-      (e) => e.entryName.includes('hlth_center_aggregated_fitness_data') && e.entryName.endsWith('.csv'),
+    // unzipper 解压（支持 ZipCrypto + AES；adm-zip 解密有 bug，换 unzipper）
+    const directory = await unzipper.Open.buffer(buffer);
+    const aggFile = directory.files.find(
+      (f) => f.path.includes('hlth_center_aggregated_fitness_data') && f.path.endsWith('.csv'),
     );
-    if (!aggEntry) throw Errors.badRequest('ZIP 内未找到 hlth_center_aggregated_fitness_data.csv');
+    if (!aggFile) throw Errors.badRequest('ZIP 内未找到 hlth_center_aggregated_fitness_data.csv');
 
-    const csvText = zip.readAsText(aggEntry, password); // 小米 ZIP 加密，传密码解压
+    const csvText = (await aggFile.buffer(password)).toString('utf8'); // 小米 ZIP 加密，传密码解压
     const records = parseCsv(csvText, { columns: true, skip_empty_lines: true }) as Array<{
       Key: string;
       Time: string;
