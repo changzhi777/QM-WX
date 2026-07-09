@@ -89,6 +89,11 @@
       </view>
     </view>
 
+    <view class="list-item" bindtap="goDeviceBind">
+      <view class="lbl">设备绑定</view>
+      <view class="arrow">›</view>
+    </view>
+
     <view class="list-item" bindtap="goFamily">
       <view class="lbl">家庭空间</view>
       <view class="arrow">›</view>

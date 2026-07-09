@@ -37,7 +37,9 @@
     "pages/hot/index",
     "pages/topic/index",
     "pages/group-buy/index",
-    "pages/group-buy-detail/index"
+    "pages/group-buy-detail/index",
+    "pages/health-history/index",
+    "pages/data-import-guide/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",

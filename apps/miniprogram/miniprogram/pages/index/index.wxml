@@ -46,8 +46,11 @@
   </view>
 
   <!-- V0.1.43 今日健康卡（心率/血氧/步数，BLE + 微信运动）-->
-  <view class="health-card" wx:if="{{isLogin && (todayHealth.hr || todayHealth.spo2 || todayHealth.steps)}}">
-    <view class="health-label">今日健康</view>
+  <view class="health-card" wx:if="{{isLogin && (todayHealth.hr || todayHealth.spo2 || todayHealth.steps)}}" bindtap="goHealthHistory">
+    <view class="health-header">
+      <view class="health-label">今日健康</view>
+      <view class="health-more">历史 ›</view>
+    </view>
     <view class="health-row">
       <view class="health-item" wx:if="{{todayHealth.hr}}">
         <view class="health-icon">❤️</view>
@@ -67,21 +70,13 @@
     </view>
   </view>
 
-  <!-- 两大中心引导（运动/商城，导流 tab）-->
-  <view class="redirect-card">
-    <view class="redirect-row" bindtap="goSport">
-      <view class="redirect-icon">🏃</view>
+  <!-- V0.1.43 数据导入指南（按品牌，国内源）-->
+  <view class="redirect-card" bindtap="goImportGuide">
+    <view class="redirect-row">
+      <view class="redirect-icon">📥</view>
       <view class="redirect-text">
-        <view class="redirect-title">运动中心</view>
-        <view class="redirect-desc">打卡 · 跑鞋 · 目标 · 健康 · 训练</view>
-      </view>
-      <view class="redirect-arrow">›</view>
-    </view>
-    <view class="redirect-row" bindtap="goMall">
-      <view class="redirect-icon">🛒</view>
-      <view class="redirect-text">
-        <view class="redirect-title">商城中心</view>
-        <view class="redirect-desc">商品 · 购物车 · 优惠券 · 订单</view>
+        <view class="redirect-title">数据导入指南</view>
+        <view class="redirect-desc">佳明 · 小米 · 微信运动 · 蓝牙（按品牌图文步骤）</view>
       </view>
       <view class="redirect-arrow">›</view>
     </view>

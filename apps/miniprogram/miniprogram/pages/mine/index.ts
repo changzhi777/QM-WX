@@ -176,6 +176,10 @@ Page({
     wx.navigateTo({ url: '/pages/notification/index' });
   },
 
+  goDeviceBind() {
+    wx.navigateTo({ url: '/pages/device-bind/index' });
+  },
+
   goFamily() {
     wx.navigateTo({ url: '/pages/family/index' });
   },

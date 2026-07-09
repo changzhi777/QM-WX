@@ -45,7 +45,9 @@
   padding: 24rpx;
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
 }
-.health-label { font-size: 26rpx; color: var(--text-secondary); margin-bottom: 16rpx; }
+.health-label { font-size: 26rpx; color: var(--text-secondary); }
+.health-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
+.health-more { font-size: 24rpx; color: var(--brand, #0FAF8E); }
 .health-row { display: flex; }
 .health-item { flex: 1; text-align: center; }
 .health-icon { font-size: 36rpx; }

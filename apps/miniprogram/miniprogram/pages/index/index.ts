@@ -165,11 +165,15 @@ Page({
     wx.switchTab({ url: '/pages/mine/index' });
   },
 
-  goMall() {
-    wx.switchTab({ url: '/pages/mall/index' });
-  },
-
   goProfile() {
     wx.navigateTo({ url: '/pages/profile/index' });
+  },
+
+  goHealthHistory() {
+    wx.navigateTo({ url: '/pages/health-history/index' });
+  },
+
+  goImportGuide() {
+    wx.navigateTo({ url: '/pages/data-import-guide/index' });
   },
 });
