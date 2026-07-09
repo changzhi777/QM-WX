@@ -69,6 +69,7 @@ model User {
   weRunRecords      WeRunRecord[] // V0.1.43 微信运动步数（每日）
   heartRateRecords  HeartRateRecord[] // V0.1.43 心率历史（BLE 0x180D + 微信运动）
   spo2Records       SpO2Record[] // V0.1.43 血氧历史（BLE 0x1822）
+  sleepRecords      SleepRecord[] // V0.1.43 睡眠历史（小米数据包导入）
   groupBuyMembers   GroupBuyMember[] // V0.1.37 团购参与记录
   // 分销（V0.1.24）
   inviteCode        String?  @unique
@@ -930,4 +931,27 @@ model SpO2Record {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, timestamp])
+}
+
+// ===== 睡眠历史（V0.1.43，小米数据包导入）=====
+// importXiaomiZip 解析小米睡眠 JSON → upsert by userId+date
+// myTodayHealth 可加 latestSleep 展示（阶段 2 扩展）
+model SleepRecord {
+  id              String   @id @default(cuid())
+  userId          String
+  date            String   // YYYY-MM-DD（CN 时区，一日一条）
+  bedtime         DateTime? // 入睡时间
+  wakeTime        DateTime? // 起床时间
+  durationSeconds Int?      // 总时长（秒）
+  deepSeconds     Int?      // 深睡
+  lightSeconds    Int?      // 浅睡
+  remSeconds      Int?      // REM
+  awakeSeconds    Int?      // 清醒
+  score           Int?      // 睡眠评分
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date]) // 一日一条（upsert 防重）
+  @@index([userId, date])
 }
