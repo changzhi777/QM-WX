@@ -150,6 +150,16 @@ export const userService = {
   async bindApps(_userId: string, _input: BindAppsInput): Promise<never> {
     throw Errors.notImplemented('绑定运动 APP 功能开发中（Phase 1.1）');
   },
+
+  /** V0.1.43 完成新用户激活向导（标记 onboardingDone = true，失效 me 缓存）*/
+  async completeOnboarding(userId: string) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { onboardingDone: true },
+    });
+    await Cache.del(meCacheKey(userId));
+    return { ok: true };
+  },
 };
 
 /** Prisma row → API output（含 ISO 时间） */
@@ -171,6 +181,7 @@ function toUserOutput(u: {
   stats: unknown;
   createdAt: Date;
   updatedAt: Date;
+  onboardingDone: boolean;
 }) {
   const rawStats = (u.stats as { totalDistance?: number; totalCheckins?: number } | null) ?? {};
   const stats = {
@@ -196,5 +207,6 @@ function toUserOutput(u: {
     stats,
     createdAt: u.createdAt.toISOString(),
     updatedAt: u.updatedAt.toISOString(),
+    onboardingDone: u.onboardingDone,
   };
 }

@@ -1,0 +1,88 @@
+<view class="page">
+  <!-- 进度条 -->
+  <view class="progress">
+    <view class="progress-step {{step >= 1 ? 'active' : ''}}">1 资料</view>
+    <view class="progress-line {{step >= 2 ? 'active' : ''}}"></view>
+    <view class="progress-step {{step >= 2 ? 'active' : ''}}">2 设备</view>
+    <view class="progress-line {{step >= 3 ? 'active' : ''}}"></view>
+    <view class="progress-step {{step >= 3 ? 'active' : ''}}">3 导入</view>
+    <view class="progress-line {{step >= 4 ? 'active' : ''}}"></view>
+    <view class="progress-step {{step >= 4 ? 'active' : ''}}">4 完成</view>
+  </view>
+
+  <!-- Step 1 资料 -->
+  <view class="step-content" wx:if="{{step === 1}}">
+    <view class="section-title">完善个人资料</view>
+    <view class="form-item">
+      <view class="form-label">头像</view>
+      <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+        <image class="avatar" src="{{avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill"/>
+      </button>
+    </view>
+    <view class="form-item">
+      <view class="form-label">昵称</view>
+      <input class="form-input" type="nickname" placeholder="选填" value="{{nickname}}" bindinput="onNicknameInput"/>
+    </view>
+    <view class="form-item">
+      <view class="form-label">性别</view>
+      <view class="gender-row">
+        <view class="gender-btn {{gender === 'male' ? 'active' : ''}}" data-value="male" bindtap="onGenderChange">男</view>
+        <view class="gender-btn {{gender === 'female' ? 'active' : ''}}" data-value="female" bindtap="onGenderChange">女</view>
+        <view class="gender-btn {{gender === 'unknown' ? 'active' : ''}}" data-value="unknown" bindtap="onGenderChange">保密</view>
+      </view>
+    </view>
+    <view class="form-item">
+      <view class="form-label">生日</view>
+      <picker mode="date" value="{{birthday}}" end="2026-12-31" bindchange="onBirthdayChange">
+        <view class="form-input {{birthday ? '' : 'placeholder'}}">{{birthday || '请选择'}}</view>
+      </picker>
+    </view>
+    <view class="form-item">
+      <view class="form-label">身高 (cm)</view>
+      <input class="form-input" type="digit" placeholder="选填" value="{{height}}" bindinput="onHeightInput"/>
+    </view>
+    <view class="form-item">
+      <view class="form-label">体重 (kg)</view>
+      <input class="form-input" type="digit" placeholder="选填" value="{{weight}}" bindinput="onWeightInput"/>
+    </view>
+    <button class="next-btn" bindtap="nextFromProfile">下一步</button>
+  </view>
+
+  <!-- Step 2 设备 -->
+  <view class="step-content" wx:if="{{step === 2}}">
+    <view class="section-title">绑定设备（可选）</view>
+    <view class="guide-card" bindtap="goDeviceBind">
+      <view class="guide-icon">⌚</view>
+      <view class="guide-text">
+        <view class="guide-title">设备绑定中心</view>
+        <view class="guide-desc">扫描绑定 BLE 手环/手表（心率/血氧实时同步）</view>
+      </view>
+      <view class="guide-arrow">›</view>
+    </view>
+    <button class="next-btn" bindtap="nextFromDevice">下一步</button>
+    <view class="skip-btn" bindtap="skipDevice">跳过</view>
+  </view>
+
+  <!-- Step 3 导入 -->
+  <view class="step-content" wx:if="{{step === 3}}">
+    <view class="section-title">导入历史数据（可选）</view>
+    <view class="guide-card" bindtap="goImportGuide">
+      <view class="guide-icon">📥</view>
+      <view class="guide-text">
+        <view class="guide-title">数据导入指南</view>
+        <view class="guide-desc">小米数据包上传 / 微信运动同步 / 佳明导入</view>
+      </view>
+      <view class="guide-arrow">›</view>
+    </view>
+    <button class="next-btn" bindtap="nextFromImport">下一步</button>
+    <view class="skip-btn" bindtap="skipImport">跳过</view>
+  </view>
+
+  <!-- Step 4 完成 -->
+  <view class="step-content" wx:if="{{step === 4}}">
+    <view class="finish-icon">🎉</view>
+    <view class="finish-title">激活完成！</view>
+    <view class="finish-desc">你已完成激活，开始享受青沐运动</view>
+    <button class="next-btn" bindtap="finish">进入首页</button>
+  </view>
+</view>

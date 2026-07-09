@@ -180,6 +180,10 @@ Page({
     wx.navigateTo({ url: '/pages/device-bind/index' });
   },
 
+  goOnboarding() {
+    wx.navigateTo({ url: '/pages/onboarding/index' });
+  },
+
   goFamily() {
     wx.navigateTo({ url: '/pages/family/index' });
   },

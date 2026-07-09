@@ -94,6 +94,11 @@
       <view class="arrow">›</view>
     </view>
 
+    <view class="list-item" bindtap="goOnboarding">
+      <view class="lbl">激活向导</view>
+      <view class="arrow">›</view>
+    </view>
+
     <view class="list-item" bindtap="goFamily">
       <view class="lbl">家庭空间</view>
       <view class="arrow">›</view>

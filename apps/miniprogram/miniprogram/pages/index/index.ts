@@ -118,9 +118,19 @@ Page({
       try {
         await ensureLogin();
         const app = getApp();
-        const u = app.globalData.user as null | { nickname: string; avatarUrl: string | null; points: number };
+        const u = app.globalData.user as null | {
+          nickname: string;
+          avatarUrl: string | null;
+          points: number;
+          onboardingDone?: boolean;
+        };
         this.setData({ user: u, isLogin: !!u });
         isLogin = !!u;
+        // V0.1.43 新用户未完成激活向导 → 跳 onboarding
+        if (u && u.onboardingDone === false) {
+          wx.redirectTo({ url: '/pages/onboarding/index' });
+          return;
+        }
       } catch {
         this.setData({ user: null, isLogin: false });
       }

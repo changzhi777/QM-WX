@@ -54,6 +54,12 @@ export async function userRoutes(app: FastifyInstance) {
           return { code: 0, data: { user, config } };
         }
 
+        case 'completeOnboarding': {
+          const authUser = await requireLogin(req);
+          const data = await userService.completeOnboarding(authUser.id);
+          return { code: 0, data };
+        }
+
         default:
           return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
       }

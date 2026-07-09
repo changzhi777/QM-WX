@@ -74,6 +74,7 @@ model User {
   // 分销（V0.1.24）
   inviteCode        String?  @unique
   distributorLevel  String   @default("V0") // V0 | V1 | V2 | V3
+  onboardingDone    Boolean  @default(false) // V0.1.43 新用户激活向导完成标记
   distributionOrders DistributionOrder[]
   teamInvites        Team[]          @relation("TeamInviter")
   teamInvitees       Team[]          @relation("TeamInvitee")

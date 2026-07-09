@@ -44,7 +44,7 @@ export type BindAppsInput = z.infer<typeof BindAppsInputSchema>;
 // ===== 路由 body =====
 
 export const ActionBodySchema = z.object({
-  action: z.enum(['login', 'updateProfile', 'bindApps', 'me']),
+  action: z.enum(['login', 'updateProfile', 'bindApps', 'me', 'completeOnboarding']),
   payload: z.unknown().optional(),
 });
 export type ActionBody = z.infer<typeof ActionBodySchema>;
@@ -73,6 +73,7 @@ export const UserOutputSchema = z.object({
   }),
   createdAt: z.string(),
   updatedAt: z.string(),
+  onboardingDone: z.boolean(),
 });
 
 export const LoginOutputSchema = z.object({
