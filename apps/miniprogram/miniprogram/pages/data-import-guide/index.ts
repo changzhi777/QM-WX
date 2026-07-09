@@ -75,7 +75,7 @@ Page({
     }
   },
 
-  /** V0.1.43 上传小米数据包 ZIP（阶段 1：返回文件树确认格式，阶段 2 改入库）*/
+  /** V0.1.43 上传小米数据包 ZIP（选文件 → 弹密码 → 上传入库）*/
   onXiaomiUpload() {
     wx.chooseMessageFile({
       count: 1,
@@ -83,42 +83,55 @@ Page({
       extension: ['zip'],
       success: (res) => {
         const file = res.tempFiles[0];
-        const token = wx.getStorageSync('accessToken');
-        // 用 wx.$apiBase（同 services/api.ts，app.ts onLaunch 注入 prod）；fallback ENV.apiBase
-        const base = (wx as unknown as { $apiBase?: string }).$apiBase || ENV.apiBase;
-        wx.showLoading({ title: '上传解析中...' });
-        wx.uploadFile({
-          url: `${base}/api/device/uploadXiaomiZip`,
-          filePath: file.path,
-          name: 'file',
-          header: token ? { authorization: `Bearer ${token}` } : {},
-          success: (r) => {
-            wx.hideLoading();
-            try {
-              const data = JSON.parse(r.data);
-              if (data.code === 0) {
-                const d = data.data;
-                // 阶段 2：返回入库数 { hr, spo2, sleep, steps }
-                this.setData({ xiaomiFiles: [], xiaomiCount: 0 });
-                wx.showModal({
-                  title: '✅ 导入成功',
-                  content: `心率 ${d.hr} 条\n血氧 ${d.spo2} 条\n睡眠 ${d.sleep} 天\n步数 ${d.steps} 天`,
-                  confirmText: '看历史',
-                  cancelText: '关闭',
-                  success: (m) => m.confirm && wx.navigateTo({ url: '/pages/health-history/index' }),
-                });
-              } else {
-                wx.showToast({ title: data.msg || '上传失败', icon: 'none' });
-              }
-            } catch {
-              wx.showToast({ title: '解析失败', icon: 'none' });
-            }
-          },
-          fail: () => {
-            wx.hideLoading();
-            wx.showToast({ title: '上传失败', icon: 'none' });
+        // 小米 ZIP 加密，弹密码输入（用户导出时设的）
+        wx.showModal({
+          title: 'ZIP 解压密码',
+          editable: true,
+          placeholderText: '小米隐私中心导出时设的密码',
+          success: (m) => {
+            if (!m.confirm) return;
+            this.doUpload(file, m.content || '');
           },
         });
+      },
+    });
+  },
+
+  /** V0.1.43 实际上传（formData 带密码）*/
+  doUpload(file: { path: string }, password: string) {
+    const token = wx.getStorageSync('accessToken');
+    const base = (wx as unknown as { $apiBase?: string }).$apiBase || ENV.apiBase;
+    wx.showLoading({ title: '上传解析中...' });
+    wx.uploadFile({
+      url: `${base}/api/device/uploadXiaomiZip`,
+      filePath: file.path,
+      name: 'file',
+      header: token ? { authorization: `Bearer ${token}` } : {},
+      formData: { password },
+      success: (r) => {
+        wx.hideLoading();
+        try {
+          const data = JSON.parse(r.data);
+          if (data.code === 0) {
+            const d = data.data;
+            this.setData({ xiaomiFiles: [], xiaomiCount: 0 });
+            wx.showModal({
+              title: '✅ 导入成功',
+              content: `心率 ${d.hr} 条\n血氧 ${d.spo2} 条\n睡眠 ${d.sleep} 天\n步数 ${d.steps} 天`,
+              confirmText: '看历史',
+              cancelText: '关闭',
+              success: (m) => m.confirm && wx.navigateTo({ url: '/pages/health-history/index' }),
+            });
+          } else {
+            wx.showToast({ title: data.msg || '上传失败', icon: 'none' });
+          }
+        } catch {
+          wx.showToast({ title: '解析失败', icon: 'none' });
+        }
+      },
+      fail: () => {
+        wx.hideLoading();
+        wx.showToast({ title: '上传失败', icon: 'none' });
       },
     });
   },

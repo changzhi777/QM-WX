@@ -828,7 +828,7 @@ export const deviceService = {
    * - steps aggregated → WeRunRecord（by userId+date upsert，补充每日步数）
    * - stress/calories/weight → 暂不入（YAGNI，后续按需）
    */
-  async importXiaomiZip(userId: string, buffer: Buffer): Promise<{
+  async importXiaomiZip(userId: string, buffer: Buffer, password = ''): Promise<{
     hr: number;
     spo2: number;
     sleep: number;
@@ -841,7 +841,7 @@ export const deviceService = {
     );
     if (!aggEntry) throw Errors.badRequest('ZIP 内未找到 hlth_center_aggregated_fitness_data.csv');
 
-    const csvText = zip.readAsText(aggEntry);
+    const csvText = zip.readAsText(aggEntry, password); // 小米 ZIP 加密，传密码解压
     const records = parseCsv(csvText, { columns: true, skip_empty_lines: true }) as Array<{
       Key: string;
       Time: string;
