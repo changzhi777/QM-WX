@@ -1,7 +1,7 @@
 // pages/health-history/index.ts — 健康历史（心率/血氧/步数曲线，V0.1.43）
 import { api } from '../../services/api';
 
-type HealthType = 'hr' | 'spo2' | 'steps';
+type HealthType = 'hr' | 'spo2' | 'steps' | 'sleep';
 
 interface HistoryPoint {
   label: string;
@@ -10,9 +10,9 @@ interface HistoryPoint {
   showLabel: boolean;
 }
 
-const TYPE_LABEL: Record<HealthType, string> = { hr: '心率', spo2: '血氧', steps: '步数' };
-const TYPE_UNIT: Record<HealthType, string> = { hr: ' bpm', spo2: '%', steps: ' 步' };
-const TYPE_ICON: Record<HealthType, string> = { hr: '❤️', spo2: '🩸', steps: '👟' };
+const TYPE_LABEL: Record<HealthType, string> = { hr: '心率', spo2: '血氧', steps: '步数', sleep: '睡眠' };
+const TYPE_UNIT: Record<HealthType, string> = { hr: ' bpm', spo2: '%', steps: ' 步', sleep: ' h' };
+const TYPE_ICON: Record<HealthType, string> = { hr: '❤️', spo2: '🩸', steps: '👟', sleep: '💤' };
 
 Page({
   data: {
@@ -63,7 +63,24 @@ Page({
 
       let raw: { label: string; value: number; time: string }[] = [];
 
-      if (activeType === 'steps') {
+      if (activeType === 'sleep') {
+        // V0.1.43 睡眠：myHealthHistory(type=sleep)，返 value=hours
+        const res = await api.call<{
+          list: { id: string; value: number; timestamp: string; score: number | null }[];
+        }>('device', 'myHealthHistory', {
+          type: 'sleep',
+          start: fmtIso(start),
+          end: fmtIso(end),
+          pageSize: 500,
+        });
+        const list = res.list.slice().reverse();
+        raw = list.map((r) => ({
+          label: r.timestamp.slice(5, 10),
+          value: r.value,
+          time: r.timestamp,
+        }));
+        raw = raw.slice(-50);
+      } else if (activeType === 'steps') {
         const res = await api.call<{ records: { date: string; step: number }[] }>(
           'device',
           'myWeRun',

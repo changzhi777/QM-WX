@@ -20,6 +20,7 @@ Page({
       hr: null as { value: number; timestamp: string } | null,
       spo2: null as { value: number; timestamp: string } | null,
       steps: null as { value: number; date: string } | null,
+      sleepXiaomi: null as { durationHours: number | null; score: number | null; date: string } | null,
     },
     healthTimer: null as ReturnType<typeof setInterval> | null,
     showPrivacy: false,
@@ -91,6 +92,7 @@ Page({
         hr: { value: number; timestamp: string } | null;
         spo2: { value: number; timestamp: string } | null;
         steps: { value: number; date: string } | null;
+        sleepXiaomi: { durationHours: number | null; score: number | null; date: string } | null;
       }>('device', 'myTodayHealth', {});
       this.setData({ todayHealth });
       try {

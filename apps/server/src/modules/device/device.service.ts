@@ -244,6 +244,40 @@ export const deviceService = {
    * 按 type + dateRange 分页查询；type 决定查 HeartRateRecord 还是 SpO2Record
    */
   async myHealthHistory(userId: string, input: MyHealthHistoryQuery) {
+    // V0.1.43 sleep 类型：按 date 字符串查 SleepRecord（字段不同，单独处理）
+    if (input.type === 'sleep') {
+      const startDate = input.start?.slice(0, 10);
+      const endDate = input.end?.slice(0, 10);
+      const whereSleep = {
+        userId,
+        ...(startDate || endDate
+          ? { date: { ...(startDate ? { gte: startDate } : {}), ...(endDate ? { lte: endDate } : {}) } }
+          : {}),
+      };
+      const [rows, total] = await Promise.all([
+        prisma.sleepRecord.findMany({
+          where: whereSleep,
+          orderBy: { date: 'desc' },
+          skip: (input.page - 1) * input.pageSize,
+          take: input.pageSize,
+        }),
+        prisma.sleepRecord.count({ where: whereSleep }),
+      ]);
+      return {
+        type: 'sleep',
+        list: rows.map((r) => ({
+          id: r.id,
+          value: r.durationSeconds ? Math.round((r.durationSeconds / 3600) * 10) / 10 : 0,
+          timestamp: `${r.date}T00:00:00.000Z`,
+          score: r.score,
+          deepHours: r.deepSeconds ? Math.round((r.deepSeconds / 3600) * 10) / 10 : null,
+        })),
+        total,
+        page: input.page,
+        pageSize: input.pageSize,
+        hasMore: input.page * input.pageSize < total,
+      };
+    }
     const where = {
       userId,
       ...(input.start || input.end
@@ -558,7 +592,7 @@ export const deviceService = {
     const { start, end, dateStr } = todayRangeCN();
     const key = `garmin:today:${userId}:${dateStr}`;
     return Cache.wrap(key, GARMIN_CACHE_TTL_SEC, async () => {
-      const [sleepLatest, fitnessAgeLatest, metrics, todayActivities, latestHrRow, latestSpO2Row, todayWeRun] = await Promise.all([
+      const [sleepLatest, fitnessAgeLatest, metrics, todayActivities, latestHrRow, latestSpO2Row, todayWeRun, latestMiSleepRow] = await Promise.all([
         prisma.garminSleep.findFirst({ where: { userId }, orderBy: { calendarDate: 'desc' } }),
         prisma.garminFitnessAge.findFirst({ where: { userId }, orderBy: { asOfDate: 'desc' } }),
         prisma.garminMetric.findMany({
@@ -581,6 +615,8 @@ export const deviceService = {
           orderBy: { timestamp: 'desc' },
         }),
         prisma.weRunRecord.findUnique({ where: { userId_date: { userId, date: dateStr } } }),
+        // V0.1.43 小米睡眠（SleepRecord，从小米数据包导入，今日）
+        prisma.sleepRecord.findFirst({ where: { userId, date: dateStr } }),
       ]);
 
       // 各 metricType 取 latest（已按日期 desc，首次出现即最新）
@@ -610,6 +646,20 @@ export const deviceService = {
           ? { value: latestSpO2Row.value, timestamp: latestSpO2Row.timestamp.toISOString() }
           : null,
         steps: todayWeRun ? { value: todayWeRun.step, date: todayWeRun.date } : null,
+        // V0.1.43 小米睡眠（SleepRecord，小米数据包导入，今日；与佳明 sleep 字段区分）
+        sleepXiaomi: latestMiSleepRow
+          ? {
+              durationHours: latestMiSleepRow.durationSeconds
+                ? secsToHours(latestMiSleepRow.durationSeconds)
+                : null,
+              deepHours: latestMiSleepRow.deepSeconds ? secsToHours(latestMiSleepRow.deepSeconds) : null,
+              lightHours: latestMiSleepRow.lightSeconds ? secsToHours(latestMiSleepRow.lightSeconds) : null,
+              score: latestMiSleepRow.score,
+              bedtime: latestMiSleepRow.bedtime?.toISOString() ?? null,
+              wakeTime: latestMiSleepRow.wakeTime?.toISOString() ?? null,
+              date: latestMiSleepRow.date,
+            }
+          : null,
         sleep: sleepLatest
           ? {
               durationHours: sleepDurationHours(sleepLatest),

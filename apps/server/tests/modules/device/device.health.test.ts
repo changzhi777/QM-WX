@@ -18,6 +18,7 @@ vi.mock('src/infra/prisma.js', () => ({
     heartRateRecord: { findFirst: vi.fn() },
     spO2Record: { findFirst: vi.fn() },
     weRunRecord: { findUnique: vi.fn() },
+    sleepRecord: { findFirst: vi.fn() },
   },
 }));
 

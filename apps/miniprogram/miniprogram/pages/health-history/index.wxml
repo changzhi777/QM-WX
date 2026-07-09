@@ -4,6 +4,7 @@
     <view class="tab {{activeType === 'hr' ? 'active' : ''}}" data-type="hr" bindtap="onTabChange">❤️ 心率</view>
     <view class="tab {{activeType === 'spo2' ? 'active' : ''}}" data-type="spo2" bindtap="onTabChange">🩸 血氧</view>
     <view class="tab {{activeType === 'steps' ? 'active' : ''}}" data-type="steps" bindtap="onTabChange">👟 步数</view>
+    <view class="tab {{activeType === 'sleep' ? 'active' : ''}}" data-type="sleep" bindtap="onTabChange">💤 睡眠</view>
   </view>
 
   <!-- 时间范围 -->
