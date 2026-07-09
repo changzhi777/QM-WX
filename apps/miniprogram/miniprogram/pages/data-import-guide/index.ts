@@ -1,5 +1,6 @@
 // pages/data-import-guide/index.ts — 数据导入图文引导（V0.1.43，按品牌，国内源）
 import { DEVICE_BRANDS, IMPORT_GUIDE, DEVICE_CATEGORY_LABEL } from '@qm-wx/shared';
+import { ENV } from '../../config/env';
 
 /** 品牌 emoji 图标（key 映射）*/
 const BRAND_ICON: Record<string, string> = {
@@ -30,6 +31,9 @@ Page({
       steps: { text: string; shot?: string }[];
       action: { label: string; url?: string; available: boolean };
     },
+    // V0.1.43 小米上传结果（文件树，确认格式用，阶段 2 改入库）
+    xiaomiFiles: [] as { name: string; size: number; isDirectory: boolean; preview?: string }[],
+    xiaomiCount: 0,
   },
 
   onTapBrand(e: WechatMiniprogram.TouchEvent) {
@@ -58,11 +62,57 @@ Page({
   },
 
   onAction() {
+    // V0.1.43 小米：走上传（wx.chooseMessageFile 选 ZIP），其他按 url navigateTo
+    if (this.data.selectedKey === 'xiaomi') {
+      this.onXiaomiUpload();
+      return;
+    }
     const url = this.data.guide?.action.url;
     if (url) {
       wx.navigateTo({ url });
     } else {
       wx.showToast({ title: '功能开发中，敬请期待', icon: 'none' });
     }
+  },
+
+  /** V0.1.43 上传小米数据包 ZIP（阶段 1：返回文件树确认格式，阶段 2 改入库）*/
+  onXiaomiUpload() {
+    wx.chooseMessageFile({
+      count: 1,
+      type: 'file',
+      extension: ['zip'],
+      success: (res) => {
+        const file = res.tempFiles[0];
+        const token = wx.getStorageSync('accessToken');
+        wx.showLoading({ title: '上传解析中...' });
+        wx.uploadFile({
+          url: `${ENV.apiBase}/api/device/uploadXiaomiZip`,
+          filePath: file.path,
+          name: 'file',
+          header: token ? { authorization: `Bearer ${token}` } : {},
+          success: (r) => {
+            wx.hideLoading();
+            try {
+              const data = JSON.parse(r.data);
+              if (data.code === 0) {
+                this.setData({
+                  xiaomiFiles: data.data.files,
+                  xiaomiCount: data.data.count,
+                });
+                wx.showToast({ title: `解析 ${data.data.count} 个文件`, icon: 'success' });
+              } else {
+                wx.showToast({ title: data.msg || '上传失败', icon: 'none' });
+              }
+            } catch {
+              wx.showToast({ title: '解析失败', icon: 'none' });
+            }
+          },
+          fail: () => {
+            wx.hideLoading();
+            wx.showToast({ title: '上传失败', icon: 'none' });
+          },
+        });
+      },
+    });
   },
 });

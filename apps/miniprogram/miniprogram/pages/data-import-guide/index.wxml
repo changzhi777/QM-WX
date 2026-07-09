@@ -47,6 +47,15 @@
     <button class="action-btn {{!guide.action.available ? 'disabled' : ''}}" bindtap="onAction">
       {{guide.action.label}}
     </button>
+
+    <!-- V0.1.43 小米上传文件树（确认格式用，阶段 2 改入库）-->
+    <view class="xiaomi-files" wx:if="{{selectedKey === 'xiaomi' && xiaomiCount > 0}}">
+      <view class="files-title">📦 解析到 {{xiaomiCount}} 个文件（确认格式）</view>
+      <view class="file-row" wx:for="{{xiaomiFiles}}" wx:key="name">
+        <view class="file-name">{{item.isDirectory ? '📁' : '📄'}} {{item.name}} ({{item.size}}B)</view>
+        <view class="file-preview" wx:if="{{item.preview}}">{{item.preview}}</view>
+      </view>
+    </view>
   </view>
 
   <!-- 未选中提示 -->

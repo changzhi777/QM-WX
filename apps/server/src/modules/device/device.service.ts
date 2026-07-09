@@ -14,6 +14,7 @@
  * - AES 密钥（用于 token 加密存储）
  */
 import { randomUUID, createDecipheriv } from 'node:crypto';
+import AdmZip from 'adm-zip';
 import { Errors } from '../../common/errors.js';
 import { prisma } from '../../infra/prisma.js';
 import { redis } from '../../infra/redis.js';
@@ -726,6 +727,38 @@ export const deviceService = {
       vendor: binding.vendor,
       deviceName: input.name,
       status: binding.status,
+    };
+  },
+
+  /**
+   * 解析小米 ZIP 结构（V0.1.43 阶段 1：返回文件树 + 文本预览，不做入库）
+   *
+   * 用于确认小米隐私中心导出格式。阶段 2 根据真实格式接解析 + 入库。
+   */
+  async parseXiaomiZipStructure(buffer: Buffer): Promise<{
+    files: { name: string; size: number; isDirectory: boolean; preview?: string }[];
+    count: number;
+  }> {
+    const zip = new AdmZip(buffer);
+    const entries = zip.getEntries();
+    return {
+      files: entries.map((e) => {
+        const lower = e.entryName.toLowerCase();
+        const isText =
+          lower.endsWith('.json') ||
+          lower.endsWith('.csv') ||
+          lower.endsWith('.txt') ||
+          lower.endsWith('.xml') ||
+          lower.endsWith('.tcx');
+        return {
+          name: e.entryName,
+          size: e.header.size,
+          isDirectory: e.isDirectory,
+          preview:
+            !e.isDirectory && isText ? zip.readAsText(e).slice(0, 500) : undefined,
+        };
+      }),
+      count: entries.length,
     };
   },
 };

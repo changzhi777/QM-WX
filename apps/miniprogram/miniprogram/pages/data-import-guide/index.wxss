@@ -129,3 +129,31 @@
 .empty { text-align: center; padding: 80rpx 0; }
 .empty-icon { font-size: 64rpx; }
 .empty-text { font-size: 26rpx; color: #999; margin-top: 12rpx; }
+
+/* V0.1.43 小米上传文件树（确认格式用，阶段 2 改入库）*/
+.xiaomi-files {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-top: 16rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+.files-title { font-size: 28rpx; font-weight: 600; margin-bottom: 16rpx; }
+.file-row {
+  margin-bottom: 16rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.file-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+.file-name { font-size: 24rpx; color: #333; word-break: break-all; }
+.file-preview {
+  font-size: 20rpx;
+  color: #666;
+  background: #f5f5f5;
+  padding: 12rpx;
+  border-radius: 8rpx;
+  margin-top: 8rpx;
+  word-break: break-all;
+  max-height: 240rpx;
+  overflow: hidden;
+}

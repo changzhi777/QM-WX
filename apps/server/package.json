@@ -33,6 +33,7 @@
     "@fastify/static": "^7.0.0",
     "@prisma/client": "^5.10.0",
     "@qm-wx/shared": "workspace:*",
+    "adm-zip": "^0.5.18",
     "bullmq": "^5.0.0",
     "dotenv": "^16.4.0",
     "fastify": "^4.26.0",
@@ -42,6 +43,7 @@
     "zod": "^3.22.0"
   },
   "devDependencies": {
+    "@types/adm-zip": "^0.5.8",
     "@types/node": "^20.11.0",
     "@vitest/coverage-v8": "^3.2.6",
     "prisma": "^5.10.0",

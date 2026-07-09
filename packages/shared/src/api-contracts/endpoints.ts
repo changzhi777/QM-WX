@@ -81,6 +81,7 @@ export const ENDPOINTS = {
     submitHeartRate: '/api/device',
     submitSpO2: '/api/device', // V0.1.43 血氧上传（BLE 0x1822 / 0x2A5F）
     myHealthHistory: '/api/device', // V0.1.43 心率/血氧历史（type + dateRange 分页）
+    uploadXiaomiZip: '/api/device/uploadXiaomiZip', // V0.1.43 小米数据包上传（multipart ZIP）
     // 蓝牙设备绑定（V0.1.25，参考图 2770）
     bindBleDevice: '/api/device',
     myBindings: '/api/device',
