@@ -83,14 +83,19 @@ Page({
       extension: ['zip'],
       success: (res) => {
         const file = res.tempFiles[0];
-        // 小米 ZIP 加密，弹密码输入（用户导出时设的）
+        // 小米 ZIP 加密，弹密码输入（用户导出时设的，输入框可长按粘贴）
         wx.showModal({
-          title: 'ZIP 解压密码',
+          title: '请输入 ZIP 解压密码',
+          content: '小米隐私中心导出 ZIP 时设置的解压密码（输入框可长按粘贴）',
           editable: true,
-          placeholderText: '小米隐私中心导出时设的密码',
+          placeholderText: '解压密码',
           success: (m) => {
             if (!m.confirm) return;
-            this.doUpload(file, m.content || '');
+            if (!m.content) {
+              wx.showToast({ title: '请输入密码', icon: 'none' });
+              return;
+            }
+            this.doUpload(file, m.content);
           },
         });
       },
