@@ -15,6 +15,7 @@
  */
 import { randomUUID, createDecipheriv } from 'node:crypto';
 import AdmZip from 'adm-zip';
+import { parse as parseCsv } from 'csv-parse/sync';
 import { Errors } from '../../common/errors.js';
 import { prisma } from '../../infra/prisma.js';
 import { redis } from '../../infra/redis.js';
@@ -759,6 +760,121 @@ export const deviceService = {
         };
       }),
       count: entries.length,
+    };
+  },
+
+  /**
+   * 导入小米数据包 ZIP（V0.1.43 阶段 2：解析 CSV + 入库 4 表）
+   *
+   * 小米隐私中心导出格式（已摸清）：
+   * - 全 CSV（不是 JSON），文件名 *_hlth_center_aggregated_fitness_data.csv（每日聚合，最有价值）
+   * - 表头：Uid,Sid,Tag,Key,Time,Value,UpdateTime
+   * - Time = Unix 秒；Value = JSON 字符串（嵌套，含转义 ""）
+   *
+   * 入库映射：
+   * - heart_rate aggregated → latest_hr.bpm + time → HeartRateRecord（逐条）
+   * - spo2 aggregated → latest_spo2.spo2 + time → SpO2Record（逐条）
+   * - sleep aggregated → SleepRecord（by userId+date upsert，duration 单位分钟→秒 ×60）
+   * - steps aggregated → WeRunRecord（by userId+date upsert，补充每日步数）
+   * - stress/calories/weight → 暂不入（YAGNI，后续按需）
+   */
+  async importXiaomiZip(userId: string, buffer: Buffer): Promise<{
+    hr: number;
+    spo2: number;
+    sleep: number;
+    steps: number;
+  }> {
+    const zip = new AdmZip(buffer);
+    // 找 aggregated CSV（每日聚合数据，最核心）
+    const aggEntry = zip.getEntries().find(
+      (e) => e.entryName.includes('hlth_center_aggregated_fitness_data') && e.entryName.endsWith('.csv'),
+    );
+    if (!aggEntry) throw Errors.badRequest('ZIP 内未找到 hlth_center_aggregated_fitness_data.csv');
+
+    const csvText = zip.readAsText(aggEntry);
+    const records = parseCsv(csvText, { columns: true, skip_empty_lines: true }) as Array<{
+      Key: string;
+      Time: string;
+      Value: string;
+    }>;
+
+    const hrSamples: { value: number; timestamp: Date }[] = [];
+    const spo2Samples: { value: number; timestamp: Date }[] = [];
+    const sleepUpserts: { date: string; data: Record<string, unknown> }[] = [];
+    const stepUpserts: { date: string; step: number }[] = [];
+
+    for (const r of records) {
+      const time = Number(r.Time); // Unix 秒
+      let value: Record<string, unknown>;
+      try {
+        value = JSON.parse(r.Value);
+      } catch {
+        continue; // Value 非法 JSON，跳过
+      }
+      const date = cnDateFromTs(time); // CN 时区 YYYY-MM-DD
+
+      if (r.Key === 'heart_rate') {
+        const latest = value.latest_hr as { bpm?: number; time?: number } | undefined;
+        if (latest?.bpm && latest.time) {
+          hrSamples.push({ value: latest.bpm, timestamp: new Date(latest.time * 1000) });
+        }
+      } else if (r.Key === 'spo2') {
+        const latest = value.latest_spo2 as { spo2?: number; time?: number } | undefined;
+        if (latest?.spo2 && latest.time) {
+          spo2Samples.push({ value: latest.spo2, timestamp: new Date(latest.time * 1000) });
+        }
+      } else if (r.Key === 'sleep') {
+        const seg = (value.segment_details as Array<{ bedtime?: number; wake_up_time?: number }> | undefined)?.[0];
+        const min = (n: number | undefined): number | null => (n != null ? n * 60 : null); // 分钟→秒
+        sleepUpserts.push({
+          date,
+          data: {
+            bedtime: seg?.bedtime ? new Date(seg.bedtime * 1000) : null,
+            wakeTime: seg?.wake_up_time ? new Date(seg.wake_up_time * 1000) : null,
+            durationSeconds: min(value.total_duration as number | undefined),
+            deepSeconds: min(value.sleep_deep_duration as number | undefined),
+            lightSeconds: min(value.sleep_light_duration as number | undefined),
+            remSeconds: null,
+            awakeSeconds: min(value.sleep_awake_duration as number | undefined),
+            score: (value.sleep_score as number | undefined) ?? null,
+          },
+        });
+      } else if (r.Key === 'steps') {
+        stepUpserts.push({ date, step: (value.steps as number) ?? 0 });
+      }
+    }
+
+    // 批量入库（心率/血氧 createMany，睡眠/步数 upsert by userId+date）
+    if (hrSamples.length) {
+      await prisma.heartRateRecord.createMany({
+        data: hrSamples.map((s) => ({ userId, value: s.value, timestamp: s.timestamp, source: 'xiaomi' })),
+      });
+    }
+    if (spo2Samples.length) {
+      await prisma.spO2Record.createMany({
+        data: spo2Samples.map((s) => ({ userId, value: s.value, timestamp: s.timestamp })),
+      });
+    }
+    for (const s of sleepUpserts) {
+      await prisma.sleepRecord.upsert({
+        where: { userId_date: { userId, date: s.date } },
+        create: { userId, date: s.date, ...(s.data as Record<string, never>) },
+        update: s.data,
+      });
+    }
+    for (const p of stepUpserts) {
+      await prisma.weRunRecord.upsert({
+        where: { userId_date: { userId, date: p.date } },
+        create: { userId, date: p.date, step: p.step },
+        update: { step: p.step },
+      });
+    }
+
+    return {
+      hr: hrSamples.length,
+      spo2: spo2Samples.length,
+      sleep: sleepUpserts.length,
+      steps: stepUpserts.length,
     };
   },
 };

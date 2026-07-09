@@ -15,7 +15,7 @@ import { mockErrors } from '../../helpers/mockErrors.js';
 const mocks = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const helpers = require('../../helpers/mockPrisma.ts') as typeof import('../../helpers/mockPrisma.js');
-  return helpers.createPrismaMock({ models: ['deviceBinding', 'weRunRecord', 'user', 'heartRateRecord', 'spO2Record'], txModels: [] });
+  return helpers.createPrismaMock({ models: ['deviceBinding', 'weRunRecord', 'user', 'heartRateRecord', 'spO2Record', 'sleepRecord'], txModels: [] });
 });
 
 // Mock Redis（Cache.wrap + syncWeRun session_key 都走 redis）
@@ -228,5 +228,46 @@ describe('deviceService.myHealthHistory (V0.1.43)', () => {
     expect(r.list).toHaveLength(1);
     expect(mocks.prisma.spO2Record.findMany).toHaveBeenCalled();
     expect(mocks.prisma.spO2Record.count).toHaveBeenCalled();
+  });
+});
+
+describe('deviceService.importXiaomiZip (V0.1.43 小米数据包导入)', () => {
+  it('解析 CSV 入库 4 表（心率/血氧/睡眠/步数）', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const AdmZip = require('adm-zip') as typeof import('adm-zip');
+    const csv = `Uid,Sid,Tag,Key,Time,Value,UpdateTime
+187987205,default,daily_report,heart_rate,1779494400,"{""latest_hr"":{""bpm"":72,""time"":1779494460}}",1779586594
+187987205,default,daily_report,spo2,1779667200,"{""latest_spo2"":{""spo2"":98,""time"":1779752580}}",1783329226
+187987205,default,daily_report,sleep,1779580800,"{""total_duration"":303,""sleep_deep_duration"":70,""sleep_light_duration"":203,""sleep_awake_duration"":0,""sleep_score"":62,""segment_details"":[{""bedtime"":1779556320,""wake_up_time"":1779572700}]}",1779614426
+187987205,default,daily_report,steps,1682812800,"{""steps"":3268,""calories"":131,""distance"":1917}",1686280569`;
+    const zip = new AdmZip();
+    zip.addFile('20260709_MiFitness_hlth_center_aggregated_fitness_data.csv', Buffer.from(csv));
+    const buffer = zip.toBuffer();
+
+    mocks.prisma.heartRateRecord.createMany.mockResolvedValue({ count: 1 });
+    mocks.prisma.spO2Record.createMany.mockResolvedValue({ count: 1 });
+    mocks.prisma.sleepRecord.upsert.mockResolvedValue({});
+    mocks.prisma.weRunRecord.upsert.mockResolvedValue({});
+
+    const r = await deviceService.importXiaomiZip('u1', buffer);
+    expect(r.hr).toBe(1);
+    expect(r.spo2).toBe(1);
+    expect(r.sleep).toBe(1);
+    expect(r.steps).toBe(1);
+    expect(mocks.prisma.heartRateRecord.createMany).toHaveBeenCalledWith({
+      data: [expect.objectContaining({ userId: 'u1', value: 72, source: 'xiaomi' })],
+    });
+    expect(mocks.prisma.sleepRecord.upsert).toHaveBeenCalled();
+    expect(mocks.prisma.weRunRecord.upsert).toHaveBeenCalled();
+  });
+
+  it('ZIP 无 aggregated CSV → badRequest', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const AdmZip = require('adm-zip') as typeof import('adm-zip');
+    const zip = new AdmZip();
+    zip.addFile('other.csv', Buffer.from('a,b\n1,2'));
+    await expect(deviceService.importXiaomiZip('u1', zip.toBuffer())).rejects.toThrow(
+      '未找到',
+    );
   });
 });

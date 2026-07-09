@@ -118,14 +118,13 @@ export async function deviceRoutes(app: FastifyInstance) {
   );
 
   // V0.1.43 小米数据包上传（multipart ZIP，独立 route，不走 action switch）
-  // 阶段 1：接收 ZIP + adm-zip 解压 + 返回文件树（确认格式，不做入库）
-  // 阶段 2（样本到）：加解析 + 入库 HeartRateRecord/SpO2Record/SleepRecord...
+  // 阶段 2：解析 CSV + 入库 4 表（心率/血氧/睡眠/步数）
   app.post('/uploadXiaomiZip', async (req) => {
     if (!req.user) throw Errors.unauthorized();
     const data = await req.file({ limits: { fileSize: 50 * 1024 * 1024 } });
     if (!data) throw Errors.badRequest('no file');
     const buffer = await data.toBuffer();
-    const result = await deviceService.parseXiaomiZipStructure(buffer);
+    const result = await deviceService.importXiaomiZip(req.user.id, buffer);
     return { code: 0, data: result };
   });
 }
