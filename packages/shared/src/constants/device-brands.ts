@@ -183,9 +183,9 @@ export const IMPORT_GUIDE: Record<string, ImportGuideConfig> = {
     steps: [
       { text: '登录小米账号 → 隐私中心 →「查阅和管理您的数据」', shot: '/images/import-guide/xiaomi-1.png' },
       { text: '选择「MI Fitness 小米运动健康」→ 下载（密码 = ZIP 解压密码，记牢）', shot: '/images/import-guide/xiaomi-2.png' },
-      { text: '等邮件通知 → 下载 ZIP（小程序上传功能开发中）', shot: '/images/import-guide/xiaomi-3.png' },
+      { text: '等邮件通知 → 下载 ZIP → 发到微信「文件传输助手」→ 点下方按钮上传', shot: '/images/import-guide/xiaomi-3.png' },
     ],
-    action: { label: '小米上传（开发中）', available: false },
+    action: { label: '上传小米数据包', available: true },
   },
   werun: {
     sourceLabel: '微信运动（手机内置）',
