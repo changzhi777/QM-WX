@@ -84,9 +84,11 @@ Page({
       success: (res) => {
         const file = res.tempFiles[0];
         const token = wx.getStorageSync('accessToken');
+        // 用 wx.$apiBase（同 services/api.ts，app.ts onLaunch 注入 prod）；fallback ENV.apiBase
+        const base = (wx as unknown as { $apiBase?: string }).$apiBase || ENV.apiBase;
         wx.showLoading({ title: '上传解析中...' });
         wx.uploadFile({
-          url: `${ENV.apiBase}/api/device/uploadXiaomiZip`,
+          url: `${base}/api/device/uploadXiaomiZip`,
           filePath: file.path,
           name: 'file',
           header: token ? { authorization: `Bearer ${token}` } : {},
