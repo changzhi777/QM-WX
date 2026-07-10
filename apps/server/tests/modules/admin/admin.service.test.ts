@@ -17,6 +17,8 @@ const mockPrisma = vi.hoisted(() => ({
   walletTransaction: { create: vi.fn() },
   withdrawalRequest: { findUnique: vi.fn(), findMany: vi.fn(), count: vi.fn(), update: vi.fn() },
   order: { findUnique: vi.fn(), update: vi.fn() }, // V0.1.107 自提核销
+  distributionOrder: { findMany: vi.fn() }, // V0.1.108 结算单导出
+  commissionLog: { groupBy: vi.fn() }, // V0.1.108 累计佣金 groupBy
   $transaction: vi.fn(), // V0.1.105 提现审核用
 }));
 
@@ -39,6 +41,7 @@ import {
   approveWithdrawal,
   rejectWithdrawal,
   confirmPickup,
+  exportSettlement,
 } from '../../../src/modules/admin/admin.service.js';
 import { BusinessError } from '../../../src/common/errors.js';
 
@@ -449,5 +452,75 @@ describe('admin.service · confirmPickup', () => {
     expect(mockPrisma.auditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ action: 'confirmPickup', target: 'o1' }),
     });
+  });
+});
+
+// ===== V0.1.108 GAP-6 结算单导出 =====
+
+describe('admin.service · exportSettlement', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('返回 CSV 表头 + 数据行（含 BOM）', async () => {
+    mockPrisma.distributionOrder.findMany.mockResolvedValue([
+      {
+        id: 'd1', userId: 'u1', orderId: 'o1', orderAmount: 100, commissionAmount: 15,
+        commissionRate: 0.15, status: 'settled', settledAt: new Date('2026-07-15'),
+        user: { id: 'u1', nickname: '跑友A', inviteCode: 'ABC123', distributorLevel: 'V2' },
+      },
+      {
+        id: 'd2', userId: 'u2', orderId: 'o2', orderAmount: 200, commissionAmount: 20,
+        commissionRate: 0.1, status: 'settled', settledAt: new Date('2026-07-20'),
+        user: { id: 'u2', nickname: '跑友B', inviteCode: 'XYZ789', distributorLevel: 'V1' },
+      },
+    ] as never);
+    mockPrisma.commissionLog.groupBy.mockResolvedValue([
+      { userId: 'u1', _sum: { amount: 500 } },
+      { userId: 'u2', _sum: { amount: 100 } },
+    ] as never);
+
+    const csv = await exportSettlement({ yearMonth: '2026-07' }, 'admin1');
+    // BOM 开头
+    expect(csv.charCodeAt(0)).toBe(0xfeff);
+    // 表头
+    expect(csv).toContain('userId,nickname,inviteCode,distributorLevel,monthOrderCount,monthCommission,totalCommission');
+    // 数据行
+    expect(csv).toContain('u1,跑友A,ABC123,V2,1,15.00,500.00');
+    expect(csv).toContain('u2,跑友B,XYZ789,V1,1,20.00,100.00');
+    // AuditLog
+    expect(mockPrisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: 'exportSettlement', target: '2026-07' }),
+    });
+  });
+
+  it('本月无结算订单 → 仅表头', async () => {
+    mockPrisma.distributionOrder.findMany.mockResolvedValue([] as never);
+    mockPrisma.commissionLog.groupBy.mockResolvedValue([] as never);
+
+    const csv = await exportSettlement({ yearMonth: '2026-07' }, 'admin1');
+    expect(csv.charCodeAt(0)).toBe(0xfeff);
+    expect(csv).toContain('userId,nickname');
+  });
+
+  it('按 monthCommission 降序', async () => {
+    mockPrisma.distributionOrder.findMany.mockResolvedValue([
+      {
+        id: 'd1', userId: 'u_small', orderId: 'o1', orderAmount: 50, commissionAmount: 5,
+        status: 'settled', settledAt: new Date('2026-07-10'),
+        user: { id: 'u_small', nickname: '小单', inviteCode: 'A1', distributorLevel: 'V0' },
+      },
+      {
+        id: 'd2', userId: 'u_big', orderId: 'o2', orderAmount: 500, commissionAmount: 100,
+        status: 'settled', settledAt: new Date('2026-07-15'),
+        user: { id: 'u_big', nickname: '大单', inviteCode: 'A2', distributorLevel: 'V3' },
+      },
+    ] as never);
+    mockPrisma.commissionLog.groupBy.mockResolvedValue([] as never);
+
+    const csv = await exportSettlement({ yearMonth: '2026-07' }, 'admin1');
+    const lines = csv.split('\n');
+    const dataLines = lines.slice(1);
+    // u_big 应该在前（100 > 5）
+    expect(dataLines[0]).toContain('u_big');
+    expect(dataLines[1]).toContain('u_small');
   });
 });

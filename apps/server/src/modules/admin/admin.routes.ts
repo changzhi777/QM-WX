@@ -41,6 +41,7 @@ import {
   WithdrawalIdSchema,
   RejectWithdrawalSchema,
   ConfirmPickupSchema,
+  ExportSettlementQuerySchema,
 } from './admin.schema.js';
 
 export async function adminRoutes(app: FastifyInstance) {
@@ -157,6 +158,16 @@ export async function adminRoutes(app: FastifyInstance) {
             actorOpenid,
           ),
         };
+      // ===== V0.1.108 GAP-6 结算单导出 =====
+      case 'exportSettlement': {
+        const csv = await adminService.exportSettlement(
+          ExportSettlementQuerySchema.parse(payload ?? {}),
+          actorOpenid,
+        );
+        reply.header('Content-Type', 'text/csv; charset=utf-8');
+        reply.header('Content-Disposition', `attachment; filename="settlement-${Date.now()}.csv"`);
+        return reply.send(csv);
+      }
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
     }

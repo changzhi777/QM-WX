@@ -12,6 +12,7 @@ import { invalidateContentsCache, invalidateContentDetail } from '../content/con
 import { invalidateFeatureFlagsCache } from '../../common/middleware/feature-gate.js';
 import { Errors } from '../../common/errors.js';
 import { walletRepo } from '../wallet/wallet.repo.js';
+import { toCsvHeader, toCsvRow, UTF8_BOM } from '../../common/csv.js';
 import { assertTransition, type OrderStatus } from '../../domain/order-state.js';
 import type {
   UpsertContentInput,
@@ -779,4 +780,77 @@ export async function confirmPickup(pickupCode: string, adminOpenid: string) {
     orderId: r.id,
     pickupConfirmedAt: r.pickupConfirmedAt!.toISOString(),
   };
+}
+
+/**
+ * V0.1.108 GAP-6 结算单导出
+ *
+ * 按月份（YYYY-MM）导出分销对账单：每个分销商的本月订单数 + 本月佣金 + 累计佣金
+ * 流式 toCsv（已有 common/csv.ts 工具）
+ *
+ * 范围：只统计 status=settled 的 DistributionOrder（已结算订单，避免 pending 噪声）
+ * 字段：userId / nickname / inviteCode / distributorLevel / monthOrderCount / monthCommission / totalCommission
+ */
+export async function exportSettlement(input: { yearMonth: string }, adminOpenid: string) {
+  // 解析 yearMonth → [start, end)
+  const [y, m] = input.yearMonth.split('-').map(Number);
+  const start = new Date(Date.UTC(y, m - 1, 1) - 8 * 3600 * 1000); // CN 时区 1 号 0 点
+  const end = new Date(Date.UTC(y, m, 1) - 8 * 3600 * 1000);
+
+  const orders = await prisma.distributionOrder.findMany({
+    where: { status: 'settled', settledAt: { gte: start, lt: end } },
+    include: {
+      user: { select: { id: true, nickname: true, inviteCode: true, distributorLevel: true } },
+    },
+  });
+
+  // groupBy userId 汇总本月数据 + 查累计佣金（CommissionLog.type in [settle, settle_indirect]）
+  const monthMap = new Map<string, { userId: string; nickname: string | null; inviteCode: string | null; distributorLevel: string; monthOrderCount: number; monthCommission: number }>();
+  for (const o of orders) {
+    const k = o.userId;
+    const s = monthMap.get(k) ?? {
+      userId: k,
+      nickname: o.user.nickname,
+      inviteCode: o.user.inviteCode,
+      distributorLevel: o.user.distributorLevel,
+      monthOrderCount: 0,
+      monthCommission: 0,
+    };
+    s.monthOrderCount += 1;
+    s.monthCommission += Number(o.commissionAmount);
+    monthMap.set(k, s);
+  }
+
+  // 累计佣金：所有 CommissionLog.type in [settle, settle_indirect]
+  const totalAgg = await prisma.commissionLog.groupBy({
+    by: ['userId'],
+    where: { type: { in: ['settle', 'settle_indirect'] } },
+    _sum: { amount: true },
+  });
+  const totalMap = new Map(totalAgg.map((t) => [t.userId, Number(t._sum.amount ?? 0)]));
+
+  // 合并汇总 + 按本月佣金降序
+  const rows = Array.from(monthMap.values())
+    .map((r) => ({ ...r, totalCommission: totalMap.get(r.userId) ?? 0 }))
+    .sort((a, b) => b.monthCommission - a.monthCommission);
+
+  // CSV 输出
+  const lines: string[] = [];
+  lines.push(toCsvHeader(['userId', 'nickname', 'inviteCode', 'distributorLevel', 'monthOrderCount', 'monthCommission', 'totalCommission']));
+  for (const r of rows) {
+    lines.push(toCsvRow([r.userId, r.nickname ?? '', r.inviteCode ?? '', r.distributorLevel, r.monthOrderCount, r.monthCommission.toFixed(2), r.totalCommission.toFixed(2)]));
+  }
+
+  // 审计
+  await prisma.auditLog.create({
+    data: {
+      actorOpenid: adminOpenid,
+      action: 'exportSettlement',
+      target: input.yearMonth,
+      payload: { rowCount: rows.length, totalCommission: rows.reduce((s, r) => s + r.monthCommission, 0) } as never,
+      ip: 'admin',
+    },
+  });
+
+  return UTF8_BOM + lines.join('\n');
 }

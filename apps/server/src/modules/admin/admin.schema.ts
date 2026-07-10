@@ -202,3 +202,9 @@ export const ConfirmPickupSchema = z.object({
   pickupCode: z.string().min(6).max(20), // 订单号末 6 位 + 3 位大写字母数字
 });
 export type ConfirmPickupInput = z.infer<typeof ConfirmPickupSchema>;
+
+// ===== V0.1.108 GAP-6 结算单导出 =====
+export const ExportSettlementQuerySchema = z.object({
+  yearMonth: z.string().regex(/^\d{4}-\d{2}$/, '格式 YYYY-MM'), // 2026-07
+});
+export type ExportSettlementQueryInput = z.infer<typeof ExportSettlementQuerySchema>;
