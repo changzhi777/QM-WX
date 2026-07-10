@@ -9,6 +9,7 @@
     "pages/content-list/index",
     "pages/content-detail/index",
     "pages/product-detail/index",
+    "pages/review-publish/index",
     "pages/order-confirm/index",
     "pages/order-list/index",
     "pages/weekly-report/index",

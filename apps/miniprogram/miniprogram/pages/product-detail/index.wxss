@@ -50,3 +50,15 @@
 }
 
 .empty, .loading { padding: 80rpx 0; text-align: center; color: var(--text-tertiary); }
+
+/* 评价段（V0.1.113） */
+.rating-summary { display: flex; align-items: baseline; gap: 4rpx; }
+.rating-summary .avg { font-size: 40rpx; font-weight: 600; color: #ffb800; }
+.rating-summary .avg-unit { font-size: 22rpx; color: var(--text-tertiary); }
+.review-item { padding: 16rpx 0; border-top: 1rpx solid #f0f0f0; }
+.review-head { display: flex; align-items: center; gap: 12rpx; }
+.r-avatar { width: 48rpx; height: 48rpx; border-radius: 50%; background: #f0f0f0; }
+.r-name { font-size: 26rpx; color: #333; flex: 1; }
+.r-stars { font-size: 24rpx; color: #ffb800; }
+.r-content { font-size: 28rpx; color: #333; line-height: 1.5; margin-top: 8rpx; }
+.no-review { text-align: center; font-size: 26rpx; color: var(--text-tertiary); padding: 24rpx 0; }

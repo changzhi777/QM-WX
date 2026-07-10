@@ -6,8 +6,10 @@
 .card .status { font-size: 26rpx; font-weight: 600; }
 
 .card .items { padding: 16rpx 0; }
-.card .item { display: flex; justify-content: space-between; padding: 8rpx 0; font-size: 26rpx; }
-.card .item .qty { color: var(--text-tertiary); }
+.card .item { display: flex; align-items: center; padding: 8rpx 0; font-size: 26rpx; }
+.card .item .name { flex: 1; }
+.card .item .qty { color: var(--text-tertiary); margin-right: 16rpx; }
+.card .review-link { color: var(--brand); font-size: 24rpx; }
 
 .card .footer-row { display: flex; justify-content: space-between; align-items: center; padding-top: 16rpx; border-top: 1rpx solid var(--border); }
 .card .amount { font-size: 26rpx; color: var(--text-secondary); }

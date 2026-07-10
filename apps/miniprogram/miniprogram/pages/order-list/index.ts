@@ -82,6 +82,18 @@ Page({
     }
   },
 
+  /** 去评价（done/paid/shipped 订单的商品，跳发表评价页） */
+  onReview(e: WechatMiniprogram.CustomEvent) {
+    const { productId, orderId, productName } = e.currentTarget.dataset as {
+      productId: string;
+      orderId: string;
+      productName: string;
+    };
+    wx.navigateTo({
+      url: `/pages/review-publish/index?productId=${productId}&orderId=${orderId}&productName=${encodeURIComponent(productName)}`,
+    });
+  },
+
   async onCancel(e: WechatMiniprogram.CustomEvent) {
     const id = e.currentTarget.dataset.id as string;
     const res = await new Promise<WechatMiniprogram.ShowModalSuccessCallbackResult>((resolve) => {

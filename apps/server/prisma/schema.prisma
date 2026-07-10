@@ -38,6 +38,7 @@ model User {
 
   checkins          Checkin[]
   orders            Order[]
+  reviews           Review[]   // V0.1.113 评价
   wallet            Wallet?
   groupMembers      GroupMember[]
   ownedGroups       Group[]            @relation("GroupOwner")
@@ -162,6 +163,7 @@ model Product {
   orderItems OrderItem[]
   carts      Cart[]
   groupBuys  GroupBuy[] // V0.1.37 团购
+  reviews    Review[]   // V0.1.113 评价
 
   @@index([category, status])
 }
@@ -244,6 +246,7 @@ model Order {
   user              User                @relation(fields: [userId], references: [id])
   groupBuy          GroupBuy?           @relation(fields: [groupBuyId], references: [id], onDelete: SetNull)
   distributionOrder DistributionOrder?
+  reviews           Review[]      // V0.1.113 评价
 
   @@index([userId, createdAt])
   @@index([sourceUserId])
@@ -260,6 +263,27 @@ model OrderItem {
 
   order   Order   @relation(fields: [orderId], references: [id])
   product Product @relation(fields: [productId], references: [id])
+}
+
+// ===== 评价（V0.1.113 电商闭环最后一块）=====
+// 用户对已购商品评价（rating 1-5 + content + images）；create 校验订单已购 + 商品在订单内 + @@unique 防重
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  orderId   String // 评价来源订单（校验已购 + 防重）
+  rating    Int // 1-5 星
+  content   String?
+  images    String[]
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId, orderId]) // 防重：同一订单同一商品只评一次
+  @@index([productId, createdAt]) // 商品评价列表
+  @@index([userId, createdAt]) // 我的评价
 }
 
 // ===== 积分流水 =====

@@ -209,6 +209,13 @@ export const ENDPOINTS = {
     join: '/api/group-buy',
     myJoined: '/api/group-buy',
   },
+  review: {
+    create: '/api/review',
+    list: '/api/review',
+    stats: '/api/review',
+    myReviews: '/api/review',
+    remove: '/api/review',
+  },
 } as const;
 
 export type EndpointModule = keyof typeof ENDPOINTS;

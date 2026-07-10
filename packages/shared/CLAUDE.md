@@ -4,6 +4,7 @@
 >
 > ## 📋 变更记录 (Changelog)
 >
+> - **2026-07-10** — **V0.1.113 评价系统** ENDPOINTS 加 `review` 模块（5 action：create/list/stats/myReviews/remove，电商闭环最后一块）
 > - **2026-07-10** — 🎯 **V0.1.100 GitHub 主线起点** + 🎯 **V0.1.43 微信运动 + 小米 OAuth + 健康持久化 + onboarding 4 步式**：`ENDPOINTS.device` 加 3 action（syncWeRun / myWeRun / myHealthHistory），端点 action 数 13→**16**；`API_BASE.prod` 仍 `qingmulife.cn`；本仓未单独发版本（与主仓同步 v0.1.100 跳号）
 > - **2026-07-08** — **V0.1.42 跑群深化** ENDPOINTS sport +3 action（groupDetail / groupMembers / announceGroup）+ **V0.1.41** training +3 joinPlan/myActivePlan/leavePlan + admin +2 upsertTrainingPlan/listTrainingPlans
 > - **2026-07-04** — **V0.1.34 家庭空间 family** ENDPOINTS 加 `family` 模块（6 action：createFamily/joinFamily/myFamily/leaveFamily/familyRanking/inviteInfo）+ `goal` 扩 2 action（addFamilyGoal/myFamilyGoals，action 数 4→6）

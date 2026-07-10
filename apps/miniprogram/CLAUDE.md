@@ -5,6 +5,7 @@
 >
 > ## 📋 变更记录 (Changelog)
 >
+> - **2026-07-10** — **V0.1.113 评价系统前端**：pages/review-publish（选星 1-5 + content 500 字 + 图片最多 9 张 chooseMedia→uploadFile 上传 + 提交调 review.create）+ product-detail 加评价段（loadReviews 调 review.stats 汇总 avg/count + review.list 前 3 条预览 + 暂无评价兜底）+ order-list done/paid/shipped 商品加「去评价」入口（navigateTo review-publish?productId&orderId&productName）+ app.json 注册；**42→43 页**；typecheck 通过；mine「我的评价」入口 + 我的评价页待后续
 > - **2026-07-10** — 🎯 **V0.1.100 GitHub 主线起点** + 🎯 **V0.1.43 微信运动 + 小米 OAuth + 健康持久化 + onboarding 4 步式激活向导**：`utils/werun.ts` 新增（syncWeRunToday wx.getWeRunData→AES-128-CBC 解密→upsert + getWeRunHistory + syncWeRunIfFirstToday 每日节流 + cnMonthRange）；`utils/ble.ts` 加固（retry3 + hasHr 策略 + 去 services 过滤 + getDeviceServices 诊断）；**4 新页面**（werun 月度柱状图+汇总+手动同步+月份切换 / onboarding 4 步式 welcome→profile→avatar→sync / health-history 心率/血氧历史曲线 / data-import-guide 小米数据包导入指南）；mine 加「重新激活授权」入口替退出登录（**wx.login 总登回原账号，真退出无意义**，改语义为重新走向导填资料/授权）；`app.ts` 加 envVersion 分支（develop→本地 / trial,release→生产）；首页 onShow 加微信运动每日节流；onboarding step3 一键同步微信运动；**页面 38→42 / 表 45→51 / 单元 577→580 / 迁移 19→27**
 > - **2026-07-08** — **V0.1.42 跑群深化** group-detail 改造（群卡+公告+汇总+成员列表）+ **V0.1.41 训练计划配置化** training 进度卡+加入计划 + **V0.1.40 profile 完整** 7 问题修
 > - **2026-07-07** — **V0.1.39 family 后续**（转让家长+解散+家庭成就；family 页 owner 操作区 + 家庭成就卡；不增表/页）

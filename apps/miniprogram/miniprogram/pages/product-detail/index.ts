@@ -25,6 +25,14 @@ Page({
     quantity: 1,
     error: false,
     errorMsg: '',
+    reviewStats: null as { avg: number; count: number } | null,
+    reviews: [] as Array<{
+      id: string;
+      rating: number;
+      content: string | null;
+      user: { nickname: string | null; avatarUrl: string | null };
+      createdAt: string;
+    }>,
   },
 
   onLoad(query) {
@@ -45,6 +53,7 @@ Page({
       const { product } = await api.call<{ product: Product }>('mall', 'productDetail', { id });
       this.setData({ product, loading: false });
       wx.setNavigationBarTitle({ title: product.name });
+      this.loadReviews(product.id);
 
       // 读 feature flag：payment 关闭时只能"积分兑换"或"敬请期待"
       const flags = (getApp().globalData.config?.featureFlags ?? {}) as { payment?: boolean };
@@ -55,6 +64,27 @@ Page({
         error: true,
         errorMsg: (e as Error).message ?? '加载商品失败',
       });
+    }
+  },
+
+  /** 加载商品评价（汇总 + 前 3 条预览，失败不影响商品展示） */
+  async loadReviews(productId: string) {
+    try {
+      const [stats, { list }] = await Promise.all([
+        api.call<{ avg: number; count: number }>('review', 'stats', { productId }),
+        api.call<{
+          list: Array<{
+            id: string;
+            rating: number;
+            content: string | null;
+            user: { nickname: string | null; avatarUrl: string | null };
+            createdAt: string;
+          }>;
+        }>('review', 'list', { productId, page: 1, pageSize: 3 }),
+      ]);
+      this.setData({ reviewStats: stats, reviews: list });
+    } catch {
+      // 评价加载失败不阻塞商品展示
     }
   },
 

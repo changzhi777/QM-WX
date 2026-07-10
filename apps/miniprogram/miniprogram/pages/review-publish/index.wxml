@@ -1,0 +1,48 @@
+<view class="page">
+  <view class="product-card bg-white p-4">
+    <text class="product-name">{{productName}}</text>
+  </view>
+
+  <view class="card bg-white m-2 p-4 rounded-lg shadow">
+    <view class="label">评分</view>
+    <view class="stars">
+      <text
+        wx:for="{{[1,2,3,4,5]}}"
+        wx:key="*this"
+        class="star {{item <= rating ? 'active' : ''}}"
+        data-star="{{item}}"
+        bindtap="onPickStar"
+      >★</text>
+    </view>
+
+    <view class="label mt">评价内容</view>
+    <textarea
+      class="content-input"
+      placeholder="说说商品怎么样..."
+      maxlength="500"
+      value="{{content}}"
+      bindinput="onContentInput"
+      placeholder-class="ph"
+    />
+    <view class="char-count">{{content.length}}/500</view>
+
+    <view class="label mt">图片（{{images.length}}/9）</view>
+    <view class="images">
+      <image
+        wx:for="{{images}}"
+        wx:key="*this"
+        class="img"
+        src="{{item}}"
+        mode="aspectFill"
+        data-idx="{{index}}"
+        bindtap="onRemoveImage"
+      />
+      <view class="add-img" wx:if="{{images.length < 9}}" bindtap="onChooseImage">+</view>
+    </view>
+  </view>
+
+  <view class="footer-placeholder" />
+  <view class="footer bg-white">
+    <button class="btn-primary" bindtap="onSubmit" loading="{{submitting}}">提交评价</button>
+  </view>
+</view>

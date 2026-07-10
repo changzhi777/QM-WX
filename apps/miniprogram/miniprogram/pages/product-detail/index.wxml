@@ -30,6 +30,24 @@
     <view class="content-text mt-2">{{product.description}}</view>
   </view>
 
+  <!-- 评价段（V0.1.113） -->
+  <view class="reviews bg-white m-2 p-4 rounded-lg shadow">
+    <view class="section-title">评价（{{reviewStats.count || 0}}）</view>
+    <view class="rating-summary mt-2" wx:if="{{reviewStats && reviewStats.count > 0}}">
+      <text class="avg">{{reviewStats.avg}}</text>
+      <text class="avg-unit">分</text>
+    </view>
+    <view wx:for="{{reviews}}" wx:key="id" class="review-item mt">
+      <view class="review-head">
+        <image class="r-avatar" src="{{item.user.avatarUrl || '/images/default-avatar.png'}}" />
+        <text class="r-name">{{item.user.nickname || '匿名用户'}}</text>
+        <text class="r-stars">{{item.rating}}★</text>
+      </view>
+      <view class="r-content" wx:if="{{item.content}}">{{item.content}}</view>
+    </view>
+    <view class="no-review mt" wx:if="{{!reviewStats || reviewStats.count === 0}}">暂无评价</view>
+  </view>
+
   <view class="footer-placeholder" />
 
   <view class="footer bg-white">

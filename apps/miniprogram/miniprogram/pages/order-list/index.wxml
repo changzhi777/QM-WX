@@ -17,6 +17,14 @@
       <view class="item" wx:for="{{item.items}}" wx:key="id" wx:for-item="it">
         <text class="name">{{it.name}}</text>
         <text class="qty">× {{it.qty}}</text>
+        <text
+          class="review-link"
+          wx:if="{{item.status === 'done' || item.status === 'paid' || item.status === 'shipped'}}"
+          data-product-id="{{it.productId}}"
+          data-order-id="{{item.id}}"
+          data-product-name="{{it.name}}"
+          bindtap="onReview"
+        >去评价</text>
       </view>
     </view>
     <view class="footer-row">

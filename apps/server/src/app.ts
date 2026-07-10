@@ -44,6 +44,7 @@ import { notificationRoutes } from './modules/notification/notification.routes.j
 import { followRoutes } from './modules/follow/follow.routes.js';
 import { familyRoutes } from './modules/family/family.routes.js';
 import { groupBuyRoutes } from './modules/group-buy/group-buy.routes.js';
+import { reviewRoutes } from './modules/review/review.routes.js';
 import { BusinessError } from './common/errors.js';
 
 export async function buildApp() {
@@ -156,6 +157,7 @@ export async function buildApp() {
   await app.register(followRoutes, { prefix: '/api/follow' });
   await app.register(familyRoutes, { prefix: '/api/family' });
   await app.register(groupBuyRoutes, { prefix: '/api/group-buy' });
+  await app.register(reviewRoutes, { prefix: '/api/review' });
   await app.register(adminRoutes, { prefix: '/api/admin' });
   await app.register(wxpayRoutes, { prefix: '/api/wxpay' });
 
