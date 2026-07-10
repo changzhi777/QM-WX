@@ -37,6 +37,9 @@ import {
   ListGroupBuysSchema,
   UpsertTrainingPlanSchema,
   ListTrainingPlansSchema,
+  ListWithdrawalsSchema,
+  WithdrawalIdSchema,
+  RejectWithdrawalSchema,
 } from './admin.schema.js';
 
 export async function adminRoutes(app: FastifyInstance) {
@@ -121,6 +124,29 @@ export async function adminRoutes(app: FastifyInstance) {
         reply.header('Content-Disposition', 'attachment; filename="users.csv"');
         return reply.send(csv);
       }
+      // ===== V0.1.105 GAP-6 提现审核 =====
+      case 'listWithdrawals':
+        return {
+          code: 0,
+          data: await adminService.listWithdrawals(ListWithdrawalsSchema.parse(payload ?? {})),
+        };
+      case 'approveWithdrawal':
+        return {
+          code: 0,
+          data: await adminService.approveWithdrawal(
+            WithdrawalIdSchema.parse(payload).id,
+            actorOpenid,
+          ),
+        };
+      case 'rejectWithdrawal':
+        return {
+          code: 0,
+          data: await adminService.rejectWithdrawal(
+            RejectWithdrawalSchema.parse(payload).id,
+            RejectWithdrawalSchema.parse(payload).reason,
+            actorOpenid,
+          ),
+        };
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
     }

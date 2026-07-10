@@ -11,6 +11,7 @@ import { invalidateProductsCache, invalidateProductDetail } from '../mall/mall.s
 import { invalidateContentsCache, invalidateContentDetail } from '../content/content.service.js';
 import { invalidateFeatureFlagsCache } from '../../common/middleware/feature-gate.js';
 import { Errors } from '../../common/errors.js';
+import { walletRepo } from '../wallet/wallet.repo.js';
 import { assertTransition, type OrderStatus } from '../../domain/order-state.js';
 import type {
   UpsertContentInput,
@@ -604,4 +605,130 @@ export async function listGroupBuys(input: ListGroupBuysInput) {
     page: input.page,
     pageSize: input.pageSize,
   };
+}
+
+// ===== V0.1.105 GAP-6 提现审核 =====
+
+/**
+ * 列出提现申请（按 status 筛选 + 分页）
+ */
+export async function listWithdrawals(input: { status?: 'pending' | 'approved' | 'rejected'; page: number; pageSize: number }) {
+  const where = input.status ? { status: input.status } : {};
+  const [list, total] = await Promise.all([
+    prisma.withdrawalRequest.findMany({
+      where,
+      orderBy: [{ status: 'asc' }, { createdAt: 'desc' }], // pending 排前
+      skip: (input.page - 1) * input.pageSize,
+      take: input.pageSize,
+      include: {
+        user: { select: { id: true, nickname: true, avatarUrl: true, inviteCode: true } },
+      },
+    }),
+    prisma.withdrawalRequest.count({ where }),
+  ]);
+  return {
+    list: list.map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      amount: Number(r.amount),
+      status: r.status,
+      reason: r.reason,
+      processedBy: r.processedBy,
+      processedAt: r.processedAt?.toISOString() ?? null,
+      createdAt: r.createdAt.toISOString(),
+      user: r.user,
+    })),
+    total,
+    page: input.page,
+    pageSize: input.pageSize,
+    hasMore: input.page * input.pageSize < total,
+  };
+}
+
+/**
+ * 审核通过提现（事务内扣余额 + 写 WalletTransaction）
+ *
+ * 二次校验余额（避免申请→消费佣金→退款时余额不足竞态）
+ * 余额不足自动转 rejected
+ * 微信企业付款 API 真对接留待 GAP-6.2（V0.1.105 仅 stub：扣余额后标 approved，admin 手动打款）
+ */
+export async function approveWithdrawal(id: string, adminOpenid: string) {
+  return prisma.$transaction(async (tx) => {
+    const req = await tx.withdrawalRequest.findUnique({ where: { id } });
+    if (!req) throw Errors.notFound('提现申请不存在');
+    if (req.status !== 'pending') throw Errors.conflict('已处理');
+
+    // 二次校验余额
+    const wallet = await walletRepo.ensureWalletInTx(tx, req.userId);
+    if (Number(wallet.balance) < Number(req.amount)) {
+      // 余额不足 → 转 rejected（不动钱包）
+      await tx.withdrawalRequest.update({
+        where: { id },
+        data: { status: 'rejected', reason: '余额不足', processedBy: adminOpenid, processedAt: new Date() },
+      });
+      throw Errors.badRequest('余额不足，自动转 rejected');
+    }
+
+    // 扣余额 + 写 WalletTransaction(type=withdraw)
+    const amount = Number(req.amount);
+    await tx.wallet.update({
+      where: { id: wallet.id },
+      data: { balance: { decrement: amount } },
+    });
+    await tx.walletTransaction.create({
+      data: {
+        userId: req.userId,
+        walletId: wallet.id,
+        type: 'withdraw',
+        amount: -amount,
+        status: 'success',
+      },
+    });
+    await tx.withdrawalRequest.update({
+      where: { id },
+      data: { status: 'approved', processedBy: adminOpenid, processedAt: new Date() },
+    });
+
+    // TODO GAP-6.2: 调微信企业付款 API（需商户号 + APIv3 证书），此处仅落库 stub
+
+    // 审计
+    await tx.auditLog.create({
+      data: {
+        actorOpenid: adminOpenid,
+        action: 'approveWithdrawal',
+        target: id,
+        payload: { userId: req.userId, amount } as never,
+        ip: 'admin',
+      },
+    });
+
+    return { ok: true, id, status: 'approved' };
+  });
+}
+
+/**
+ * 拒绝提现（不动钱包，仅标状态 + 原因）
+ */
+export async function rejectWithdrawal(id: string, reason: string, adminOpenid: string) {
+  const req = await prisma.withdrawalRequest.findUnique({ where: { id } });
+  if (!req) throw Errors.notFound('提现申请不存在');
+  if (req.status !== 'pending') throw Errors.conflict('已处理');
+
+  const r = await prisma.withdrawalRequest.update({
+    where: { id },
+    data: { status: 'rejected', reason, processedBy: adminOpenid, processedAt: new Date() },
+  });
+
+  // 审计
+  await prisma.auditLog.create({
+    data: {
+      actorOpenid: adminOpenid,
+      action: 'rejectWithdrawal',
+      target: id,
+      payload: { userId: req.userId, reason, amount: Number(req.amount) } as never,
+      ip: 'admin',
+    },
+  });
+
+  return { ok: true, id: r.id, status: 'rejected' };
 }

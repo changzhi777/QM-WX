@@ -13,6 +13,10 @@ const mockPrisma = vi.hoisted(() => ({
   user: { findUnique: vi.fn(), update: vi.fn() },
   auditLog: { create: vi.fn(), findMany: vi.fn(), count: vi.fn() },
   trainingPlan: { create: vi.fn(), update: vi.fn(), findMany: vi.fn() },
+  wallet: { findUnique: vi.fn(), update: vi.fn() },
+  walletTransaction: { create: vi.fn() },
+  withdrawalRequest: { findUnique: vi.fn(), findMany: vi.fn(), count: vi.fn(), update: vi.fn() },
+  $transaction: vi.fn(), // V0.1.105 提现审核用
 }));
 
 vi.mock('src/infra/prisma.js', () => ({ prisma: mockPrisma }));
@@ -30,8 +34,16 @@ import {
   assertNotBanned,
   upsertTrainingPlan,
   listTrainingPlans,
+  listWithdrawals,
+  approveWithdrawal,
+  rejectWithdrawal,
 } from '../../../src/modules/admin/admin.service.js';
 import { BusinessError } from '../../../src/common/errors.js';
+
+// V0.1.105 GAP-6: mock walletRepo（admin.service 引入了 ensureWalletInTx）
+vi.mock('src/modules/wallet/wallet.repo.js', () => ({
+  walletRepo: { ensureWalletInTx: vi.fn().mockResolvedValue({ id: 'w1', balance: 1000 }) },
+}));
 
 describe('admin.service · banUser', () => {
   beforeEach(() => vi.clearAllMocks());
@@ -286,6 +298,107 @@ describe('admin.service · 训练计划 CRUD (V0.1.41)', () => {
     expect(mockPrisma.trainingPlan.findMany).toHaveBeenCalledWith({
       where: { status: 'active' },
       orderBy: [{ weeks: 'asc' }, { createdAt: 'desc' }],
+    });
+  });
+});
+
+// ===== V0.1.105 GAP-6 提现审核 =====
+
+describe('admin.service · listWithdrawals', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('按 status 过滤 + 分页含 user', async () => {
+    mockPrisma.withdrawalRequest.findMany.mockResolvedValue([
+      {
+        id: 'wr1', userId: 'u1', amount: 100, status: 'pending',
+        reason: null, processedBy: null, processedAt: null,
+        createdAt: new Date('2026-07-10'),
+        user: { id: 'u1', nickname: '跑友A', avatarUrl: null, inviteCode: 'ABC123' },
+      },
+    ] as never);
+    mockPrisma.withdrawalRequest.count.mockResolvedValue(1 as never);
+
+    const r = await listWithdrawals({ status: 'pending', page: 1, pageSize: 20 });
+    expect(r.list[0].id).toBe('wr1');
+    expect(r.list[0].amount).toBe(100);
+    expect(r.list[0].user.nickname).toBe('跑友A');
+    expect(r.total).toBe(1);
+  });
+});
+
+describe('admin.service · approveWithdrawal', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('提现申请不存在 → 404', async () => {
+    // mock $transaction 直接调 callback，tx 传一个含 findUnique 的对象
+    mockPrisma.$transaction.mockImplementation(async (cb: (tx: typeof mockPrisma) => Promise<unknown>) =>
+      cb({ withdrawalRequest: { findUnique: mockPrisma.withdrawalRequest.findUnique, update: vi.fn() } } as never),
+    );
+    mockPrisma.withdrawalRequest.findUnique.mockResolvedValue(null);
+    await expect(approveWithdrawal('wr1', 'admin1')).rejects.toThrow('提现申请不存在');
+  });
+
+  it('余额不足 → 自动转 rejected + 抛 400', async () => {
+    const txMock = {
+      withdrawalRequest: { findUnique: mockPrisma.withdrawalRequest.findUnique, update: vi.fn().mockResolvedValue({}) },
+      wallet: { update: vi.fn() },
+      walletTransaction: { create: vi.fn() },
+      auditLog: { create: vi.fn() },
+    };
+    mockPrisma.$transaction.mockImplementation(async (cb) => cb(txMock as never));
+    const { walletRepo } = await import('../../../src/modules/wallet/wallet.repo.js');
+    (walletRepo.ensureWalletInTx as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'w1', balance: 50 } as never);
+    mockPrisma.withdrawalRequest.findUnique.mockResolvedValue({ id: 'wr1', userId: 'u1', amount: 100, status: 'pending' } as never);
+
+    await expect(approveWithdrawal('wr1', 'admin1')).rejects.toThrow('余额不足，自动转 rejected');
+    expect(txMock.withdrawalRequest.update).toHaveBeenCalledWith({
+      where: { id: 'wr1' },
+      data: expect.objectContaining({ status: 'rejected', reason: '余额不足' }),
+    });
+  });
+
+  it('余额足 → 扣减 + WalletTransaction + AuditLog + 标 approved', async () => {
+    const txMock = {
+      withdrawalRequest: { findUnique: mockPrisma.withdrawalRequest.findUnique, update: vi.fn().mockResolvedValue({}) },
+      wallet: { update: vi.fn().mockResolvedValue({}) },
+      walletTransaction: { create: vi.fn().mockResolvedValue({}) },
+      auditLog: { create: vi.fn().mockResolvedValue({}) },
+    };
+    mockPrisma.$transaction.mockImplementation(async (cb) => cb(txMock as never));
+    const { walletRepo } = await import('../../../src/modules/wallet/wallet.repo.js');
+    (walletRepo.ensureWalletInTx as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'w1', balance: 500 } as never);
+    mockPrisma.withdrawalRequest.findUnique.mockResolvedValue({ id: 'wr1', userId: 'u1', amount: 100, status: 'pending' } as never);
+
+    const r = await approveWithdrawal('wr1', 'admin1');
+    expect(r.status).toBe('approved');
+    expect(txMock.wallet.update).toHaveBeenCalledWith({
+      where: { id: 'w1' },
+      data: { balance: { decrement: 100 } },
+    });
+    expect(txMock.walletTransaction.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ userId: 'u1', type: 'withdraw', amount: -100 }),
+    });
+    expect(txMock.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: 'approveWithdrawal', target: 'wr1' }),
+    });
+  });
+});
+
+describe('admin.service · rejectWithdrawal', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('标 rejected + reason + AuditLog', async () => {
+    mockPrisma.withdrawalRequest.findUnique.mockResolvedValue({ id: 'wr1', userId: 'u1', amount: 100, status: 'pending' } as never);
+    mockPrisma.withdrawalRequest.update.mockResolvedValue({ id: 'wr1', status: 'rejected' } as never);
+
+    const r = await rejectWithdrawal('wr1', '信息不符', 'admin1');
+    expect(r.status).toBe('rejected');
+    expect(mockPrisma.withdrawalRequest.update).toHaveBeenCalledWith({
+      where: { id: 'wr1' },
+      data: expect.objectContaining({ status: 'rejected', reason: '信息不符', processedBy: 'admin1' }),
+    });
+    expect(mockPrisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: 'rejectWithdrawal', target: 'wr1' }),
     });
   });
 });

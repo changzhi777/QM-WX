@@ -70,6 +70,7 @@ model User {
   heartRateRecords  HeartRateRecord[] // V0.1.43 心率历史（BLE 0x180D + 微信运动）
   spo2Records       SpO2Record[] // V0.1.43 血氧历史（BLE 0x1822）
   sleepRecords      SleepRecord[] // V0.1.43 睡眠历史（小米数据包导入）
+  withdrawalRequests WithdrawalRequest[] // V0.1.105 提现申请（pending/approved/rejected）
   groupBuyMembers   GroupBuyMember[] // V0.1.37 团购参与记录
   // 分销（V0.1.24）
   inviteCode        String?  @unique
@@ -955,4 +956,27 @@ model SleepRecord {
 
   @@unique([userId, date]) // 一日一条（upsert 防重）
   @@index([userId, date])
+}
+
+// 提现申请（V0.1.105 GAP-6）
+// 用户提交提现 → admin 后台手动审核 → 标记 approved/rejected
+// - pending：钱包不扣（避免申请→消费佣金→退款时余额不足竞态）
+// - approved：事务内钱包扣减 + WalletTransaction(type=withdraw) + status=approved
+// - rejected：仅标记状态（不动钱包）
+// - 微信企业付款 API 真对接留待 GAP-6.2（需商户号 + APIv3 证书）
+model WithdrawalRequest {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Decimal  @db.Decimal(10, 2) // 申请金额（元，≥10）
+  status      String   @default("pending") // pending | approved | rejected
+  reason      String?  // 拒绝原因（rejected 时填）
+  processedBy String?  // admin openid（approved/rejected 时填）
+  processedAt DateTime? // 审核时间
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status]) // 用户查自己的 + admin 按 status 筛选
+  @@index([status, createdAt]) // admin 待审核列表
 }

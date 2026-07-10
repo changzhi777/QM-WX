@@ -14,7 +14,8 @@
 import { prisma } from '../../infra/prisma.js';
 import type { Prisma } from '@prisma/client';
 import { walletRepo } from '../wallet/wallet.repo.js';
-import type { PageInput, TeamInput } from './distribution.schema.js';
+import { Errors } from '../../common/errors.js';
+import type { PageInput, TeamInput, WithdrawalRequestInput } from './distribution.schema.js';
 
 // 等级规则（从高到低，取满足的最高级）
 export const LEVEL_RULES = [
@@ -273,10 +274,71 @@ export const distributionService = {
       rules: [
         '分享商品或邀请链接给好友，好友下单后你即可获得佣金。',
         '直推佣金：按当前等级 V1=10% / V2=15% / V3=20%。',
-        '间推佣金：即将上线（关系已记录）。',
+        '间推佣金：直推×50%（V0.1.105 已上线）。',
         '佣金在订单支付完成后实时入账至钱包余额，可提现。',
         '累计佣金或团队人数达标自动升级等级。',
       ],
+    };
+  },
+
+  /**
+   * 提现申请（V0.1.105 GAP-6）
+   *
+   * pending 状态不扣余额（避免「申请→消费佣金→退款时余额不足」竞态）
+   * 审核通过后 admin.approveWithdrawal 事务内扣减
+   */
+  async requestWithdrawal(userId: string, input: WithdrawalRequestInput) {
+    // 校验：最低 10 元（schema 已校验最低，这里兜底）
+    if (input.amount < 10) throw Errors.badRequest('最低提现金额 10 元');
+
+    // 校验余额
+    const wallet = await walletRepo.ensureWallet(userId);
+    if (Number(wallet.balance) < input.amount) {
+      throw Errors.badRequest('余额不足');
+    }
+
+    // 校验：同用户已有 pending 申请 → 拒绝（避免重复申请）
+    const pending = await prisma.withdrawalRequest.findFirst({
+      where: { userId, status: 'pending' },
+    });
+    if (pending) throw Errors.conflict('已有待审核申请');
+
+    const req = await prisma.withdrawalRequest.create({
+      data: { userId, amount: input.amount, status: 'pending' },
+    });
+
+    return {
+      id: req.id,
+      amount: Number(req.amount),
+      status: req.status,
+      createdAt: req.createdAt.toISOString(),
+    };
+  },
+
+  /** 我的提现记录（分页） */
+  async myWithdrawals(userId: string, input: PageInput) {
+    const [list, total] = await Promise.all([
+      prisma.withdrawalRequest.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        skip: (input.page - 1) * input.pageSize,
+        take: input.pageSize,
+      }),
+      prisma.withdrawalRequest.count({ where: { userId } }),
+    ]);
+    return {
+      list: list.map((r) => ({
+        id: r.id,
+        amount: Number(r.amount),
+        status: r.status,
+        reason: r.reason,
+        processedAt: r.processedAt?.toISOString() ?? null,
+        createdAt: r.createdAt.toISOString(),
+      })),
+      total,
+      page: input.page,
+      pageSize: input.pageSize,
+      hasMore: input.page * input.pageSize < total,
     };
   },
 };

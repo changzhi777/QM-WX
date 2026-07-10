@@ -178,3 +178,21 @@ export type ListAuditLogsInput = z.infer<typeof ListAuditLogsSchema>;
 export type StatsByTimeRangeInput = z.infer<typeof StatsByTimeRangeSchema>;
 export type ExportOrdersInput = z.infer<typeof ExportOrdersSchema>;
 export type ExportUsersInput = z.infer<typeof ExportUsersSchema>;
+
+// ===== V0.1.105 GAP-6 提现审核 =====
+export const ListWithdrawalsSchema = z.object({
+  status: z.enum(['pending', 'approved', 'rejected']).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(20),
+});
+export type ListWithdrawalsInput = z.infer<typeof ListWithdrawalsSchema>;
+
+export const WithdrawalIdSchema = z.object({
+  id: z.string().min(1),
+});
+export type WithdrawalIdInput = z.infer<typeof WithdrawalIdSchema>;
+
+export const RejectWithdrawalSchema = z.object({
+  id: z.string().min(1),
+  reason: z.string().min(1).max(200), // 拒绝原因（必填）
+});

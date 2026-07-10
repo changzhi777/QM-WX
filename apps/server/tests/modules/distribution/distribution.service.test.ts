@@ -14,12 +14,16 @@ vi.mock('src/infra/prisma.js', () => ({
     distributionOrder: { aggregate: vi.fn(), count: vi.fn(), findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn() },
     team: { count: vi.fn(), findMany: vi.fn(), findFirst: vi.fn(), findUnique: vi.fn() },
     commissionLog: { aggregate: vi.fn(), findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn() },
-    wallet: { update: vi.fn() },
+    wallet: { update: vi.fn(), findUnique: vi.fn(), create: vi.fn() },
     walletTransaction: { create: vi.fn() },
+    withdrawalRequest: { findFirst: vi.fn(), findMany: vi.fn(), count: vi.fn(), create: vi.fn() },
   },
 }));
 vi.mock('src/modules/wallet/wallet.repo.js', () => ({
-  walletRepo: { ensureWalletInTx: vi.fn().mockResolvedValue({ id: 'w1' }) },
+  walletRepo: {
+    ensureWalletInTx: vi.fn().mockResolvedValue({ id: 'w1' }),
+    ensureWallet: vi.fn().mockResolvedValue({ id: 'w1', balance: 1000 }),
+  },
 }));
 
 import { prisma } from 'src/infra/prisma.js';
@@ -375,5 +379,55 @@ describe('clawbackIndirectCommission（V0.1.105 间推冲红）', () => {
 describe('INDIRECT_COMMISSION_RATE 常量', () => {
   it('默认 50%（0.5）', () => {
     expect(INDIRECT_COMMISSION_RATE).toBe(0.5);
+  });
+});
+
+// ===== V0.1.105 GAP-6 提现申请 =====
+
+describe('requestWithdrawal', () => {
+  it('amount < 10 → badRequest', async () => {
+    await expect(distributionService.requestWithdrawal('u1', { amount: 5 })).rejects.toThrow('最低提现金额 10 元');
+  });
+
+  it('余额不足 → badRequest', async () => {
+    mockedWalletRepo.ensureWallet.mockResolvedValue({ id: 'w1', balance: 50 } as never);
+    await expect(distributionService.requestWithdrawal('u1', { amount: 100 })).rejects.toThrow('余额不足');
+  });
+
+  it('已有 pending → conflict', async () => {
+    mockedWalletRepo.ensureWallet.mockResolvedValue({ id: 'w1', balance: 500 } as never);
+    mockedPrisma.withdrawalRequest.findFirst.mockResolvedValue({ id: 'w_existing' } as never);
+    await expect(distributionService.requestWithdrawal('u1', { amount: 100 })).rejects.toThrow('已有待审核申请');
+  });
+
+  it('余额足 + 无 pending → 落 WithdrawalRequest pending', async () => {
+    mockedWalletRepo.ensureWallet.mockResolvedValue({ id: 'w1', balance: 500 } as never);
+    mockedPrisma.withdrawalRequest.findFirst.mockResolvedValue(null);
+    mockedPrisma.withdrawalRequest.create.mockResolvedValue({
+      id: 'wr1', amount: 100, status: 'pending', createdAt: new Date('2026-07-10'),
+    } as never);
+
+    const r = await distributionService.requestWithdrawal('u1', { amount: 100 });
+    expect(r.id).toBe('wr1');
+    expect(r.amount).toBe(100);
+    expect(r.status).toBe('pending');
+    expect(mockedPrisma.withdrawalRequest.create).toHaveBeenCalledWith({
+      data: { userId: 'u1', amount: 100, status: 'pending' },
+    });
+  });
+});
+
+describe('myWithdrawals', () => {
+  it('分页含记录', async () => {
+    mockedPrisma.withdrawalRequest.findMany.mockResolvedValue([
+      { id: 'wr1', amount: 100, status: 'approved', reason: null, processedAt: new Date('2026-07-10'), createdAt: new Date('2026-07-09') },
+    ] as never);
+    mockedPrisma.withdrawalRequest.count.mockResolvedValue(1 as never);
+
+    const r = await distributionService.myWithdrawals('u1', { page: 1, pageSize: 20 });
+    expect(r.list[0].id).toBe('wr1');
+    expect(r.list[0].amount).toBe(100);
+    expect(r.total).toBe(1);
+    expect(r.hasMore).toBe(false);
   });
 });
