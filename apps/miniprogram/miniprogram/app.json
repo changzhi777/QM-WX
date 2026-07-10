@@ -11,6 +11,7 @@
     "pages/product-detail/index",
     "pages/review-publish/index",
     "pages/review-my/index",
+    "pages/review-list/index",
     "pages/my-enrollments/index",
     "pages/order-confirm/index",
     "pages/order-list/index",

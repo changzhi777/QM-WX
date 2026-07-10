@@ -67,6 +67,14 @@ Page({
     }
   },
 
+  /** 查看全部评价（跳商品评价列表页） */
+  onViewAllReviews() {
+    if (!this.data.product) return;
+    wx.navigateTo({
+      url: `/pages/review-list/index?productId=${this.data.product.id}&productName=${encodeURIComponent(this.data.product.name)}`,
+    });
+  },
+
   /** 加载商品评价（汇总 + 前 3 条预览，失败不影响商品展示） */
   async loadReviews(productId: string) {
     try {

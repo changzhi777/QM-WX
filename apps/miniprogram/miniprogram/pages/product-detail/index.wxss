@@ -62,3 +62,4 @@
 .r-stars { font-size: 24rpx; color: #ffb800; }
 .r-content { font-size: 28rpx; color: #333; line-height: 1.5; margin-top: 8rpx; }
 .no-review { text-align: center; font-size: 26rpx; color: var(--text-tertiary); padding: 24rpx 0; }
+.view-all { text-align: center; font-size: 26rpx; color: var(--brand); padding: 16rpx 0; }

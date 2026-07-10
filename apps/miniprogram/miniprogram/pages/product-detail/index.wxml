@@ -45,6 +45,9 @@
       </view>
       <view class="r-content" wx:if="{{item.content}}">{{item.content}}</view>
     </view>
+    <view class="view-all" wx:if="{{reviewStats.count > reviews.length}}" bindtap="onViewAllReviews">
+      查看全部 {{reviewStats.count}} 条评价 ›
+    </view>
     <view class="no-review mt" wx:if="{{!reviewStats || reviewStats.count === 0}}">暂无评价</view>
   </view>
 
