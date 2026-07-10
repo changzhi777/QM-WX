@@ -13,6 +13,7 @@ FROM base AS deps
 WORKDIR /repo
 COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
 COPY apps/server/package.json ./apps/server/
+COPY apps/miniprogram/package.json ./apps/miniprogram/
 COPY packages/shared/package.json ./packages/shared/
 RUN pnpm install --frozen-lockfile
 
