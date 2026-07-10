@@ -732,3 +732,51 @@ export async function rejectWithdrawal(id: string, reason: string, adminOpenid: 
 
   return { ok: true, id: r.id, status: 'rejected' };
 }
+
+/**
+ * V0.1.107 GAP-6 自提核销（admin 手动输入 pickupCode 核销）
+ *
+ * - 校验 Order.pickupCode 存在
+ * - 校验未过期（pickupExpiresAt > now）
+ * - 校验未核销（pickupConfirmedAt === null）
+ * - 校验订单已支付（status='paid'，避免「下单→核销但未支付」竞态）
+ * - update pickupConfirmedAt + pickupConfirmedBy（不动 status，业务上 status='paid' + 核销时间即完成）
+ *
+ * @unique pickupCode 兜底冲突（碰撞概率 < 0.1%，订单量 < 1000）
+ */
+export async function confirmPickup(pickupCode: string, adminOpenid: string) {
+  const order = await prisma.order.findUnique({ where: { pickupCode } });
+  if (!order) throw Errors.notFound('核销码无效');
+  if (order.pickupConfirmedAt) throw Errors.badRequest('该订单已核销');
+  if (order.pickupExpiresAt && order.pickupExpiresAt < new Date()) {
+    throw Errors.badRequest('核销码已过期');
+  }
+  if (order.status !== 'paid') {
+    throw Errors.badRequest('订单未支付，无法核销');
+  }
+
+  const r = await prisma.order.update({
+    where: { id: order.id },
+    data: {
+      pickupConfirmedAt: new Date(),
+      pickupConfirmedBy: adminOpenid,
+    },
+  });
+
+  // 审计
+  await prisma.auditLog.create({
+    data: {
+      actorOpenid: adminOpenid,
+      action: 'confirmPickup',
+      target: order.id,
+      payload: { pickupCode, userId: order.userId } as never,
+      ip: 'admin',
+    },
+  });
+
+  return {
+    ok: true,
+    orderId: r.id,
+    pickupConfirmedAt: r.pickupConfirmedAt!.toISOString(),
+  };
+}

@@ -16,6 +16,7 @@ const mockPrisma = vi.hoisted(() => ({
   wallet: { findUnique: vi.fn(), update: vi.fn() },
   walletTransaction: { create: vi.fn() },
   withdrawalRequest: { findUnique: vi.fn(), findMany: vi.fn(), count: vi.fn(), update: vi.fn() },
+  order: { findUnique: vi.fn(), update: vi.fn() }, // V0.1.107 自提核销
   $transaction: vi.fn(), // V0.1.105 提现审核用
 }));
 
@@ -37,6 +38,7 @@ import {
   listWithdrawals,
   approveWithdrawal,
   rejectWithdrawal,
+  confirmPickup,
 } from '../../../src/modules/admin/admin.service.js';
 import { BusinessError } from '../../../src/common/errors.js';
 
@@ -399,6 +401,53 @@ describe('admin.service · rejectWithdrawal', () => {
     });
     expect(mockPrisma.auditLog.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ action: 'rejectWithdrawal', target: 'wr1' }),
+    });
+  });
+});
+
+// ===== V0.1.107 GAP-6 自提核销 =====
+
+describe('admin.service · confirmPickup', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('pickupCode 无效 → 404', async () => {
+    mockPrisma.order.findUnique.mockResolvedValue(null);
+    await expect(confirmPickup('INVALID1', 'admin1')).rejects.toThrow('核销码无效');
+  });
+
+  it('已核销 → 400', async () => {
+    mockPrisma.order.findUnique.mockResolvedValue({
+      id: 'o1', userId: 'u1', status: 'paid',
+      pickupCode: 'ABC123X7K', pickupConfirmedAt: new Date(), pickupExpiresAt: null,
+    } as never);
+    await expect(confirmPickup('ABC123X7K', 'admin1')).rejects.toThrow('已核销');
+  });
+
+  it('订单未支付 → 400', async () => {
+    mockPrisma.order.findUnique.mockResolvedValue({
+      id: 'o1', userId: 'u1', status: 'pending_pay',
+      pickupCode: 'ABC123X7K', pickupConfirmedAt: null, pickupExpiresAt: null,
+    } as never);
+    await expect(confirmPickup('ABC123X7K', 'admin1')).rejects.toThrow('订单未支付');
+  });
+
+  it('核销成功 → update + AuditLog', async () => {
+    mockPrisma.order.findUnique.mockResolvedValue({
+      id: 'o1', userId: 'u1', status: 'paid',
+      pickupCode: 'ABC123X7K', pickupConfirmedAt: null, pickupExpiresAt: null,
+    } as never);
+    mockPrisma.order.update.mockResolvedValue({
+      id: 'o1', pickupConfirmedAt: new Date('2026-07-10'),
+    } as never);
+
+    const r = await confirmPickup('ABC123X7K', 'admin1');
+    expect(r.orderId).toBe('o1');
+    expect(mockPrisma.order.update).toHaveBeenCalledWith({
+      where: { id: 'o1' },
+      data: expect.objectContaining({ pickupConfirmedBy: 'admin1' }),
+    });
+    expect(mockPrisma.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ action: 'confirmPickup', target: 'o1' }),
     });
   });
 });

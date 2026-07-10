@@ -40,6 +40,7 @@ import {
   ListWithdrawalsSchema,
   WithdrawalIdSchema,
   RejectWithdrawalSchema,
+  ConfirmPickupSchema,
 } from './admin.schema.js';
 
 export async function adminRoutes(app: FastifyInstance) {
@@ -144,6 +145,15 @@ export async function adminRoutes(app: FastifyInstance) {
           data: await adminService.rejectWithdrawal(
             RejectWithdrawalSchema.parse(payload).id,
             RejectWithdrawalSchema.parse(payload).reason,
+            actorOpenid,
+          ),
+        };
+      // ===== V0.1.107 GAP-6 自提核销 =====
+      case 'confirmPickup':
+        return {
+          code: 0,
+          data: await adminService.confirmPickup(
+            ConfirmPickupSchema.parse(payload).pickupCode,
             actorOpenid,
           ),
         };

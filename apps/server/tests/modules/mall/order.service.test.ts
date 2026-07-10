@@ -38,7 +38,7 @@ vi.mock('src/infra/prisma.js', () => {
 vi.mock('src/jobs/queue.js', () => ({ enqueueCloseOrder: vi.fn() }));
 
 import { prisma } from 'src/infra/prisma.js';
-import { orderService } from 'src/modules/mall/order.service.js';
+import { orderService, generatePickupCode } from 'src/modules/mall/order.service.js';
 
 const mockedPrisma = vi.mocked(prisma);
 const tx = (prisma as unknown as { _tx: unknown })._tx as {
@@ -159,5 +159,29 @@ describe('orderService.cancel', () => {
     } as never);
 
     await expect(orderService.cancel('u1', 'o1')).rejects.toThrow('不是你的订单');
+  });
+});
+
+// ===== V0.1.107 GAP-6 自提核销码 =====
+
+describe('generatePickupCode（V0.1.107 纯函数）', () => {
+  it('订单号末 6 位 + 3 位大写字母数字', () => {
+    const code = generatePickupCode('clxxxxxxxxxxxxxxxabcd');
+    expect(code).toHaveLength(9);
+    expect(code).toMatch(/^[A-Z0-9]{9}$/);
+    // 末 6 位 = 订单号末 6 位大写
+    expect(code.slice(0, 6)).toBe('XXABCD');
+  });
+
+  it('3 位随机字符表避开 I/O/0/1（OCR 友好）', () => {
+    const codes = Array.from({ length: 100 }, () => generatePickupCode('orderid12345'));
+    for (const c of codes) {
+      expect(c.slice(6)).not.toMatch(/[IO01]/); // 仅 3 位随机段不含 I/O/0/1
+    }
+  });
+
+  it('100 次生成唯一性（碰撞概率 < 0.1%）', () => {
+    const codes = new Set(Array.from({ length: 100 }, () => generatePickupCode('orderid12345')));
+    expect(codes.size).toBeGreaterThan(95);
   });
 });

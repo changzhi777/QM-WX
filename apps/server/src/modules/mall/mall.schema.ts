@@ -47,6 +47,8 @@ export const CreateOrderInputSchema = z.object({
   inviteCode: z.string().min(4).max(16).optional(),
   // V0.1.37 团购：团购 id（有值则校验 reached + 已参与 + 团购价）
   groupBuyId: z.string().optional(),
+  // V0.1.107 GAP-6 自提：'pickup' | 'express'（默认 express，需填 address；pickup 不需 address）
+  deliveryType: z.enum(['pickup', 'express']).default('express'),
 });
 export type CreateOrderInput = z.infer<typeof CreateOrderInputSchema>;
 

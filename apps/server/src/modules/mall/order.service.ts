@@ -22,6 +22,23 @@ import type { CreateOrderInput, MyOrdersInput } from './mall.schema.js';
 /** 1 积分 = 0.01 元（仅用于积分全额兑换场景） */
 const POINTS_TO_YUAN = 0.01;
 
+/**
+ * 生成 pickupCode（V0.1.107 GAP-6）
+ *
+ * 订单号末 6 位 + 3 位大写字母数字（29 字符表，避开 I/O/0/1 易混淆）
+ * @unique 兜底碰撞（订单量 < 1000 时碰撞概率 < 0.1%）
+ */
+export function generatePickupCode(orderId: string): string {
+  const tail = orderId.slice(-6).toUpperCase();
+  // 28 字符表（去 I/O/0/1 + 大写 + 2-9）：'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' (28 chars, no I/O/0/1)
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const random = Array.from(
+    { length: 3 },
+    () => chars[Math.floor(Math.random() * chars.length)],
+  ).join('');
+  return `${tail}${random}`;
+}
+
 export const orderService = {
   async create(userId: string, input: CreateOrderInput) {
     // V0.1.37 团购校验（groupBuyId 存在 → reached + 已参与 + 单一团购商品）
@@ -130,6 +147,11 @@ export const orderService = {
       }
     }
 
+    // V0.1.107 GAP-6 自提：deliveryType='pickup' → 事务内生成 pickupCode（订单号末 6 位 + 3 位大写字母数字）
+    // 默认 30 天过期
+    let pickupCode: string | null = null;
+    const pickupExpiresAt: { value: Date | null } = { value: null };
+
     // 4. 事务：写 order + 扣积分（如有）+ 分销落单
     const sourceUserIdFinal = sourceUserId;
     const commissionRateFinal = commissionRate;
@@ -157,6 +179,18 @@ export const orderService = {
         },
         include: { items: true },
       });
+
+      // V0.1.107 GAP-6 自提：生成 pickupCode（订单号末 6 位 + 3 位大写字母数字）
+      if (input.deliveryType === 'pickup') {
+        const code = generatePickupCode(o.id);
+        const expiresAt = new Date(Date.now() + 30 * 24 * 3600 * 1000);
+        await tx.order.update({
+          where: { id: o.id },
+          data: { pickupCode: code, pickupExpiresAt: expiresAt },
+        });
+        pickupCode = code;
+        pickupExpiresAt.value = expiresAt;
+      }
 
       // 扣积分（仅积分全额兑换场景）
       if (pointsUsed > 0) {
@@ -243,6 +277,9 @@ export const orderService = {
           : payChannel === 'wxpay'
             ? '订单已创建，请完成支付'
             : '订单已创建，支付功能开通中，客服会联系您',
+      // V0.1.107 GAP-6 自提核销码（仅 deliveryType=pickup 时返）
+      pickupCode,
+      pickupExpiresAt: pickupExpiresAt.value ? pickupExpiresAt.value.toISOString() : null,
     };
   },
 

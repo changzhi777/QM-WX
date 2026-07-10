@@ -233,6 +233,11 @@ model Order {
   sourceUserId    String?
   // V0.1.37 团购订单关联（null=普通订单；有值=团购价订单）
   groupBuyId      String?
+  // V0.1.107 GAP-6 自提核销（订单号末 6 位 + 3 位大写字母数字作 pickupCode）
+  pickupCode         String?   @unique
+  pickupExpiresAt    DateTime? // 默认 30 天过期
+  pickupConfirmedAt  DateTime? // 核销时间
+  pickupConfirmedBy  String?   // 核销人（admin openid）
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 

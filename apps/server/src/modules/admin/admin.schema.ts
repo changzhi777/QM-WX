@@ -196,3 +196,9 @@ export const RejectWithdrawalSchema = z.object({
   id: z.string().min(1),
   reason: z.string().min(1).max(200), // 拒绝原因（必填）
 });
+
+// ===== V0.1.107 GAP-6 自提核销 =====
+export const ConfirmPickupSchema = z.object({
+  pickupCode: z.string().min(6).max(20), // 订单号末 6 位 + 3 位大写字母数字
+});
+export type ConfirmPickupInput = z.infer<typeof ConfirmPickupSchema>;
