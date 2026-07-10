@@ -32,6 +32,7 @@
 | [SUBMIT-CHECKLIST.md](SUBMIT-CHECKLIST.md) | 小程序提交前检查清单 | ✅ 当前有效 |
 | [**PHASE-4-2-PREP.md**](PHASE-4-2-PREP.md) | **Phase 4.1 → 4.2 切真生产 playbook**（商户号/证书/env 模板/监控/回滚/9 项 checklist） | ✅ **新增** |
 | [**API-AUDIT.md**](API-AUDIT.md) | **API 审查报告**：P0/P1 清单（P0-1 user 鉴权 / P1 admin schema 内联，**均已在 working tree 修复**） | ✅ **新增** |
+| [**VERIFY-CHECKLIST.md**](VERIFY-CHECKLIST.md) | **V0.1.121 真机验证 + wxpay 商户配置清单**（功能矩阵 + 商户号批后步骤 + payment flag SQL + 回滚） | ✅ **新增** |
 
 ---
 
