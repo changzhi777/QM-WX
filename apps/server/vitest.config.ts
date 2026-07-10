@@ -21,9 +21,9 @@ export default defineConfig({
       reporter: ['text', 'html', 'lcov'],
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.test.ts', 'src/server.ts', 'src/**/routes.ts'],
-      // 阈值：基于 V0.1.110 后实测（include jobs/）
-      // 当前实测: lines 80.08 / funcs 86.46 / branches 75.77 / statements 80.08
-      // V0.1.110 GAP-3.3: include src/jobs/**（+7 单测：refresh-certs 2 + close-order 4 + ludong-sync 1）
+      // 阈值：基于 V0.1.111 后实测（jobs/ 全测）
+      // 当前实测: lines 80.92 / funcs 86.74 / branches 75.93 / statements 80.92
+      // V0.1.111 GAP-3.4: +8 单测（garmin 5 + scheduler 3）
       // 留 1.08% 缓冲给后续重构
       thresholds: {
         lines: 79,
