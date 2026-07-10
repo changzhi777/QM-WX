@@ -192,6 +192,14 @@ Page({
     wx.navigateTo({ url: '/pages/family/index' });
   },
 
+  goReview() {
+    wx.navigateTo({ url: '/pages/review-my/index' });
+  },
+
+  goEnrollments() {
+    wx.navigateTo({ url: '/pages/my-enrollments/index' });
+  },
+
   goAgreement() {
     wx.navigateTo({ url: '/pages/agreement/index' });
   },

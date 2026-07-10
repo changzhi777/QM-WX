@@ -1,0 +1,25 @@
+<view class="page">
+  <view class="empty" wx:if="{{!loading && list.length === 0}}">还没有报名记录</view>
+
+  <view
+    class="card bg-white m-2 p-4 rounded-lg shadow"
+    wx:for="{{list}}"
+    wx:key="id"
+    data-id="{{item.content.id}}"
+    bindtap="onTap"
+  >
+    <view class="head">
+      <text class="type-tag">{{item.typeLabel}}</text>
+      <text class="status">{{item.statusLabel}}</text>
+    </view>
+    <view class="title">{{item.content.title}}</view>
+    <view class="meta" wx:if="{{item.content.date || item.content.location}}">
+      <text wx:if="{{item.content.date}}">📅 {{item.content.date}}</text>
+      <text wx:if="{{item.content.location}}" class="ml">📍 {{item.content.location}}</text>
+    </view>
+    <view class="enroll-date">报名于 {{item.createdAt}}</view>
+  </view>
+
+  <view class="loading-more" wx:if="{{loading}}">加载中...</view>
+  <view class="no-more" wx:if="{{!hasMore && list.length > 0}}">没有更多了</view>
+</view>

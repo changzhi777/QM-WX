@@ -30,7 +30,14 @@ export const ContentEnrollInputSchema = z.object({
 });
 export type ContentEnrollInput = z.infer<typeof ContentEnrollInputSchema>;
 
+export const ContentMyEnrollmentsSchema = z.object({
+  type: z.enum(CONTENT_TYPES).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(20),
+});
+export type ContentMyEnrollmentsInput = z.infer<typeof ContentMyEnrollmentsSchema>;
+
 export const ContentActionBodySchema = z.object({
-  action: z.enum(['list', 'detail', 'enroll']),
+  action: z.enum(['list', 'detail', 'enroll', 'myEnrollments']),
   payload: z.unknown().optional(),
 });

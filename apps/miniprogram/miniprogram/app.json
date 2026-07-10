@@ -10,6 +10,8 @@
     "pages/content-detail/index",
     "pages/product-detail/index",
     "pages/review-publish/index",
+    "pages/review-my/index",
+    "pages/my-enrollments/index",
     "pages/order-confirm/index",
     "pages/order-list/index",
     "pages/weekly-report/index",

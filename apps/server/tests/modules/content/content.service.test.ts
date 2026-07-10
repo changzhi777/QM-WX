@@ -21,7 +21,9 @@ vi.mock('src/infra/prisma.js', () => {
       },
       enrollment: {
         findFirst: vi.fn(),
+        findMany: vi.fn(),
         create: vi.fn(),
+        count: vi.fn(),
       },
     },
   };
@@ -270,6 +272,40 @@ describe('contentService.enroll', () => {
           status: 'submitted',
         }),
       }),
+    );
+  });
+});
+
+// ===== myEnrollments（V0.1.113 赛事/内容报名闭环）=====
+describe('contentService.myEnrollments', () => {
+  it('返报名列表 + 含 content 详情 + 按 type 过滤', async () => {
+    mockedPrisma.enrollment.findMany.mockResolvedValue([
+      {
+        id: 'e1', type: 'marathon', status: 'submitted',
+        createdAt: new Date('2026-07-10T00:00:00Z'),
+        content: { id: 'c1', title: '城市马拉松', cover: null, type: 'marathon', date: '2026-10-01', location: '北京' },
+      },
+    ] as never);
+    mockedPrisma.enrollment.count.mockResolvedValue(1 as never);
+
+    const result = await contentService.myEnrollments('u1', { type: 'marathon', page: 1, pageSize: 20 });
+
+    expect(result.total).toBe(1);
+    expect(result.list[0].content.title).toBe('城市马拉松');
+    expect(result.list[0].createdAt).toBe('2026-07-10T00:00:00.000Z');
+    expect(mockedPrisma.enrollment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: 'u1', type: 'marathon' } }),
+    );
+  });
+
+  it('无 type 时 where 仅 userId', async () => {
+    mockedPrisma.enrollment.findMany.mockResolvedValue([] as never);
+    mockedPrisma.enrollment.count.mockResolvedValue(0 as never);
+
+    await contentService.myEnrollments('u1', { page: 1, pageSize: 20 });
+
+    expect(mockedPrisma.enrollment.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: 'u1' } }),
     );
   });
 });

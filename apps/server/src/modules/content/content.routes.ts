@@ -12,6 +12,7 @@ import {
   ContentListInputSchema,
   ContentDetailInputSchema,
   ContentEnrollInputSchema,
+  ContentMyEnrollmentsSchema,
 } from './content.schema.js';
 
 export async function contentRoutes(app: FastifyInstance) {
@@ -38,6 +39,12 @@ export async function contentRoutes(app: FastifyInstance) {
           const user = await requireLogin(req);
           const input = ContentEnrollInputSchema.parse(payload);
           return { code: 0, data: await contentService.enroll(user.id, input) };
+        }
+
+        case 'myEnrollments': {
+          const user = await requireLogin(req);
+          const input = ContentMyEnrollmentsSchema.parse(payload ?? {});
+          return { code: 0, data: await contentService.myEnrollments(user.id, input) };
         }
 
         default:

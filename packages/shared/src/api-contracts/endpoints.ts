@@ -52,6 +52,7 @@ export const ENDPOINTS = {
     list: '/api/content',
     detail: '/api/content',
     enroll: '/api/content',
+    myEnrollments: '/api/content',
   },
   weeklyReport: {
     currentWeek: '/api/weekly-report',

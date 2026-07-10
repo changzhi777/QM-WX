@@ -109,6 +109,16 @@
       <view class="arrow">›</view>
     </view>
 
+    <view class="list-item" bindtap="goReview">
+      <view class="lbl">我的评价</view>
+      <view class="arrow">›</view>
+    </view>
+
+    <view class="list-item" bindtap="goEnrollments">
+      <view class="lbl">我的报名</view>
+      <view class="arrow">›</view>
+    </view>
+
     <view class="list-item" bindtap="goProfile">
       <view class="lbl">个人资料</view>
       <view class="arrow">›</view>

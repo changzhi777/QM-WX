@@ -1,0 +1,15 @@
+.page { min-height: 100vh; background: #f5f5f5; padding-bottom: 40rpx; }
+.empty { padding: 120rpx 0; text-align: center; color: var(--text-tertiary); font-size: 28rpx; }
+.card { }
+.head { display: flex; justify-content: space-between; align-items: center; }
+.type-tag {
+  font-size: 22rpx; color: var(--brand, #0FAF8E);
+  background: rgba(15, 175, 142, 0.1);
+  padding: 4rpx 16rpx; border-radius: 8rpx;
+}
+.status { font-size: 24rpx; color: var(--text-tertiary); }
+.title { font-size: 30rpx; font-weight: 600; color: #333; margin-top: 12rpx; }
+.meta { font-size: 24rpx; color: var(--text-secondary); margin-top: 8rpx; }
+.meta .ml { margin-left: 16rpx; }
+.enroll-date { font-size: 22rpx; color: var(--text-tertiary); margin-top: 8rpx; }
+.loading-more, .no-more { text-align: center; color: var(--text-tertiary); font-size: 24rpx; padding: 24rpx 0; }

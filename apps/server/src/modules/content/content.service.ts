@@ -17,6 +17,7 @@ import { Cache } from '../../infra/cache.js';
 import type {
   ContentListInput,
   ContentEnrollInput,
+  ContentMyEnrollmentsInput,
 } from './content.schema.js';
 
 /** list 缓存 TTL：60s（内容列表变更不频繁，公开热路径，60s 容忍内容上新延迟） */
@@ -139,6 +140,42 @@ export const contentService = {
     return {
       enrollmentId: enrollment.id,
       message: '意向已提交，客服会尽快联系您',
+    };
+  },
+
+  /**
+   * 我的报名记录（赛事/酒店/景区等，按 type 过滤，含 Content 详情）
+   */
+  async myEnrollments(userId: string, input: ContentMyEnrollmentsInput) {
+    const where = {
+      userId,
+      ...(input.type ? { type: input.type } : {}),
+    };
+    const [list, total] = await Promise.all([
+      prisma.enrollment.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip: (input.page - 1) * input.pageSize,
+        take: input.pageSize,
+        include: {
+          content: {
+            select: { id: true, title: true, cover: true, type: true, date: true, location: true },
+          },
+        },
+      }),
+      prisma.enrollment.count({ where }),
+    ]);
+    return {
+      list: list.map((e) => ({
+        id: e.id,
+        type: e.type,
+        status: e.status,
+        createdAt: e.createdAt.toISOString(),
+        content: e.content,
+      })),
+      total,
+      page: input.page,
+      pageSize: input.pageSize,
     };
   },
 };
