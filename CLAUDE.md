@@ -8,6 +8,7 @@
 
 ## 变更记录 (Changelog)
 
+- **2026-07-10** — 🎯 **GAP-3 覆盖率阈值门禁关闭（V0.1.102）**：`apps/server/vitest.config.ts` 加 `coverage.thresholds`（lines 78 / functions 80 / branches 75 / statements 78），基于 **V0.1.101 后实测 79.58% lines / 85.51% funcs / 76.09% branches / 79.58% statements**，留 1.58% 缓冲给后续重构；`pnpm test:coverage` exit=0 通过；注释：routes.ts 普遍 13-19% 拉低全局（单测只测 service 不测 route handler），jobs/ 62.72% 未测，调高阈值需先补 routes/jobs 测试或改 exclude（暂 YAGNI 留待 GAP-3.2）；后续建议按 module exclude routes 提全局覆盖至 84%+。
 - **2026-07-10** — 🎯 **GitHub 主线起点 + 微信运动/onboarding/重新激活授权（V0.1.100）**：
   1. **GitHub 私有 repo 起点**：push `changzhi777/QM-WX`，`origin`=HTTPS+PAT，`ct400`=CT400 Gitea 保留**不同步**，`v0.1.100` 跳号起点（CT400 历史 v0.1.0~42 保留），patch+1 规则文档化；`.gitignore` 排除 `.zcf/plan/history/` + 小米数据包 `*MiFitness*data_copy*`/`*MiFitness*.zip`
   2. **微信运动闭环**：`utils/werun.ts`（syncWeRunToday wx.getWeRunData→AES→upsert，session_key 过期自动重登重试 / getWeRunHistory / syncWeRunIfFirstToday 每日节流 / cnMonthRange）+ `pages/werun/`（月度柱状图+汇总+手动同步+月份切换）+ 首页 onShow 节流 + onboarding step3 一键同步；后端 `device.syncWeRun`/`myWeRun` V0.1.43 已就绪
@@ -594,17 +595,17 @@ graph TD
 - **CT400**：main 推到 bc34aff，v0.1.40/41/42 tag 已推
 - **生产**：qingmulife.cn 运行 V0.1.42
 
-### GAP 清单（GAP-7 关闭；GAP-11 断点续扫中）
+### GAP 清单（GAP-3/7 关闭；GAP-11 断点续扫中）
 
 1. ✅ ~~GAP-1（P0）user 鉴权~~（已修）
 2. ✅ ~~GAP-2（P1）admin schema 抽离~~（已落地）
-3. ⏳ GAP-3（🟡 P2）覆盖率阈值门禁 — 总覆盖 82.11%
+3. ✅ ~~GAP-3（🟡 P2）覆盖率阈值门禁~~（V0.1.102 关闭 — `apps/server/vitest.config.ts` 加 `thresholds: lines 78 / functions 80 / branches 75 / statements 78`，实测 79.58/85.51/76.09/79.58%，`pnpm test:coverage` exit=0；routes/jobs 拉低全局覆盖留待 GAP-3.2）
 4. ✅ ~~GAP-4（P3）CHANGELOG 版本段~~（已补）
 5. ✅ ~~GAP-5 device userId 兜底~~（V0.1.39 真登录恢复，device.routes 已用 req.user.id，全 server 无张晨兜底）
 6. ⏳ GAP-6（🟡 P2）分销二次上线（间推佣金/提现/自提）
 7. ✅ ~~GAP-7 CT400 tag 推送~~（V0.1.40/41/42 已推）
 8. ⏳ GAP-8（🟢 P3）电商/训练/跑鞋/目标/收藏/动态 module 级 CLAUDE.md（仅 distribution 有）
-9. ⏳ GAP-9（🟢 P3）蓝牙 BLE 真机联调
+9. ✅ ~~GAP-9（🟢 P3）蓝牙 BLE 真机联调~~（V0.1.43 闭环 — 小米 10Pro 标准 0x180D 心率广播走通，utils/ble.ts retry3+hasHr+去 services 过滤+getDeviceServices 诊断就位）
 10. ✅ ~~GAP-10 sport.checkin 前端选鞋入口~~（V0.1.27 闭环）
 11. 🚧 **GAP-11（🟢 P3，本次）**：子 CLAUDE.md 详细段 + 根残留段落断点续扫 — 本次已完成根 CLAUDE.md 关键段 + 4 文件顶部 + index.json；子 CLAUDE.md 详细段（module/表/页面清单）留下次
 
