@@ -14,6 +14,8 @@
 import { prisma } from '../../infra/prisma.js';
 import { Errors } from '../../common/errors.js';
 import { Cache } from '../../infra/cache.js';
+import { walletRepo } from '../wallet/wallet.repo.js';
+import { configRepo } from '../app-config/app-config.repository.js';
 import type {
   ContentListInput,
   ContentEnrollInput,
@@ -127,6 +129,42 @@ export const contentService = {
     });
     if (existing) throw Errors.conflict('你已提交过意向，请勿重复');
 
+    // V0.1.116 报名费：fee > 0 + payment=ON → 余额扣费（事务原子，wxpay 真集成留待）
+    const fee = content.fee ? Number(content.fee) : 0;
+    const { featureFlags } = await configRepo.getLoginConfig();
+    const needPay = fee > 0 && !!featureFlags.payment;
+
+    if (needPay) {
+      const enrollment = await prisma.$transaction(async (tx) => {
+        const wallet = await walletRepo.ensureWalletInTx(tx, userId);
+        if (Number(wallet.balance) < fee) throw Errors.badRequest('余额不足，请充值');
+        await tx.wallet.update({
+          where: { id: wallet.id },
+          data: { balance: { decrement: fee } },
+        });
+        await tx.walletTransaction.create({
+          data: {
+            userId,
+            walletId: wallet.id,
+            type: 'content_enroll',
+            amount: -fee,
+            status: 'success',
+          },
+        });
+        return tx.enrollment.create({
+          data: {
+            userId,
+            contentId: input.id,
+            type: content.type,
+            formData: input.formData,
+            status: 'confirmed',
+          },
+        });
+      });
+      return { enrollmentId: enrollment.id, message: '报名成功，已扣费' };
+    }
+
+    // fee=0 或 payment=OFF → 意向单（不扣费）
     const enrollment = await prisma.enrollment.create({
       data: {
         userId,

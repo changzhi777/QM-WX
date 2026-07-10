@@ -854,3 +854,14 @@ export async function exportSettlement(input: { yearMonth: string }, adminOpenid
 
   return UTF8_BOM + lines.join('\n');
 }
+
+/** 回复评价（admin/商家，V0.1.116） */
+export async function addReviewReply(input: { reviewId: string; content: string }) {
+  const review = await prisma.review.findUnique({ where: { id: input.reviewId } });
+  if (!review) throw Errors.notFound('评价不存在');
+  await prisma.review.update({
+    where: { id: input.reviewId },
+    data: { replyContent: input.content, repliedAt: new Date() },
+  });
+  return { ok: true };
+}

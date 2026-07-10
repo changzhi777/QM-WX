@@ -17,6 +17,10 @@
       <text class="date">{{item.createdAt}}</text>
     </view>
     <view class="content" wx:if="{{item.content}}">{{item.content}}</view>
+    <view class="reply" wx:if="{{item.replyContent}}">
+      <text class="reply-label">商家回复：</text>
+      <text class="reply-text">{{item.replyContent}}</text>
+    </view>
     <view class="images" wx:if="{{item.images.length > 0}}">
       <image
         wx:for="{{item.images}}"

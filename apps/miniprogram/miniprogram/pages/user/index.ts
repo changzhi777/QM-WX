@@ -20,6 +20,15 @@ Page({
     info: null as (CountsRes & { followingBtn: boolean }) | null,
     loading: false,
     toggling: false,
+    tab: 'info' as 'info' | 'feeds',
+    feeds: [] as Array<{
+      id: string;
+      content: string;
+      likeCount: number;
+      commentCount: number;
+      createdAt: string;
+    }>,
+    feedsLoading: false,
   },
 
   onLoad(query: { userId?: string }) {
@@ -74,6 +83,37 @@ Page({
       wx.showToast({ title: '操作失败', icon: 'none' });
     } finally {
       this.setData({ toggling: false });
+    }
+  },
+
+  /** 切 tab（首次进动态拉列表） */
+  onSwitchTab(e: WechatMiniprogram.TouchEvent) {
+    const tab = e.currentTarget.dataset.tab as 'info' | 'feeds';
+    this.setData({ tab });
+    if (tab === 'feeds' && this.data.feeds.length === 0 && !this.data.feedsLoading) {
+      this.loadFeeds();
+    }
+  },
+
+  /** 拉该用户动态（feed.list + userId 过滤，V0.1.116 后端支持） */
+  async loadFeeds() {
+    this.setData({ feedsLoading: true });
+    try {
+      const res = await api.call<{
+        list: Array<{
+          id: string;
+          content: string;
+          likeCount: number;
+          commentCount: number;
+          createdAt: string;
+        }>;
+      }>('feed', 'list', { userId: this.data.userId, page: 1, pageSize: 20 });
+      this.setData({
+        feeds: res.list.map((f) => ({ ...f, createdAt: f.createdAt.slice(0, 10) })),
+        feedsLoading: false,
+      });
+    } catch {
+      this.setData({ feedsLoading: false });
     }
   },
 });

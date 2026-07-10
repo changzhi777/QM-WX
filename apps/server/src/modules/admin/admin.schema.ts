@@ -208,3 +208,10 @@ export const ExportSettlementQuerySchema = z.object({
   yearMonth: z.string().regex(/^\d{4}-\d{2}$/, '格式 YYYY-MM'), // 2026-07
 });
 export type ExportSettlementQueryInput = z.infer<typeof ExportSettlementQuerySchema>;
+
+// ===== V0.1.116 评价回复 =====
+export const AddReviewReplySchema = z.object({
+  reviewId: z.string().min(1),
+  content: z.string().min(1).max(500),
+});
+export type AddReviewReplyInput = z.infer<typeof AddReviewReplySchema>;

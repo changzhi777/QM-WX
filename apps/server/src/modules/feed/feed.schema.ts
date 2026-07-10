@@ -20,6 +20,7 @@ export const FeedPageSchema = z.object({
   pageSize: z.number().int().min(1).max(50).default(20),
   sort: z.enum(['latest', 'hot']).default('latest'), // hot=按 likeCount desc（红心广场）
   topic: z.string().optional(), // 话题过滤（话题页用）
+  userId: z.string().optional(), // V0.1.116 用户主页动态过滤
 });
 export type FeedPageInput = z.infer<typeof FeedPageSchema>;
 

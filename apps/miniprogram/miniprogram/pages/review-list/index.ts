@@ -8,6 +8,8 @@ interface ReviewItem {
   content: string | null;
   images: string[];
   createdAt: string;
+  replyContent: string | null;
+  repliedAt: string | null;
   user: { id: string; nickname: string | null; avatarUrl: string | null };
 }
 

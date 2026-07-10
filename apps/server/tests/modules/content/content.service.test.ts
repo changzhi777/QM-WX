@@ -25,6 +25,7 @@ vi.mock('src/infra/prisma.js', () => {
         create: vi.fn(),
         count: vi.fn(),
       },
+      appConfig: { findMany: vi.fn().mockResolvedValue([]) },
     },
   };
 });

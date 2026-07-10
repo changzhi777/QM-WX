@@ -276,6 +276,8 @@ model Review {
   content   String?
   images    String[]
   createdAt DateTime @default(now())
+  replyContent String? // V0.1.116 admin/商家回复
+  repliedAt    DateTime?
 
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   product Product @relation(fields: [productId], references: [id], onDelete: Cascade)

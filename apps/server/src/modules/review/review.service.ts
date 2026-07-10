@@ -88,7 +88,11 @@ export const reviewService = {
       prisma.review.count({ where }),
     ]);
     return {
-      list: list.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })),
+      list: list.map((r) => ({
+        ...r,
+        createdAt: r.createdAt.toISOString(),
+        repliedAt: r.repliedAt?.toISOString() ?? null,
+      })),
       total,
       page: input.page,
       pageSize: input.pageSize,
@@ -135,7 +139,11 @@ export const reviewService = {
       prisma.review.count({ where }),
     ]);
     return {
-      list: list.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })),
+      list: list.map((r) => ({
+        ...r,
+        createdAt: r.createdAt.toISOString(),
+        repliedAt: r.repliedAt?.toISOString() ?? null,
+      })),
       total,
       page: input.page,
       pageSize: input.pageSize,

@@ -42,6 +42,7 @@ import {
   RejectWithdrawalSchema,
   ConfirmPickupSchema,
   ExportSettlementQuerySchema,
+  AddReviewReplySchema,
 } from './admin.schema.js';
 
 export async function adminRoutes(app: FastifyInstance) {
@@ -167,6 +168,11 @@ export async function adminRoutes(app: FastifyInstance) {
         reply.header('Content-Type', 'text/csv; charset=utf-8');
         reply.header('Content-Disposition', `attachment; filename="settlement-${Date.now()}.csv"`);
         return reply.send(csv);
+      }
+      // ===== V0.1.116 评价回复 =====
+      case 'addReviewReply': {
+        const input = AddReviewReplySchema.parse(payload);
+        return { code: 0, data: await adminService.addReviewReply(input) };
       }
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });

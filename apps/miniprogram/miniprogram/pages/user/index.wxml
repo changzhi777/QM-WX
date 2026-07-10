@@ -32,5 +32,21 @@
       </button>
     </view>
     <view class="self-tip" wx:else>这是我本人</view>
+
+    <!-- tab 切换（V0.1.116）-->
+    <view class="tabs">
+      <view class="tab {{tab === 'info' ? 'active' : ''}}" data-tab="info" bindtap="onSwitchTab">资料</view>
+      <view class="tab {{tab === 'feeds' ? 'active' : ''}}" data-tab="feeds" bindtap="onSwitchTab">动态</view>
+    </view>
+
+    <!-- 动态列表（tab=feeds，feed.list userId 过滤）-->
+    <block wx:if="{{tab === 'feeds'}}">
+      <view wx:for="{{feeds}}" wx:key="id" class="feed-card bg-white m-2 p-4 rounded-lg shadow">
+        <view class="feed-content">{{item.content}}</view>
+        <view class="feed-meta">{{item.likeCount}}❤️ {{item.commentCount}}💬 · {{item.createdAt}}</view>
+      </view>
+      <view wx:if="{{feedsLoading}}" class="loading-more">加载中...</view>
+      <view wx:if="{{!feedsLoading && feeds.length === 0}}" class="empty">暂无动态</view>
+    </block>
   </block>
 </view>

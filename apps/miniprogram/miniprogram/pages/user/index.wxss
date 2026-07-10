@@ -42,3 +42,12 @@
 .btn-following { background: #fff; color: #999; border: 1rpx solid #ddd; }
 
 .self-tip { text-align: center; color: #bbb; font-size: 26rpx; margin-top: 48rpx; }
+
+/* tab + 动态列表（V0.1.116）*/
+.tabs { display: flex; background: #fff; margin: 24rpx 32rpx 0; border-radius: 12rpx; overflow: hidden; }
+.tab { flex: 1; text-align: center; padding: 20rpx 0; font-size: 28rpx; color: #666; }
+.tab.active { color: #0faf8e; font-weight: 600; border-bottom: 4rpx solid #0faf8e; }
+.feed-card { margin-top: 16rpx; }
+.feed-content { font-size: 28rpx; color: #333; line-height: 1.5; }
+.feed-meta { font-size: 22rpx; color: #999; margin-top: 12rpx; }
+.loading-more, .empty { text-align: center; color: #999; font-size: 26rpx; padding: 60rpx 0; }

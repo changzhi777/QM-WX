@@ -20,8 +20,8 @@ export const feedService = {
    * V0.1.36：sort=hot 按 likeCount desc（红心广场）；topic 过滤（话题页）
    */
   async list(userId: string, input: FeedPageInput) {
-    const { page, pageSize, sort, topic } = input;
-    const where = topic ? { topic } : {};
+    const { page, pageSize, sort, topic, userId: authorId } = input;
+    const where = { ...(topic ? { topic } : {}), ...(authorId ? { userId: authorId } : {}) };
     const orderBy = sort === 'hot' ? { likeCount: 'desc' as const } : { createdAt: 'desc' as const };
     const [feeds, total] = await Promise.all([
       prisma.feed.findMany({
