@@ -1,7 +1,23 @@
 # packages/shared — 前后端共享层
 
 > 📍 面包屑：`QM-WX/` → [`根 CLAUDE.md`](../../CLAUDE.md) → **packages/shared/**（这里）
-> 最近更新：2026-07-08（**V0.1.42** ENDPOINTS sport +3 groupDetail/groupMembers/announceGroup + **V0.1.41** training +3 joinPlan/myActivePlan/leavePlan + admin +2 upsertTrainingPlan/listTrainingPlans + **V0.1.36~39** notification/follow/family/group-buy 模块）— **45 表 / 30 module / 38 页 / 577 单元** — V0.1.34 ENDPOINTS 加 `family` 模块（6 action：createFamily/joinFamily/myFamily/leaveFamily/familyRanking/inviteInfo）+ `goal` 扩 2 action（addFamilyGoal/myFamilyGoals，action 数 4→6））+ V0.1.33 — `device-brands.ts` 改动：`xiaomi` available false→**true**（小米手环可绑定）+ `garmin.desc` 加"BLE 实时心率 + OAuth 历史" + 新增 `BLE_VENDOR_PATTERNS: Record<string, RegExp[]>`（garmin: /garmin|forerunner|fenix|vivoactive|edge/i；xiaomi: /mi\s*band|xiaomi|小米|redmi/i）+ 新增 `matchBleVendor(name): 'garmin' | 'xiaomi' | 'ble'` 函数（按设备名匹配，未中返 'ble'）+ `BleVendor` type — **前后端单一数据源**，前端扫描识别 + 后端 vendor 校验共用；V0.1.32 `ENDPOINTS` 加 `follow` 模块（6 action：follow/unfollow/isFollowing/myFollowing/myFollowers/myCounts）；V0.1.31 `ENDPOINTS` 加 `notification` 模块（4 action：list/unreadCount/markRead/markAllRead）；V0.1.30 `ENDPOINTS` 加 `feed` 模块（6 action：list/myFeeds/publish/like/unlike/comment）；V0.1.29 `ENDPOINTS` 加 `favorite` 模块（4 action：list/add/remove/isFavorited）；V0.1.28 `ENDPOINTS` 加 `goal` 模块（4 action：list/add/remove/myProgress）+ `stats` 加 `myCertificates`（action 数 2→3）；V0.1.27 `ENDPOINTS.stats` 加 `myAnnualReport` action；V0.1.26 已加 `shoes` 模块（5 action）；V0.1.25 已加 `training` 模块（2 action）+ device action 数更新（+myTodayHealth/bindBleDevice/myBindings）+ 新增 `device-brands.ts` 常量：DEVICE_BRANDS 9 品牌 + DEVICE_CATEGORY_LABEL）
+>
+> ## 📋 变更记录 (Changelog)
+>
+> - **2026-07-10** — 🎯 **V0.1.100 GitHub 主线起点** + 🎯 **V0.1.43 微信运动 + 小米 OAuth + 健康持久化 + onboarding 4 步式**：`ENDPOINTS.device` 加 3 action（syncWeRun / myWeRun / myHealthHistory），端点 action 数 13→**16**；`API_BASE.prod` 仍 `qingmulife.cn`；本仓未单独发版本（与主仓同步 v0.1.100 跳号）
+> - **2026-07-08** — **V0.1.42 跑群深化** ENDPOINTS sport +3 action（groupDetail / groupMembers / announceGroup）+ **V0.1.41** training +3 joinPlan/myActivePlan/leavePlan + admin +2 upsertTrainingPlan/listTrainingPlans
+> - **2026-07-04** — **V0.1.34 家庭空间 family** ENDPOINTS 加 `family` 模块（6 action：createFamily/joinFamily/myFamily/leaveFamily/familyRanking/inviteInfo）+ `goal` 扩 2 action（addFamilyGoal/myFamilyGoals，action 数 4→6）
+> - **2026-07-03** — **V0.1.33 BLE 设备品牌识别** `device-brands.ts` 改动：`xiaomi` available false→**true**（小米手环可绑定）+ `garmin.desc` 加"BLE 实时心率 + OAuth 历史" + 新增 `BLE_VENDOR_PATTERNS` + `matchBleVendor(name)` 函数 + `BleVendor` type（**前后端单一数据源**）
+> - **2026-07-03** — **V0.1.32 follow** ENDPOINTS 加 follow 模块（6 action）
+> - **2026-07-03** — **V0.1.31 notification** ENDPOINTS 加 notification 模块（4 action）
+> - **2026-07-03** — **V0.1.30 feed** ENDPOINTS 加 feed 模块（6 action）
+> - **2026-07-03** — **V0.1.29 favorite** ENDPOINTS 加 favorite 模块（4 action）
+> - **2026-07-03** — **V0.1.28 goal + stats.myCertificates** ENDPOINTS 加 goal 模块（4 action）+ stats 加 myCertificates（action 数 2→3）
+> - **2026-07-03** — **V0.1.27 stats.myAnnualReport** ENDPOINTS.stats 加 myAnnualReport action
+> - **2026-07-03** — **V0.1.26 shoes** ENDPOINTS 加 shoes 模块（5 action）
+> - **2026-07-03** — **V0.1.25 pic 3 页 + device 扩 5 action** ENDPOINTS 加 training 模块（2 action）+ device action 数 13 + device-brands.ts 新增（DEVICE_BRANDS 9 品牌 + DEVICE_CATEGORY_LABEL）
+
+> 最近更新：2026-07-10（V0.1.100/V0.1.43 ENDPOINTS device +3 syncWeRun/myWeRun/myHealthHistory + V0.1.41 training +3/admin +2）— **51 表 / 30 module / 42 页 / 580 单元** — V0.1.42 ENDPOINTS sport +3 groupDetail/groupMembers/announceGroup + V0.1.41 training +3 joinPlan/myActivePlan/leavePlan + admin +2 upsertTrainingPlan/listTrainingPlans + V0.1.36~39 notification/follow/family/group-buy 模块 + V0.1.34 ENDPOINTS 加 `family` 模块（6 action）+ `goal` 扩 2 action（addFamilyGoal/myFamilyGoals，action 数 4→6））+ V0.1.33 — `device-brands.ts` 改动：`xiaomi` available false→**true**（小米手环可绑定）+ `garmin.desc` 加"BLE 实时心率 + OAuth 历史" + 新增 `BLE_VENDOR_PATTERNS: Record<string, RegExp[]>`（garmin: /garmin|forerunner|fenix|vivoactive|edge/i；xiaomi: /mi\s*band|xiaomi|小米|redmi/i）+ 新增 `matchBleVendor(name): 'garmin' | 'xiaomi' | 'ble'` 函数（按设备名匹配，未中返 'ble'）+ `BleVendor` type — **前后端单一数据源**，前端扫描识别 + 后端 vendor 校验共用；V0.1.32 `ENDPOINTS` 加 `follow` 模块（6 action：follow/unfollow/isFollowing/myFollowing/myFollowers/myCounts）；V0.1.31 `ENDPOINTS` 加 `notification` 模块（4 action：list/unreadCount/markRead/markAllRead）；V0.1.30 `ENDPOINTS` 加 `feed` 模块（6 action：list/myFeeds/publish/like/unlike/comment）；V0.1.29 `ENDPOINTS` 加 `favorite` 模块（4 action：list/add/remove/isFavorited）；V0.1.28 `ENDPOINTS` 加 `goal` 模块（4 action：list/add/remove/myProgress）+ `stats` 加 `myCertificates`（action 数 2→3）；V0.1.27 `ENDPOINTS.stats` 加 `myAnnualReport` action；V0.1.26 已加 `shoes` 模块（5 action）；V0.1.25 已加 `training` 模块（2 action）+ device action 数更新（+myTodayHealth/bindBleDevice/myBindings）+ 新增 `device-brands.ts` 常量：DEVICE_BRANDS 9 品牌 + DEVICE_CATEGORY_LABEL）
 
 ---
 
@@ -25,7 +41,7 @@ src/
 │   ├── points-rules.ts             # 积分规则（打卡 +N / 注册 +N / 等）
 │   └── device-brands.ts            # **设备品牌清单**（V0.1.25：DEVICE_BRANDS 9 品牌 + DEVICE_CATEGORY_LABEL；**V0.1.33 新增**：BLE_VENDOR_PATTERNS + matchBleVendor + BleVendor type；xiaomi available true）
 └── api-contracts/
-    └── endpoints.ts                # API 端点路径常量（module/action 映射 + actionUrl 工具）
+    └── endpoints.ts                # API 端点路径常量（module/action 映射 + actionUrl 工具；**V0.1.43 +3 action syncWeRun/myWeRun/myHealthHistory**，device action 数 13→16）
 ```
 
 ---
@@ -48,7 +64,7 @@ import {} from '@qm-wx/shared/constants/device-brands';   // V0.1.25 / V0.1.33
 import {} from '@qm-wx/shared/api-contracts';
 ```
 
-### ENDPOINTS 模块清单（截至 2026-07-04 V0.1.34）
+### ENDPOINTS 模块清单（截至 2026-07-10 V0.1.100/V0.1.43）
 
 | 模块 | action 数 | 说明 |
 | --- | ---: | --- |
@@ -62,7 +78,7 @@ import {} from '@qm-wx/shared/api-contracts';
 | admin | 18+ | listUsers/listContents/listProducts/stats/ban/unban/auditLog/statsByTimeRange/exportOrders/exportUsers 等 |
 | upload | 1 | upload |
 | wxpay | 4 | createOrder / notify / queryOrder / refund |
-| **device** | **13**（V0.1.25 +3） | listBindings/startOAuth/unbind/syncWeRun/submitHeartRate + 佳明 4 查询 myActivities/mySleep/myMetrics/myFitnessAge + **V0.1.25 新增**：myTodayHealth（聚合 4 类）/ myBindings（品牌+绑定+佳明自动检测）/ bindBleDevice（vendor=ble；**V0.1.33 schema 加 vendor enum + brandMeta optional，service 按 [userId,vendor] upsert**） |
+| **device** | **16**（V0.1.43 +3） | listBindings/startOAuth/unbind/syncWeRun/submitHeartRate/submitSpO2/myHealthHistory + 佳明 4 查询 myActivities/mySleep/myMetrics/myFitnessAge + **V0.1.25 新增**：myTodayHealth（聚合 4 类）/ myBindings（品牌+绑定+佳明自动检测）/ bindBleDevice（vendor=ble；**V0.1.33 schema 加 vendor enum + brandMeta optional，service 按 [userId,vendor] upsert**）+ **V0.1.43 新增**：syncWeRun（微信运动 session_key AES 解密 upsert）/ myWeRun（查询月度列表 + Cache）/ myHealthHistory（心率/血氧/睡眠历史 type+dateRange 查询） |
 | **stats** | **3**（V0.1.28 +1） | myRunnerStats（年/总跑量汇总 + Cache）+ V0.1.27 新增 myAnnualReport（年汇总 yearDistance/yearCheckins/yearDurationSec/avgPace + 月度分布 12 个月 + longestRun + activeDays）+ **V0.1.28 新增 myCertificates**（动态生成零建表：里程碑证书 100/500/1000/3000km 自动颁发 + 赛事证书 marathon + 下一里程碑进度 nextMilestone + totalDistance/totalCheckins，Cache 120s） |
 | ranking | 1 | groupRankingMulti |
 | **cart** | 5 | add/remove/list/updateQty/clear |
@@ -122,7 +138,7 @@ export function matchBleVendor(name: string): BleVendor {
 ## 🧪 测试
 
 ```bash
-pnpm test              # vitest run — **6 passed**（含 endpoints actionUrl 校验；V0.1.34 加 family/goal 新 action 不破现有测试）
+pnpm test              # vitest run — **6 passed**（含 endpoints actionUrl 校验；V0.1.100 加 device 3 action 不破现有测试）
 pnpm typecheck         # tsc --noEmit
 pnpm build             # tsc -p tsconfig.build.json → dist/
 ```
@@ -150,7 +166,7 @@ pnpm build             # tsc -p tsconfig.build.json → dist/
 - ✅ 前后端共用（后端通过 `workspace:*` 引用，小程序通过构建后产物引用）
 - ✅ `api-contracts/endpoints.ts` 补 4 缺口（方案 B）+ `actionUrl(module, action)` 工具
 - ✅ **`endpoints.test.ts` 6 测试**（vitest 3.2.6 跑通，含 actionUrl 校验）
-- ✅ **`device` 模块端点**（2026-07-01，V0.1.25 +3）— 13 action：listBindings / startOAuth / unbind / syncWeRun / submitHeartRate + 佳明 4 查询 myActivities / mySleep / myMetrics / myFitnessAge + **V0.1.25 新增 myTodayHealth / myBindings / bindBleDevice**
+- ✅ **`device` 模块端点**（V0.1.25 +3，V0.1.43 +3）— 16 action：listBindings / startOAuth / unbind / submitHeartRate / submitSpO2 + 佳明 4 查询 myActivities / mySleep / myMetrics / myFitnessAge + V0.1.25 myTodayHealth / myBindings / bindBleDevice + V0.1.33 品牌识别 vendor + **V0.1.43 新增 syncWeRun / myWeRun / myHealthHistory**（微信运动 + 健康历史）
 - ✅ **`training` 模块端点**（V0.1.25 新增）— 2 action：myPlans / mySportRecords
 - ✅ **`shoes` 模块端点**（V0.1.26 新增）— 5 action：list（含 healthRatio = currentKm/thresholdKm*100）/ add / update / retire（active→retired）/ myStats（total/activeCount/retiredCount/totalKm/retiringSoonCount，retiringSoon = healthRatio≥70%）；thresholdKm 默认 800
 - ✅ **`stats.myAnnualReport` 端点**（V0.1.27 新增）— 年汇总（yearDistance/yearCheckins/yearDurationSec/avgPace）+ 月度分布 12 个月 + longestRun + activeDays；后端单次 groupBy(by date) 性能优化（避免 12 次 aggregate）；前端 `pages/annual-report/` 渐变大卡 + 月度柱状图 + 年份切换 + 分享战报
@@ -172,4 +188,4 @@ pnpm build             # tsc -p tsconfig.build.json → dist/
 
 ---
 
-🤙 改常量只改这里，别在两端各写一份。新增 module 必须先在 `endpoints.ts` 登记 action 列表。V0.1.26 已加 shoes（5 action）+ sport.checkin +shoeId；V0.1.27 已加 stats.myAnnualReport（年汇总+月度分布）；V0.1.28 已加 goal（4 action）+ stats.myCertificates（动态证书）；V0.1.29 已加 favorite（4 action：list 含详情/add upsert/remove/isFavorited 批量红心）；V0.1.30 已加 feed（6 action：list 含作者+liked/myFeeds/publish 可关联 checkinId/like/unlike 幂等/comment 事务内 commentCount+1）；V0.1.31 已加 notification（4 action：list 含 actor/unreadCount 红点/markRead 鉴权仅本人/markAllRead updateMany 幂等）；V0.1.32 已加 follow（6 action：follow upsert 幂等+不能关注自己+复用 notify(type=follow)/unfollow deleteMany/isFollowing 批量查按钮状态/myFollowing/myFollowers 分页含 user/myCounts 用户主页一次拿全 user+counts+isFollowing+isSelf，可查任意 userId）；V0.1.33 已加 matchBleVendor + BLE_VENDOR_PATTERNS + BleVendor type（xiaomi available 开放 + garmin desc 加 BLE 实时心率+OAuth 历史标注）— 前后端单一数据源，前端扫描识别 + 后端 vendor 校验共用；**V0.1.34 已加 family（6 action：createFamily 事务内建 Family+FamilyMember+8 位 inviteCode hex 短码/joinFamily 按 inviteCode 查 + 已有家庭 conflict/myFamily 家庭卡+成员列表含本月跑量/leaveFamily owner 不可离开 badRequest/familyRanking 本周/本月 CN 时区成员跑量榜按距离降序/inviteInfo 返 name+inviteCode）+ goal +2 action（addFamilyGoal 鉴权 member.familyId 必须匹配 forbidden/myFamilyGoals 聚合家庭成员进度，calcGoalProgress 扩 userIds DRY 复用）**；下一步蓝牙真机联调（V0.1.27 调试面板 + V0.1.33 品牌识别就位）+ sport 选鞋 UI 联动（已闭环）+ 目标/证书增强（自定义里程碑 / 多种证书类型）+ 收藏社交向扩展（分享收藏单/合集/红心广场）+ **动态社交向扩展（图文/视频/带打卡/带跑鞋/话题/转发微信群）**+ **通知扩展（goal_complete/系统公告等新 type）**+ **用户主页增强（动态列表 tab / 收藏 tab / 跑量汇总卡 / 关注/粉丝列表分页跳转）** + stats.myAnnualReport/myCertificates 单测（V0.1.29 后端已补，覆盖 39→100%）+ **BLE_VENDOR_PATTERNS 扩展（coros/huawei 等新品牌 pattern）**+ **家庭空间增强（家庭转让/解散 + 家庭路线分享 GPS + 家庭成就 + 家庭目标分享卡片）**。
+🤙 改常量只改这里，别在两端各写一份。新增 module 必须先在 `endpoints.ts` 登记 action 列表。V0.1.26 已加 shoes（5 action）+ sport.checkin +shoeId；V0.1.27 已加 stats.myAnnualReport（年汇总+月度分布）；V0.1.28 已加 goal（4 action）+ stats.myCertificates（动态证书）；V0.1.29 已加 favorite（4 action：list 含详情/add upsert/remove/isFavorited 批量红心）；V0.1.30 已加 feed（6 action：list 含作者+liked/myFeeds/publish 可关联 checkinId/like/unlike 幂等/comment 事务内 commentCount+1）；V0.1.31 已加 notification（4 action：list 含 actor/unreadCount 红点/markRead 鉴权仅本人/markAllRead updateMany 幂等）；V0.1.32 已加 follow（6 action：follow upsert 幂等+不能关注自己+复用 notify(type=follow)/unfollow deleteMany/isFollowing 批量查按钮状态/myFollowing/myFollowers 分页含 user/myCounts 用户主页一次拿全 user+counts+isFollowing+isSelf，可查任意 userId）；V0.1.33 已加 matchBleVendor + BLE_VENDOR_PATTERNS + BleVendor type（xiaomi available 开放 + garmin desc 加 BLE 实时心率+OAuth 历史标注）— 前后端单一数据源，前端扫描识别 + 后端 vendor 校验共用；V0.1.34 已加 family（6 action）+ goal +2 action（addFamilyGoal/myFamilyGoals，calcGoalProgress 扩 userIds DRY 复用）；**V0.1.43 已加 device +3 action（syncWeRun 微信运动 session_key AES 解密 upsert / myWeRun 月度列表 + Cache / myHealthHistory 心率/血氧/睡眠历史 type+dateRange 查询）**；下一步蓝牙真机联调（V0.1.43 retry3+hasHr+去 services 过滤+getDeviceServices 诊断已闭环 + 小米 10Pro 标准 0x180D 心率广播走通 GAP-9 关闭）+ sport 选鞋 UI 联动（已闭环）+ 目标/证书增强（自定义里程碑 / 多种证书类型）+ 收藏社交向扩展（分享收藏单/合集/红心广场）+ 动态社交向扩展（图文/视频/带打卡/带跑鞋/话题/转发微信群）+ 通知扩展（goal_complete/系统公告等新 type）+ 用户主页增强（动态列表 tab / 收藏 tab / 跑量汇总卡 / 关注/粉丝列表分页跳转）+ BLE_VENDOR_PATTERNS 扩展（coros/huawei 等新品牌 pattern）+ 家庭空间增强（家庭转让/解散 + 家庭路线分享 GPS + 家庭成就 + 家庭目标分享卡片）+ GAP-3 覆盖率阈值门禁 + GAP-6 分销二次上线（间推佣金/提现/自提）。

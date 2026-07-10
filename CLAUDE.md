@@ -8,6 +8,14 @@
 
 ## 变更记录 (Changelog)
 
+- **2026-07-10** — 🎯 **GitHub 主线起点 + 微信运动/onboarding/重新激活授权（V0.1.100）**：
+  1. **GitHub 私有 repo 起点**：push `changzhi777/QM-WX`，`origin`=HTTPS+PAT，`ct400`=CT400 Gitea 保留**不同步**，`v0.1.100` 跳号起点（CT400 历史 v0.1.0~42 保留），patch+1 规则文档化；`.gitignore` 排除 `.zcf/plan/history/` + 小米数据包 `*MiFitness*data_copy*`/`*MiFitness*.zip`
+  2. **微信运动闭环**：`utils/werun.ts`（syncWeRunToday wx.getWeRunData→AES→upsert，session_key 过期自动重登重试 / getWeRunHistory / syncWeRunIfFirstToday 每日节流 / cnMonthRange）+ `pages/werun/`（月度柱状图+汇总+手动同步+月份切换）+ 首页 onShow 节流 + onboarding step3 一键同步；后端 `device.syncWeRun`/`myWeRun` V0.1.43 已就绪
+  3. **onboarding 修 2 bug**：① profile 嵌套字段（原顶层传 gender/birthday/height/weight 被 Zod strip 全丢）→ 包进 `profile:{}`；② 头像 `api.uploadFile` 持久化（原存微信临时 CDN 链接会过期）
+  4. **重新激活授权**：`user.resetOnboarding` action（onboardingDone=false）+ mine「重新激活授权」入口替退出登录（**wx.login 总登回原账号，真退出无意义**，改语义为重新走向导填资料/授权）
+  5. **app.ts envVersion 分支**：develop→本地 / trial,release→生产（原硬编码 prod 导致预览扫码连生产旧后端，新功能 unknown action 全失败）
+  6. **3 条教训**：小米数据包差点进 commit（.gitignore 排佳明漏小米，reset 撤回）→ push 前必跑 `git diff --cached --name-only | grep -iE 'MiFitness|zip|env|pem|sql'` 验证；SSH key 失败 2 次→转 HTTPS+PAT 最快；git rm --cached 只删当前 tree（历史 commit 仍含密码，私有 repo 风险低接受）
+
 - **2026-07-08** — 🎯 **训练计划配置化 + 跑群深化 + setErrorHandler 时机修（V0.1.40~42）**：
   1. **V0.1.40 profile 完整实现**（/zcf:workflow 全链路审查）：User +5 字段（gender/birthday/region/height/weight）+ service updateProfile 处理 profile + uploadFile 拼 baseUrl + UserOutputSchema +5 + applyUser 回填；1 迁移；7 问题全修（Phase 1 半成品全链路断裂修复）
   2. **V0.1.41 训练计划配置化**（/zcf:workflow 方案2 轻量配置化）：2 新表 TrainingPlan+UserPlanEnrollment（1人1活跃 @unique）+ admin +2 action（upsertTrainingPlan/listTrainingPlans）+ training +3 action（joinPlan/myActivePlan/leavePlan）+ myPlans 改读 DB + calcPlanProgress 内部 helper（不耦合 goal.calcGoalProgress）+ seed 4 套模板 + 前端进度卡；修 V0.1.40 app.ts typecheck + 删 training.service 死代码；**43→45 表 / 29→30 module / 34→38 页 / 545→572 单元 / 17→18 迁移**
