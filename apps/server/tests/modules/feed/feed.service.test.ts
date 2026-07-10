@@ -221,3 +221,15 @@ describe('feedService.list V0.1.36 sort/topic', () => {
     );
   });
 });
+
+// V0.1.116 userId 过滤（用户主页动态 tab）
+describe('feedService.list V0.1.116 userId 过滤', () => {
+  it('传 userId → where 含 userId', async () => {
+    mocks.prisma.feed.findMany.mockResolvedValue([] as never);
+    mocks.prisma.feed.count.mockResolvedValue(0 as never);
+    await feedService.list('u1', { page: 1, pageSize: 20, userId: 'u2' });
+    expect(mocks.prisma.feed.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ userId: 'u2' }) }),
+    );
+  });
+});

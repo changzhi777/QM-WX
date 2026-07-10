@@ -19,6 +19,7 @@ const mockPrisma = vi.hoisted(() => ({
   order: { findUnique: vi.fn(), update: vi.fn() }, // V0.1.107 自提核销
   distributionOrder: { findMany: vi.fn() }, // V0.1.108 结算单导出
   commissionLog: { groupBy: vi.fn() }, // V0.1.108 累计佣金 groupBy
+  review: { findUnique: vi.fn(), update: vi.fn() }, // V0.1.117 评价回复
   $transaction: vi.fn(), // V0.1.105 提现审核用
 }));
 
@@ -42,6 +43,7 @@ import {
   rejectWithdrawal,
   confirmPickup,
   exportSettlement,
+  addReviewReply,
 } from '../../../src/modules/admin/admin.service.js';
 import { BusinessError } from '../../../src/common/errors.js';
 
@@ -522,5 +524,24 @@ describe('admin.service · exportSettlement', () => {
     // u_big 应该在前（100 > 5）
     expect(dataLines[0]).toContain('u_big');
     expect(dataLines[1]).toContain('u_small');
+  });
+});
+
+// ===== V0.1.117 评价回复 =====
+describe('admin.service · addReviewReply', () => {
+  it('评价不存在 → notFound', async () => {
+    mockPrisma.review.findUnique.mockResolvedValue(null);
+    await expect(addReviewReply({ reviewId: 'r1', content: '回复' })).rejects.toThrow('评价不存在');
+  });
+
+  it('成功回复 → review.update replyContent/repliedAt', async () => {
+    mockPrisma.review.findUnique.mockResolvedValue({ id: 'r1' } as never);
+    mockPrisma.review.update.mockResolvedValue({} as never);
+    const result = await addReviewReply({ reviewId: 'r1', content: '感谢评价' });
+    expect(result).toEqual({ ok: true });
+    expect(mockPrisma.review.update).toHaveBeenCalledWith({
+      where: { id: 'r1' },
+      data: expect.objectContaining({ replyContent: '感谢评价', repliedAt: expect.any(Date) }),
+    });
   });
 });
