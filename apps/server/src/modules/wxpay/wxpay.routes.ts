@@ -121,6 +121,20 @@ export async function wxpayRoutes(app: FastifyInstance) {
       await prisma.$transaction(async (tx) => {
         // 状态机：pending_pay → paid（已在上面 if 校验过，此处再过 assertTransition 双保险）
         assertTransition(order.status as OrderStatus, 'paid');
+
+        // V0.1.118 赛事报名订单：fee 是商家收入，不进用户钱包 → enrollment confirmed（跳过钱包入账）
+        if (order.contentType === 'enroll') {
+          await tx.enrollment.updateMany({
+            where: { orderId: order.id },
+            data: { status: 'confirmed' },
+          });
+          await tx.order.update({
+            where: { id: order.id },
+            data: { status: 'paid', wxTransactionId: resource.transaction_id, paidAt: new Date() },
+          });
+          return;
+        }
+
         const wallet = await walletRepo.ensureWalletInTx(tx, order.userId);
 
         // 微信回调 amount.total 是分，转元

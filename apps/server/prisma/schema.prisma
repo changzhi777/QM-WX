@@ -235,6 +235,9 @@ model Order {
   sourceUserId    String?
   // V0.1.37 团购订单关联（null=普通订单；有值=团购价订单）
   groupBuyId      String?
+  // V0.1.118 赛事报名支付（null=商品订单；'enroll'=赛事报名）
+  contentType     String?
+  contentId       String?
   // V0.1.107 GAP-6 自提核销（订单号末 6 位 + 3 位大写字母数字作 pickupCode）
   pickupCode         String?   @unique
   pickupExpiresAt    DateTime? // 默认 30 天过期
@@ -641,6 +644,7 @@ model Enrollment {
   type      String
   formData  Json
   status    String   @default("submitted") // submitted | confirmed | cancelled
+  orderId   String?  // V0.1.118 赛事报名支付关联（wxpay 回调查 enrollment confirmed）
   createdAt DateTime @default(now())
 
   content Content @relation(fields: [contentId], references: [id])

@@ -94,11 +94,33 @@ Page({
 
     this.setData({ submitting: true });
     try {
-      await api.call('content', 'enroll', {
+      const res = await api.call<{
+        enrollmentId: string;
+        message?: string;
+        payParams?: {
+          timeStamp: string;
+          nonceStr: string;
+          package: string;
+          signType: 'MD5' | 'HMAC-SHA256' | 'RSA';
+          paySign: string;
+        };
+      }>('content', 'enroll', {
         id: content!.id,
         formData: { name: form.name.trim(), phone: form.phone.trim(), remark: form.remark.trim() || undefined },
       });
-      wx.showToast({ title: '已提交，客服会联系您', icon: 'success' });
+      // V0.1.118 fee>0+payment=ON → 后端返 payParams → 拉起微信支付；否则意向单
+      if (res.payParams) {
+        await new Promise<void>((resolve, reject) => {
+          wx.requestPayment({
+            ...res.payParams!,
+            success: () => resolve(),
+            fail: (e) => reject(e),
+          });
+        });
+        wx.showToast({ title: '报名成功', icon: 'success' });
+      } else {
+        wx.showToast({ title: res.message ?? '已提交，客服会联系您', icon: 'success' });
+      }
       this.setData({ showEnroll: false, form: { name: '', phone: '', remark: '' } });
     } catch (err) {
       wx.showToast({ title: (err as Error).message ?? '提交失败', icon: 'none' });

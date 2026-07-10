@@ -14,8 +14,9 @@
 import { prisma } from '../../infra/prisma.js';
 import { Errors } from '../../common/errors.js';
 import { Cache } from '../../infra/cache.js';
-import { walletRepo } from '../wallet/wallet.repo.js';
 import { configRepo } from '../app-config/app-config.repository.js';
+import { userRepo } from '../user/user.repository.js';
+import { unifiedOrder } from '../wxpay/wxpay.service.js';
 import type {
   ContentListInput,
   ContentEnrollInput,
@@ -135,33 +136,53 @@ export const contentService = {
     const needPay = fee > 0 && !!featureFlags.payment;
 
     if (needPay) {
-      const enrollment = await prisma.$transaction(async (tx) => {
-        const wallet = await walletRepo.ensureWalletInTx(tx, userId);
-        if (Number(wallet.balance) < fee) throw Errors.badRequest('余额不足，请充值');
-        await tx.wallet.update({
-          where: { id: wallet.id },
-          data: { balance: { decrement: fee } },
-        });
-        await tx.walletTransaction.create({
-          data: {
-            userId,
-            walletId: wallet.id,
-            type: 'content_enroll',
-            amount: -fee,
-            status: 'success',
-          },
-        });
-        return tx.enrollment.create({
-          data: {
-            userId,
-            contentId: input.id,
-            type: content.type,
-            formData: input.formData,
-            status: 'confirmed',
-          },
-        });
+      // V0.1.118 wxpay 真集成：创建 Order(enroll) + enrollment(submitted) + 统一下单 → 返 payParams
+      const user = await userRepo.findById(userId);
+      if (!user) throw Errors.unauthorized();
+      const order = await prisma.order.create({
+        data: {
+          userId,
+          totalAmount: fee as never,
+          payAmount: fee as never,
+          status: 'pending_pay',
+          payChannel: 'wxpay',
+          contentType: 'enroll',
+          contentId: input.id,
+        },
       });
-      return { enrollmentId: enrollment.id, message: '报名成功，已扣费' };
+      const enrollment = await prisma.enrollment.create({
+        data: {
+          userId,
+          contentId: input.id,
+          type: content.type,
+          formData: input.formData,
+          status: 'submitted',
+          orderId: order.id,
+        },
+      });
+      // 入队超时关单（同 mall，30min 未支付 cancel）
+      const { enqueueCloseOrder } = await import('../../jobs/queue.js');
+      await enqueueCloseOrder(order.id);
+      // wxpay 统一下单（事务外，外部 IO）
+      const wxpay = await unifiedOrder({
+        outTradeNo: order.id,
+        description: `青沐-${content.title ?? '赛事报名'}`.slice(0, 127),
+        totalFen: Math.round(fee * 100),
+        openid: user.openid,
+      });
+      await prisma.order.update({ where: { id: order.id }, data: { prepayId: wxpay.prepayId } });
+      return {
+        enrollmentId: enrollment.id,
+        orderId: order.id,
+        payParams: {
+          timeStamp: wxpay.timestamp,
+          nonceStr: wxpay.nonceStr,
+          package: wxpay.packageStr,
+          signType: 'RSA' as const,
+          paySign: wxpay.sign,
+        },
+        message: '订单已创建，请完成支付',
+      };
     }
 
     // fee=0 或 payment=OFF → 意向单（不扣费）
