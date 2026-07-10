@@ -20,16 +20,16 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/server.ts'],
-      // 阈值：低于当前实测 ~1.58%，给后续重构留缓冲
-      // 当前实测 (V0.1.101 后): lines 79.58 / funcs 85.51 / branches 76.09 / statements 79.58
-      // 注释：routes.ts 普遍 13-19% 拉低全局（单测只测 service 不测 route handler），jobs/ 62.72% 未测
-      // 调高阈值需先补 routes/jobs 测试或改为按 module exclude（暂 YAGNI，留待 GAP-3.2）
+      exclude: ['src/**/*.test.ts', 'src/server.ts', 'src/**/routes.ts', 'src/jobs/**'],
+      // 阈值：基于 V0.1.108 后实测（exclude routes + jobs）
+      // 当前实测: lines 80.73 / funcs 87.31 / branches 75.43 / statements 80.73
+      // V0.1.108 GAP-3.2: 排除 routes.ts（单测只测 service；route handler 走 e2e）+ jobs/（未测；后续用 jobs/ 单测补全再 include）
+      // 留 1.73% 缓冲给后续重构
       thresholds: {
-        lines: 78,
-        functions: 80,
-        branches: 75,
-        statements: 78,
+        lines: 79,
+        functions: 86,
+        branches: 74,
+        statements: 79,
       },
     },
   },
