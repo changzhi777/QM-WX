@@ -34,6 +34,15 @@ export function computeLevel(totalCommission: number, teamCount: number): string
   return 'V0';
 }
 
+/**
+ * 间推佣金比例（V0.1.105 GAP-6）
+ *
+ * 间推佣金 = 直推佣金 × INDIRECT_COMMISSION_RATE
+ * 默认 50%（V2 直推 15% → 间推 7.5%）
+ * MVP 硬编码常量；后续可改为 AppConfig.indirectCommissionRate 配置化
+ */
+export const INDIRECT_COMMISSION_RATE = 0.5;
+
 /** 等级对应的直推佣金率（间推减半） */
 export function levelRate(level: string): number {
   return LEVEL_RULES.find((r) => r.level === level)?.rate ?? 0;
@@ -344,6 +353,91 @@ export async function settleCommission(
     where: { id: distrOrder.userId },
     data: { distributorLevel: newLevel },
   });
+
+  // V0.1.105 GAP-6：间推佣金（直推完成后追加触发）
+  await settleIndirectCommission(tx, orderId);
+}
+
+/**
+ * 间推佣金结算（V0.1.105 GAP-6）
+ *
+ * 2-hop 查询：distOrder.userId（直推上线）的 Team 关系 → inviterId = 间推上线（grandfather）
+ * 间推佣金 = 直推佣金 × INDIRECT_COMMISSION_RATE
+ * 不依赖 Team.level=2 字段（V0.1.24 mall.createOrder 创建逻辑有 @unique 冲突风险，MVP 未触发）
+ *
+ * - 无 Team 关系（直推上线无自己的上线）：跳过
+ * - 间推金额 ≤ 0：跳过
+ * - 幂等：依赖 distOrder.status（settleIndirectCommission 自己维护 settleIndirect 标记在 CommissionLog.type='settle_indirect'）
+ */
+export async function settleIndirectCommission(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+): Promise<void> {
+  const distrOrder = await tx.distributionOrder.findUnique({ where: { orderId } });
+  if (!distrOrder) return;
+
+  // 幂等：已发过间推佣金（CommissionLog.type='settle_indirect' 且 orderId 匹配）则跳过
+  const existingIndirect = await tx.commissionLog.findFirst({
+    where: { orderId, type: 'settle_indirect' },
+  });
+  if (existingIndirect) return;
+
+  // 2-hop 查询：直推上线的 Team.inviterId = 间推上线
+  const directRelation = await tx.team.findUnique({
+    where: { inviteeId: distrOrder.userId }, // inviteeId = 上线（@unique 一人一条）
+  });
+  if (!directRelation) return; // 直推上线没有自己的上线 → 无间推
+
+  const grandfatherId = directRelation.inviterId;
+  if (grandfatherId === distrOrder.userId) return; // 防自环
+
+  // 计算间推佣金 = 直推 × 50%
+  const directCommission = Number(distrOrder.commissionAmount);
+  const indirectAmount = Math.round(directCommission * INDIRECT_COMMISSION_RATE * 100) / 100;
+  if (indirectAmount <= 0) return;
+
+  // 钱包入账 + WalletTransaction + CommissionLog
+  const wallet = await walletRepo.ensureWalletInTx(tx, grandfatherId);
+  await tx.wallet.update({
+    where: { id: wallet.id },
+    data: { balance: { increment: indirectAmount } },
+  });
+  await tx.walletTransaction.create({
+    data: {
+      userId: grandfatherId,
+      walletId: wallet.id,
+      type: 'commission',
+      amount: indirectAmount,
+      orderId,
+      status: 'success',
+    },
+  });
+
+  // 佣金流水累计快照
+  const lastLog = await tx.commissionLog.findFirst({
+    where: { userId: grandfatherId },
+    orderBy: { createdAt: 'desc' },
+    select: { balanceAfter: true },
+  });
+  const balanceAfter = Number(lastLog?.balanceAfter ?? 0) + indirectAmount;
+  await tx.commissionLog.create({
+    data: {
+      userId: grandfatherId,
+      orderId,
+      amount: indirectAmount,
+      type: 'settle_indirect',
+      balanceAfter,
+      note: `间推佣金 ${(INDIRECT_COMMISSION_RATE * 100).toFixed(0)}%`,
+    },
+  });
+
+  // 等级重算（间推上线）
+  const teamCount = await tx.team.count({ where: { inviterId: grandfatherId, level: 1 } });
+  const newLevel = computeLevel(balanceAfter, teamCount);
+  await tx.user.update({
+    where: { id: grandfatherId },
+    data: { distributorLevel: newLevel },
+  });
 }
 
 /**
@@ -403,5 +497,70 @@ export async function clawbackCommission(
   await tx.distributionOrder.update({
     where: { id: distrOrder.id },
     data: { status: 'cancelled' },
+  });
+
+  // V0.1.105 GAP-6：间推佣金冲红（直推冲红完成后追加触发）
+  await clawbackIndirectCommission(tx, orderId);
+}
+
+/**
+ * 间推佣金冲红（V0.1.105 GAP-6）
+ *
+ * 退款时冲红间推佣金：找 settle_indirect 的 CommissionLog 记录 → 钱包扣减 + 负 CommissionLog
+ * - 无 settle_indirect 记录：跳过（从未发过间推佣金）
+ * - 已冲红（clawback_indirect 记录存在）：幂等跳过
+ */
+export async function clawbackIndirectCommission(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+): Promise<void> {
+  // 找间推佣金入账记录（settle_indirect）
+  const indirectLog = await tx.commissionLog.findFirst({
+    where: { orderId, type: 'settle_indirect' },
+  });
+  if (!indirectLog) return; // 未发过间推
+
+  // 幂等：已冲红则跳过
+  const alreadyClawback = await tx.commissionLog.findFirst({
+    where: { orderId, type: 'clawback_indirect' },
+  });
+  if (alreadyClawback) return;
+
+  const amount = Number(indirectLog.amount);
+  const grandfatherId = indirectLog.userId;
+
+  // 钱包扣减（允许负，如实记账）
+  const wallet = await walletRepo.ensureWalletInTx(tx, grandfatherId);
+  await tx.wallet.update({
+    where: { id: wallet.id },
+    data: { balance: { decrement: amount } },
+  });
+  await tx.walletTransaction.create({
+    data: {
+      userId: grandfatherId,
+      walletId: wallet.id,
+      type: 'commission_clawback',
+      amount: -amount,
+      orderId,
+      status: 'success',
+    },
+  });
+
+  // 负 CommissionLog
+  const lastLog = await tx.commissionLog.findFirst({
+    where: { userId: grandfatherId },
+    orderBy: { createdAt: 'desc' },
+    select: { balanceAfter: true },
+  });
+  const balanceAfter = Number(lastLog?.balanceAfter ?? 0) - amount;
+  await tx.commissionLog.create({
+    data: {
+      userId: grandfatherId,
+      orderId,
+      amount: -amount,
+      type: 'clawback_indirect',
+      balanceAfter,
+      note: '间推佣金冲红',
+    },
   });
 }

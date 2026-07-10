@@ -11,9 +11,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('src/infra/prisma.js', () => ({
   prisma: {
     user: { findUnique: vi.fn(), findFirst: vi.fn(), updateMany: vi.fn(), update: vi.fn() },
-    distributionOrder: { aggregate: vi.fn(), count: vi.fn(), findMany: vi.fn(), findUnique: vi.fn() },
-    team: { count: vi.fn(), findMany: vi.fn(), findFirst: vi.fn() },
+    distributionOrder: { aggregate: vi.fn(), count: vi.fn(), findMany: vi.fn(), findUnique: vi.fn(), create: vi.fn() },
+    team: { count: vi.fn(), findMany: vi.fn(), findFirst: vi.fn(), findUnique: vi.fn() },
     commissionLog: { aggregate: vi.fn(), findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn() },
+    wallet: { update: vi.fn() },
+    walletTransaction: { create: vi.fn() },
   },
 }));
 vi.mock('src/modules/wallet/wallet.repo.js', () => ({
@@ -119,8 +121,14 @@ function makeTx(overrides: Record<string, unknown> = {}) {
     },
     wallet: { update: vi.fn().mockResolvedValue({}) },
     walletTransaction: { create: vi.fn().mockResolvedValue({}) },
-    commissionLog: { findFirst: vi.fn(), create: vi.fn().mockResolvedValue({}) },
-    team: { count: vi.fn().mockResolvedValue(0) },
+    commissionLog: {
+      findFirst: vi.fn().mockResolvedValue(null), // 默认无 lastLog/无间推记录 → 间推逻辑跳过
+      create: vi.fn().mockResolvedValue({}),
+    },
+    team: {
+      count: vi.fn().mockResolvedValue(0),
+      findUnique: vi.fn().mockResolvedValue(null), // 默认无 Team 关系 → 间推逻辑跳过
+    },
     user: { update: vi.fn().mockResolvedValue({}) },
     ...overrides,
   } as unknown as import('@prisma/client').Prisma.TransactionClient;
@@ -216,5 +224,156 @@ describe('clawbackCommission', () => {
     });
     await clawbackCommission(tx, 'o1');
     expect(update).not.toHaveBeenCalled();
+  });
+});
+
+// ===== V0.1.105 GAP-6 间推佣金 =====
+
+import {
+  settleIndirectCommission,
+  clawbackIndirectCommission,
+  INDIRECT_COMMISSION_RATE,
+} from 'src/modules/distribution/distribution.service.js';
+
+describe('settleIndirectCommission（V0.1.105 间推佣金）', () => {
+  it('无 DistrOrder → 安全返回', async () => {
+    const tx = makeTx({ distributionOrder: { findUnique: vi.fn().mockResolvedValue(null), update: vi.fn() } });
+    await settleIndirectCommission(tx, 'o1');
+    expect(mockedWalletRepo.ensureWalletInTx).not.toHaveBeenCalled();
+  });
+
+  it('直推上线有 grandfather → 间推入账（直推 10 → 间推 5，50%）', async () => {
+    const tx = makeTx({
+      distributionOrder: {
+        findUnique: vi.fn().mockResolvedValue({
+          id: 'd1', userId: 'u1', commissionAmount: 10, status: 'settled',
+        }),
+        update: vi.fn().mockResolvedValue({}),
+      },
+      team: {
+        count: vi.fn().mockResolvedValue(0),
+        findUnique: vi.fn().mockImplementation((args: { where: { inviteeId: string } }) => {
+          if (args.where.inviteeId === 'u1') return Promise.resolve({ id: 't1', inviterId: 'grandpa', inviteeId: 'u1', level: 1, joinedAt: new Date() });
+          return Promise.resolve(null);
+        }),
+      },
+    });
+    mockedWalletRepo.ensureWalletInTx.mockResolvedValue({ id: 'w_grandpa' } as never);
+
+    await settleIndirectCommission(tx, 'o1');
+
+    // 间推钱包入账应调用 ensureWalletInTx(tx, 'grandpa')
+    expect(mockedWalletRepo.ensureWalletInTx).toHaveBeenCalledWith(tx, 'grandpa');
+    // 间推金额 = 10 × 0.5 = 5
+    const walletUpdate = (tx.wallet.update as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
+    expect(walletUpdate.data.balance).toEqual({ increment: 5 });
+    // commissionLog 应记录 type='settle_indirect' amount=5
+    const logCall = (tx.commissionLog.create as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
+    expect(logCall.data.userId).toBe('grandpa');
+    expect(Number(logCall.data.amount)).toBe(5);
+    expect(logCall.data.type).toBe('settle_indirect');
+  });
+
+  it('直推上线无 Team 关系 → 跳过（无 grandfather）', async () => {
+    const tx = makeTx({
+      distributionOrder: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'd1', userId: 'u1', commissionAmount: 10, status: 'settled' }),
+        update: vi.fn(),
+      },
+      team: { count: vi.fn().mockResolvedValue(0), findUnique: vi.fn().mockResolvedValue(null) },
+    });
+    await settleIndirectCommission(tx, 'o1');
+    expect(mockedWalletRepo.ensureWalletInTx).not.toHaveBeenCalled();
+  });
+
+  it('直推金额 0 → 间推金额 0 跳过', async () => {
+    const tx = makeTx({
+      distributionOrder: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'd1', userId: 'u1', commissionAmount: 0, status: 'settled' }),
+        update: vi.fn(),
+      },
+      team: {
+        count: vi.fn().mockResolvedValue(0),
+        findUnique: vi.fn().mockResolvedValue({ id: 't1', inviterId: 'grandpa', inviteeId: 'u1', level: 1, joinedAt: new Date() }),
+      },
+    });
+    await settleIndirectCommission(tx, 'o1');
+    expect(mockedWalletRepo.ensureWalletInTx).not.toHaveBeenCalled();
+  });
+
+  it('幂等：CommissionLog type=settle_indirect 已存在 → 跳过', async () => {
+    const tx = makeTx({
+      distributionOrder: {
+        findUnique: vi.fn().mockResolvedValue({ id: 'd1', userId: 'u1', commissionAmount: 10, status: 'settled' }),
+        update: vi.fn(),
+      },
+      commissionLog: {
+        findFirst: vi.fn().mockImplementation((args: { where: { type?: string } }) => {
+          if (args.where.type === 'settle_indirect') return Promise.resolve({ id: 'l1' });
+          return Promise.resolve(null);
+        }),
+        create: vi.fn(),
+      },
+    });
+    await settleIndirectCommission(tx, 'o1');
+    expect(mockedWalletRepo.ensureWalletInTx).not.toHaveBeenCalled();
+  });
+});
+
+describe('clawbackIndirectCommission（V0.1.105 间推冲红）', () => {
+  it('无 settle_indirect 记录 → 跳过', async () => {
+    const tx = makeTx({
+      commissionLog: {
+        findFirst: vi.fn().mockResolvedValue(null),
+        create: vi.fn(),
+      },
+    });
+    await clawbackIndirectCommission(tx, 'o1');
+    expect(mockedWalletRepo.ensureWalletInTx).not.toHaveBeenCalled();
+  });
+
+  it('有 settle_indirect 记录 → 钱包扣减 + clawback_indirect log', async () => {
+    const tx = makeTx({
+      commissionLog: {
+        findFirst: vi.fn().mockImplementation((args: { where: { type?: string } }) => {
+          if (args.where.type === 'settle_indirect') return Promise.resolve({ id: 'l_indirect', userId: 'grandpa', amount: 5 });
+          if (args.where.type === 'clawback_indirect') return Promise.resolve(null); // 未冲红
+          return Promise.resolve(null);
+        }),
+        create: vi.fn(),
+      },
+    });
+    mockedWalletRepo.ensureWalletInTx.mockResolvedValue({ id: 'w_grandpa' } as never);
+
+    await clawbackIndirectCommission(tx, 'o1');
+
+    expect(mockedWalletRepo.ensureWalletInTx).toHaveBeenCalledWith(tx, 'grandpa');
+    const walletUpdate = (tx.wallet.update as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
+    expect(walletUpdate.data.balance).toEqual({ decrement: 5 });
+    const createCalls = (tx.commissionLog.create as ReturnType<typeof vi.fn>).mock.calls;
+    expect(createCalls.length).toBeGreaterThan(0);
+    const lastCreate = createCalls[createCalls.length - 1][0];
+    expect(Number(lastCreate.data.amount)).toBe(-5);
+    expect(lastCreate.data.type).toBe('clawback_indirect');
+  });
+
+  it('幂等：clawback_indirect 已存在 → 跳过', async () => {
+    const tx = makeTx({
+      commissionLog: {
+        findFirst: vi.fn().mockImplementation((args: { where: { type?: string } }) => {
+          if (args.where.type === 'clawback_indirect') return Promise.resolve({ id: 'l_clawback' });
+          return Promise.resolve(null);
+        }),
+        create: vi.fn(),
+      },
+    });
+    await clawbackIndirectCommission(tx, 'o1');
+    expect(mockedWalletRepo.ensureWalletInTx).not.toHaveBeenCalled();
+  });
+});
+
+describe('INDIRECT_COMMISSION_RATE 常量', () => {
+  it('默认 50%（0.5）', () => {
+    expect(INDIRECT_COMMISSION_RATE).toBe(0.5);
   });
 });
