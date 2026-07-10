@@ -20,14 +20,14 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/server.ts', 'src/**/routes.ts', 'src/jobs/**'],
-      // 阈值：基于 V0.1.108 后实测（exclude routes + jobs）
-      // 当前实测: lines 80.73 / funcs 87.31 / branches 75.43 / statements 80.73
-      // V0.1.108 GAP-3.2: 排除 routes.ts（单测只测 service；route handler 走 e2e）+ jobs/（未测；后续用 jobs/ 单测补全再 include）
-      // 留 1.73% 缓冲给后续重构
+      exclude: ['src/**/*.test.ts', 'src/server.ts', 'src/**/routes.ts'],
+      // 阈值：基于 V0.1.110 后实测（include jobs/）
+      // 当前实测: lines 80.08 / funcs 86.46 / branches 75.77 / statements 80.08
+      // V0.1.110 GAP-3.3: include src/jobs/**（+7 单测：refresh-certs 2 + close-order 4 + ludong-sync 1）
+      // 留 1.08% 缓冲给后续重构
       thresholds: {
         lines: 79,
-        functions: 86,
+        functions: 85,
         branches: 74,
         statements: 79,
       },
