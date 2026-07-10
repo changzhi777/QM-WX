@@ -26,9 +26,28 @@ vi.mock('src/infra/prisma.js', () => {
         count: vi.fn(),
       },
       appConfig: { findMany: vi.fn().mockResolvedValue([]) },
+      order: { create: vi.fn(), update: vi.fn() },
     },
   };
 });
+
+// V0.1.119 enroll wxpay 路径依赖 mock
+vi.mock('src/modules/app-config/app-config.repository.js', () => ({
+  configRepo: { getLoginConfig: vi.fn().mockResolvedValue({ featureFlags: { payment: true } }) },
+}));
+vi.mock('src/modules/user/user.repository.js', () => ({
+  userRepo: { findById: vi.fn().mockResolvedValue({ id: 'u1', openid: 'oU1' }) },
+}));
+vi.mock('src/modules/wxpay/wxpay.service.js', () => ({
+  unifiedOrder: vi.fn().mockResolvedValue({
+    prepayId: 'prepay-1',
+    timestamp: 'ts',
+    nonceStr: 'ns',
+    packageStr: 'prepay_id=pi',
+    sign: 'sig',
+  }),
+}));
+vi.mock('src/jobs/queue.js', () => ({ enqueueCloseOrder: vi.fn() }));
 
 import { prisma } from 'src/infra/prisma.js';
 import {
@@ -274,6 +293,40 @@ describe('contentService.enroll', () => {
         }),
       }),
     );
+  });
+
+  // V0.1.119 wxpay 真集成（fee>0 + payment=ON → 创建 Order + 下单 + 返 payParams）
+  it('fee>0 + payment=ON → 创建 Order(enroll) + unifiedOrder + 返 payParams', async () => {
+    mockedPrisma.content.findUnique.mockResolvedValue({
+      id: 'c1',
+      status: 'on',
+      type: 'marathon',
+      actionType: 'enroll',
+      fee: { toString: () => '50.00' },
+      title: '城市马拉松',
+    } as never);
+    mockedPrisma.enrollment.findFirst.mockResolvedValue(null);
+    mockedPrisma.order.create.mockResolvedValue({ id: 'order-enroll' } as never);
+    mockedPrisma.enrollment.create.mockResolvedValue({ id: 'e-wxpay' } as never);
+
+    const result = await contentService.enroll('u1', { id: 'c1', formData });
+
+    expect(result.orderId).toBe('order-enroll');
+    expect(result.enrollmentId).toBe('e-wxpay');
+    expect(result.payParams).toMatchObject({ signType: 'RSA', package: 'prepay_id=pi' });
+    // Order contentType=enroll + contentId（区分赛事订单）
+    expect(mockedPrisma.order.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        contentType: 'enroll',
+        contentId: 'c1',
+        status: 'pending_pay',
+        payChannel: 'wxpay',
+      }),
+    });
+    // enrollment submitted + orderId 关联（wxpay 回调查 enrollment confirmed）
+    expect(mockedPrisma.enrollment.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ status: 'submitted', orderId: 'order-enroll' }),
+    });
   });
 });
 
