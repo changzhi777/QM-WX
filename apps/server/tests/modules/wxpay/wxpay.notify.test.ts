@@ -20,8 +20,8 @@ const mocks = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const helpers = require('../../helpers/mockPrisma.ts') as typeof import('../../helpers/mockPrisma.js');
   return helpers.createPrismaMock({
-    models: ['order', 'wallet', 'walletTransaction'],
-    txModels: ['wallet', 'walletTransaction', 'order'],
+    models: ['order', 'wallet', 'walletTransaction', 'enrollment'],
+    txModels: ['wallet', 'walletTransaction', 'order', 'enrollment'],
   });
 });
 
@@ -282,5 +282,32 @@ describe('POST /api/wxpay notify — 事务内 WalletTransaction 写入', () => 
     });
     expect(res.statusCode).toBe(200);
     expect(mockSettleCommission).toHaveBeenCalledWith(mocks.tx, 'order-1');
+  });
+
+  it('赛事订单(contentType=enroll) paid → enrollment confirmed，不进钱包（fee 是商家收入）', async () => {
+    mocks.prisma.order.findUnique.mockResolvedValue({
+      id: 'order-enroll',
+      userId: 'u1',
+      status: 'pending_pay',
+      wxTransactionId: null,
+      contentType: 'enroll',
+    } as never);
+    mocks.tx.enrollment.updateMany.mockResolvedValue({ count: 1 } as never);
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/wxpay',
+      headers: WX_HEADERS,
+      payload: { action: 'notify' },
+    });
+    expect(res.statusCode).toBe(200);
+    // enrollment → confirmed
+    expect(mocks.tx.enrollment.updateMany).toHaveBeenCalledWith({
+      where: { orderId: 'order-enroll' },
+      data: { status: 'confirmed' },
+    });
+    // 不进用户钱包（赛事 fee 是商家收入，非充值）
+    expect(mocks.tx.wallet.update).not.toHaveBeenCalled();
+    expect(mocks.tx.walletTransaction.create).not.toHaveBeenCalled();
   });
 });
