@@ -8,6 +8,7 @@
 
 ## 变更记录 (Changelog)
 
+- **2026-07-10** — 🎯 **GAP-11 断点续扫关闭（V0.1.104）**：根 + apps/server + packages/shared 3 个 CLAUDE.md 「下一步」段清理（移除已关闭 GAP-3 / GAP-8 / GAP-9 / GAP-10 提及）；根 Changelog V0.1.100~103 4 段已含 GAP-3/8/9 关闭；apps/server 387 行 + apps/miniprogram 305 行 + packages/shared 190 行详细段全部覆盖（module 清单 30 / 页面清单 42 / ENDPOINTS 16 module）；3 文件改动 0 代码 + pnpm typecheck 通过。
 - **2026-07-10** — 🎯 **GAP-3 覆盖率阈值门禁关闭（V0.1.102）**：`apps/server/vitest.config.ts` 加 `coverage.thresholds`（lines 78 / functions 80 / branches 75 / statements 78），基于 **V0.1.101 后实测 79.58% lines / 85.51% funcs / 76.09% branches / 79.58% statements**，留 1.58% 缓冲给后续重构；`pnpm test:coverage` exit=0 通过；注释：routes.ts 普遍 13-19% 拉低全局（单测只测 service 不测 route handler），jobs/ 62.72% 未测，调高阈值需先补 routes/jobs 测试或改 exclude（暂 YAGNI 留待 GAP-3.2）；后续建议按 module exclude routes 提全局覆盖至 84%+。
 - **2026-07-10** — 🎯 **GAP-8 module 级 CLAUDE.md 补建关闭（V0.1.103）**：12 个 module 补建本地 CLAUDE.md（参照 distribution 模板 175 行 — 面包屑/职责/入口/action 表/集成点/测试/范式/坑），`cart/points/address/coupon/training/shoes/goal/favorite/feed/notification/follow/family`，每个 ~100-250 行；统一模板统一格式，**2 处 N+1 规避范式**（favorite.list groupBy / family.myFamily+ranking groupBy — 范式累计第 4 次）沉淀到 CLAUDE.md；`User 双 relation @relation("name")` 范式累计 3 次（NotifActor V0.1.31 / Follower V0.1.32 / FamilyOwner V0.1.34）全部记录；`$transaction` 维护计数（feed.likeCount/commentCount）+ `notify()` 集成函数 + `calcGoalProgress` 扩 userIds DRY + `groupBy by userId` 1 次替代 N 次 aggregate — 4 大跨 module 范式完整记录。
 - **2026-07-10** — 🎯 **GitHub 主线起点 + 微信运动/onboarding/重新激活授权（V0.1.100）**：
@@ -596,7 +597,7 @@ graph TD
 - **CT400**：main 推到 bc34aff，v0.1.40/41/42 tag 已推
 - **生产**：qingmulife.cn 运行 V0.1.42
 
-### GAP 清单（GAP-3/8/7 关闭；GAP-11 断点续扫中）
+### GAP 清单（GAP-3/8/11/7 关闭；仅 GAP-6 开放）
 
 1. ✅ ~~GAP-1（P0）user 鉴权~~（已修）
 2. ✅ ~~GAP-2（P1）admin schema 抽离~~（已落地）
@@ -608,7 +609,7 @@ graph TD
 8. ✅ ~~GAP-8（🟢 P3）module 级 CLAUDE.md~~（V0.1.103 关闭 — 12 个 module 补建本地 CLAUDE.md：cart/points/address/coupon/training/shoes/goal/favorite/feed/notification/follow/family；每个 ~100-250 行统一模板）
 9. ✅ ~~GAP-9（🟢 P3）蓝牙 BLE 真机联调~~（V0.1.43 闭环 — 小米 10Pro 标准 0x180D 心率广播走通，utils/ble.ts retry3+hasHr+去 services 过滤+getDeviceServices 诊断就位）
 10. ✅ ~~GAP-10 sport.checkin 前端选鞋入口~~（V0.1.27 闭环）
-11. 🚧 **GAP-11（🟢 P3，本次）**：子 CLAUDE.md 详细段 + 根残留段落断点续扫 — 本次已完成根 CLAUDE.md 关键段 + 4 文件顶部 + index.json；子 CLAUDE.md 详细段（module/表/页面清单）留下次
+11. ✅ ~~GAP-11（🟢 P3）子 CLAUDE.md 详细段 + 根残留段落断点续扫~~（V0.1.104 关闭 — 根 + apps/server + packages/shared 「下一步」段清理已关闭 GAP 提及；module 清单 30 / 页面清单 42 / ENDPOINTS 16 module 详细段全部覆盖）
 
 ---
 
@@ -686,4 +687,4 @@ graph TD
 
 ---
 
-🤙 *Be water, my friend.* **V0.1.42 已推 CT400 + 生产部署**（v0.1.40/41/42 tag，main 推到 bc34aff）；V0.1.40 profile 完整（User +5 字段）+ V0.1.41 训练计划配置化（TrainingPlan+UserPlanEnrollment 表 + training +3 action）+ V0.1.42 跑群深化（Group +announce + sport +3 action）+ setErrorHandler 时机修（Fastify 4 route 前注册，修 401/403/404 返默认格式 bug）；**45 表 / 30 module / 38 页 / 577 单元 / 19 迁移 / 15 缓存热路径**；working tree 已 commit V0.1.24~42；下一个 patch 段：真机验证 + 赛事服务 MVP（业务闭环第 3 块）+ 评价系统（电商闭环最后一块）+ 蓝牙真机联调 + 覆盖率阈值门禁。
+🤙 *Be water, my friend.* **V0.1.103 已推 GitHub**（V0.1.101 init 索引刷新 + V0.1.102 GAP-3 阈值门禁 + V0.1.103 GAP-8 12 module CLAUDE.md）；V0.1.100/43 微信运动+小米 OAuth+健康持久化+蓝牙加固+onboarding 4 步式（**51 表 / 30 module / 42 页 / 580 单元 / 27 迁移**）；**GAP 已关闭 8 项**：GAP-1/2/4/5/7/8/9/10 + GAP-3（V0.1.102）；**仍开放 2 项**：GAP-6（分销二次上线：间推佣金/提现/自提收货）+ GAP-11（断点续扫，V0.1.104+）；**下一个 patch 段**：真机验证 + 赛事服务 MVP（业务闭环第 3 块）+ 评价系统（电商闭环最后一块）。
