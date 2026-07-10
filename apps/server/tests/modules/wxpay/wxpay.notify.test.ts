@@ -53,6 +53,12 @@ const mockWalletRepo = vi.hoisted(() => ({
 }));
 vi.mock('../../../src/modules/wallet/wallet.repo.js', () => ({ walletRepo: mockWalletRepo }));
 
+// mock distribution.service：settleCommission 在分销单（order.sourceUserId）回调时被调
+const mockSettleCommission = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock('../../../src/modules/distribution/distribution.service.js', () => ({
+  settleCommission: mockSettleCommission,
+}));
+
 import { wxpayRoutes } from '../../../src/modules/wxpay/wxpay.routes.js';
 
 async function buildApp() {
@@ -188,5 +194,93 @@ describe('POST /api/wxpay notify — 事务内 WalletTransaction 写入', () => 
     expect(mocks.prisma.$transaction).not.toHaveBeenCalled();
     // 还原
     (mockResource as { trade_state: string }).trade_state = 'SUCCESS';
+  });
+
+  it('unknown action → 400 unknown action', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/wxpay',
+      headers: WX_HEADERS,
+      payload: { action: 'other' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().msg).toContain('unknown action');
+  });
+
+  it('头部缺失 → 400 微信回调头部缺失', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/wxpay',
+      headers: {},
+      payload: { action: 'notify' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().msg).toContain('头部缺失');
+  });
+
+  it('order not found → 404 order not found', async () => {
+    mocks.prisma.order.findUnique.mockResolvedValue(null);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/wxpay',
+      headers: WX_HEADERS,
+      payload: { action: 'notify' },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json().msg).toContain('order not found');
+  });
+
+  it('cancelled 订单 → 关单保护不复活', async () => {
+    mocks.prisma.order.findUnique.mockResolvedValue({
+      id: 'order-1',
+      userId: 'u1',
+      status: 'cancelled',
+      wxTransactionId: null,
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/wxpay',
+      headers: WX_HEADERS,
+      payload: { action: 'notify' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().data).toMatchObject({ ignoredState: 'order_cancelled' });
+    expect(mocks.prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('非 pending_pay 非 cancelled 状态 → ignoredState order_status_xxx', async () => {
+    mocks.prisma.order.findUnique.mockResolvedValue({
+      id: 'order-1',
+      userId: 'u1',
+      status: 'shipped',
+      wxTransactionId: null,
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/wxpay',
+      headers: WX_HEADERS,
+      payload: { action: 'notify' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().data).toMatchObject({ ignoredState: 'order_status_shipped' });
+    expect(mocks.prisma.$transaction).not.toHaveBeenCalled();
+  });
+
+  it('分销单 sourceUserId → 事务内调 settleCommission', async () => {
+    mocks.prisma.order.findUnique.mockResolvedValue({
+      id: 'order-1',
+      userId: 'u1',
+      status: 'pending_pay',
+      wxTransactionId: null,
+      sourceUserId: 'u-referrer',
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/wxpay',
+      headers: WX_HEADERS,
+      payload: { action: 'notify' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(mockSettleCommission).toHaveBeenCalledWith(mocks.tx, 'order-1');
   });
 });

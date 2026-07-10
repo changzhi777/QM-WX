@@ -20,16 +20,17 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/server.ts', 'src/**/routes.ts'],
-      // 阈值：基于 V0.1.111 后实测（jobs/ 全测）
-      // 当前实测: lines 80.92 / funcs 86.74 / branches 75.93 / statements 80.92
-      // V0.1.111 GAP-3.4: +8 单测（garmin 5 + scheduler 3）
-      // 留 1.08% 缓冲给后续重构
+      exclude: ['src/**/*.test.ts', 'src/server.ts'],
+      // 阈值：基于 V0.1.112 后实测（routes 全测纳入统计）
+      // V0.1.112 GAP-3.5: +15 routes 测试文件（switch-action 路由层全覆盖）
+      // routes.ts 从 exclude 移除 → 纳入覆盖率统计（29 个 module routes 全测）
+      // 实测: lines 85.58 / funcs 88.39 / branches 76.98 / statements 85.58
+      // 留 ~1.5% 缓冲给后续重构；wxpay.routes funcs 36%（$transaction happy path 未测）留待后续可选补
       thresholds: {
-        lines: 79,
-        functions: 85,
-        branches: 74,
-        statements: 79,
+        lines: 84,
+        functions: 87,
+        branches: 75,
+        statements: 84,
       },
     },
   },

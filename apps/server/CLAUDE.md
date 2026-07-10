@@ -5,6 +5,7 @@
 >
 > ## 📋 变更记录 (Changelog)
 >
+> - **2026-07-10** — 🎯 **V0.1.112 GAP-3.5 routes 全测 + service 补漏**：① 15 `*.routes.test.ts`（points/notification/group-buy/ranking/goal/cart/training/favorite/shoes/address/stats/follow/family/feed/distribution，+106 单测）+ coverage.exclude 移除 `src/**/routes.ts` → 29 module routes 纳入；范式 vi.hoisted mock service+errors+schema（`.parse` 原样返 payload 聚焦路由分发）+ Fastify inject + onRequest 注入 user；坑：address 带 extend 的 passthrough / follow.myCounts `(target,me)` / feed.myFeeds 解构单独传 / distribution 共享 parseOrBadRequest helper；② wxpay.notify +6 分支（unknown/头部缺失/not found/cancelled/非pending/settleCommission）→ wxpay.routes funcs 36%→100%、lines 95.23%（仅余 L78-82 验签 catch）；③ order.service +8（myOrders 3 + 团购校验 4 + cancel 退积分）→ 52.8%→71.53%（mall 75.57%→84.73%；addPoints 正负分支范式：>0 update 无条件 increment / <0 updateMany 条件 `points>=-change` 防双花）；**全局覆盖 80.92 → 86.44%**（routes 纳入后不降反升）；阈值 79/85/74/79 → **84/87/75/84**；全测试 630 → **755 passed**；剩余 order.service payment=ON 微信下单路径留待可选（需 mock configRepo + unifiedOrder）
 > - **2026-07-10** — 🎯 **V0.1.100 GitHub 主线起点**（origin 切换 GitHub `changzhi777/QM-WX` 私有 HTTPS+PAT / ct400 Gitea 保留不同步 / v0.1.100 跳号起点 CT400 v0.1.0~42 保留 / patch+1 规则文档化；.gitignore 加 MiFitness 数据包排除）+ 🎯 **V0.1.43 微信运动 + 小米 OAuth + 健康持久化 + 蓝牙加固 + onboarding 4 步式激活向导**（**+4 新表 WeRunRecord/HeartRateRecord/SpO2Record/SleepRecord** + User +onboardingDone 字段 + **device +3 action syncWeRun / myWeRun / myHealthHistory** + device.health.ts submitHeartRate + submitSpO2 + 心率 5s 批量 + 首次立即上传 + 小米 OAuth stub + ludong-sync.job.ts；47→**51 表 / 30 module / 38→42 页 / 577→580 单元 / 19→27 迁移**；3 教训：小米数据包 .gitignore 排佳明漏小米 → push 前必跑 `git diff --cached --name-only | grep -iE 'MiFitness|zip|env|pem|sql'` / SSH key 失败转 HTTPS+PAT / `git rm --cached` 不清历史 commit）
 > - **2026-07-08** — **V0.1.42 跑群深化 + setErrorHandler 时机修（V0.1.40~42）** — Group +announce + sport +3 action（groupDetail/groupMembers/announceGroup）+ V0.1.41 TrainingPlan+UserPlanEnrollment + training +3 action + admin +2 + myPlans 改读 DB + calcPlanProgress + V0.1.40 profile 完整（User +5 字段 gender/birthday/region/height/weight）；45 表 / 30 module / 38 页 / 572→577 单元 / 18→19 迁移
 > - **2026-07-07** — **V0.1.39 family 后续（转让家长 + 解散 + 家庭成就）** + **V0.1.37~38 2764 团购 MVP + 深化**
@@ -124,7 +125,7 @@ apps/server/
 │   ├── sql/permissions.sql           # 角色权限参考
 │   └── migrations/                   # Prisma 迁移历史（27 个，见下方表清单）
 ├── tests/
-│   ├── modules/                      # 单元测试（vi.mock Prisma/Redis）— **580 tests**（V0.1.42 577 + V0.1.43 device +3 weRun + myWeRun + myHealthHistory）
+│   ├── modules/                      # 单元测试（vi.mock Prisma/Redis）— **755 tests**（V0.1.112 GAP-3.5 routes 全测 + V0.1.113 order.service 补漏）
 │   │   ├── user/sport/mall/content/wallet/weekly-report/admin/app-config...
 │   │   ├── wxpay/{service,notify}.test.ts
 │   │   ├── mall/{order,refund}.service.test.ts
@@ -359,7 +360,7 @@ docker run -p 3000:3000 --env-file .env qm-wx-server
 - ✅ **Wallet repo**：ensureWallet / ensureWalletInTx 复用入口（**被 settle/clawback 复用，V0.1.24**）
 - ✅ **CLI 2 个**：`pnpm reconcile -- YYYY-MM-DD` 微信账单比对 + `pnpm garmin-import` 佳明全量入 Checkin（500/事务）
 - ✅ Dockerfile 多阶段构建
-- ✅ **580 单元测试** + 49 e2e（10 files）/ **总覆盖 82.11%**
+- ✅ **755 单元测试** + 49 e2e（10 files）/ **总覆盖 86.44%**（V0.1.113 service 补漏后）
 - ✅ CI/CD（GitHub Actions ci.yml + deploy-staging.yml，拆 4 parallel job）
 - ✅ **wxpay** refund + notify + 幂等 + 关单保护全链路 + **notify 触发 settleCommission**
 - ✅ **缓存基础设施**（V0.1.x）：`infra/cache.ts` Cache.wrap 接入 **15 热路径**

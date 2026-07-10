@@ -28,6 +28,8 @@ vi.mock('src/infra/prisma.js', () => {
       appConfig: { findMany: vi.fn(), findUnique: vi.fn() },
       user: userMethods,
       pointsRecord: pointsRecordMethods,
+      groupBuy: { findUnique: vi.fn() },
+      groupBuyMember: { findUnique: vi.fn() },
       $transaction: vi.fn((fn) => fn(txMock)),
       _tx: txMock,
     },
@@ -160,6 +162,22 @@ describe('orderService.cancel', () => {
 
     await expect(orderService.cancel('u1', 'o1')).rejects.toThrow('不是你的订单');
   });
+
+  it('pending_pay + 已扣积分 → 取消时退积分（addPoints 正数退回）', async () => {
+    mockedPrisma.order.findUnique.mockResolvedValue({
+      id: 'o1', userId: 'u1', status: 'pending_pay', pointsUsed: 500,
+    } as never);
+
+    await orderService.cancel('u1', 'o1');
+
+    // pointsUsed > 0 → addPoints 正数退回走 tx.user.update（increment 500；扣减才走 updateMany 条件防双花）
+    expect(tx.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'u1' }, data: { points: { increment: 500 } } }),
+    );
+    expect(mockedPrisma.order.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ status: 'cancelled' }) }),
+    );
+  });
 });
 
 // ===== V0.1.107 GAP-6 自提核销码 =====
@@ -183,5 +201,99 @@ describe('generatePickupCode（V0.1.107 纯函数）', () => {
   it('100 次生成唯一性（碰撞概率 < 0.1%）', () => {
     const codes = new Set(Array.from({ length: 100 }, () => generatePickupCode('orderid12345')));
     expect(codes.size).toBeGreaterThan(95);
+  });
+});
+
+// ===== myOrders（V0.1.112 补：列表 + status 过滤 + 分页）=====
+
+describe('orderService.myOrders', () => {
+  it('返列表 + total + Decimal/Date 序列化', async () => {
+    mockedPrisma.order.findMany.mockResolvedValue([
+      {
+        id: 'o1', userId: 'u1', status: 'paid',
+        totalAmount: 100, payAmount: 100, pointsUsed: 0,
+        payChannel: 'points', createdAt: new Date('2026-07-10T00:00:00Z'),
+        items: [],
+      },
+    ] as never);
+    mockedPrisma.order.count.mockResolvedValue(1 as never);
+
+    const result = await orderService.myOrders('u1', { page: 1, pageSize: 10 });
+
+    expect(result.total).toBe(1);
+    expect(result.page).toBe(1);
+    expect(result.pageSize).toBe(10);
+    expect(result.list[0].totalAmount).toBe('100');
+    expect(result.list[0].createdAt).toBe('2026-07-10T00:00:00.000Z');
+    expect(mockedPrisma.order.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { userId: 'u1' },
+      skip: 0,
+      take: 10,
+    }));
+  });
+
+  it('status 过滤 → where 含 status（count 也用同 where，修 N+1 不一致）', async () => {
+    mockedPrisma.order.findMany.mockResolvedValue([] as never);
+    mockedPrisma.order.count.mockResolvedValue(0 as never);
+
+    await orderService.myOrders('u1', { page: 1, pageSize: 10, status: 'paid' });
+
+    // list 与 count 必须用相同 where（否则 total 与 list 不一致）
+    expect(mockedPrisma.order.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: { userId: 'u1', status: 'paid' },
+    }));
+    expect(mockedPrisma.order.count).toHaveBeenCalledWith({ where: { userId: 'u1', status: 'paid' } });
+  });
+
+  it('分页 skip = (page-1)*pageSize', async () => {
+    mockedPrisma.order.findMany.mockResolvedValue([] as never);
+    mockedPrisma.order.count.mockResolvedValue(0 as never);
+
+    await orderService.myOrders('u1', { page: 3, pageSize: 5 });
+
+    expect(mockedPrisma.order.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      skip: 10, // (3-1) * 5
+      take: 5,
+    }));
+  });
+});
+
+// ===== create 团购校验（V0.1.37，校验阶段抛错不触达支付/分销）=====
+
+describe('orderService.create 团购校验', () => {
+  it('团购不存在 → notFound', async () => {
+    mockedPrisma.groupBuy.findUnique.mockResolvedValue(null);
+    await expect(
+      orderService.create('u1', { items: [{ productId: 'p1', qty: 1 }], groupBuyId: 'gb-x' }),
+    ).rejects.toThrow('团购不存在');
+  });
+
+  it('团购未成团（status=active）→ badRequest', async () => {
+    mockedPrisma.groupBuy.findUnique.mockResolvedValue({
+      id: 'gb1', status: 'active', productId: 'p1', groupPrice: 50,
+    } as never);
+    await expect(
+      orderService.create('u1', { items: [{ productId: 'p1', qty: 1 }], groupBuyId: 'gb1' }),
+    ).rejects.toThrow('团购未成团');
+  });
+
+  it('未参与团购（member 不存在）→ forbidden', async () => {
+    mockedPrisma.groupBuy.findUnique.mockResolvedValue({
+      id: 'gb1', status: 'reached', productId: 'p1', groupPrice: 50,
+    } as never);
+    mockedPrisma.groupBuyMember.findUnique.mockResolvedValue(null);
+    await expect(
+      orderService.create('u1', { items: [{ productId: 'p1', qty: 1 }], groupBuyId: 'gb1' }),
+    ).rejects.toThrow('未参与该团购');
+  });
+
+  it('团购商品不匹配（productId != gb.productId）→ badRequest', async () => {
+    mockedPrisma.groupBuy.findUnique.mockResolvedValue({
+      id: 'gb1', status: 'reached', productId: 'p1', groupPrice: 50,
+    } as never);
+    mockedPrisma.groupBuyMember.findUnique.mockResolvedValue({ id: 'm1' } as never);
+    await expect(
+      orderService.create('u1', { items: [{ productId: 'p2', qty: 1 }], groupBuyId: 'gb1' }),
+    ).rejects.toThrow('团购订单仅含团购商品');
   });
 });
