@@ -20,9 +20,17 @@ App({
   },
 
   async onLaunch() {
-    // 1. 注入 baseUrl（生产 qingmulife.cn）
-    //    TODO：本地起 server 后恢复 envVersion 分支（develop→localhost / trial,release→prod）
-    (wx as unknown as { $apiBase: string }).$apiBase = API_BASE.prod;
+    // 1. 注入 baseUrl（V0.1.44：恢复 envVersion 分支）
+    //    - develop（开发者工具 / 预览扫码）→ 本地后端，测最新代码
+    //    - trial / release（体验版 / 正式版）→ 生产 qingmulife.cn
+    let envVersion = 'develop';
+    try {
+      envVersion = wx.getAccountInfoSync().miniProgram.envVersion;
+    } catch {
+      // 部分基础库不支持 → 当作开发版（连本地）
+    }
+    const isDev = envVersion === 'develop';
+    (wx as unknown as { $apiBase: string }).$apiBase = isDev ? API_BASE.dev : API_BASE.prod;
 
     // 2. 检查隐私协议（提审要求首启弹）
     if (!wx.getStorageSync('privacyAgreed')) {

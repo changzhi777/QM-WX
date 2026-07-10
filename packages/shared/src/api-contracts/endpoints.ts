@@ -22,6 +22,7 @@ export const ENDPOINTS = {
     updateProfile: '/api/user',
     bindApps: '/api/user',
     completeOnboarding: '/api/user', // V0.1.43 完成激活向导
+    resetOnboarding: '/api/user', // V0.1.44 重新激活（重走向导）
   },
   auth: {
     refresh: '/api/auth/refresh',

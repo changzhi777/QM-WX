@@ -526,7 +526,7 @@ graph TD
 ## 📌 当前未决事项
 
 > 📦 **版权**：湖南青沐生命科技有限公司（Hunan Qingmu Life Technology Co., Ltd.）
-> 🏷️ **版本管理**：`git tag v{MAJOR}.{MINOR}.{PATCH}` 打在每个 commit 段最后。**约定：每次 commit 段 PATCH 自动 +1**（bug 修 / 文档 / 重构 / 测试补漏都算）。
+> 🏷️ **版本管理**：`git tag v{MAJOR}.{MINOR}.{PATCH}` 打在每个 commit 段最后。**约定：每次 commit 段 PATCH 自动 +1**（bug 修 / 文档 / 重构 / 测试补漏都算）。**🎯 V0.1.100 起 GitHub 主线**（`origin` = GitHub `changzhi777/QM-WX` 私有；CT400 Gitea 暂保留不同步）；初始 `v0.1.100`，后续 `v0.1.101 / 102 …` patch 递增。
 > 当前 tag：**`v0.1.23`** 已 push（个人中心电商版）；**working tree 待 commit V0.1.24 + V0.1.25 + V0.1.26 + V0.1.27 + V0.1.28 + V0.1.29 + V0.1.30**（V0.1.24: distribution 三表 + 全闭环集成 + 天天跑首页；V0.1.25: pic 3 页 + training module + device 扩 5 action + 蓝牙 BLE；V0.1.26: 跑鞋 Shoe 表 + sport.checkin 集成 incrementShoeKm + shoes module + 跑鞋前端页；V0.1.27: sport 跑鞋 picker + 年度报告页 + device-bind 调试面板，零 schema 改；V0.1.28: Goal 表 + goal module + stats.myCertificates + 目标/证书 2 前端页；V0.1.29: Favorite 表 + favorite module + 收藏前端页 + stats.service 覆盖 39→100%；V0.1.30: Feed+FeedLike+FeedComment 三表 + feed module（6 action）+ 动态前端页 + feed +10 单测）。CT400 待推 V0.1.18~30 tag。详细规则见 [`CHANGELOG.md` 顶部"版本规则"段](CHANGELOG.md)。
 
 1. ✅ **业务方向** — 青沐·大健康生活方式平台（已确认）

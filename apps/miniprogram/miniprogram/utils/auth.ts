@@ -52,7 +52,7 @@ async function doLogin(): Promise<{ user: User; accessToken: string }> {
   return { user: result.user, accessToken: result.accessToken };
 }
 
-/** 退出登录（清 storage + 跳首页） */
+/** 退出登录（清 storage + 跳首页）— V0.1.44：主入口改用「重新激活」，此函数保留备用 */
 export function logout() {
   const gd = getApp().globalData as GlobalData;
   wx.removeStorageSync('accessToken');

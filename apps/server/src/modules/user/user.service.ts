@@ -160,6 +160,16 @@ export const userService = {
     await Cache.del(meCacheKey(userId));
     return { ok: true };
   },
+
+  /** V0.1.44 重新激活（onboardingDone = false，前端重走向导填资料/授权微信运动等）*/
+  async resetOnboarding(userId: string) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { onboardingDone: false },
+    });
+    await Cache.del(meCacheKey(userId));
+    return { ok: true };
+  },
 };
 
 /** Prisma row → API output（含 ISO 时间） */

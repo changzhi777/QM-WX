@@ -60,6 +60,13 @@ export async function userRoutes(app: FastifyInstance) {
           return { code: 0, data };
         }
 
+        case 'resetOnboarding': {
+          // V0.1.44 重新激活：onboardingDone=false，前端跳向导重新填资料/授权
+          const authUser = await requireLogin(req);
+          const data = await userService.resetOnboarding(authUser.id);
+          return { code: 0, data };
+        }
+
         default:
           return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
       }

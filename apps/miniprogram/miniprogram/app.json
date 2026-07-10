@@ -40,7 +40,8 @@
     "pages/group-buy-detail/index",
     "pages/health-history/index",
     "pages/data-import-guide/index",
-    "pages/onboarding/index"
+    "pages/onboarding/index",
+    "pages/werun/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",

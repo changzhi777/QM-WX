@@ -94,6 +94,11 @@
       <view class="arrow">›</view>
     </view>
 
+    <view class="list-item" bindtap="goWeRun">
+      <view class="lbl">微信运动</view>
+      <view class="arrow">›</view>
+    </view>
+
     <view class="list-item" bindtap="goOnboarding">
       <view class="lbl">激活向导</view>
       <view class="arrow">›</view>
@@ -131,8 +136,8 @@
     </view>
   </view>
 
-  <view class="logout" wx:if="{{user}}" bindtap="onTapLogout">
-    退出登录
+  <view class="logout" wx:if="{{user}}" bindtap="onTapReactivate">
+    重新激活授权
   </view>
   </block>
 </view>

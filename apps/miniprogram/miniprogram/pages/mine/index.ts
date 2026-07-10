@@ -1,6 +1,6 @@
 // pages/mine/index.ts（V0.1.35 精简：运动/商城入口分散到对应 tab，mine 仅留个人/设置）
 import { api } from '../../services/api';
-import { logout, ensureLogin } from '../../utils/auth';
+import { ensureLogin } from '../../utils/auth';
 import type { User, FeatureFlagsConfig } from '@qm-wx/shared';
 void api;
 
@@ -180,6 +180,10 @@ Page({
     wx.navigateTo({ url: '/pages/device-bind/index' });
   },
 
+  goWeRun() {
+    wx.navigateTo({ url: '/pages/werun/index' });
+  },
+
   goOnboarding() {
     wx.navigateTo({ url: '/pages/onboarding/index' });
   },
@@ -196,12 +200,22 @@ Page({
     ensureLogin().then(() => this.refresh());
   },
 
-  onTapLogout() {
+  /** V0.1.44 重新激活授权（重置 onboardingDone → 跳向导重新填资料/授权微信运动）*/
+  onTapReactivate() {
     wx.showModal({
-      title: '退出登录',
-      content: '确定要退出当前账号吗？',
-      success: (res) => {
-        if (res.confirm) logout();
+      title: '重新激活',
+      content: '将重新填写个人资料并完成授权（头像/微信运动等），是否继续？',
+      success: async (res) => {
+        if (!res.confirm) return;
+        try {
+          await api.call('user', 'resetOnboarding', {});
+          const app = getApp();
+          const u = app.globalData.user as ({ onboardingDone?: boolean } | null);
+          if (u) u.onboardingDone = false;
+          wx.navigateTo({ url: '/pages/onboarding/index' });
+        } catch {
+          wx.showToast({ title: '操作失败', icon: 'none' });
+        }
       },
     });
   },

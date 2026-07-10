@@ -63,14 +63,28 @@
     <view class="skip-btn" bindtap="skipDevice">跳过</view>
   </view>
 
-  <!-- Step 3 导入 -->
+  <!-- Step 3 同步运动数据 -->
   <view class="step-content" wx:if="{{step === 3}}">
-    <view class="section-title">导入历史数据（可选）</view>
+    <view class="section-title">同步运动数据（可选）</view>
+
+    <!-- V0.1.44 微信运动一键同步（wx.getWeRunData → syncWeRun） -->
+    <view class="guide-card {{werunSynced ? 'done' : ''}}" bindtap="onSyncWeRun">
+      <view class="guide-icon">👟</view>
+      <view class="guide-text">
+        <view class="guide-title">微信运动同步</view>
+        <view class="guide-desc" wx:if="{{werunSynced}}">✓ 已同步 {{werunSyncDays}} 天步数</view>
+        <view class="guide-desc" wx:elif="{{werunSyncing}}">同步中…</view>
+        <view class="guide-desc" wx:else>一键导入近 30 天步数，首页健康卡即可显示</view>
+      </view>
+      <view class="guide-arrow">{{werunSynced ? '✓' : '›'}}</view>
+    </view>
+
+    <!-- 更多数据导入（小米数据包 / 佳明 / 其他品牌） -->
     <view class="guide-card" bindtap="goImportGuide">
       <view class="guide-icon">📥</view>
       <view class="guide-text">
-        <view class="guide-title">数据导入指南</view>
-        <view class="guide-desc">小米数据包上传 / 微信运动同步 / 佳明导入</view>
+        <view class="guide-title">更多数据导入</view>
+        <view class="guide-desc">小米数据包上传 / 佳明历史 / 其他品牌</view>
       </view>
       <view class="guide-arrow">›</view>
     </view>

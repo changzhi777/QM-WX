@@ -1,0 +1,50 @@
+<view class="page">
+  <!-- 月份切换 -->
+  <view class="month-bar">
+    <view class="arrow" bindtap="prevMonth">‹</view>
+    <view class="month-label">{{monthLabel}}</view>
+    <view class="arrow" bindtap="nextMonth">›</view>
+  </view>
+
+  <!-- 汇总卡 -->
+  <view class="summary-card">
+    <view class="summary-item">
+      <view class="num">{{totalSteps}}</view>
+      <view class="lbl">总步数</view>
+    </view>
+    <view class="summary-item">
+      <view class="num">{{totalKm}}</view>
+      <view class="lbl">总里程(km)</view>
+    </view>
+    <view class="summary-item">
+      <view class="num">{{avgSteps}}</view>
+      <view class="lbl">日均步数</view>
+    </view>
+    <view class="summary-item">
+      <view class="num">{{days}}</view>
+      <view class="lbl">活跃天数</view>
+    </view>
+  </view>
+
+  <!-- 柱状图 -->
+  <view class="chart-card">
+    <view class="chart-title">每日步数</view>
+    <view wx:if="{{loading}}" class="empty">加载中…</view>
+    <view wx:elif="{{records.length === 0}}" class="empty">本月暂无数据，点击下方按钮同步微信运动</view>
+    <scroll-view scroll-x class="chart-scroll" wx:else>
+      <view class="chart-bars">
+        <view class="bar-col" wx:for="{{records}}" wx:key="date">
+          <view class="bar" style="height:{{item.barHeight}}%"></view>
+          <view class="bar-day">{{item.dayLabel}}</view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
+  <!-- 同步按钮 -->
+  <button class="sync-btn {{syncing ? 'loading' : ''}}" bindtap="onSync">
+    {{syncing ? '同步中…' : '同步微信运动'}}
+  </button>
+
+  <view class="tip">数据来源：微信运动。每日首次进入小程序自动同步。</view>
+</view>

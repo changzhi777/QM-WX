@@ -1,6 +1,7 @@
 // pages/index/index.ts
 import { api } from '../../services/api';
 import { ensureLogin } from '../../utils/auth';
+import { syncWeRunIfFirstToday } from '../../utils/werun';
 
 Page({
   data: {
@@ -53,6 +54,8 @@ Page({
     } else {
       this.loadData();
       this.startHealthRefresh(); // V0.1.43 定时刷今日健康（15s，首页准实时）
+      // V0.1.44 每日首次进首页同步微信运动（节流 + 静默，失败不阻塞首页）
+      syncWeRunIfFirstToday().catch(() => {});
     }
   },
 
