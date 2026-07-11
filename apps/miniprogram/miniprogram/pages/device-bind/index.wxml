@@ -26,6 +26,23 @@
     </view>
   </view>
 
+  <!-- V0.1.124 体脂秤测量卡 -->
+  <view class="hr-card scale-card" wx:if="{{liveScale !== null}}">
+    <view class="hr-label">⚖️ 体重 {{liveScale.stabilized ? '✓ 已稳定' : '⏳ 测量中...'}}</view>
+    <view class="hr-value">{{liveScale.weight}}<text class="u">kg</text></view>
+    <view class="hr-meta" wx:if="{{liveScale.bodyFat}}">
+      <text class="hr-meta-item">📊 BMI {{liveScale.bmi}}</text>
+      <text class="hr-meta-item">🔥 体脂 {{liveScale.bodyFat}}%</text>
+      <text class="hr-meta-item">💪 肌肉 {{liveScale.muscle}}kg</text>
+    </view>
+    <view class="hr-meta" wx:if="{{liveScale.bodyFat}}">
+      <text class="hr-meta-item">🦴 骨量 {{liveScale.bone}}kg</text>
+      <text class="hr-meta-item">💧 水分 {{liveScale.water}}%</text>
+      <text class="hr-meta-item">⚡ 内脏脂肪 {{liveScale.visceralFat}}</text>
+    </view>
+    <button class="scale-save-btn {{liveScale.stabilized ? '' : 'disabled'}}" bindtap="onSaveScaleData" disabled="{{!liveScale.stabilized}}">保存数据</button>
+  </view>
+
   <!-- 已绑定设备 -->
   <view class="section" wx:if="{{bindings.length > 0}}">
     <view class="section-title">已绑定设备</view>

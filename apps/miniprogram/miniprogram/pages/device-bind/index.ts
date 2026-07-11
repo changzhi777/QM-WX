@@ -14,6 +14,13 @@ import {
   closeBleAdapter,
   type BleDevice,
 } from '../../utils/ble';
+import {
+  connectScale,
+  subscribeScaleData,
+  disconnectScale,
+  matchScaleVendor,
+  calcBodyComposition,
+} from '../../utils/scale';
 import { DEVICE_CATEGORY_LABEL, matchBleVendor, type DeviceBrand } from '@qm-wx/shared';
 
 /** 扫描结果项（V0.1.33 加品牌识别字段） */
@@ -77,6 +84,9 @@ Page({
     debugVisible: false,
     debugLog: [] as string[],
     hrCount: 0,
+    // V0.1.124 体脂秤
+    liveScale: null as { weight: number; bodyFat?: number; bmi?: number; muscle?: number; bone?: number; water?: number; visceralFat?: number; impedance?: number; stabilized: boolean } | null,
+    scaleConnected: false,
     // V0.1.43 微信运动步数（方案 3）
     werunRecords: [] as { date: string; step: number; km: number }[],
     werunSummary: { totalSteps: 0, totalKm: 0, days: 0 } as { totalSteps: number; totalKm: number; days: number },
@@ -155,7 +165,8 @@ Page({
         .filter((d) => d.name && d.name !== '未知设备') // 过滤空名/未命名设备
         .map((d) => {
           const detectedBrand = matchBleVendor(d.name);
-          return { ...d, detectedBrand, brandLabel: BRAND_LABEL[detectedBrand] ?? '通用' };
+          const isScale = matchScaleVendor(d.name);
+          return { ...d, detectedBrand: isScale ? 'mi_scale' : detectedBrand, brandLabel: isScale ? '体脂秤' : (BRAND_LABEL[detectedBrand] ?? '通用') };
         })
         .sort((a, b) => {
           // 品牌命中的排前（garmin/xiaomi 优先于 ble 通用）
@@ -183,6 +194,12 @@ Page({
     this.setData({ connecting: true });
     wx.showLoading({ title: '连接中...' });
     this.pushLog(`连接 ${device.name}...`);
+
+    // V0.1.124 体脂秤走独立流程（connectScale 自动检测 0x181B/0x181D）
+    if (device.detectedBrand === 'mi_scale' || matchScaleVendor(device.name)) {
+      return this.connectScaleDevice(device);
+    }
+
     try {
       await connectDevice(device.deviceId);
       this.pushLog('✓ 已连接，读取电量/设备信息...');
@@ -304,6 +321,76 @@ Page({
       wx.hideLoading();
       this.setData({ connecting: false });
       wx.showToast({ title: (e as Error).message || '连接失败', icon: 'none' });
+    }
+  },
+
+  /** V0.1.124 体脂秤连接 + 订阅数据（独立流程） */
+  async connectScaleDevice(device: FoundDevice) {
+    try {
+      const { serviceId, characteristicId, type } = await connectScale(device.deviceId);
+      this.pushLog(`✓ 体脂秤已连接，Service ${type === 'body_composition' ? '0x181B（体成分）' : '0x181D（体重）'}`);
+      this.setData({ scanVisible: false, connecting: false, scaleConnected: true, boundBleDeviceId: device.deviceId });
+      wx.hideLoading();
+      wx.showToast({ title: '请站上秤测量', icon: 'none' });
+
+      subscribeScaleData(device.deviceId, serviceId, characteristicId, (data) => {
+        // 拿到实时测量数据
+        if (data.impedance) {
+          // 体成分秤：有阻抗 → 算体成分
+          const app = getApp() as { globalData: { user?: { gender?: string; birthday?: string; height?: number } } };
+          const u = app.globalData.user;
+          const gender = (u?.gender === 'female' ? 'female' : 'male') as 'male' | 'female';
+          const height = u?.height ?? 170;
+          const age = u?.birthday ? new Date().getFullYear() - parseInt(u.birthday.slice(0, 4)) : 30;
+          const bodyData = calcBodyComposition(data, height, gender, age);
+          this.setData({
+            liveScale: {
+              weight: bodyData.weight, bodyFat: bodyData.bodyFat, bmi: bodyData.bmi,
+              muscle: bodyData.muscle, bone: bodyData.bone, water: bodyData.water,
+              visceralFat: bodyData.visceralFat, impedance: bodyData.impedance,
+              stabilized: data.stabilized,
+            },
+          });
+        } else {
+          // 体重秤：只显示体重
+          this.setData({ liveScale: { weight: data.weight, stabilized: data.stabilized } });
+        }
+      }, (err) => {
+        this.pushLog(`⚠ 秤数据订阅失败: ${err.errMsg}`);
+      });
+    } catch (e) {
+      wx.hideLoading();
+      this.setData({ connecting: false });
+      wx.showToast({ title: (e as Error).message || '体脂秤连接失败', icon: 'none' });
+    }
+  },
+
+  /** V0.1.124 保存体脂秤数据（调 device.submitBodyComposition） */
+  async onSaveScaleData() {
+    const scale = this.data.liveScale;
+    if (!scale || !scale.stabilized) {
+      wx.showToast({ title: '请等待体重稳定', icon: 'none' });
+      return;
+    }
+    try {
+      await api.call('device', 'submitBodyComposition', {
+        weight: scale.weight,
+        bodyFat: scale.bodyFat,
+        bmi: scale.bmi,
+        muscle: scale.muscle,
+        bone: scale.bone,
+        water: scale.water,
+        visceralFat: scale.visceralFat,
+        impedance: scale.impedance,
+      });
+      wx.showToast({ title: '已保存', icon: 'success' });
+      // 断开连接
+      if (this.data.boundBleDeviceId) {
+        await disconnectScale(this.data.boundBleDeviceId);
+        this.setData({ scaleConnected: false, liveScale: null, boundBleDeviceId: '' });
+      }
+    } catch (e) {
+      wx.showToast({ title: (e as Error).message || '保存失败', icon: 'none' });
     }
   },
 
