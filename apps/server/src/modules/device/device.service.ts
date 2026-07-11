@@ -313,6 +313,37 @@ export const deviceService = {
           }
         : {}),
     };
+    // V0.1.125 body_composition 类型：查 BodyCompositionRecord（体重/体脂/肌肉等）
+    if (input.type === 'body_composition') {
+      const [rows, total] = await Promise.all([
+        prisma.bodyCompositionRecord.findMany({
+          where,
+          orderBy: { timestamp: 'desc' },
+          skip: (input.page - 1) * input.pageSize,
+          take: input.pageSize,
+        }),
+        prisma.bodyCompositionRecord.count({ where }),
+      ]);
+      return {
+        type: 'body_composition',
+        list: rows.map((r) => ({
+          id: r.id,
+          weight: r.weight,
+          bodyFat: r.bodyFat,
+          bmi: r.bmi,
+          muscle: r.muscle,
+          bone: r.bone,
+          water: r.water,
+          visceralFat: r.visceralFat,
+          impedance: r.impedance,
+          timestamp: r.timestamp.toISOString(),
+        })),
+        total,
+        page: input.page,
+        pageSize: input.pageSize,
+        hasMore: input.page * input.pageSize < total,
+      };
+    }
     const isHr = input.type === 'hr';
     const [rows, total] = await Promise.all([
       isHr

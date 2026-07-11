@@ -163,9 +163,9 @@ function parseWeightBytes(bytes: Uint8Array): ScaleData {
  */
 function parseBodyCompositionBytes(bytes: Uint8Array): ScaleData {
   const flags = bytes[0];
-  const weightRaw = (bytes[1] | (bytes[2] << 8)) & 0x0fff; // 12-bit weight
+  const weightRaw = bytes[1] | (bytes[2] << 8); // uint16 LE
   const isStable = (flags & 0x20) !== 0; // bit5 = weight stabilized
-  const weight = weightRaw * 0.005; // 5g 分辨率 → kg
+  const weight = weightRaw * 0.01; // 10g 分辨率 → kg
   // 阻抗值在 byte 11-12（体成分秤才有，部分固件偏移不同）
   let impedance: number | undefined;
   if (bytes.length >= 13) {
@@ -206,29 +206,27 @@ export function calcBodyComposition(
 
   const isMale = gender === 'male';
 
-  // 体脂率（基于阻抗 + BMI + 性别/年龄，简化公式）
-  // 参考 openScale: bodyFat = f(impedance, weight, height, age, gender)
-  const z = impedance;
-  const ff = isMale
-    ? 0.88 + 0.18 * (weight * 100 / (z * h * h)) - 0.02 * age
-    : 0.62 + 0.22 * (weight * 100 / (z * h * h)) - 0.01 * age;
-  let bodyFat = Math.max(3, Math.min(60, Math.round((1 - ff) * 1000) / 10));
+  // Sun et al. 2003 BIA 公式（TBW → FFM → bodyFat%）
+  // TBW = a + b * H²/Z + c * W （H=cm, Z=ohm, W=kg）
+  const h2z = (height * height) / impedance; // 阻抗指数
+  const tbwKg = isMale
+    ? 1.20 + 0.45 * h2z + 0.18 * weight
+    : 0.91 + 0.47 * h2z + 0.11 * weight;
+  const ffm = tbwKg / 0.732; // FFM = TBW / 0.732（去脂体重）
+  let bodyFat = Math.max(3, Math.min(60, Math.round(((weight - ffm) / weight) * 1000) / 10));
 
-  // 肌肉量 = 体重 × (1 - 体脂率/100)
-  const muscle = Math.round(weight * (1 - bodyFat / 100) * 10) / 10;
+  // 肌肉量 = FFM × 0.55（肌肉约占去脂体重 55%）
+  const muscle = Math.round(ffm * 0.55 * 10) / 10;
 
   // 骨量（体重相关经验公式）
   const bone = weight < 65
     ? Math.round((weight * 0.035) * 100) / 100
     : Math.round((weight * 0.040) * 100) / 100;
 
-  // 水分率（TBW%，基于阻抗 + 体重）
-  const tbw = isMale
-    ? Math.round((99.7 - 0.00065 * z * z - 0.4 * bmi) * 10) / 10
-    : Math.round((96.3 - 0.00055 * z * z - 0.3 * bmi) * 10) / 10;
-  const water = Math.max(35, Math.min(75, tbw));
+  // 水分率 = TBW / weight × 100
+  const water = Math.max(35, Math.min(75, Math.round((tbwKg / weight) * 1000) / 10));
 
-  // 内脏脂肪等级（简化：基于 BMI + 体脂率 + 腰围估算无 → 用 BMI 替代）
+  // 内脏脂肪等级（简化：基于 BMI）
   const visceralFat = bmi > 30 ? Math.round(bmi - 18) : Math.max(1, Math.round((bmi - 15) * 0.8));
 
   return { weight, bodyFat, bmi, muscle, bone, water, visceralFat, impedance: z };

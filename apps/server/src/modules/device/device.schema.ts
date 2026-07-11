@@ -115,7 +115,7 @@ export type SubmitSpO2Input = z.infer<typeof SubmitSpO2InputSchema>;
 
 /** 健康历史查询（心率/血氧，V0.1.43）*/
 export const MyHealthHistoryQuerySchema = z.object({
-  type: z.enum(['hr', 'spo2', 'sleep']),
+  type: z.enum(['hr', 'spo2', 'sleep', 'body_composition']),
   start: z.string().datetime().optional(),
   end: z.string().datetime().optional(),
   page: z.number().int().min(1).default(1),
