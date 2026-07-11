@@ -32,6 +32,7 @@ import type {
   SubmitHeartRateInput,
   SubmitSpO2Input,
   MyHealthHistoryQuery,
+  SubmitBodyCompositionInput,
   MyActivitiesQuery,
   MySleepQuery,
   MyMetricsQuery,
@@ -237,6 +238,28 @@ export const deviceService = {
     });
     await Cache.del(`garmin:today:${userId}:${todayRangeCN().dateStr}`);
     return { ok: true, value: record.value, timestamp: record.timestamp.toISOString() };
+  },
+
+  /**
+   * 提交体脂秤数据（V0.1.124 BLE 小米体脂秤）
+   * 前端解析 BLE ArrayBuffer → 算体成分 → 提交落库
+   */
+  async submitBodyComposition(userId: string, input: SubmitBodyCompositionInput) {
+    const record = await prisma.bodyCompositionRecord.create({
+      data: {
+        userId,
+        weight: input.weight,
+        bodyFat: input.bodyFat ?? null,
+        bmi: input.bmi ?? null,
+        muscle: input.muscle ?? null,
+        bone: input.bone ?? null,
+        water: input.water ?? null,
+        visceralFat: input.visceralFat ?? null,
+        impedance: input.impedance ?? null,
+        timestamp: input.ts ? new Date(input.ts) : new Date(),
+      },
+    });
+    return { ok: true, id: record.id, timestamp: record.timestamp.toISOString() };
   },
 
   /**

@@ -15,6 +15,7 @@ import {
   BindBleDeviceInputSchema,
   SubmitHeartRateInputSchema,
   SubmitSpO2InputSchema,
+  SubmitBodyCompositionSchema,
   MyHealthHistoryQuerySchema,
   MyActivitiesQuerySchema,
   MySleepQuerySchema,
@@ -57,6 +58,10 @@ export async function deviceRoutes(app: FastifyInstance) {
         case 'submitSpO2': {
           const input = SubmitSpO2InputSchema.parse(payload);
           return { code: 0, data: await deviceService.submitSpO2(userId, input) };
+        }
+        case 'submitBodyComposition': {
+          const input = SubmitBodyCompositionSchema.parse(payload);
+          return { code: 0, data: await deviceService.submitBodyComposition(userId, input) };
         }
         case 'myHealthHistory': {
           const input = MyHealthHistoryQuerySchema.parse(payload ?? {});

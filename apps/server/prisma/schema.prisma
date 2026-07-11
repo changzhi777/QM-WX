@@ -71,6 +71,7 @@ model User {
   heartRateRecords  HeartRateRecord[] // V0.1.43 心率历史（BLE 0x180D + 微信运动）
   spo2Records       SpO2Record[] // V0.1.43 血氧历史（BLE 0x1822）
   sleepRecords      SleepRecord[] // V0.1.43 睡眠历史（小米数据包导入）
+  bodyCompositionRecords BodyCompositionRecord[] // V0.1.124 体脂秤数据（BLE 小米体脂秤）
   withdrawalRequests WithdrawalRequest[] // V0.1.105 提现申请（pending/approved/rejected）
   groupBuyMembers   GroupBuyMember[] // V0.1.37 团购参与记录
   // 分销（V0.1.24）
@@ -991,6 +992,28 @@ model SleepRecord {
 
   @@unique([userId, date]) // 一日一条（upsert 防重）
   @@index([userId, date])
+}
+
+// ===== 体脂秤数据（V0.1.124，BLE 小米体脂秤 0x181B/0x181D）=====
+// 体重（必有）+ 体成分（体脂率/BMI/肌肉/骨骼/水分/内脏脂肪/阻抗，体成分秤才有）
+model BodyCompositionRecord {
+  id          String   @id @default(cuid())
+  userId      String
+  weight      Float    // 体重 kg（BLE uint16 ×0.01）
+  bodyFat     Float?   // 体脂率 %
+  bmi         Float?   // BMI（weight / height²）
+  muscle      Float?   // 肌肉量 kg
+  bone        Float?   // 骨量 kg
+  water       Float?   // 水分率 %
+  visceralFat Float?   // 内脏脂肪等级 1-30
+  impedance   Int?     // 原始阻抗值（体成分秤 BIA）
+  source      String   @default("ble") // ble | manual
+  timestamp   DateTime // 测量时间
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, timestamp])
 }
 
 // 提现申请（V0.1.105 GAP-6）

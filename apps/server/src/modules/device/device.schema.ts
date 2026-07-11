@@ -123,6 +123,20 @@ export const MyHealthHistoryQuerySchema = z.object({
 });
 export type MyHealthHistoryQuery = z.infer<typeof MyHealthHistoryQuerySchema>;
 
+/** 提交体脂秤数据（V0.1.124 BLE 小米体脂秤） */
+export const SubmitBodyCompositionSchema = z.object({
+  weight: z.number().min(1).max(500), // 体重 kg 合理区间
+  bodyFat: z.number().min(0).max(80).optional(), // 体脂率 %
+  bmi: z.number().min(5).max(100).optional(),
+  muscle: z.number().min(0).max(200).optional(), // 肌肉量 kg
+  bone: z.number().min(0).max(20).optional(), // 骨量 kg
+  water: z.number().min(0).max(90).optional(), // 水分率 %
+  visceralFat: z.number().min(0).max(50).optional(), // 内脏脂肪等级
+  impedance: z.number().int().min(0).max(2000).optional(), // BIA 阻抗值
+  ts: z.number().int().optional(), // 毫秒时间戳（缺省取 now）
+});
+export type SubmitBodyCompositionInput = z.infer<typeof SubmitBodyCompositionSchema>;
+
 // ===== 佳明数据处理（导入榜单，2026-07-01）=====
 
 /** RawActivity.type → Checkin.sportType 映射（导入榜单/数据处理共用，单点维护） */
