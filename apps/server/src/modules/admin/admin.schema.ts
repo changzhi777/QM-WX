@@ -210,6 +210,11 @@ export const ExportSettlementQuerySchema = z.object({
 export type ExportSettlementQueryInput = z.infer<typeof ExportSettlementQuerySchema>;
 
 // ===== V0.1.116 评价回复 =====
+export const ListReviewsSchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(50).default(20),
+});
+
 export const AddReviewReplySchema = z.object({
   reviewId: z.string().min(1),
   content: z.string().min(1).max(500),

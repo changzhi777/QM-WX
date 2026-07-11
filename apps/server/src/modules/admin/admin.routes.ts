@@ -43,6 +43,7 @@ import {
   ConfirmPickupSchema,
   ExportSettlementQuerySchema,
   AddReviewReplySchema,
+  ListReviewsSchema,
 } from './admin.schema.js';
 
 export async function adminRoutes(app: FastifyInstance) {
@@ -169,7 +170,10 @@ export async function adminRoutes(app: FastifyInstance) {
         reply.header('Content-Disposition', `attachment; filename="settlement-${Date.now()}.csv"`);
         return reply.send(csv);
       }
-      // ===== V0.1.116 评价回复 =====
+      // ===== V0.1.116 评价 =====
+      case 'listReviews': {
+        return { code: 0, data: await adminService.listReviews(ListReviewsSchema.parse(payload ?? {})) };
+      }
       case 'addReviewReply': {
         const input = AddReviewReplySchema.parse(payload);
         return { code: 0, data: await adminService.addReviewReply(input) };

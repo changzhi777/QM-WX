@@ -163,13 +163,21 @@ export const contentService = {
       // 入队超时关单（同 mall，30min 未支付 cancel）
       const { enqueueCloseOrder } = await import('../../jobs/queue.js');
       await enqueueCloseOrder(order.id);
-      // wxpay 统一下单（事务外，外部 IO）
-      const wxpay = await unifiedOrder({
-        outTradeNo: order.id,
-        description: `青沐-${content.title ?? '赛事报名'}`.slice(0, 127),
-        totalFen: Math.round(fee * 100),
-        openid: user.openid,
-      });
+      // wxpay 统一下单（事务外，外部 IO）— 失败则清理 enrollment + cancel Order，
+      // 避免 orphan + 用户被 existing 防重拦截无法重新报名（V0.1.122 审查修复）
+      let wxpay;
+      try {
+        wxpay = await unifiedOrder({
+          outTradeNo: order.id,
+          description: `青沐-${content.title ?? '赛事报名'}`.slice(0, 127),
+          totalFen: Math.round(fee * 100),
+          openid: user.openid,
+        });
+      } catch (e) {
+        await prisma.enrollment.delete({ where: { id: enrollment.id } }).catch(() => undefined);
+        await prisma.order.update({ where: { id: order.id }, data: { status: 'cancelled' } }).catch(() => undefined);
+        throw e;
+      }
       await prisma.order.update({ where: { id: order.id }, data: { prepayId: wxpay.prepayId } });
       return {
         enrollmentId: enrollment.id,

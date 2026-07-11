@@ -855,6 +855,32 @@ export async function exportSettlement(input: { yearMonth: string }, adminOpenid
   return UTF8_BOM + lines.join('\n');
 }
 
+/** 评价列表（admin 查所有评价，V0.1.122 qm-admin 评价管理用） */
+export async function listReviews(input: { page: number; pageSize: number }) {
+  const [list, total] = await Promise.all([
+    prisma.review.findMany({
+      orderBy: { createdAt: 'desc' },
+      skip: (input.page - 1) * input.pageSize,
+      take: input.pageSize,
+      include: {
+        user: { select: { id: true, nickname: true, avatarUrl: true } },
+        product: { select: { id: true, name: true } },
+      },
+    }),
+    prisma.review.count(),
+  ]);
+  return {
+    list: list.map((r) => ({
+      ...r,
+      createdAt: r.createdAt.toISOString(),
+      repliedAt: r.repliedAt?.toISOString() ?? null,
+    })),
+    total,
+    page: input.page,
+    pageSize: input.pageSize,
+  };
+}
+
 /** 回复评价（admin/商家，V0.1.116） */
 export async function addReviewReply(input: { reviewId: string; content: string }) {
   const review = await prisma.review.findUnique({ where: { id: input.reviewId } });
