@@ -202,6 +202,7 @@ export const ENDPOINTS = {
     unlike: '/api/feed',
     comment: '/api/feed',
     hotTopics: '/api/feed',
+    shoesForPicker: '/api/feed', // V0.1.136 关联跑鞋 picker
   },
   notification: {
     list: '/api/notification',

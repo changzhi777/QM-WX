@@ -32,6 +32,7 @@ export const feedService = {
         include: {
           user: { select: { id: true, nickname: true, avatarUrl: true } },
           likes: { where: { userId }, select: { id: true } },
+          shoe: { select: { id: true, brand: true, model: true, nickname: true, currentKm: true } }, // V0.1.136
         },
       }),
       prisma.feed.count({ where }),
@@ -44,6 +45,7 @@ export const feedService = {
         distanceKm: f.distanceKm,
         topic: f.topic,
         videoUrl: f.videoUrl,
+        shoe: f.shoe ? { id: f.shoe.id, brand: f.shoe.brand, model: f.shoe.model, nickname: f.shoe.nickname, currentKm: f.shoe.currentKm } : null, // V0.1.136
         likeCount: f.likeCount,
         commentCount: f.commentCount,
         createdAt: f.createdAt.toISOString(),
@@ -68,6 +70,7 @@ export const feedService = {
         include: {
           user: { select: { id: true, nickname: true, avatarUrl: true } },
           likes: { where: { userId }, select: { id: true } },
+          shoe: { select: { id: true, brand: true, model: true, nickname: true, currentKm: true } }, // V0.1.136
         },
       }),
       prisma.feed.count({ where: { userId } }),
@@ -80,6 +83,7 @@ export const feedService = {
         distanceKm: f.distanceKm,
         topic: f.topic,
         videoUrl: f.videoUrl,
+        shoe: f.shoe ? { id: f.shoe.id, brand: f.shoe.brand, model: f.shoe.model, nickname: f.shoe.nickname, currentKm: f.shoe.currentKm } : null, // V0.1.136
         likeCount: f.likeCount,
         commentCount: f.commentCount,
         createdAt: f.createdAt.toISOString(),
@@ -93,8 +97,18 @@ export const feedService = {
     };
   },
 
-  /** 发布动态（V0.1.36 +topic +videoUrl）*/
+  /** 发布动态（V0.1.36 +topic +videoUrl + V0.1.136 +shoeId） */
   async publish(userId: string, input: PublishFeedInput) {
+    // V0.1.136 校验 shoeId 归属（不属则忽略）
+    let shoeId: string | null = null;
+    if (input.shoeId) {
+      const shoe = await prisma.shoe.findFirst({
+        where: { id: input.shoeId, userId },
+        select: { id: true },
+      });
+      shoeId = shoe?.id ?? null;
+    }
+
     const feed = await prisma.feed.create({
       data: {
         userId,
@@ -104,9 +118,25 @@ export const feedService = {
         distanceKm: input.distanceKm,
         topic: input.topic,
         videoUrl: input.videoUrl,
+        shoeId,
       },
     });
     return { id: feed.id };
+  },
+
+  /**
+   * V0.1.136 feed.shoesForPicker
+   *
+   * 取用户 active 跑鞋列表（前端发动态时跑鞋 picker 用）
+   * 复用 shoes.service.list 接口（直接调）
+   */
+  async shoesForPicker(userId: string) {
+    const shoes = await prisma.shoe.findMany({
+      where: { userId, status: 'active' },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, brand: true, model: true, nickname: true, currentKm: true },
+    });
+    return { shoes };
   },
 
   /** 点赞（幂等，已点赞不重复加 count） */

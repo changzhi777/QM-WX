@@ -343,6 +343,7 @@ model Shoe {
 
   user     User      @relation(fields: [userId], references: [id])
   checkins Checkin[] // 关联打卡（里程来源）
+  feeds    Feed[] // V0.1.136 关联动态
 
   @@index([userId, status])
 }
@@ -459,18 +460,21 @@ model Feed {
   distanceKm   Float? // 冗余跑量（避免 join，展示用）
   topic        String? // V0.1.36 话题（如 "马拉松"；null=无话题）
   videoUrl     String? // V0.1.36 外部视频链接（mp4 URL，<video> 播放）
+  shoeId       String? // V0.1.136 关联跑鞋（可选，动态卡显示跑鞋信息）
   likeCount    Int      @default(0)
   commentCount Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   user     User          @relation(fields: [userId], references: [id])
+  shoe     Shoe?         @relation(fields: [shoeId], references: [id], onDelete: SetNull)
   likes    FeedLike[]
   comments FeedComment[]
 
   @@index([createdAt])
   @@index([userId, createdAt])
   @@index([topic]) // V0.1.36 话题聚合查询
+  @@index([shoeId])
 }
 
 // 动态点赞（unique 防重复）

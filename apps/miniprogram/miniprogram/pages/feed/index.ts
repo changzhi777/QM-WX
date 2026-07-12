@@ -8,6 +8,7 @@ interface FeedItem {
   distanceKm: number | null;
   topic: string | null; // V0.1.36 话题
   videoUrl: string | null; // V0.1.36 外部视频链接
+  shoe: { id: string; brand: string; model: string; nickname: string | null; currentKm: number } | null; // V0.1.136
   likeCount: number;
   commentCount: number;
   createdAt: string;
@@ -32,6 +33,9 @@ Page({
     publishContent: '',
     publishTopic: '', // V0.1.36 话题
     publishVideo: '', // V0.1.36 视频链接
+    publishImages: [] as string[], // V0.1.136 图片
+    publishShoeId: '', // V0.1.136 关联跑鞋
+    publishShoes: [] as Array<{ id: string; brand: string; model: string; nickname: string | null; currentKm: number }>, // V0.1.136
     commentVisible: false,
     commentFeedId: '',
     commentContent: '',
@@ -79,14 +83,63 @@ Page({
     }
   },
 
-  /** 发布动态（V0.1.36 +topic +videoUrl） */
-  onPublish() {
+  /** 发布动态（V0.1.36 +topic +videoUrl + V0.1.136 +images +shoeId） */
+  async onPublish() {
     this.setData({
       publishVisible: true,
       publishContent: '',
       publishTopic: '',
       publishVideo: '',
+      publishImages: [],
+      publishShoeId: '',
+      publishShoes: [],
     });
+    // V0.1.136 加载用户 active 跑鞋
+    try {
+      const r = await api.call<{ shoes: Array<{ id: string; brand: string; model: string; nickname: string | null; currentKm: number }> }>(
+        'feed',
+        'shoesForPicker',
+        {},
+      );
+      this.setData({ publishShoes: r.shoes });
+    } catch {
+      // 加载失败不影响发布
+    }
+  },
+
+  /** V0.1.136 选择图片（wx.chooseMedia 限 9 张） */
+  async onPickImages() {
+    const current = this.data.publishImages || [];
+    const remaining = 9 - current.length;
+    if (remaining <= 0) {
+      wx.showToast({ title: '最多 9 张', icon: 'none' });
+      return;
+    }
+    try {
+      const r = await wx.chooseMedia({
+        count: remaining,
+        mediaType: ['image'],
+        sourceType: ['album', 'camera'],
+      });
+      const newUrls = r.tempFiles.map((f) => f.tempFilePath);
+      this.setData({ publishImages: [...current, ...newUrls].slice(0, 9) });
+    } catch (e) {
+      console.error('[feed.publish] chooseMedia failed', e);
+    }
+  },
+
+  /** V0.1.136 删除已选图片 */
+  onRemoveImage(e: WechatMiniprogram.TouchEvent) {
+    const idx = e.currentTarget.dataset.idx as number;
+    const newImages = [...this.data.publishImages];
+    newImages.splice(idx, 1);
+    this.setData({ publishImages: newImages });
+  },
+
+  /** V0.1.136 选择跑鞋 */
+  onPickShoe(e: WechatMiniprogram.TouchEvent) {
+    const id = (e.currentTarget.dataset.id as string) || '';
+    this.setData({ publishShoeId: id });
   },
   onInputPublish(e: WechatMiniprogram.Input) {
     this.setData({ publishContent: e.detail.value });
@@ -107,7 +160,10 @@ Page({
     try {
       const topic = this.data.publishTopic.trim() || undefined;
       const videoUrl = this.data.publishVideo.trim() || undefined;
-      await api.call('feed', 'publish', { content, images: [], topic, videoUrl });
+      const shoeId = this.data.publishShoeId || undefined;
+      const images = this.data.publishImages || [];
+      // V0.1.136 上传图片到 OSS（MVP：直接传临时路径，V0.1.13X 待替换 uploadFile）
+      await api.call('feed', 'publish', { content, images, topic, videoUrl, shoeId });
       this.setData({
         publishing: false,
         publishVisible: false,

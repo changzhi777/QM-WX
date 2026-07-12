@@ -1,5 +1,5 @@
 /**
- * feed module Zod schemas（V0.1.30，社交向 — 运动动态）
+ * feed module Zod schemas（V0.1.30 社交向 — 运动动态 + V0.1.36 话题视频 + V0.1.136 关联跑鞋）
  */
 import { z } from 'zod';
 
@@ -11,10 +11,11 @@ export const PublishFeedInputSchema = z.object({
   distanceKm: z.number().min(0).max(200).optional(),
   topic: z.string().max(30).optional(), // V0.1.36 话题
   videoUrl: z.string().url().optional(), // V0.1.36 外部视频链接（mp4 URL）
+  shoeId: z.string().optional(), // V0.1.136 关联跑鞋
 });
 export type PublishFeedInput = z.infer<typeof PublishFeedInputSchema>;
 
-/** 分页 + 排序 + 话题过滤（V0.1.36）*/
+/** 分页 + 排序 + 话题过滤（V0.1.36）+ 用户过滤（V0.1.116） */
 export const FeedPageSchema = z.object({
   page: z.number().int().min(1).default(1),
   pageSize: z.number().int().min(1).max(50).default(20),
@@ -33,7 +34,16 @@ export const CommentInputSchema = z.object({
   content: z.string().min(1).max(200),
 });
 
+/** V0.1.136 跑鞋 picker 用 */
+export const FeedShoeItemSchema = z.object({
+  id: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  nickname: z.string().nullable(),
+  currentKm: z.number(),
+});
+
 export const FeedActionBodySchema = z.object({
-  action: z.enum(['list', 'myFeeds', 'publish', 'like', 'unlike', 'comment', 'hotTopics']),
+  action: z.enum(['list', 'myFeeds', 'publish', 'like', 'unlike', 'comment', 'hotTopics', 'shoesForPicker']), // V0.1.136
   payload: z.unknown().optional(),
 });

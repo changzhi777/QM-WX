@@ -1,0 +1,12 @@
+/* components/collection-poster/index.wxss */
+
+.poster-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.poster-canvas {
+  display: block;
+}

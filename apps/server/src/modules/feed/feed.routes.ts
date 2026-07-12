@@ -47,6 +47,9 @@ export async function feedRoutes(app: FastifyInstance) {
         const input = CommentInputSchema.parse(payload);
         return { code: 0, data: await feedService.comment(userId, input.feedId, input.content) };
       }
+      // V0.1.136 跑鞋 picker
+      case 'shoesForPicker':
+        return { code: 0, data: await feedService.shoesForPicker(userId) };
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
     }

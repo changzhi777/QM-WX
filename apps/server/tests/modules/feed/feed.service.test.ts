@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const helpers = require('../../helpers/mockPrisma.ts') as typeof import('../../helpers/mockPrisma.js');
   return helpers.createPrismaMock({
-    models: ['feed', 'feedLike', 'feedComment'],
+    models: ['feed', 'feedLike', 'feedComment', 'shoe'], // V0.1.136 +shoe
     txModels: ['feed', 'feedLike', 'feedComment'],
   });
 });
@@ -231,5 +231,80 @@ describe('feedService.list V0.1.116 userId 过滤', () => {
     expect(mocks.prisma.feed.findMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: expect.objectContaining({ userId: 'u2' }) }),
     );
+  });
+});
+
+// ============================================================
+// V0.1.136 关联跑鞋
+// ============================================================
+
+describe('feedService.publish 含 shoeId (V0.1.136)', () => {
+  it('shoeId 属于 user → 写库', async () => {
+    mocks.prisma.shoe.findFirst.mockResolvedValue({ id: 's1' } as never);
+    mocks.prisma.feed.create.mockResolvedValue({ id: 'f1' } as never);
+
+    const r = await feedService.publish('u1', {
+      content: '今天跑了 10 km',
+      images: [],
+      shoeId: 's1',
+    });
+    expect(r.id).toBe('f1');
+    expect(mocks.prisma.feed.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ shoeId: 's1' }),
+      }),
+    );
+  });
+
+  it('shoeId 不属于 user → 忽略（写 null）', async () => {
+    mocks.prisma.shoe.findFirst.mockResolvedValue(null);
+    mocks.prisma.feed.create.mockResolvedValue({ id: 'f1' } as never);
+
+    await feedService.publish('u1', { content: 'x', images: [], shoeId: 's99' });
+    expect(mocks.prisma.feed.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ shoeId: null }),
+      }),
+    );
+  });
+});
+
+describe('feedService.shoesForPicker (V0.1.136)', () => {
+  it('返用户 active 跑鞋列表', async () => {
+    mocks.prisma.shoe.findMany.mockResolvedValue([
+      { id: 's1', brand: 'Nike', model: 'Vaporfly', nickname: '战靴一号', currentKm: 600 },
+      { id: 's2', brand: '必迈', model: '路征', nickname: null, currentKm: 300 },
+    ] as never);
+
+    const r = await feedService.shoesForPicker('u1');
+    expect(r.shoes).toHaveLength(2);
+    expect(r.shoes[0].brand).toBe('Nike');
+  });
+});
+
+describe('feedService.list 含 shoe (V0.1.136)', () => {
+  it('返回 list 项含 shoe 信息', async () => {
+    mocks.prisma.feed.findMany.mockResolvedValue([
+      {
+        id: 'f1',
+        content: 'x',
+        images: [],
+        distanceKm: null,
+        topic: null,
+        videoUrl: null,
+        shoeId: 's1',
+        likeCount: 0,
+        commentCount: 0,
+        createdAt: new Date('2026-07-01'),
+        user: { id: 'u1', nickname: '张三', avatarUrl: null },
+        likes: [],
+        shoe: { id: 's1', brand: 'Nike', model: 'Vaporfly', nickname: '战靴', currentKm: 600 },
+      },
+    ] as never);
+    mocks.prisma.feed.count.mockResolvedValue(1);
+
+    const r = await feedService.list('u1', { page: 1, pageSize: 20, sort: 'latest', topic: undefined, userId: undefined });
+    expect(r.list[0].shoe?.brand).toBe('Nike');
+    expect(r.list[0].shoe?.currentKm).toBe(600);
   });
 });
