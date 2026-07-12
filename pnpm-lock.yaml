@@ -93,6 +93,9 @@ importers:
       fastify-plugin:
         specifier: ^6.0.0
         version: 6.0.0
+      fit-file-parser:
+        specifier: ^3.0.2
+        version: 3.0.2
       ioredis:
         specifier: ~5.10.0
         version: 5.10.1
@@ -1611,6 +1614,9 @@ packages:
   find-up@5.0.0:
     resolution: {integrity: sha512-78/PXT1wlLLDgTzDs7sjq9hzz0vXD+zn+7wypEe4fXQxCmdmqfGsEPQxmiCSQI3ajFV91bVSsvNtrJRiW6nGng==}
     engines: {node: '>=10'}
+
+  fit-file-parser@3.0.2:
+    resolution: {integrity: sha512-Yg7XfByuKh8CypgHqNcZSLyV9aWo14pkZ1oWR8VfdHBhuJN856PvlfYAkLSTD58USE5S+iSYE9f9diil043Xag==}
 
   flat-cache@3.2.0:
     resolution: {integrity: sha512-CYcENa+FtcUKLmhhqyctpclsq7QF38pKjZHsGNiSQF5r4FtoKDWabFDl3hzaEQMvT1LHEysw5twgLvpYYb4vbw==}
@@ -4199,6 +4205,10 @@ snapshots:
     dependencies:
       locate-path: 6.0.0
       path-exists: 4.0.0
+
+  fit-file-parser@3.0.2:
+    dependencies:
+      buffer: 6.0.3
 
   flat-cache@3.2.0:
     dependencies:

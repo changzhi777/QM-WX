@@ -72,6 +72,7 @@ model User {
   spo2Records       SpO2Record[] // V0.1.43 血氧历史（BLE 0x1822）
   sleepRecords      SleepRecord[] // V0.1.43 睡眠历史（小米数据包导入）
   bodyCompositionRecords BodyCompositionRecord[] // V0.1.124 体脂秤数据（BLE 小米体脂秤）
+  corosRawEvents CorosRawEvent[] // V0.1.130 COROS Terra webhook 原始数据
   withdrawalRequests WithdrawalRequest[] // V0.1.105 提现申请（pending/approved/rejected）
   groupBuyMembers   GroupBuyMember[] // V0.1.37 团购参与记录
   // 分销（V0.1.24）
@@ -1037,4 +1038,20 @@ model WithdrawalRequest {
 
   @@index([userId, status]) // 用户查自己的 + admin 按 status 筛选
   @@index([status, createdAt]) // admin 待审核列表
+}
+
+// ===== V0.1.130 COROS Terra webhook 聚合 =====
+model CorosRawEvent {
+  id          String   @id @default(cuid())
+  userId      String
+  terraUserId String // Terra 返回的 user_id（webhook payload 含）
+  type        String // activity | daily | sleep
+  payload     Json // 原始 webhook payload（Terra 标准化 JSON）
+  processed   Boolean  @default(false) // activity 已解析到 RawActivity
+  receivedAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, receivedAt])
+  @@index([terraUserId])
 }

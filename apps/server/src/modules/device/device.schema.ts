@@ -81,7 +81,7 @@ export const BindBleDeviceInputSchema = z.object({
   name: z.string(), // 设备名（localName / 广播名，用于展示）
   services: z.array(z.string()).default([]), // 设备支持的 BLE 服务 UUID（如心率 0000180D-...）
   // V0.1.33：品牌 vendor（garmin/xiaomi 走品牌 upsert，可同时绑多设备；ble 兼容旧通用）
-  vendor: z.enum(['ble', 'garmin', 'xiaomi']).default('ble'),
+  vendor: z.enum(['ble', 'garmin', 'xiaomi', 'coros']).default('ble'),
   // V0.1.33：设备信息（0x180A 读到的厂商/型号，MVP 不持久化，透传展示）
   brandMeta: z
     .object({

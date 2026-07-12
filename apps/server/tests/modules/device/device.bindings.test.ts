@@ -111,6 +111,25 @@ describe('deviceService.myBindings (V0.1.25 + V0.1.33)', () => {
     // garmin vendor 走 accessTokenEnc 展示（与 ble 一致）
     expect(r.bindings[0].deviceName).toBe('Forerunner 245');
   });
+
+  it('V0.1.128 coros BLE 绑定 → deviceName 走 accessTokenEnc', async () => {
+    mockedPrisma.deviceBinding.findMany.mockResolvedValue([
+      {
+        id: 'b5',
+        vendor: 'coros',
+        accessTokenEnc: 'COROS PACE 3',
+        vendorUserId: 'coros-device',
+        status: 'active',
+        lastSyncAt: new Date(),
+        createdAt: new Date(),
+      },
+    ] as never);
+    mockedPrisma.rawActivity.count.mockResolvedValue(0);
+
+    const r = await deviceService.myBindings('u1');
+    expect(r.bindings[0].deviceName).toBe('COROS PACE 3');
+    expect(r.bindings[0].vendor).toBe('coros');
+  });
 });
 
 describe('deviceService.bindBleDevice (V0.1.25 + V0.1.33 vendor)', () => {
@@ -185,6 +204,28 @@ describe('deviceService.bindBleDevice (V0.1.25 + V0.1.33 vendor)', () => {
       expect.objectContaining({
         where: { userId_vendor: { userId: 'u1', vendor: 'xiaomi' } },
         create: expect.objectContaining({ vendor: 'xiaomi' }),
+      }),
+    );
+  });
+
+  it('V0.1.128 vendor=coros → upsert by [userId, coros]', async () => {
+    mockedPrisma.deviceBinding.upsert.mockResolvedValue({
+      id: 'b5',
+      vendor: 'coros',
+      status: 'active',
+    } as never);
+
+    await deviceService.bindBleDevice('u1', {
+      deviceId: 'coros-pace',
+      name: 'COROS PACE 3',
+      services: ['0000180D-0000-1000-8000-00805F9B34FB'],
+      vendor: 'coros',
+    });
+
+    expect(mockedPrisma.deviceBinding.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId_vendor: { userId: 'u1', vendor: 'coros' } },
+        create: expect.objectContaining({ vendor: 'coros', accessTokenEnc: 'COROS PACE 3' }),
       }),
     );
   });

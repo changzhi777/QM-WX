@@ -62,9 +62,14 @@ Page({
   },
 
   onAction() {
-    // V0.1.43 小米：走上传（wx.chooseMessageFile 选 ZIP），其他按 url navigateTo
+    // V0.1.43 小米：走上传（wx.chooseMessageFile 选 ZIP）
     if (this.data.selectedKey === 'xiaomi') {
       this.onXiaomiUpload();
+      return;
+    }
+    // V0.1.129 COROS：上传 FIT 文件
+    if (this.data.selectedKey === 'coros') {
+      this.onCorosFitUpload();
       return;
     }
     const url = this.data.guide?.action.url;
@@ -96,6 +101,49 @@ Page({
               return;
             }
             this.doUpload(file, m.content);
+          },
+        });
+      },
+    });
+  },
+
+  /** V0.1.129 上传 COROS FIT 文件（选文件 → 上传解析 → RawActivity 入库）*/
+  onCorosFitUpload() {
+    wx.chooseMessageFile({
+      count: 1,
+      type: 'file',
+      extension: ['fit'],
+      success: (res) => {
+        const file = res.tempFiles[0];
+        const token = wx.getStorageSync('accessToken');
+        const base = (wx as unknown as { $apiBase?: string }).$apiBase || ENV.apiBase;
+        wx.showLoading({ title: '解析 FIT 中...' });
+        wx.uploadFile({
+          url: `${base}/api/device/uploadCorosFit`,
+          filePath: file.path,
+          name: 'file',
+          header: token ? { authorization: `Bearer ${token}` } : {},
+          success: (r) => {
+            wx.hideLoading();
+            try {
+              const data = JSON.parse(r.data);
+              if (data.code === 0) {
+                const d = data.data;
+                wx.showModal({
+                  title: '✅ 导入成功',
+                  content: `${d.type} · ${(d.distanceMeters / 1000).toFixed(2)}km · ${Math.round((d.durationSec || 0) / 60)}min\n后续可在「佳明数据处理」页导入打卡榜`,
+                  showCancel: false,
+                });
+              } else {
+                wx.showToast({ title: data.msg || '上传失败', icon: 'none' });
+              }
+            } catch {
+              wx.showToast({ title: '解析失败', icon: 'none' });
+            }
+          },
+          fail: () => {
+            wx.hideLoading();
+            wx.showToast({ title: '上传失败', icon: 'none' });
           },
         });
       },

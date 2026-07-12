@@ -16,9 +16,18 @@
 import { randomUUID, createDecipheriv } from 'node:crypto';
 import AdmZip from 'adm-zip';
 import unzipper from 'unzipper';
+import FitParser from 'fit-file-parser';
+import {
+  generateTerraAuthUrl,
+  isTerraConfigured,
+  verifyTerraSignature,
+  parseTerraActivity,
+  fetchTerraActivity,
+} from './terra-client.js';
 import { parse as parseCsv } from 'csv-parse/sync';
 import { Errors } from '../../common/errors.js';
 import { prisma } from '../../infra/prisma.js';
+import type { Prisma } from '@prisma/client';
 import { redis } from '../../infra/redis.js';
 import { Cache } from '../../infra/cache.js';
 import { env } from '../../config/env.js';
@@ -779,9 +788,9 @@ export const deviceService = {
       bindings: bindings.map((b) => ({
         id: b.id,
         vendor: b.vendor,
-        // ble/garmin/xiaomi：设备名存 accessTokenEnc（复用字段，零 schema 改）；oauth: vendorUserId
+        // BLE 类 vendor（ble/garmin/xiaomi/coros）：设备名存 accessTokenEnc（复用字段，零 schema 改）；oauth: vendorUserId
         deviceName:
-          b.vendor === 'ble' || b.vendor === 'garmin' || b.vendor === 'xiaomi'
+          b.vendor === 'ble' || b.vendor === 'garmin' || b.vendor === 'xiaomi' || b.vendor === 'coros'
             ? b.accessTokenEnc ?? '蓝牙设备'
             : b.vendorUserId ?? b.vendor,
         status: b.status,
@@ -834,6 +843,142 @@ export const deviceService = {
       deviceName: input.name,
       status: binding.status,
     };
+  },
+
+  /**
+   * 导入 COROS FIT 文件（V0.1.129）
+   *
+   * COROS app 导出活动 FIT → 小程序上传 → fit-file-parser 解析 → RawActivity upsert
+   * 复用 RawActivity（vendor='coros'），后续走 importToCheckin 进统一榜（同 garmin 范式）
+   */
+  async importCorosFit(userId: string, buffer: Buffer): Promise<{
+    id: string;
+    type: string;
+    startTime: string;
+    durationSec: number | null;
+    distanceMeters: number | null;
+    created: boolean;
+  }> {
+    const fitParser = new FitParser({ force: true, mode: 'list' });
+    let data: { sessions?: Array<Record<string, unknown>> };
+    try {
+      data = (await fitParser.parseAsync(buffer as unknown as ArrayBuffer)) as {
+        sessions?: Array<Record<string, unknown>>;
+      };
+    } catch {
+      throw Errors.badRequest('FIT 文件解析失败');
+    }
+    const session = data.sessions?.[0];
+    if (!session) throw Errors.badRequest('FIT 无 session 数据');
+
+    const startRaw = session.start_time ?? session.timestamp_created;
+    const startTime = startRaw instanceof Date ? startRaw : new Date(String(startRaw));
+    const durationSec = Number(session.total_timer_time ?? session.total_elapsed_time ?? 0) || null;
+    const distanceMeters = session.total_distance != null ? Number(session.total_distance) : null;
+    const avgHr = (session.avg_heart_rate as number | undefined) ?? null;
+    const maxHr = (session.max_heart_rate as number | undefined) ?? null;
+    const cadence =
+      (session.avg_cadence as number | undefined) ?? (session.total_strides as number | undefined) ?? null;
+    const sport = String(session.sport ?? 'running');
+    const type = TYPE_MAP[sport] || sport;
+
+    const rawJson = toPureJson(data);
+    const raw = await upsertCorosRawActivity(
+      userId,
+      { startTime, durationSec, distanceMeters, avgHr, maxHr, cadence, type },
+      rawJson,
+    );
+
+    return {
+      id: raw.id,
+      type: raw.type,
+      startTime: raw.startTime.toISOString(),
+      durationSec: raw.durationSec,
+      distanceMeters: raw.distanceMeters,
+      created: raw.status === 'pending',
+    };
+  },
+
+  /**
+   * 生成 Terra 授权 URL（V0.1.130 COROS 聚合）
+   *
+   * 用户跳 Terra widget 授权 COROS 账号 → 同步时 webhook PUSH 数据。
+   * 未配置 TERRA_DEV_ID 返空 url + configured=false（前端提示敬请期待）。
+   */
+  async corosAuthUrl(userId: string): Promise<{ url: string; configured: boolean }> {
+    return { url: generateTerraAuthUrl(userId), configured: isTerraConfigured() };
+  },
+
+  /**
+   * Terra webhook 接收（V0.1.130，public 路由无 JWT，用 Terra 签名验证）
+   *
+   * 验签 + payload 落 CorosRawEvent + activity 解析到 RawActivity（vendor=coros）
+   * reference 字段 = generateTerraAuthUrl 传的 reference_id（= userId）
+   */
+  async terraWebhook(rawBody: string, signature: string): Promise<{ ok: boolean; saved: boolean }> {
+    if (!verifyTerraSignature(rawBody, signature)) {
+      throw Errors.unauthorized();
+    }
+    const payload = JSON.parse(rawBody) as {
+      user_id?: string;
+      type?: string;
+      data?: Record<string, unknown>;
+      reference?: string;
+    };
+    const userId = payload.reference;
+    if (!userId) return { ok: true, saved: false }; // 无 reference，忽略
+
+    const terraUserId = payload.user_id ?? '';
+    const type = (payload.type ?? 'activity').replace('_data', '').replace('data', '');
+
+    // activity → 解析到 RawActivity；daily/sleep 暂存原始 payload 待后续
+    let processed = type !== 'activity';
+    if (type === 'activity' && payload.data) {
+      const parsed = parseTerraActivity(payload.data);
+      if (parsed) {
+        await upsertCorosRawActivity(userId, parsed, toPureJson(payload));
+        processed = true;
+      }
+    }
+
+    await prisma.corosRawEvent.create({
+      data: {
+        userId,
+        terraUserId,
+        type,
+        payload: toPureJson(payload),
+        processed,
+      },
+    });
+
+    return { ok: true, saved: true };
+  },
+
+  /**
+   * Terra REST 拉历史 activity（V0.1.130，webhook 补充，手动触发）
+   * 需先 webhook 授权（CorosRawEvent 有 terraUserId 记录）
+   */
+  async syncFromTerra(
+    userId: string,
+    input: { start: string; end: string },
+  ): Promise<{ ok: boolean; count: number; msg?: string }> {
+    const latest = await prisma.corosRawEvent.findFirst({
+      where: { userId },
+      orderBy: { receivedAt: 'desc' },
+    });
+    if (!latest) return { ok: false, count: 0, msg: '未授权 Terra（需先 webhook 授权）' };
+
+    const activities = await fetchTerraActivity(latest.terraUserId, input.start, input.end);
+    if (!activities) return { ok: false, count: 0, msg: 'Terra 未配置 API key' };
+
+    let count = 0;
+    for (const act of activities) {
+      const parsed = parseTerraActivity(act as Record<string, unknown>);
+      if (!parsed) continue;
+      await upsertCorosRawActivity(userId, parsed, toPureJson(act));
+      count++;
+    }
+    return { ok: true, count };
   },
 
   /**
@@ -1053,6 +1198,54 @@ function cnDateFromTs(tsSec: number): string {
  * 微信 WXBizDataCrypt：session_key 作 AES-128-CBC 密钥，解密 encryptedData
  * 返 JSON：{ stepInfoList: [{timestamp, step}], watermark: {appid, ...} }
  */
+/** 序列化为纯 JSON（Date → ISO string，适配 Prisma Json 字段） */
+function toPureJson(obj: unknown): Prisma.InputJsonValue {
+  return JSON.parse(JSON.stringify(obj)) as Prisma.InputJsonValue;
+}
+
+/** COROS 活动统一落库 RawActivity（vendor=coros；importCorosFit/terraWebhook/syncFromTerra 复用） */
+async function upsertCorosRawActivity(
+  userId: string,
+  parsed: {
+    startTime: Date;
+    durationSec: number | null;
+    distanceMeters: number | null;
+    avgHr: number | null;
+    maxHr: number | null;
+    cadence: number | null;
+    type: string;
+  },
+  rawJson: unknown,
+) {
+  const vendorActivityId = parsed.startTime.toISOString();
+  return prisma.rawActivity.upsert({
+    where: { vendor_vendorActivityId: { vendor: 'coros', vendorActivityId } },
+    create: {
+      userId,
+      vendor: 'coros',
+      vendorActivityId,
+      type: parsed.type,
+      startTime: parsed.startTime,
+      durationSec: parsed.durationSec,
+      distanceMeters: parsed.distanceMeters,
+      avgHr: parsed.avgHr,
+      maxHr: parsed.maxHr,
+      cadence: parsed.cadence,
+      raw: rawJson as Prisma.InputJsonValue,
+      status: 'pending',
+    },
+    update: {
+      type: parsed.type,
+      durationSec: parsed.durationSec,
+      distanceMeters: parsed.distanceMeters,
+      avgHr: parsed.avgHr,
+      maxHr: parsed.maxHr,
+      cadence: parsed.cadence,
+      raw: rawJson as Prisma.InputJsonValue,
+    },
+  });
+}
+
 function decryptWeRunData(
   sessionKey: string,
   encryptedData: string,

@@ -44,6 +44,11 @@ const EnvSchema = z.object({
     .transform((v) => v === '1' || v === 'true'),
   LUDONG_WEBHOOK_SECRET: z.string().default(''),
   LUDONG_BASE_URL: z.string().url().default('http://localhost:8000'),
+
+  // V0.1.130 COROS Terra 聚合（缺省 stub，配齐 API key 后生效）
+  TERRA_API_KEY: z.string().optional(),
+  TERRA_DEV_ID: z.string().optional(),
+  TERRA_WEBHOOK_SECRET: z.string().default(''),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

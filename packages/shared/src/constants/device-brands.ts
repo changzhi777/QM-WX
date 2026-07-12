@@ -53,9 +53,9 @@ export const DEVICE_BRANDS: DeviceBrand[] = [
     key: 'coros',
     name: '高驰 COROS',
     category: 'watch',
-    connectionType: 'oauth',
-    available: false,
-    desc: 'PACE / APEX 系列',
+    connectionType: 'ble',
+    available: true,
+    desc: 'PACE / APEX / VERTIX 系列（BLE 实时心率 + FIT 文件导入历史）',
   },
   {
     key: 'huawei',
@@ -121,16 +121,17 @@ export const DEVICE_BRANDS: DeviceBrand[] = [
 export const BLE_VENDOR_PATTERNS: Record<string, RegExp[]> = {
   garmin: [/garmin/i, /forerunner/i, /fenix/i, /vivoactive/i, /edge/i],
   xiaomi: [/mi\s*band/i, /xiaomi/i, /小米/i, /redmi/i],
+  coros: [/coros/i, /pace\s*\d/i, /apex/i, /vertix/i, /dura/i],
 };
 
 /** BLE 品牌识别 type（对应 DeviceBinding.vendor） */
-export type BleVendor = 'ble' | 'garmin' | 'xiaomi';
+export type BleVendor = 'ble' | 'garmin' | 'xiaomi' | 'coros';
 
 /**
  * 按设备名识别 BLE 品牌
  *
- * @param name 设备广播名（如 "Forerunner 245"、"Mi Band 7"）
- * @returns 'garmin' | 'xiaomi' | 'ble'（未识别，前端弹手选）
+ * @param name 设备广播名（如 "Forerunner 245"、"Mi Band 7"、"COROS PACE 3"）
+ * @returns 'garmin' | 'xiaomi' | 'coros' | 'ble'（未识别，前端弹手选）
  */
 export function matchBleVendor(name: string): BleVendor {
   for (const [vendor, patterns] of Object.entries(BLE_VENDOR_PATTERNS)) {
@@ -214,9 +215,14 @@ export const IMPORT_GUIDE: Record<string, ImportGuideConfig> = {
     action: { label: '敬请期待', available: false },
   },
   coros: {
-    sourceLabel: '高驰 COROS',
-    steps: [{ text: '敬请期待（高驰 API 申请中）' }],
-    action: { label: '敬请期待', available: false },
+    sourceLabel: '高驰 COROS App',
+    steps: [
+      { text: 'COROS App → 活动历史 → 选活动 → 导出 FIT 文件', shot: '/images/import-guide/coros-1.png' },
+      { text: '发 FIT 到微信「文件传输助手」→ 点下方按钮上传导入统一榜', shot: '/images/import-guide/coros-2.png' },
+      { text: '实时心率：设备绑定页 → 高驰 → 扫描连接（心率广播模式）', shot: '/images/import-guide/coros-3.png' },
+      { text: 'Terra 自动同步：联系客服开通后，活动数据自动同步（免手动上传 FIT）', shot: '/images/import-guide/coros-4.png' },
+    ],
+    action: { label: '上传 COROS FIT 文件', available: true },
   },
   suunto: {
     sourceLabel: '颂拓 Suunto',

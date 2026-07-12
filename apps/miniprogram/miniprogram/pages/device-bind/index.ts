@@ -33,6 +33,7 @@ interface FoundDevice extends BleDevice {
 const BRAND_LABEL: Record<string, string> = {
   garmin: '佳明',
   xiaomi: '小米',
+  coros: '高驰',
   ble: '通用',
 };
 
@@ -114,7 +115,7 @@ Page({
     this.setData({ loading: true });
     try {
       const res = await api.call<MyBindingsRes>('device', 'myBindings', {});
-      const boundBle = res.bindings.find((b) => b.vendor === 'ble' || b.vendor === 'garmin' || b.vendor === 'xiaomi');
+      const boundBle = res.bindings.find((b) => b.vendor === 'ble' || b.vendor === 'garmin' || b.vendor === 'xiaomi' || b.vendor === 'coros');
       this.setData({
         brands: res.brands.map((b) => ({
           ...b,
@@ -237,7 +238,7 @@ Page({
       if (bodyLocation) this.setData({ liveBodyLocation: bodyLocation });
 
       // V0.1.33 品牌识别：扫描时识别 + manufacturer 二次验证 + 手选兜底
-      let vendor = device.detectedBrand as 'ble' | 'garmin' | 'xiaomi';
+      let vendor = device.detectedBrand as 'ble' | 'garmin' | 'xiaomi' | 'coros';
       if (vendor === 'ble' && deviceInfo.manufacturer) {
         // 设备名未识别，用 0x180A Manufacturer Name 二次验证（权威字段）
         const byMfg = matchBleVendor(deviceInfo.manufacturer);

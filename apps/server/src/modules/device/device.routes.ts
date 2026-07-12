@@ -116,6 +116,15 @@ export async function deviceRoutes(app: FastifyInstance) {
           const input = ImportToCheckinInputSchema.parse(payload);
           return { code: 0, data: await deviceService.importToCheckin(userId, input) };
         }
+        case 'corosAuthUrl': {
+          // V0.1.130 生成 Terra widget 授权 URL
+          return { code: 0, data: await deviceService.corosAuthUrl(userId) };
+        }
+        case 'syncFromTerra': {
+          // V0.1.130 Terra REST 手动拉历史 activity
+          const input = (payload ?? {}) as { start: string; end: string };
+          return { code: 0, data: await deviceService.syncFromTerra(userId, input) };
+        }
         default:
           return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
       }
@@ -139,6 +148,28 @@ export async function deviceRoutes(app: FastifyInstance) {
     }
     if (!buffer) throw Errors.badRequest('no file');
     const result = await deviceService.importXiaomiZip(req.user.id, buffer, password);
+    return { code: 0, data: result };
+  });
+
+  // V0.1.129 COROS FIT 文件上传（multipart，解析活动 → RawActivity vendor=coros）
+  app.post('/uploadCorosFit', async (req) => {
+    if (!req.user) throw Errors.unauthorized();
+    const parts = req.parts({ limits: { fileSize: 20 * 1024 * 1024 } });
+    let buffer: Buffer | null = null;
+    for await (const part of parts) {
+      if (part.type === 'file') buffer = await part.toBuffer();
+    }
+    if (!buffer) throw Errors.badRequest('no file');
+    const result = await deviceService.importCorosFit(req.user.id, buffer);
+    return { code: 0, data: result };
+  });
+
+  // V0.1.130 Terra webhook（public，无 JWT，Terra 签名验证）
+  // app.ts 已挂 req.rawBody（原始字节，验签用）
+  app.post('/terra-webhook', async (req) => {
+    const rawBody = (req as unknown as { rawBody?: string }).rawBody ?? '';
+    const signature = (req.headers['xterra-signature'] as string) ?? '';
+    const result = await deviceService.terraWebhook(rawBody, signature);
     return { code: 0, data: result };
   });
 }
