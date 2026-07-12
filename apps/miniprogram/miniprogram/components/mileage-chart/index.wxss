@@ -1,0 +1,11 @@
+/* components/mileage-chart/index.wxss */
+
+.mileage-chart-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.mileage-chart-canvas {
+  display: block;
+}

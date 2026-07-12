@@ -163,6 +163,10 @@ export const ENDPOINTS = {
     update: '/api/shoes',
     retire: '/api/shoes',
     myStats: '/api/shoes',
+    // V0.1.133 增强
+    getDetail: '/api/shoes',
+    getMileageHistory: '/api/shoes',
+    updateThreshold: '/api/shoes',
   },
   goal: {
     list: '/api/goal',

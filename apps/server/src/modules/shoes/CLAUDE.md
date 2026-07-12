@@ -34,7 +34,7 @@
 
 ---
 
-## 📡 对外接口（5 action）
+## 📡 对外接口（8 action，V0.1.133 加 3）
 
 > 统一 POST `/api/shoes` body：`{ action, payload }`，需 JWT 鉴权
 
@@ -45,6 +45,9 @@
 | `update` | `UpdateShoeInput` | `{ id }` | 更新（先校验 id+userId 存在） |
 | `retire` | `{ id }` | `{ ok }` | 退役（status=active→retired；已退役 badRequest） |
 | `myStats` | — | `{ total, activeCount, retiredCount, totalKm, retiringSoonCount }` | 跑鞋统计（mine 红点用 retiringSoonCount） |
+| **`getDetail`**（V0.1.133） | `{ id }` | `ShoeDetail` | 单只跑鞋详情（含 totalCheckins/latestCheckinAt/daysSincePurchase） |
+| **`getMileageHistory`**（V0.1.133） | `{ id }` | `MileageHistory` | 历史里程曲线（weekly + monthly 双粒度一次性返，garmin cm→km 分流） |
+| **`updateThreshold`**（V0.1.133） | `{ id, thresholdKm }` | `{ id, thresholdKm }` | 单字段原子更新阈值（100-2000） |
 
 ---
 
@@ -72,14 +75,39 @@ export async function incrementShoeKm(
 
 ---
 
+## 📊 V0.1.133 跑鞋增强（阈值个性化 + 历史里程曲线）
+
+### 3 新 action
+
+| action | 用途 | 关键设计 |
+| --- | --- | --- |
+| **`getDetail(userId, shoeId)`** | 单只跑鞋详情 | 聚合 Checkin count + 最新打卡时间 + 购买天数（daysSincePurchase） |
+| **`getMileageHistory(userId, shoeId)`** | 历史里程曲线（周+月双粒度） | **单位分流关键坑**：garmin cm→km (`/100000`)，sport km 直通；`findMany + 内存 reduce` 避免 Prisma Float 精度 |
+| **`updateThreshold(userId, {id, thresholdKm})`** | 单字段原子更新阈值 | 独立 action 语义清晰（"我只改阈值不改其他"）；Zod 校验 100-2000 |
+
+### 关键坑（V0.1.133 沉淀）
+
+1. **Checkin.distance 单位混用**（最坑）：
+   - garmin-import.job.ts（V0.1.25）写入时单位是 cm（佳明返回的 distance 是 cm）
+   - sport.checkin 创建时单位是 km（`Math.floor(clean.distance * perKm)` 中 `clean.distance` 是 km）
+   - **解决**：`normalizeDistanceKm(distance, dataSource)` helper：dataSource==='garmin' → `/100000`，其他 → 直通
+   - 写入时也确认正确：`incrementShoeKm(tx, shoeId, distanceKm)` — sport.checkin 传 km，garmin-import 转 cm 后 `/100000` 调 incrementShoeKm
+
+2. **Prisma Float 精度**：`groupBy(by period)` 会有精度损失 → `findMany + 内存 reduce` 而非 SQL groupBy（跑鞋打卡量小，性能 OK）
+
+3. **更新频率**：`updateThreshold` 独立 action 而非复用 `update`（update 是全字段替换，前端编辑阈值语义清晰）
+
+---
+
 ## 🧪 测试
 
 ```bash
-# tests/modules/shoes/shoes.service.test.ts — 7 单元
+# tests/modules/shoes/shoes.service.test.ts — **16 单元**（V0.1.133 +9：getDetail 2 / getMileageHistory 5 / updateThreshold 2）
+# tests/modules/shoes/shoes.routes.test.ts — 7 单元
 pnpm test shoes
 ```
 
-覆盖：list 排序 / add / update 校验存在 / retire active→retired / retire 重复退役 badRequest / myStats retiringSoonCount / incrementShoeKm 纯函数（事务客户端调用）。
+覆盖：list 排序 / add / update 校验存在 / retire active→retired / retire 重复退役 badRequest / myStats retiringSoonCount / **getDetail（正常 + notFound）/ getMileageHistory（garmin cm→km 单位分流 + sport km 直通 + 双粒度分桶 + 空数据 + notFound）/ updateThreshold（正常 + notFound）** / incrementShoeKm 纯函数（事务客户端调用）。
 
 ---
 

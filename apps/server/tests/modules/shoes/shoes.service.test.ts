@@ -1,7 +1,8 @@
 /**
- * shoes module 单测（V0.1.26，跑者向 — 跑鞋里程管理）
+ * shoes module 单测（V0.1.26 跑者向 + V0.1.133 增强）
  *
- * 覆盖：list（含 healthRatio）/ add / retire（active→retired + 已退役 + 不存在）/ myStats
+ * V0.1.26：list（含 healthRatio）/ add / retire / myStats
+ * V0.1.133：getDetail / getMileageHistory（含 garmin cm→km 单位分流 + 周/月分桶）/ updateThreshold
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mockErrors } from '../../helpers/mockErrors.js';
@@ -9,6 +10,7 @@ import { mockErrors } from '../../helpers/mockErrors.js';
 vi.mock('src/infra/prisma.js', () => ({
   prisma: {
     shoe: { findMany: vi.fn(), create: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
+    checkin: { findMany: vi.fn(), findFirst: vi.fn(), count: vi.fn() },
   },
 }));
 vi.mock('src/common/errors.js', () => ({ Errors: mockErrors }));
@@ -120,5 +122,132 @@ describe('shoesService.myStats (V0.1.26)', () => {
     expect(r.retiredCount).toBe(1);
     expect(r.totalKm).toBe(1900); // 600+300+1000
     expect(r.retiringSoonCount).toBe(1); // 仅 600/800=75%
+  });
+});
+
+// ============================================================
+// V0.1.133 跑鞋增强：详情 / 历史里程曲线 / 阈值更新
+// ============================================================
+
+describe('shoesService.getDetail (V0.1.133)', () => {
+  it('返详情 + 累计打卡数 + 最新打卡 + 购买天数', async () => {
+    const purchased = new Date('2026-01-01T00:00:00Z');
+    mockedPrisma.shoe.findFirst.mockResolvedValue({
+      id: 's1', brand: 'Nike', model: 'Vaporfly', nickname: '战靴',
+      currentKm: 600, thresholdKm: 800, status: 'active',
+      purchasedAt: purchased, note: '主力',
+      createdAt: new Date('2026-01-01T00:00:00Z'),
+      updatedAt: new Date('2026-07-01T00:00:00Z'),
+    } as never);
+    mockedPrisma.checkin.count.mockResolvedValue(42);
+    mockedPrisma.checkin.findFirst.mockResolvedValue({
+      createdAt: new Date('2026-07-10T00:00:00Z'),
+    } as never);
+
+    const r = await shoesService.getDetail('u1', 's1');
+
+    expect(r.id).toBe('s1');
+    expect(r.healthRatio).toBe(75); // 600/800*100
+    expect(r.totalCheckins).toBe(42);
+    expect(r.latestCheckinAt).toBe('2026-07-10T00:00:00.000Z');
+    expect(r.daysSincePurchase).toBeGreaterThan(180);
+  });
+
+  it('不属于自己的鞋 → notFound', async () => {
+    mockedPrisma.shoe.findFirst.mockResolvedValue(null);
+    await expect(shoesService.getDetail('u1', 's99')).rejects.toThrow();
+  });
+});
+
+describe('shoesService.getMileageHistory (V0.1.133)', () => {
+  it('garmin cm 数据 → 单位分流 /100000 转 km', async () => {
+    mockedPrisma.shoe.findFirst.mockResolvedValue({ id: 's1' } as never);
+    // 3 条 garmin 数据（同 ISO 周 W28 + 同月 2026-07）：5000cm + 8000cm + 10000cm
+    // (cm→km: 0.05 + 0.08 + 0.10 = 0.23km)
+    mockedPrisma.checkin.findMany.mockResolvedValue([
+      { distance: 5000, createdAt: new Date('2026-07-06T10:00:00Z'), dataSource: 'garmin' }, // Mon
+      { distance: 8000, createdAt: new Date('2026-07-08T10:00:00Z'), dataSource: 'garmin' }, // Wed
+      { distance: 10000, createdAt: new Date('2026-07-10T10:00:00Z'), dataSource: 'garmin' }, // Fri
+    ] as never);
+
+    const r = await shoesService.getMileageHistory('u1', 's1');
+
+    expect(r.totalCheckins).toBe(3);
+    expect(r.totalKm).toBeCloseTo(0.2, 1); // 0.23 → 0.2 (round 1 位小数)
+    expect(r.weekly).toHaveLength(1); // 同 ISO 周 (W28)
+    expect(r.monthly).toHaveLength(1); // 同月 (2026-07)
+    expect(r.weekly[0].distanceKm).toBeCloseTo(0.2, 1);
+  });
+
+  it('sport.checkin km 数据 → 直通（不除）', async () => {
+    mockedPrisma.shoe.findFirst.mockResolvedValue({ id: 's1' } as never);
+    // 2 条 sport 数据：5km + 8km（km 单位直通）
+    mockedPrisma.checkin.findMany.mockResolvedValue([
+      { distance: 5, createdAt: new Date('2026-07-01T10:00:00Z'), dataSource: 'sport' },
+      { distance: 8, createdAt: new Date('2026-07-15T10:00:00Z'), dataSource: 'sport' },
+    ] as never);
+
+    const r = await shoesService.getMileageHistory('u1', 's1');
+
+    expect(r.totalKm).toBe(13); // 5+8 直通
+    expect(r.totalCheckins).toBe(2);
+  });
+
+  it('周+月双粒度分桶（跨周/跨月）', async () => {
+    mockedPrisma.shoe.findFirst.mockResolvedValue({ id: 's1' } as never);
+    // 跨 3 周 + 2 月
+    mockedPrisma.checkin.findMany.mockResolvedValue([
+      { distance: 5, createdAt: new Date('2026-06-28T10:00:00Z'), dataSource: 'sport' },  // 2026-W27 2026-06
+      { distance: 3, createdAt: new Date('2026-07-05T10:00:00Z'), dataSource: 'sport' },  // 2026-W28 2026-07
+      { distance: 7, createdAt: new Date('2026-07-12T10:00:00Z'), dataSource: 'sport' },  // 2026-W29 2026-07
+      { distance: 10, createdAt: new Date('2026-07-25T10:00:00Z'), dataSource: 'sport' }, // 2026-W30 2026-07
+    ] as never);
+
+    const r = await shoesService.getMileageHistory('u1', 's1');
+
+    expect(r.weekly).toHaveLength(4); // 4 个不同的周
+    expect(r.monthly).toHaveLength(2); // 2 个不同的月
+    expect(r.monthly[0].period).toBe('2026-06');
+    expect(r.monthly[0].distanceKm).toBe(5);
+    expect(r.monthly[1].period).toBe('2026-07');
+    expect(r.monthly[1].distanceKm).toBe(20); // 3+7+10
+    expect(r.totalKm).toBe(25);
+  });
+
+  it('空数据 → 双数组空 + totalCheckins=0', async () => {
+    mockedPrisma.shoe.findFirst.mockResolvedValue({ id: 's1' } as never);
+    mockedPrisma.checkin.findMany.mockResolvedValue([]);
+
+    const r = await shoesService.getMileageHistory('u1', 's1');
+
+    expect(r.weekly).toEqual([]);
+    expect(r.monthly).toEqual([]);
+    expect(r.totalCheckins).toBe(0);
+    expect(r.totalKm).toBe(0);
+  });
+
+  it('不属于自己的鞋 → notFound', async () => {
+    mockedPrisma.shoe.findFirst.mockResolvedValue(null);
+    await expect(shoesService.getMileageHistory('u1', 's99')).rejects.toThrow();
+  });
+});
+
+describe('shoesService.updateThreshold (V0.1.133)', () => {
+  it('更新阈值（仅 thresholdKm 字段）', async () => {
+    mockedPrisma.shoe.findFirst.mockResolvedValue({ id: 's1' } as never);
+    mockedPrisma.shoe.update.mockResolvedValue({} as never);
+
+    const r = await shoesService.updateThreshold('u1', { id: 's1', thresholdKm: 1000 });
+
+    expect(mockedPrisma.shoe.update).toHaveBeenCalledWith({
+      where: { id: 's1' },
+      data: { thresholdKm: 1000 },
+    });
+    expect(r).toEqual({ id: 's1', thresholdKm: 1000 });
+  });
+
+  it('不存在 → notFound', async () => {
+    mockedPrisma.shoe.findFirst.mockResolvedValue(null);
+    await expect(shoesService.updateThreshold('u1', { id: 's99', thresholdKm: 800 })).rejects.toThrow();
   });
 });

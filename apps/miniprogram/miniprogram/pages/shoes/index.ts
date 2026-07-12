@@ -74,15 +74,22 @@ Page({
     });
   },
 
-  /** 表单输入（动态字段） */
+  /** 表单输入（动态字段） — V0.1.133 阈值改 slider，去除 text input */
   onInput(e: WechatMiniprogram.Input) {
     const field = e.currentTarget.dataset.field as keyof typeof this.data.form;
     const value = e.detail.value;
-    if (field === 'thresholdKm') {
-      this.setData({ form: { ...this.data.form, thresholdKm: Number(value) || DEFAULT_THRESHOLD } });
-    } else {
-      this.setData({ form: { ...this.data.form, [field]: value } });
-    }
+    this.setData({ form: { ...this.data.form, [field]: value } });
+  },
+
+  /** 阈值 slider 拖动中（V0.1.133） */
+  onThresholdChanging(e: WechatMiniprogram.SliderChanging) {
+    this.setData({ form: { ...this.data.form, thresholdKm: e.detail.value } });
+  },
+
+  /** 点击跑鞋卡 → 跳详情页（V0.1.133） */
+  onTapShoe(e: WechatMiniprogram.TouchEvent) {
+    const id = e.currentTarget.dataset.id as string;
+    wx.navigateTo({ url: `/pages/shoes-detail/index?id=${id}` });
   },
 
   /** 提交添加 */

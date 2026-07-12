@@ -31,6 +31,7 @@
     "pages/device-bind/index",
     "pages/training/index",
     "pages/shoes/index",
+    "pages/shoes-detail/index",
     "pages/annual-report/index",
     "pages/goal/index",
     "pages/certificate/index",

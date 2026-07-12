@@ -18,7 +18,13 @@
       <view class="empty-tip">添加你的第一双跑鞋，打卡自动累计里程</view>
     </view>
 
-    <view class="shoe-card {{item.status === 'retired' ? 'retired' : ''}}" wx:for="{{shoes}}" wx:key="id">
+    <view
+      class="shoe-card {{item.status === 'retired' ? 'retired' : ''}}"
+      wx:for="{{shoes}}"
+      wx:key="id"
+      data-id="{{item.id}}"
+      bindtap="onTapShoe"
+    >
       <view class="shoe-head">
         <view class="shoe-name">{{item.nickname || (item.brand + ' ' + item.model)}}</view>
         <view class="shoe-status {{item.status}}">{{item.status === 'active' ? '使用中' : '已退役'}}</view>
@@ -46,9 +52,9 @@
         <block wx:else>✓ 状态良好</block>
       </view>
 
-      <!-- 退役按钮 -->
+      <!-- 操作按钮（点卡→详情 / 长按→菜单 / 退役） -->
       <view class="shoe-actions" wx:if="{{item.status === 'active'}}">
-        <view class="retire-btn" data-id="{{item.id}}" bindtap="onRetire">退役</view>
+        <view class="retire-btn" data-id="{{item.id}}" catchtap="onRetire">退役</view>
       </view>
     </view>
   </view>
@@ -76,7 +82,21 @@
       </view>
       <view class="form-item">
         <text class="label">更换阈值</text>
-        <input class="input" type="number" value="{{form.thresholdKm}}" data-field="thresholdKm" bindinput="onInput" placeholder="km（默认 800）" />
+        <view class="threshold-row">
+          <slider
+            min="100"
+            max="2000"
+            step="50"
+            value="{{form.thresholdKm}}"
+            bindchanging="onThresholdChanging"
+            activeColor="#0FAF8E"
+            block-size="20"
+            show-value="{{false}}"
+            class="threshold-slider"
+          />
+          <text class="threshold-val">{{form.thresholdKm}} km</text>
+        </view>
+        <view class="threshold-tip">拖动滑块调整（100-2000，默认 800）</view>
       </view>
       <view class="form-actions">
         <button class="btn-cancel" bindtap="closeForm">取消</button>

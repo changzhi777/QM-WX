@@ -22,9 +22,63 @@ export const UpdateShoeInputSchema = AddShoeInputSchema.extend({
 });
 export type UpdateShoeInput = z.infer<typeof UpdateShoeInputSchema>;
 
+/** V0.1.133 单字段原子更新阈值 */
+export const UpdateThresholdInputSchema = z.object({
+  id: z.string(),
+  thresholdKm: z.number().min(100).max(2000),
+});
+export type UpdateThresholdInput = z.infer<typeof UpdateThresholdInputSchema>;
+
+/** V0.1.133 跑鞋详情（含聚合） */
+export const ShoeDetailSchema = z.object({
+  id: z.string(),
+  brand: z.string(),
+  model: z.string(),
+  nickname: z.string().nullable(),
+  currentKm: z.number(),
+  thresholdKm: z.number(),
+  status: z.enum(['active', 'retired']),
+  purchasedAt: z.string().nullable(),
+  note: z.string().nullable(),
+  healthRatio: z.number(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  totalCheckins: z.number(),
+  latestCheckinAt: z.string().nullable(),
+  daysSincePurchase: z.number().nullable(),
+});
+export type ShoeDetail = z.infer<typeof ShoeDetailSchema>;
+
+/** V0.1.133 里程曲线单点 */
+export const MileagePointSchema = z.object({
+  period: z.string(), // weekly: "2026-W28" / monthly: "2026-07"
+  distanceKm: z.number(),
+  checkinCount: z.number(),
+});
+export type MileagePoint = z.infer<typeof MileagePointSchema>;
+
+/** V0.1.133 里程曲线（周+月双粒度一次性返） */
+export const MileageHistorySchema = z.object({
+  weekly: z.array(MileagePointSchema),
+  monthly: z.array(MileagePointSchema),
+  totalKm: z.number(),
+  totalCheckins: z.number(),
+});
+export type MileageHistory = z.infer<typeof MileageHistorySchema>;
+
 export const ShoeIdInputSchema = z.object({ id: z.string() });
 
 export const ShoesActionBodySchema = z.object({
-  action: z.enum(['list', 'add', 'update', 'retire', 'myStats']),
+  action: z.enum([
+    'list',
+    'add',
+    'update',
+    'retire',
+    'myStats',
+    // V0.1.133
+    'getDetail',
+    'getMileageHistory',
+    'updateThreshold',
+  ]),
   payload: z.unknown().optional(),
 });

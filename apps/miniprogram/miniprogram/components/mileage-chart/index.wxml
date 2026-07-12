@@ -1,0 +1,8 @@
+<view class="mileage-chart-wrapper" style="width:{{width}}px;height:{{height}}px;">
+  <canvas
+    type="2d"
+    id="mileageChartCanvas"
+    class="mileage-chart-canvas"
+    style="width:{{width}}px;height:{{height}}px;"
+  />
+</view>
