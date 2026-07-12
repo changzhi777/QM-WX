@@ -10,8 +10,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('src/infra/prisma.js', () => ({
   prisma: {
-    checkin: { aggregate: vi.fn(), findFirst: vi.fn(), groupBy: vi.fn() },
+    checkin: { aggregate: vi.fn(), findFirst: vi.fn(), groupBy: vi.fn(), findMany: vi.fn() },
     enrollment: { findMany: vi.fn() },
+    groupMember: { findMany: vi.fn() }, // V0.1.135 group contribution
+    group: { findUnique: vi.fn() },
   },
 }));
 
@@ -172,6 +174,9 @@ describe('statsService.myCertificates (V0.1.28)', () => {
         content: { title: '长沙马拉松', date: '2026-10-01', location: '长沙', cover: null },
       },
     ] as never);
+    // V0.1.135 多种证书需要：checkin.findMany + groupMember.findMany
+    mockedPrisma.checkin.findMany.mockResolvedValue([] as never);
+    mockedPrisma.groupMember.findMany.mockResolvedValue([] as never);
 
     const r = await statsService.myCertificates('u1');
 
@@ -191,6 +196,8 @@ describe('statsService.myCertificates (V0.1.28)', () => {
       _count: 0,
     } as never);
     mockedPrisma.enrollment.findMany.mockResolvedValueOnce([]);
+    mockedPrisma.checkin.findMany.mockResolvedValue([] as never);
+    mockedPrisma.groupMember.findMany.mockResolvedValue([] as never);
 
     const r = await statsService.myCertificates('u1');
 
@@ -205,10 +212,57 @@ describe('statsService.myCertificates (V0.1.28)', () => {
       _count: 500,
     } as never);
     mockedPrisma.enrollment.findMany.mockResolvedValueOnce([]);
+    mockedPrisma.checkin.findMany.mockResolvedValue([] as never);
+    mockedPrisma.groupMember.findMany.mockResolvedValue([] as never);
 
     const r = await statsService.myCertificates('u1');
 
     expect(r.milestones).toHaveLength(4); // 100/500/1000/3000 全达
     expect(r.nextMilestone).toBeNull();
+  });
+});
+
+// ============================================================
+// V0.1.135 多种证书 helper
+// ============================================================
+
+describe('statsService.myCertificates 多种证书 (V0.1.135)', () => {
+  it('总跑量 600 + 配速进步达成 + 连续 7 天 + 群内前 3 → 返 5 段', async () => {
+    // 总跑量 600
+    mockedPrisma.checkin.aggregate.mockResolvedValueOnce({
+      _sum: { distance: 600 },
+      _count: 80,
+    } as never);
+    mockedPrisma.enrollment.findMany.mockResolvedValueOnce([]);
+
+    // computePaceProgressCert: 10 次有配速 checkin，最近 5 比前 5 快 10%
+    const recent5 = Array.from({ length: 5 }, () => ({ distance: 10, durationSec: 3000 })); // pace 300
+    const baseline5 = Array.from({ length: 5 }, () => ({ distance: 10, durationSec: 3500 })); // pace 350
+    mockedPrisma.checkin.findMany.mockResolvedValueOnce([...recent5, ...baseline5] as never);
+
+    // computeConsecutiveCheckinCert: 7 天连续 (2026-07-01 ~ 2026-07-07)
+    mockedPrisma.checkin.findMany.mockResolvedValueOnce(
+      [1, 2, 3, 4, 5, 6, 7].map((d) => ({ date: `2026-07-0${d}` })) as never,
+    );
+
+    // computeGroupContributionCert: 1 个 group + 用户 rank 1
+    mockedPrisma.groupMember.findMany.mockResolvedValueOnce([{ groupId: 'g1' }] as never);
+    mockedPrisma.group.findUnique.mockResolvedValueOnce({ name: '晨跑群' } as never);
+    mockedPrisma.groupMember.findMany.mockResolvedValueOnce([{ userId: 'u1' }, { userId: 'u2' }] as never);
+    mockedPrisma.checkin.groupBy.mockResolvedValueOnce([
+      { userId: 'u1', _sum: { distance: 100 } },
+      { userId: 'u2', _sum: { distance: 50 } },
+    ] as never);
+
+    const r = await statsService.myCertificates('u1');
+
+    expect(r.totalDistance).toBe(600);
+    expect(r.milestones).toHaveLength(2); // 100/500 达成
+    expect(r.paceProgressCert.achieved).toBe(true);
+    expect(r.paceProgressCert.improvementPct).toBeGreaterThan(10);
+    expect(r.consecutiveCheckinCert.longestStreak).toBe(7);
+    expect(r.consecutiveCheckinCert.achieved).toHaveLength(1); // 7 天达成
+    expect(r.groupContributionCert.achieved).toBe(true);
+    expect(r.groupContributionCert.topRanks).toHaveLength(1);
   });
 });

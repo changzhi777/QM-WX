@@ -1,0 +1,8 @@
+<view class="poster-wrapper" style="width:{{width}}px;height:{{height}}px;">
+  <canvas
+    type="2d"
+    id="posterCanvas"
+    class="poster-canvas"
+    style="width:{{width}}px;height:{{height}}px;"
+  />
+</view>

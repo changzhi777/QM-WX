@@ -9,8 +9,9 @@ import { mockErrors } from '../../helpers/mockErrors.js';
 vi.mock('src/infra/prisma.js', () => ({
   prisma: {
     goal: { findMany: vi.fn(), create: vi.fn(), findFirst: vi.fn(), delete: vi.fn() },
-    checkin: { aggregate: vi.fn() },
+    checkin: { aggregate: vi.fn(), findMany: vi.fn() },
     familyMember: { findUnique: vi.fn(), findMany: vi.fn() }, // V0.1.34 家庭目标
+    user: { findUnique: vi.fn(), update: vi.fn() }, // V0.1.135 自定义里程碑
   },
 }));
 vi.mock('src/common/errors.js', () => ({ Errors: mockErrors }));
@@ -216,5 +217,88 @@ describe('goalService.myFamilyGoals (V0.1.34)', () => {
     mockedPrisma.familyMember.findUnique.mockResolvedValue(null);
     const r = await goalService.myFamilyGoals('u1');
     expect(r.goals).toEqual([]);
+  });
+});
+
+// ============================================================
+// V0.1.135 自定义里程碑
+// ============================================================
+
+describe('goalService.addCustomMilestone (V0.1.135)', () => {
+  it('添加自定义里程碑（含 achievement 查询）', async () => {
+    // 第一次调用：addCustomMilestone 入口 findUnique → 空
+    mockedPrisma.user.findUnique.mockResolvedValueOnce({
+      id: 'u1',
+      customMilestones: [],
+    } as never);
+    mockedPrisma.user.update.mockResolvedValue({} as never);
+    // 第二次调用：checkMilestoneAchievement 入口 findUnique → 新增的 km: 10
+    mockedPrisma.user.findUnique.mockResolvedValueOnce({
+      id: 'u1',
+      customMilestones: [{ km: 10, title: '10 km 入门' }],
+    } as never);
+    mockedPrisma.checkin.aggregate.mockResolvedValue({ _sum: { distance: 50 } } as never);
+    mockedPrisma.checkin.findMany.mockResolvedValue([] as never);
+
+    const r = await goalService.addCustomMilestone('u1', { km: 10, title: '10 km 入门' });
+    expect(r.milestone.km).toBe(10);
+    expect(r.milestone.title).toBe('10 km 入门');
+    expect(r.achievement.achieved).toBe(true); // 50 >= 10
+    expect(r.achievement.currentKm).toBe(50);
+  });
+
+  it('重复 km → conflict', async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      customMilestones: [{ km: 10, title: '已存在' }],
+    } as never);
+
+    await expect(
+      goalService.addCustomMilestone('u1', { km: 10, title: '重复' }),
+    ).rejects.toThrow();
+  });
+
+  it('超过 20 个 → badRequest', async () => {
+    const existing = Array.from({ length: 20 }, (_, i) => ({ km: i + 1, title: `m${i}` }));
+    mockedPrisma.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      customMilestones: existing,
+    } as never);
+
+    await expect(
+      goalService.addCustomMilestone('u1', { km: 100, title: '超额' }),
+    ).rejects.toThrow();
+  });
+});
+
+describe('goalService.checkMilestoneAchievement (V0.1.135)', () => {
+  it('已达成 → achieved=true + achievedAt', async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      customMilestones: [{ km: 100, title: '百公里入门' }],
+    } as never);
+    mockedPrisma.checkin.aggregate.mockResolvedValue({ _sum: { distance: 250 } } as never);
+    mockedPrisma.checkin.findMany.mockResolvedValue([
+      { distance: 60, date: '2026-07-01' },
+      { distance: 50, date: '2026-07-02' }, // 累计 110 ≥ 100，最早达成日期
+      { distance: 140, date: '2026-07-03' },
+    ] as never);
+
+    const r = await goalService.checkMilestoneAchievement('u1', 100);
+    expect(r.achieved).toBe(true);
+    expect(r.currentKm).toBe(250);
+    expect(r.achievedAt).toBe('2026-07-02');
+  });
+
+  it('未达成 → achieved=false', async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      customMilestones: [{ km: 100, title: '百公里' }],
+    } as never);
+    mockedPrisma.checkin.aggregate.mockResolvedValue({ _sum: { distance: 50 } } as never);
+
+    const r = await goalService.checkMilestoneAchievement('u1', 100);
+    expect(r.achieved).toBe(false);
+    expect(r.achievedAt).toBeNull();
   });
 });

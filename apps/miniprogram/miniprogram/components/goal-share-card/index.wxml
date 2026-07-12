@@ -1,0 +1,8 @@
+<view class="share-card-wrapper" style="width:{{width}}px;height:{{height}}px;">
+  <canvas
+    type="2d"
+    id="shareCardCanvas"
+    class="share-card-canvas"
+    style="width:{{width}}px;height:{{height}}px;"
+  />
+</view>

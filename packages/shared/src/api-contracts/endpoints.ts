@@ -182,6 +182,11 @@ export const ENDPOINTS = {
     myProgress: '/api/goal',
     addFamilyGoal: '/api/goal',
     myFamilyGoals: '/api/goal',
+    // V0.1.135 自定义里程碑
+    addCustomMilestone: '/api/goal',
+    removeCustomMilestone: '/api/goal',
+    listCustomMilestones: '/api/goal',
+    checkMilestoneAchievement: '/api/goal',
   },
   favorite: {
     list: '/api/favorite',

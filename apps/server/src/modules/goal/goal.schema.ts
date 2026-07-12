@@ -1,5 +1,5 @@
 /**
- * goal module Zod schemas（V0.1.28，跑者向 — 跑步目标 + 进度跟踪）
+ * goal module Zod schemas（V0.1.28 跑者向 — 跑步目标 + V0.1.34 家庭目标 + V0.1.135 自定义里程碑）
  */
 import { z } from 'zod';
 
@@ -23,9 +23,46 @@ export const AddFamilyGoalSchema = AddGoalInputSchema.extend({
 });
 export type AddFamilyGoalInput = z.infer<typeof AddFamilyGoalSchema>;
 
+// ===== V0.1.135 自定义里程碑 =====
+
+/** 自定义里程碑单条 */
+export const CustomMilestoneSchema = z.object({
+  km: z.number().min(1).max(100000),
+  title: z.string().min(1).max(50),
+  icon: z.string().max(20).optional(),
+});
+export type CustomMilestone = z.infer<typeof CustomMilestoneSchema>;
+
+/** 添加自定义里程碑 */
+export const AddCustomMilestoneInputSchema = CustomMilestoneSchema;
+export type AddCustomMilestoneInput = z.infer<typeof AddCustomMilestoneInputSchema>;
+
+/** 删除自定义里程碑 */
+export const RemoveCustomMilestoneInputSchema = z.object({
+  km: z.number().min(1),
+});
+export type RemoveCustomMilestoneInput = z.infer<typeof RemoveCustomMilestoneInputSchema>;
+
+/** 里程碑达成查询 */
+export const CheckMilestoneAchievementInputSchema = z.object({
+  km: z.number().min(1),
+});
+
 export const GoalIdInputSchema = z.object({ id: z.string() });
 
 export const GoalActionBodySchema = z.object({
-  action: z.enum(['list', 'add', 'remove', 'myProgress', 'addFamilyGoal', 'myFamilyGoals']),
+  action: z.enum([
+    'list',
+    'add',
+    'remove',
+    'myProgress',
+    'addFamilyGoal',
+    'myFamilyGoals',
+    // V0.1.135 自定义里程碑
+    'addCustomMilestone',
+    'removeCustomMilestone',
+    'listCustomMilestones',
+    'checkMilestoneAchievement',
+  ]),
   payload: z.unknown().optional(),
 });

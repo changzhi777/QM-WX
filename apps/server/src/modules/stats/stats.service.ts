@@ -29,6 +29,13 @@ const MILESTONE_CERTS = [
   { km: 3000, title: '马拉松健将', desc: '累计跑量突破 3000 km' },
 ] as const;
 
+/** V0.1.135 连续打卡证书配置 */
+const CONSECUTIVE_CERTS = [
+  { days: 7, title: '周连击', desc: '连续打卡 7 天' },
+  { days: 30, title: '月度坚持', desc: '连续打卡 30 天' },
+  { days: 100, title: '百日筑基', desc: '连续打卡 100 天' },
+] as const;
+
 export const statsService = {
   /**
    * 跑者数据中心汇总（参考图 2768）
@@ -205,7 +212,172 @@ export const statsService = {
         milestones,
         marathons,
         nextMilestone: MILESTONE_CERTS.find((m) => totalDistance < m.km) ?? null,
+        // V0.1.135 多种证书
+        paceProgressCert: await computePaceProgressCert(userId),
+        consecutiveCheckinCert: await computeConsecutiveCheckinCert(userId),
+        groupContributionCert: await computeGroupContributionCert(userId),
       };
     });
   },
 };
+
+// ============================================================
+// V0.1.135 多种证书 helper（动态生成，沿用 MILESTONE_CERTS 范式）
+// ============================================================
+
+/**
+ * 配速进步证书：最近 5 次跑均快于历史均值 10%
+ *
+ * 算法：取用户最近 10 次有配速的 Checkin → 后 5 次平均 vs 前 5 次平均
+ * 简化：MVP 不区分训练强度，按距离+时间算 pace (sec/km)
+ */
+async function computePaceProgressCert(userId: string) {
+  const checkins = await prisma.checkin.findMany({
+    where: { userId, distance: { gt: 0 }, durationSec: { gt: 0 } },
+    orderBy: { createdAt: 'desc' },
+    take: 10,
+    select: { distance: true, durationSec: true },
+  });
+  if (checkins.length < 10) {
+    return { type: 'pace_progress' as const, achieved: false, reason: 'need_10_runs' };
+  }
+
+  // 前 5 次（基线）vs 后 5 次（最新） — 数组按 desc，所以 [0..4]=最新5次, [5..9]=之前5次
+  const recent5 = checkins.slice(0, 5);
+  const baseline5 = checkins.slice(5, 10);
+
+  const pace = (c: { distance: number; durationSec: number | null }) =>
+    c.distance > 0 && c.durationSec ? c.durationSec / c.distance : Infinity;
+
+  const recentAvg = recent5.reduce((s, c) => s + pace(c), 0) / 5;
+  const baselineAvg = baseline5.reduce((s, c) => s + pace(c), 0) / 5;
+
+  // 提速 10% → recent pace < baseline * 0.9
+  const achieved = recentAvg < baselineAvg * 0.9;
+
+  return {
+    type: 'pace_progress' as const,
+    title: '配速进步',
+    desc: '最近 5 次跑进历史均值 10%',
+    achieved,
+    currentPace: Math.round(recentAvg),
+    baselinePace: Math.round(baselineAvg),
+    improvementPct: baselineAvg > 0 ? Math.round((1 - recentAvg / baselineAvg) * 100) : 0,
+  };
+}
+
+/**
+ * 连续打卡证书：当前/历史最长连续打卡天数
+ *
+ * 算法：按 date asc 找最长 streak（跨日期连续）
+ */
+async function computeConsecutiveCheckinCert(userId: string) {
+  const checkins = await prisma.checkin.findMany({
+    where: { userId },
+    orderBy: { date: 'asc' },
+    select: { date: true },
+  });
+  if (checkins.length === 0) {
+    return {
+      type: 'consecutive_checkin' as const,
+      currentStreak: 0,
+      longestStreak: 0,
+      achieved: [] as Array<typeof CONSECUTIVE_CERTS[number]>,
+    };
+  }
+
+  // 去重 date
+  const uniqueDates = Array.from(new Set(checkins.map((c) => c.date))).sort();
+
+  // 计算当前 streak（从最后一天往前数）
+  let currentStreak = 1;
+  for (let i = uniqueDates.length - 1; i > 0; i--) {
+    const d1 = new Date(uniqueDates[i]);
+    const d2 = new Date(uniqueDates[i - 1]);
+    const diffDays = Math.round((d1.getTime() - d2.getTime()) / 86400000);
+    if (diffDays === 1) currentStreak++;
+    else break;
+  }
+
+  // 计算最长 streak（遍历整个序列）
+  let longestStreak = 1;
+  let cur = 1;
+  for (let i = 1; i < uniqueDates.length; i++) {
+    const d1 = new Date(uniqueDates[i - 1]);
+    const d2 = new Date(uniqueDates[i]);
+    const diffDays = Math.round((d2.getTime() - d1.getTime()) / 86400000);
+    if (diffDays === 1) cur++;
+    else cur = 1;
+    longestStreak = Math.max(longestStreak, cur);
+  }
+
+  // 达成的证书
+  const achieved = CONSECUTIVE_CERTS.filter((c) => longestStreak >= c.days);
+
+  return {
+    type: 'consecutive_checkin' as const,
+    title: '连续打卡',
+    currentStreak,
+    longestStreak,
+    achieved,
+  };
+}
+
+/**
+ * 群内贡献证书：用户在跑群本月跑量前 3
+ */
+async function computeGroupContributionCert(userId: string) {
+  const memberOf = await prisma.groupMember.findMany({
+    where: { userId },
+    select: { groupId: true },
+  });
+  if (memberOf.length === 0) {
+    return { type: 'group_contribution' as const, achieved: false, topRanks: [] };
+  }
+
+  const groupIds = memberOf.map((m) => m.groupId);
+
+  // 本月 CN 时区范围
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1) - 8 * 3600 * 1000)
+    .toISOString().slice(0, 10);
+  const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1) - 8 * 3600 * 1000)
+    .toISOString().slice(0, 10);
+
+  const topRanks: Array<{ groupId: string; groupName: string; rank: number }> = [];
+
+  // 对每个 group 聚合本月跑量 → 找用户排名
+  for (const groupId of groupIds) {
+    const group = await prisma.group.findUnique({ where: { id: groupId }, select: { name: true } });
+    if (!group) continue;
+
+    const memberIds = await prisma.groupMember.findMany({
+      where: { groupId },
+      select: { userId: true },
+    });
+    const uIds = memberIds.map((m) => m.userId);
+
+    const monthAgg = await prisma.checkin.groupBy({
+      by: ['userId'],
+      where: {
+        userId: { in: uIds },
+        date: { gte: monthStart, lt: monthEnd },
+      },
+      _sum: { distance: true },
+      orderBy: { _sum: { distance: 'desc' } },
+    });
+
+    const idx = monthAgg.findIndex((r) => r.userId === userId);
+    if (idx >= 0 && idx < 3) {
+      topRanks.push({ groupId, groupName: group.name, rank: idx + 1 });
+    }
+  }
+
+  return {
+    type: 'group_contribution' as const,
+    title: '群内前 3',
+    desc: '本月跑量在跑群内前 3 名',
+    achieved: topRanks.length > 0,
+    topRanks,
+  };
+}

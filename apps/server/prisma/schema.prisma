@@ -25,6 +25,7 @@ model User {
   memberExpireAt DateTime?
   points         Int       @default(0)
   certified      Boolean   @default(false)
+  customMilestones Json? @default("[]") // V0.1.135 自定义里程碑 [{km, title, icon?}, ...]
   // V0.1.40 个人资料扩展（profile 完整实现）
   gender         String? // male | female | unknown
   birthday       String? // YYYY-MM-DD

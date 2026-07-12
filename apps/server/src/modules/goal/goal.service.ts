@@ -14,7 +14,13 @@
  */
 import { prisma } from '../../infra/prisma.js';
 import { Errors } from '../../common/errors.js';
-import type { AddGoalInput, AddFamilyGoalInput } from './goal.schema.js';
+import type {
+  AddGoalInput,
+  AddFamilyGoalInput,
+  AddCustomMilestoneInput,
+  RemoveCustomMilestoneInput,
+  CustomMilestone,
+} from './goal.schema.js';
 
 /** Checkin.date 是 "YYYY-MM-DD"（东八区），按周期算字符串范围 */
 function cnDateRange(start: Date, end: Date): { gte: string; lt: string } {
@@ -174,5 +180,131 @@ export const goalService = {
     ]);
     const memberIds = allMembers.map((m) => m.userId);
     return { goals: await Promise.all(goals.map((g) => calcGoalProgress(memberIds, g))) };
+  },
+
+  // ============================================================
+  // V0.1.135 自定义里程碑（User.customMilestones Json 字段，零新表）
+  // ============================================================
+
+  /**
+   * 添加自定义里程碑
+   *
+   * 校验链：user 存在 → unique km → 长度 < 20 → km > 0 + title 非空
+   */
+  async addCustomMilestone(userId: string, input: AddCustomMilestoneInput) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw Errors.notFound('user not found');
+
+    const existing = (user.customMilestones as CustomMilestone[] | null) ?? [];
+
+    if (existing.length >= 20) {
+      throw Errors.badRequest('自定义里程碑已达上限 20 个');
+    }
+    if (existing.some((m) => m.km === input.km)) {
+      throw Errors.conflict('该 km 里程碑已存在');
+    }
+
+    const newMilestone: CustomMilestone = {
+      km: input.km,
+      title: input.title,
+      icon: input.icon,
+    };
+    const updated = [...existing, newMilestone].sort((a, b) => a.km - b.km);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { customMilestones: updated as never },
+    });
+
+    // 立即查达成状态
+    const achievement = await this.checkMilestoneAchievement(userId, input.km);
+    return { milestone: newMilestone, achievement };
+  },
+
+  /**
+   * 删除自定义里程碑（按 km）
+   */
+  async removeCustomMilestone(userId: string, input: RemoveCustomMilestoneInput) {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw Errors.notFound('user not found');
+
+    const existing = (user.customMilestones as CustomMilestone[] | null) ?? [];
+    const filtered = existing.filter((m) => m.km !== input.km);
+    if (filtered.length === existing.length) {
+      throw Errors.notFound('里程碑不存在');
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { customMilestones: filtered as never },
+    });
+    return { ok: true };
+  },
+
+  /**
+   * 列出我的自定义里程碑（按 km 升序）
+   */
+  async listCustomMilestones(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { customMilestones: true },
+    });
+    if (!user) throw Errors.notFound('user not found');
+    const milestones = (user.customMilestones as CustomMilestone[] | null) ?? [];
+    return { milestones: milestones.sort((a, b) => a.km - b.km) };
+  },
+
+  /**
+   * 查自定义里程碑达成状态
+   *
+   * 返：{ km, title, achieved, currentKm, achievedAt }
+   * achievedAt 找最早一次 Checkin 后 totalDistance >= km 的日期
+   */
+  async checkMilestoneAchievement(userId: string, km: number) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { customMilestones: true },
+    });
+    if (!user) throw Errors.notFound('user not found');
+
+    const milestones = (user.customMilestones as CustomMilestone[] | null) ?? [];
+    const milestone = milestones.find((m) => m.km === km);
+    if (!milestone) throw Errors.notFound('里程碑不存在');
+
+    // 总跑量
+    const agg = await prisma.checkin.aggregate({
+      _sum: { distance: true },
+      where: { userId },
+    });
+    const currentKm = agg._sum.distance ?? 0;
+    const achieved = currentKm >= km;
+
+    // 找最早达标日期（V0.1.28 后无累计视图，简化用最早达成 Checkin 日期）
+    let achievedAt: string | null = null;
+    if (achieved) {
+      // 按 date asc 找最早达到 km 的 Checkin
+      const checkins = await prisma.checkin.findMany({
+        where: { userId },
+        orderBy: { date: 'asc' },
+        select: { distance: true, date: true },
+      });
+      let cumulative = 0;
+      for (const c of checkins) {
+        cumulative += c.distance;
+        if (cumulative >= km) {
+          achievedAt = c.date;
+          break;
+        }
+      }
+    }
+
+    return {
+      km,
+      title: milestone.title,
+      icon: milestone.icon ?? null,
+      achieved,
+      currentKm: Math.round(currentKm * 10) / 10,
+      achievedAt,
+    };
   },
 };
