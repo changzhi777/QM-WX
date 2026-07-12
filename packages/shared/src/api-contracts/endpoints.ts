@@ -56,6 +56,10 @@ export const ENDPOINTS = {
     detail: '/api/content',
     enroll: '/api/content',
     myEnrollments: '/api/content',
+    // V0.1.134 赛事成绩
+    submitRaceResult: '/api/content',
+    getRaceLeaderboard: '/api/content',
+    getMyRaceResult: '/api/content',
   },
   weeklyReport: {
     currentWeek: '/api/weekly-report',
@@ -77,6 +81,9 @@ export const ENDPOINTS = {
     // 训练计划管理（V0.1.41）
     upsertTrainingPlan: '/api/admin',
     listTrainingPlans: '/api/admin',
+    // V0.1.134 赛事成绩 admin 录入
+    submitRaceResult: '/api/admin',
+    listEnrollmentsByContent: '/api/admin',
   },
   device: {
     listBindings: '/api/device',

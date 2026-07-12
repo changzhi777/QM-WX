@@ -34,6 +34,7 @@ import type {
   ListGroupBuysInput,
   UpsertTrainingPlanInput,
   ListTrainingPlansInput,
+  AdminSubmitRaceResultInput,
 } from './admin.schema.js';
 
 // ===== admin 白名单缓存（TTL 兜底：多实例部署本进程 invalidate 不通知其它实例）=====
@@ -890,4 +891,142 @@ export async function addReviewReply(input: { reviewId: string; content: string 
     data: { replyContent: input.content, repliedAt: new Date() },
   });
   return { ok: true };
+}
+
+/**
+ * V0.1.134 admin 录入赛事成绩
+ *
+ * 鉴权：isAdmin(openid) — 复用 admin 白名单缓存
+ * 不校验 enrollment.status（让 admin 也能补录）
+ * pace 后端算（finishTimeSec / content.detail.distanceKm）
+ * upsert by enrollmentId（一对一可改）
+ * 写 AuditLog（action='admin.submitRaceResult'）
+ */
+export async function submitRaceResult(
+  adminOpenid: string,
+  input: AdminSubmitRaceResultInput,
+  ip?: string,
+) {
+  if (!(await isAdmin(adminOpenid))) {
+    throw Errors.forbidden('需要 admin 权限');
+  }
+
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { id: input.enrollmentId },
+    include: { content: true },
+  });
+  if (!enrollment) throw Errors.notFound('enrollment not found');
+  if (enrollment.content.type !== 'marathon') {
+    throw Errors.badRequest('仅赛事可录入成绩');
+  }
+
+  const detail = (enrollment.content.detail as Record<string, unknown> | null) ?? null;
+  const distanceKm = typeof detail?.distanceKm === 'number' ? detail.distanceKm : null;
+  if (!distanceKm || distanceKm <= 0) {
+    throw Errors.badRequest('赛事未配置距离，无法计算配速');
+  }
+  const paceSecPerKm = Math.round(input.finishTimeSec / distanceKm);
+
+  const result = await prisma.raceResult.upsert({
+    where: { enrollmentId: input.enrollmentId },
+    create: {
+      enrollmentId: input.enrollmentId,
+      userId: enrollment.userId,
+      contentId: enrollment.contentId,
+      finishTimeSec: input.finishTimeSec,
+      paceSecPerKm,
+      rank: input.rank ?? null,
+      bibNumber: input.bibNumber ?? null,
+      source: 'admin_input',
+    },
+    update: {
+      finishTimeSec: input.finishTimeSec,
+      paceSecPerKm,
+      rank: input.rank ?? null,
+      bibNumber: input.bibNumber ?? null,
+      source: 'admin_input',
+    },
+  });
+
+  await recordAudit(
+    'admin.submitRaceResult',
+    input.enrollmentId,
+    { finishTimeSec: input.finishTimeSec, rank: input.rank ?? null },
+    adminOpenid,
+    ip,
+  );
+
+  return {
+    id: result.id,
+    enrollmentId: result.enrollmentId,
+    contentId: result.contentId,
+    finishTimeSec: result.finishTimeSec,
+    paceSecPerKm: result.paceSecPerKm,
+    rank: result.rank,
+    bibNumber: result.bibNumber,
+    finisherPhotoUrl: result.finisherPhotoUrl,
+    source: result.source,
+    createdAt: result.createdAt.toISOString(),
+    updatedAt: result.updatedAt.toISOString(),
+  };
+}
+
+/**
+ * V0.1.134 admin 查某赛事的报名列表（含 user 信息）
+ *
+ * 用于 admin-race-result 页面：列出所有 enrollment 让 admin 录入成绩
+ * 关联查 User 避免 N+1
+ */
+export async function listEnrollmentsByContent(adminOpenid: string, contentId: string) {
+  if (!(await isAdmin(adminOpenid))) {
+    throw Errors.forbidden('需要 admin 权限');
+  }
+  const enrollments = await prisma.enrollment.findMany({
+    where: { contentId },
+    orderBy: { createdAt: 'asc' },
+  });
+  if (enrollments.length === 0) return { enrollments: [] };
+
+  // 批量查 User 关联（DRY N+1）
+  const userIds = Array.from(new Set(enrollments.map((e) => e.userId)));
+  const users = await prisma.user.findMany({
+    where: { id: { in: userIds } },
+    select: { id: true, nickname: true, avatarUrl: true },
+  });
+  const userMap = new Map(users.map((u) => [u.id, u]));
+
+  // 批量查 RaceResult（含 raceResult 状态）
+  const results = await prisma.raceResult.findMany({
+    where: { contentId },
+  });
+  const resultMap = new Map(results.map((r) => [r.enrollmentId, r]));
+
+  return {
+    enrollments: enrollments.map((e) => {
+      const u = userMap.get(e.userId);
+      const r = resultMap.get(e.id);
+      return {
+        id: e.id,
+        userId: e.userId,
+        status: e.status,
+        user: {
+          id: e.userId,
+          nickname: u?.nickname ?? null,
+          avatarUrl: u?.avatarUrl ?? null,
+        },
+        raceResult: r
+          ? {
+              id: r.id,
+              enrollmentId: r.enrollmentId,
+              finishTimeSec: r.finishTimeSec,
+              paceSecPerKm: r.paceSecPerKm,
+              rank: r.rank,
+              bibNumber: r.bibNumber,
+              finisherPhotoUrl: r.finisherPhotoUrl,
+              source: r.source,
+            }
+          : null,
+      };
+    }),
+  };
 }

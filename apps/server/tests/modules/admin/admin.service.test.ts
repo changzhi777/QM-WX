@@ -10,7 +10,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const mockPrisma = vi.hoisted(() => ({
-  user: { findUnique: vi.fn(), update: vi.fn() },
+  user: { findUnique: vi.fn(), update: vi.fn(), findMany: vi.fn() },
   auditLog: { create: vi.fn(), findMany: vi.fn(), count: vi.fn() },
   trainingPlan: { create: vi.fn(), update: vi.fn(), findMany: vi.fn() },
   wallet: { findUnique: vi.fn(), update: vi.fn() },
@@ -20,6 +20,9 @@ const mockPrisma = vi.hoisted(() => ({
   distributionOrder: { findMany: vi.fn() }, // V0.1.108 结算单导出
   commissionLog: { groupBy: vi.fn() }, // V0.1.108 累计佣金 groupBy
   review: { findUnique: vi.fn(), update: vi.fn() }, // V0.1.117 评价回复
+  enrollment: { findUnique: vi.fn(), findMany: vi.fn() }, // V0.1.134 admin.submitRaceResult + listEnrollmentsByContent
+  raceResult: { upsert: vi.fn(), findMany: vi.fn() }, // V0.1.134 admin.submitRaceResult + listEnrollmentsByContent
+  appConfig: { findUnique: vi.fn() }, // V0.1.134 isAdmin 缓存
   $transaction: vi.fn(), // V0.1.105 提现审核用
 }));
 
@@ -44,6 +47,8 @@ import {
   confirmPickup,
   exportSettlement,
   addReviewReply,
+  submitRaceResult,
+  listEnrollmentsByContent,
 } from '../../../src/modules/admin/admin.service.js';
 import { BusinessError } from '../../../src/common/errors.js';
 
@@ -543,5 +548,117 @@ describe('admin.service · addReviewReply', () => {
       where: { id: 'r1' },
       data: expect.objectContaining({ replyContent: '感谢评价', repliedAt: expect.any(Date) }),
     });
+  });
+});
+
+// ============================================================
+// V0.1.134 admin.submitRaceResult
+// ============================================================
+
+describe('admin.service · submitRaceResult (V0.1.134)', () => {
+  beforeEach(() => {
+    // 默认 admin 在白名单
+    mockPrisma.appConfig.findUnique.mockResolvedValue({
+      value: { openids: ['admin1'] },
+    } as never);
+  });
+
+  it('正常录入（admin 鉴权 + upsert + AuditLog）', async () => {
+    mockPrisma.enrollment.findUnique.mockResolvedValue({
+      id: 'e1',
+      userId: 'u1',
+      contentId: 'c1',
+      content: { id: 'c1', type: 'marathon', detail: { distanceKm: 42 } },
+    } as never);
+    mockPrisma.raceResult.upsert.mockResolvedValue({
+      id: 'r1',
+      enrollmentId: 'e1',
+      userId: 'u1',
+      contentId: 'c1',
+      finishTimeSec: 12600,
+      paceSecPerKm: 300,
+      rank: 1,
+      bibNumber: 'A001',
+      finisherPhotoUrl: null,
+      source: 'admin_input',
+      createdAt: new Date('2026-07-12T10:00:00Z'),
+      updatedAt: new Date('2026-07-12T10:00:00Z'),
+    } as never);
+
+    const r = await submitRaceResult('admin1', {
+      enrollmentId: 'e1',
+      finishTimeSec: 12600,
+      rank: 1,
+      bibNumber: 'A001',
+    });
+
+    expect(r.id).toBe('r1');
+    expect(r.source).toBe('admin_input');
+    expect(r.rank).toBe(1);
+    expect(mockPrisma.raceResult.upsert).toHaveBeenCalled();
+  });
+
+  it('非 admin 鉴权失败', async () => {
+    await expect(
+      submitRaceResult('not-admin', {
+        enrollmentId: 'e1',
+        finishTimeSec: 12600,
+      }),
+    ).rejects.toThrow();
+  });
+});
+
+// ============================================================
+// V0.1.134 admin.listEnrollmentsByContent
+// ============================================================
+
+describe('admin.service · listEnrollmentsByContent (V0.1.134)', () => {
+  beforeEach(() => {
+    mockPrisma.appConfig.findUnique.mockResolvedValue({
+      value: { openids: ['admin1'] },
+    } as never);
+  });
+
+  it('正常返（含 user + raceResult 关联）', async () => {
+    mockPrisma.enrollment.findMany.mockResolvedValue([
+      { id: 'e1', userId: 'u1', contentId: 'c1', status: 'confirmed' },
+      { id: 'e2', userId: 'u2', contentId: 'c1', status: 'confirmed' },
+    ] as never);
+    mockPrisma.user.findMany.mockResolvedValue([
+      { id: 'u1', nickname: '张三', avatarUrl: 'http://x/1.jpg' },
+      { id: 'u2', nickname: '李四', avatarUrl: null },
+    ] as never);
+    mockPrisma.raceResult.findMany.mockResolvedValue([
+      {
+        id: 'r1',
+        enrollmentId: 'e1',
+        userId: 'u1',
+        contentId: 'c1',
+        finishTimeSec: 12600,
+        paceSecPerKm: 300,
+        rank: 1,
+        bibNumber: 'A001',
+        finisherPhotoUrl: null,
+        source: 'admin_input',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ] as never);
+
+    const r = await listEnrollmentsByContent('admin1', 'c1');
+    expect(r.enrollments).toHaveLength(2);
+    expect(r.enrollments[0].user.nickname).toBe('张三');
+    expect(r.enrollments[0].raceResult?.rank).toBe(1);
+    expect(r.enrollments[1].raceResult).toBeNull();
+  });
+
+  it('空数据 → enrollments: []', async () => {
+    mockPrisma.enrollment.findMany.mockResolvedValue([]);
+    const r = await listEnrollmentsByContent('admin1', 'c1');
+    expect(r.enrollments).toEqual([]);
+  });
+
+  it('非 admin 鉴权失败', async () => {
+    await expect(listEnrollmentsByContent('not-admin', 'c1')).rejects.toThrow();
   });
 });

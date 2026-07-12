@@ -652,9 +652,33 @@ model Enrollment {
   orderId   String? // V0.1.118 赛事报名支付关联（wxpay 回调查 enrollment confirmed）
   createdAt DateTime @default(now())
 
-  content Content @relation(fields: [contentId], references: [id])
+  content    Content     @relation(fields: [contentId], references: [id])
+  raceResult RaceResult? // V0.1.134 赛事成绩 1:1
 
   @@index([userId, contentId])
+}
+
+// ===== V0.1.134 赛事成绩 =====
+// 一人(报名)一成绩，可改（upsert）
+model RaceResult {
+  id               String   @id @default(cuid())
+  enrollmentId     String   @unique // 1:1
+  userId           String   // 冗余（避免 join Enrollment 查排行榜）
+  contentId        String   // 冗余（避免 join Enrollment 查排行榜）
+  finishTimeSec    Int?     // 完赛时间（秒）
+  paceSecPerKm     Int?     // 配速（秒/公里），后端算
+  rank             Int?     // 排名（DNF/null 不入榜）
+  bibNumber        String?  // 号码布
+  finisherPhotoUrl String?  // 终点照 URL
+  source           String   @default("user_report") // user_report | admin_input
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  enrollment Enrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@index([contentId, rank])
+  @@index([contentId, finishTimeSec])
+  @@index([userId])
 }
 
 // ===== 远程配置 / 功能开关 =====

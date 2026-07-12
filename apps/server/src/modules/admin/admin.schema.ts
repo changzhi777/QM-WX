@@ -220,3 +220,18 @@ export const AddReviewReplySchema = z.object({
   content: z.string().min(1).max(500),
 });
 export type AddReviewReplyInput = z.infer<typeof AddReviewReplySchema>;
+
+// ===== V0.1.134 赛事成绩 admin 录入 =====
+export const AdminSubmitRaceResultSchema = z.object({
+  enrollmentId: z.string().min(1),
+  finishTimeSec: z.number().int().min(1),
+  rank: z.number().int().min(1).optional(),
+  bibNumber: z.string().max(20).optional(),
+});
+export type AdminSubmitRaceResultInput = z.infer<typeof AdminSubmitRaceResultSchema>;
+
+/** admin 查赛事报名列表（V0.1.134 admin-race-result 页用） */
+export const AdminListEnrollmentsByContentSchema = z.object({
+  contentId: z.string().min(1),
+});
+export type AdminListEnrollmentsByContentInput = z.infer<typeof AdminListEnrollmentsByContentSchema>;

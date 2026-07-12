@@ -21,6 +21,7 @@ import type {
   ContentListInput,
   ContentEnrollInput,
   ContentMyEnrollmentsInput,
+  SubmitRaceResultInput,
 } from './content.schema.js';
 
 /** list 缓存 TTL：60s（内容列表变更不频繁，公开热路径，60s 容忍内容上新延迟） */
@@ -243,6 +244,147 @@ export const contentService = {
       total,
       page: input.page,
       pageSize: input.pageSize,
+    };
+  },
+
+  // ============================================================
+  // V0.1.134 赛事成绩（用户自报 + 排行榜 + 我的成绩）
+  // ============================================================
+
+  /**
+   * 用户自报成绩
+   *
+   * 校验链：
+   * 1. enrollment 存在且属于 user → notFound
+   * 2. enrollment.status === 'confirmed'（未支付/未确认 badRequest）
+   * 3. content.type === 'marathon'（仅赛事可录）
+   * 4. content.detail.distanceKm 必须有（计算 pace 用）
+   *
+   * upsert by enrollmentId（一对一可改）
+   */
+  async submitRaceResult(userId: string, input: SubmitRaceResultInput) {
+    const enrollment = await prisma.enrollment.findFirst({
+      where: { id: input.enrollmentId, userId },
+      include: { content: true },
+    });
+    if (!enrollment) throw Errors.notFound('enrollment not found');
+    if (enrollment.status !== 'confirmed') {
+      throw Errors.badRequest('请先完成支付确认后再录入成绩');
+    }
+    if (enrollment.content.type !== 'marathon') {
+      throw Errors.badRequest('仅赛事可录入成绩');
+    }
+
+    // 从 Content.detail.distanceKm 算 pace
+    const detail = (enrollment.content.detail as Record<string, unknown> | null) ?? null;
+    const distanceKm = typeof detail?.distanceKm === 'number' ? detail.distanceKm : null;
+    if (!distanceKm || distanceKm <= 0) {
+      throw Errors.badRequest('赛事未配置距离，无法计算配速');
+    }
+    const paceSecPerKm = Math.round(input.finishTimeSec / distanceKm);
+
+    const result = await prisma.raceResult.upsert({
+      where: { enrollmentId: input.enrollmentId },
+      create: {
+        enrollmentId: input.enrollmentId,
+        userId,
+        contentId: enrollment.contentId,
+        finishTimeSec: input.finishTimeSec,
+        paceSecPerKm,
+        finisherPhotoUrl: input.finisherPhotoUrl ?? null,
+        source: 'user_report',
+      },
+      update: {
+        finishTimeSec: input.finishTimeSec,
+        paceSecPerKm,
+        finisherPhotoUrl: input.finisherPhotoUrl ?? null,
+        source: 'user_report',
+      },
+    });
+
+    return {
+      id: result.id,
+      enrollmentId: result.enrollmentId,
+      contentId: result.contentId,
+      finishTimeSec: result.finishTimeSec,
+      paceSecPerKm: result.paceSecPerKm,
+      rank: result.rank,
+      bibNumber: result.bibNumber,
+      finisherPhotoUrl: result.finisherPhotoUrl,
+      source: result.source,
+      createdAt: result.createdAt.toISOString(),
+      updatedAt: result.updatedAt.toISOString(),
+    };
+  },
+
+  /**
+   * 排行榜：按 finishTimeSec 升序，取前 limit 名（DNF/null 不入榜）
+   *
+   * 范式：findMany RaceResult + 批量关联 User（避免 N+1）
+   */
+  async getRaceLeaderboard(contentId: string, limit = 50) {
+    const results = await prisma.raceResult.findMany({
+      where: {
+        contentId,
+        finishTimeSec: { not: null },
+      },
+      orderBy: { finishTimeSec: 'asc' },
+      take: limit,
+    });
+
+    if (results.length === 0) {
+      return { leaderboard: [], total: 0 };
+    }
+
+    // 批量查 User（DRY N+1 规避）
+    const userIds = Array.from(new Set(results.map((r) => r.userId)));
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, nickname: true, avatarUrl: true },
+    });
+    const userMap = new Map(users.map((u) => [u.id, u]));
+
+    const leaderboard = results.map((r, idx) => {
+      const u = userMap.get(r.userId);
+      return {
+        rank: idx + 1,
+        userId: r.userId,
+        nickname: u?.nickname ?? null,
+        avatarUrl: u?.avatarUrl ?? null,
+        finishTimeSec: r.finishTimeSec ?? 0,
+        paceSecPerKm: r.paceSecPerKm ?? 0,
+        finisherPhotoUrl: r.finisherPhotoUrl ?? null,
+      };
+    });
+
+    return { leaderboard, total: results.length };
+  },
+
+  /**
+   * 我的成绩：null 表示未录入
+   */
+  async getMyRaceResult(userId: string, contentId: string) {
+    const result = await prisma.raceResult.findFirst({
+      where: {
+        userId,
+        contentId,
+        // 必须是我的 enrollment 的成绩（RaceResult.userId 冗余字段即用即查）
+      },
+    });
+    if (!result) return null;
+
+    return {
+      id: result.id,
+      enrollmentId: result.enrollmentId,
+      contentId: result.contentId,
+      finishTimeSec: result.finishTimeSec,
+      paceSecPerKm: result.paceSecPerKm,
+      rank: result.rank,
+      bibNumber: result.bibNumber,
+      finisherPhotoUrl: result.finisherPhotoUrl,
+      source: result.source,
+      createdAt: result.createdAt.toISOString(),
+      updatedAt: result.updatedAt.toISOString(),
     };
   },
 };

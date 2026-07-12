@@ -43,6 +43,8 @@ import {
   ConfirmPickupSchema,
   ExportSettlementQuerySchema,
   AddReviewReplySchema,
+  AdminSubmitRaceResultSchema,
+  AdminListEnrollmentsByContentSchema,
   ListReviewsSchema,
 } from './admin.schema.js';
 
@@ -177,6 +179,21 @@ export async function adminRoutes(app: FastifyInstance) {
       case 'addReviewReply': {
         const input = AddReviewReplySchema.parse(payload);
         return { code: 0, data: await adminService.addReviewReply(input) };
+      }
+      // V0.1.134 赛事成绩 admin 录入
+      case 'submitRaceResult': {
+        const input = AdminSubmitRaceResultSchema.parse(payload);
+        return {
+          code: 0,
+          data: await adminService.submitRaceResult(actorOpenid, input, ip),
+        };
+      }
+      case 'listEnrollmentsByContent': {
+        const input = AdminListEnrollmentsByContentSchema.parse(payload);
+        return {
+          code: 0,
+          data: await adminService.listEnrollmentsByContent(actorOpenid, input.contentId),
+        };
       }
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });

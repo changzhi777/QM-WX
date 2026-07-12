@@ -47,3 +47,118 @@
 .btn-primary { background: var(--brand); color: #fff; }
 
 .empty, .loading { padding: 80rpx 0; text-align: center; color: var(--text-tertiary); }
+
+/* ===== V0.1.134 赛事 tab + 排行榜 + 我的成绩 ===== */
+
+.race-tabs {
+  display: flex;
+  border-bottom: 1rpx solid #eee;
+  margin: 16rpx 0;
+}
+
+.race-tab {
+  flex: 1;
+  padding: 24rpx 0;
+  text-align: center;
+  font-size: 28rpx;
+  color: var(--text-secondary);
+  position: relative;
+}
+
+.race-tab.active {
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.race-tab.active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 4rpx;
+  background: var(--brand);
+}
+
+/* 详情 tab - 赛事信息 KV */
+.kv-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12rpx 0;
+  font-size: 26rpx;
+}
+
+.kv-key { color: var(--text-secondary); }
+.kv-val { color: var(--text-primary); font-weight: 500; }
+
+.rules { padding-top: 12rpx; border-top: 1rpx dashed #eee; }
+.rules-label { color: var(--text-secondary); font-size: 26rpx; }
+.rules-text { color: var(--text-primary); font-size: 26rpx; line-height: 1.6; }
+
+/* 路线 tab */
+.route-text { font-size: 28rpx; line-height: 1.6; color: var(--text-primary); white-space: pre-wrap; }
+.route-empty { text-align: center; padding: 40rpx 0; color: var(--text-tertiary); }
+
+/* 排行榜 tab */
+.lb-loading,
+.lb-empty { text-align: center; padding: 60rpx 0; color: var(--text-tertiary); }
+.lb-empty .lb-tip { display: block; font-size: 24rpx; color: var(--text-quaternary); margin-top: 12rpx; }
+
+.lb-list { margin-top: 16rpx; }
+
+.lb-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 16rpx 0;
+  border-bottom: 1rpx solid #f5f5f5;
+}
+
+.lb-row.lb-top { background: #fffbf0; padding-left: 12rpx; padding-right: 12rpx; border-radius: 8rpx; border-bottom: none; margin-bottom: 8rpx; }
+
+.lb-rank {
+  width: 48rpx;
+  text-align: center;
+  font-weight: 700;
+  font-size: 28rpx;
+  color: #999;
+}
+
+.lb-top .lb-rank { color: #ef4444; font-size: 32rpx; }
+
+.lb-avatar { width: 56rpx; height: 56rpx; border-radius: 50%; background: #eee; }
+
+.lb-name { flex: 1; font-size: 26rpx; color: var(--text-primary); }
+
+.lb-time { font-size: 24rpx; color: var(--text-primary); font-weight: 600; }
+.lb-pace { font-size: 22rpx; color: var(--text-secondary); width: 120rpx; text-align: right; }
+
+/* 我的 tab */
+.my-result { margin-top: 16rpx; }
+
+.my-empty {
+  text-align: center;
+  padding: 40rpx 0;
+  color: var(--text-tertiary);
+}
+
+.btn-self-report {
+  margin-top: 24rpx;
+  background: var(--brand);
+  color: #fff;
+  border-radius: 8rpx;
+  font-size: 28rpx;
+  height: 80rpx;
+  line-height: 80rpx;
+  border: none;
+}
+
+.btn-self-report::after { border: none; }
+
+.finisher-photo {
+  width: 200rpx;
+  height: 200rpx;
+  border-radius: 8rpx;
+  background: #eee;
+}

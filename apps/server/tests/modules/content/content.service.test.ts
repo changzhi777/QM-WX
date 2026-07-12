@@ -22,9 +22,17 @@ vi.mock('src/infra/prisma.js', () => {
       enrollment: {
         findFirst: vi.fn(),
         findMany: vi.fn(),
+        findUnique: vi.fn(),
         create: vi.fn(),
         count: vi.fn(),
       },
+      raceResult: {
+        // V0.1.134
+        upsert: vi.fn(),
+        findMany: vi.fn(),
+        findFirst: vi.fn(),
+      },
+      user: { findMany: vi.fn() }, // V0.1.134 排行榜批量关联
       appConfig: { findMany: vi.fn().mockResolvedValue([]) },
       order: { create: vi.fn(), update: vi.fn() },
     },
@@ -401,5 +409,167 @@ describe('invalidateContentDetail（精准单 key 失效，V0.1.10）', () => {
   it('cache miss 时调用也安全', async () => {
     // .then(() => 1) 永远返 1
     await expect(invalidateContentDetail('ghost')).resolves.toBe(1);
+  });
+});
+
+// ============================================================
+// V0.1.134 赛事成绩（用户自报 + 排行榜 + 我的成绩）
+// ============================================================
+
+describe('contentService.submitRaceResult (V0.1.134)', () => {
+  const baseEnrollment = {
+    id: 'e1',
+    userId: 'u1',
+    contentId: 'c1',
+    status: 'confirmed',
+    content: {
+      id: 'c1',
+      type: 'marathon',
+      detail: { distanceKm: 42 },
+    },
+  };
+
+  it('正常录入（pace 计算正确）', async () => {
+    mockedPrisma.enrollment.findFirst.mockResolvedValue(baseEnrollment as never);
+    mockedPrisma.raceResult.upsert.mockResolvedValue({
+      id: 'r1',
+      enrollmentId: 'e1',
+      userId: 'u1',
+      contentId: 'c1',
+      finishTimeSec: 12600, // 3.5h = 12600s
+      paceSecPerKm: 300, // 12600/42 = 300
+      rank: null,
+      bibNumber: null,
+      finisherPhotoUrl: null,
+      source: 'user_report',
+      createdAt: new Date('2026-07-12T10:00:00Z'),
+      updatedAt: new Date('2026-07-12T10:00:00Z'),
+    } as never);
+
+    const r = await contentService.submitRaceResult('u1', {
+      enrollmentId: 'e1',
+      finishTimeSec: 12600,
+    });
+
+    expect(r.id).toBe('r1');
+    expect(r.paceSecPerKm).toBe(300); // 12600/42 = 300
+    expect(r.source).toBe('user_report');
+  });
+
+  it('enrollment 不属于 user → notFound', async () => {
+    mockedPrisma.enrollment.findFirst.mockResolvedValue(null);
+    await expect(
+      contentService.submitRaceResult('u1', { enrollmentId: 'e1', finishTimeSec: 12600 }),
+    ).rejects.toThrow();
+  });
+
+  it('enrollment status=submitted → badRequest', async () => {
+    mockedPrisma.enrollment.findFirst.mockResolvedValue({
+      ...baseEnrollment,
+      status: 'submitted',
+    } as never);
+    await expect(
+      contentService.submitRaceResult('u1', { enrollmentId: 'e1', finishTimeSec: 12600 }),
+    ).rejects.toThrow();
+  });
+
+  it('content.type != marathon → badRequest', async () => {
+    mockedPrisma.enrollment.findFirst.mockResolvedValue({
+      ...baseEnrollment,
+      content: { ...baseEnrollment.content, type: 'hotel' },
+    } as never);
+    await expect(
+      contentService.submitRaceResult('u1', { enrollmentId: 'e1', finishTimeSec: 12600 }),
+    ).rejects.toThrow();
+  });
+
+  it('distanceKm 缺失 → badRequest', async () => {
+    mockedPrisma.enrollment.findFirst.mockResolvedValue({
+      ...baseEnrollment,
+      content: { ...baseEnrollment.content, detail: {} },
+    } as never);
+    await expect(
+      contentService.submitRaceResult('u1', { enrollmentId: 'e1', finishTimeSec: 12600 }),
+    ).rejects.toThrow();
+  });
+});
+
+describe('contentService.getRaceLeaderboard (V0.1.134)', () => {
+  it('正常排序（按 finishTimeSec asc，含 user 信息）', async () => {
+    mockedPrisma.raceResult.findMany.mockResolvedValue([
+      {
+        id: 'r1', userId: 'u1', finishTimeSec: 12600, paceSecPerKm: 300, finisherPhotoUrl: null,
+      },
+      {
+        id: 'r2', userId: 'u2', finishTimeSec: 14000, paceSecPerKm: 333, finisherPhotoUrl: 'http://x/2.jpg',
+      },
+    ] as never);
+    mockedPrisma.user.findMany.mockResolvedValue([
+      { id: 'u1', nickname: '张三', avatarUrl: 'http://x/1.jpg' },
+      { id: 'u2', nickname: '李四', avatarUrl: 'http://x/2.jpg' },
+    ] as never);
+
+    const r = await contentService.getRaceLeaderboard('c1', 50);
+
+    expect(r.leaderboard).toHaveLength(2);
+    expect(r.leaderboard[0].rank).toBe(1);
+    expect(r.leaderboard[0].userId).toBe('u1'); // 完赛最快
+    expect(r.leaderboard[0].nickname).toBe('张三');
+    expect(r.leaderboard[1].rank).toBe(2);
+    expect(r.leaderboard[1].userId).toBe('u2');
+    expect(r.total).toBe(2);
+  });
+
+  it('limit 生效', async () => {
+    mockedPrisma.raceResult.findMany.mockResolvedValue([
+      { id: 'r1', userId: 'u1', finishTimeSec: 10000, paceSecPerKm: 200, finisherPhotoUrl: null },
+    ] as never);
+    mockedPrisma.user.findMany.mockResolvedValue([
+      { id: 'u1', nickname: '张三', avatarUrl: null },
+    ] as never);
+
+    await contentService.getRaceLeaderboard('c1', 1);
+
+    expect(mockedPrisma.raceResult.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ take: 1 }),
+    );
+  });
+
+  it('空数据 → leaderboard 空数组 + total 0', async () => {
+    mockedPrisma.raceResult.findMany.mockResolvedValue([]);
+    const r = await contentService.getRaceLeaderboard('c1');
+    expect(r.leaderboard).toEqual([]);
+    expect(r.total).toBe(0);
+    expect(mockedPrisma.user.findMany).not.toHaveBeenCalled(); // 无数据不查 user
+  });
+});
+
+describe('contentService.getMyRaceResult (V0.1.134)', () => {
+  it('正常返', async () => {
+    mockedPrisma.raceResult.findFirst.mockResolvedValue({
+      id: 'r1',
+      enrollmentId: 'e1',
+      contentId: 'c1',
+      finishTimeSec: 12600,
+      paceSecPerKm: 300,
+      rank: 5,
+      bibNumber: 'A001',
+      finisherPhotoUrl: 'http://x/photo.jpg',
+      source: 'admin_input',
+      createdAt: new Date('2026-07-12T10:00:00Z'),
+      updatedAt: new Date('2026-07-12T10:00:00Z'),
+    } as never);
+
+    const r = await contentService.getMyRaceResult('u1', 'c1');
+    expect(r?.id).toBe('r1');
+    expect(r?.rank).toBe(5);
+    expect(r?.bibNumber).toBe('A001');
+    expect(r?.source).toBe('admin_input');
+  });
+
+  it('无记录 → null', async () => {
+    mockedPrisma.raceResult.findFirst.mockResolvedValue(null);
+    const r = await contentService.getMyRaceResult('u1', 'c1');
+    expect(r).toBeNull();
   });
 });

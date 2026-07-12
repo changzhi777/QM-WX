@@ -1,0 +1,93 @@
+<view class="page">
+  <view wx:if="{{!isAdmin}}" class="loading">鉴权中...</view>
+
+  <block wx:else>
+    <!-- 头部：选择赛事 -->
+    <view class="header">
+      <view wx:if="{{contentId}}" class="content-info">
+        <text class="content-label">当前赛事：</text>
+        <text class="content-id">{{contentId}}</text>
+      </view>
+      <button class="btn-pick" bindtap="onPickContent">
+        {{contentId ? '切换赛事' : '选择赛事'}}
+      </button>
+    </view>
+
+    <!-- 列表 -->
+    <view wx:if="{{loading}}" class="loading">加载中...</view>
+    <view wx:elif="{{enrollments.length === 0 && contentId}}" class="empty">
+      <text>暂无报名</text>
+      <text class="empty-tip">下拉刷新试试</text>
+    </view>
+
+    <view wx:else class="list">
+      <view
+        class="enrollment-card"
+        wx:for="{{enrollments}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="onTapEnrollment"
+      >
+        <view class="enrollment-row">
+          <image class="avatar" src="{{item.user.avatarUrl || '/images/default-avatar.png'}}" />
+          <view class="user-info">
+            <text class="nickname">{{item.user.nickname || item.userId}}</text>
+            <text class="enrollment-status">{{item.status === 'confirmed' ? '已确认' : item.status}}</text>
+          </view>
+          <view wx:if="{{item.raceResult}}" class="result-badge">
+            <text class="rank">{{item.raceResult.rank ? '#' + item.raceResult.rank : '-'}}</text>
+            <text class="time">{{item.raceResult.finishTimeSec ? formatDuration(item.raceResult.finishTimeSec) : '-'}}</text>
+          </view>
+          <view wx:else class="result-badge empty">
+            <text class="no-result">未录</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 录入弹层 -->
+    <view class="mask" wx:if="{{showForm}}" bindtap="closeForm">
+      <view class="form-panel" catchtap="">
+        <view class="form-title">录入成绩</view>
+        <view wx:if="{{selectedEnrollment}}" class="form-user">
+          {{selectedEnrollment.user.nickname || selectedEnrollment.userId}}
+        </view>
+
+        <view class="form-item">
+          <text class="label">完赛时间（秒）*</text>
+          <input
+            class="input"
+            type="number"
+            value="{{form.finishTimeSec}}"
+            bindinput="onInputTime"
+            placeholder="如 12600（3.5 小时）"
+          />
+        </view>
+        <view class="form-item">
+          <text class="label">排名（可选）</text>
+          <input
+            class="input"
+            type="number"
+            value="{{form.rank}}"
+            bindinput="onInputRank"
+            placeholder="如 1 / 5 / 10"
+          />
+        </view>
+        <view class="form-item">
+          <text class="label">号码布（可选）</text>
+          <input
+            class="input"
+            value="{{form.bibNumber}}"
+            bindinput="onInputBib"
+            placeholder="如 A001"
+          />
+        </view>
+
+        <view class="form-actions">
+          <button class="btn-cancel" bindtap="closeForm">取消</button>
+          <button class="btn-submit" bindtap="onSubmit" loading="{{submitting}}">保存</button>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

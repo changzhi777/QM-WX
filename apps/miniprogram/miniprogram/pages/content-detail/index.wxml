@@ -12,10 +12,143 @@
     </view>
   </view>
 
-  <view class="summary bg-white m-2 p-4 rounded-lg shadow" wx:if="{{content.summary}}">
-    <view class="section-title">简介</view>
-    <view class="content-text mt-2">{{content.summary}}</view>
+  <!-- V0.1.134 赛事 tab 切换（仅 marathon） -->
+  <view wx:if="{{isRace}}" class="race-tabs bg-white">
+    <view
+      class="race-tab {{activeTab === 'detail' ? 'active' : ''}}"
+      data-tab="detail"
+      bindtap="onSwitchTab"
+    >详情</view>
+    <view
+      class="race-tab {{activeTab === 'route' ? 'active' : ''}}"
+      data-tab="route"
+      bindtap="onSwitchTab"
+    >路线</view>
+    <view
+      class="race-tab {{activeTab === 'leaderboard' ? 'active' : ''}}"
+      data-tab="leaderboard"
+      bindtap="onSwitchTab"
+    >排行榜</view>
+    <view
+      class="race-tab {{activeTab === 'mine' ? 'active' : ''}}"
+      data-tab="mine"
+      bindtap="onSwitchTab"
+    >我的</view>
   </view>
+
+  <!-- V0.1.134 详情 tab -->
+  <block wx:if="{{isRace && activeTab === 'detail'}}">
+    <view class="summary bg-white m-2 p-4 rounded-lg shadow" wx:if="{{content.summary}}">
+      <view class="section-title">简介</view>
+      <view class="content-text mt-2">{{content.summary}}</view>
+    </view>
+    <view class="card bg-white m-2 p-4 rounded-lg shadow" wx:if="{{content.detail}}">
+      <view class="section-title">赛事信息</view>
+      <view class="kv-row mt-2" wx:if="{{content.detail.distanceKm}}">
+        <text class="kv-key">距离</text>
+        <text class="kv-val">{{content.detail.distanceKm}} km</text>
+      </view>
+      <view class="kv-row" wx:if="{{content.detail.startTime}}">
+        <text class="kv-key">起跑时间</text>
+        <text class="kv-val">{{content.detail.startTime}}</text>
+      </view>
+      <view class="kv-row" wx:if="{{content.detail.category}}">
+        <text class="kv-key">组别</text>
+        <text class="kv-val">{{content.detail.category}}</text>
+      </view>
+      <view class="kv-row" wx:if="{{content.detail.elevation}}">
+        <text class="kv-key">海拔</text>
+        <text class="kv-val">{{content.detail.elevation}}</text>
+      </view>
+      <view class="rules mt-2" wx:if="{{content.detail.rules}}">
+        <text class="rules-label">规则：</text>
+        <text class="rules-text">{{content.detail.rules}}</text>
+      </view>
+    </view>
+  </block>
+
+  <!-- V0.1.134 路线 tab -->
+  <block wx:if="{{isRace && activeTab === 'route'}}">
+    <view class="card bg-white m-2 p-4 rounded-lg shadow">
+      <view class="section-title">路线</view>
+      <view class="route-text mt-2" wx:if="{{content.detail.route}}">
+        {{content.detail.route}}
+      </view>
+      <view class="route-empty" wx:else>
+        <text>暂无路线详情</text>
+      </view>
+    </view>
+  </block>
+
+  <!-- V0.1.134 排行榜 tab -->
+  <block wx:if="{{isRace && activeTab === 'leaderboard'}}">
+    <view class="card bg-white m-2 p-4 rounded-lg shadow">
+      <view class="section-title">完赛排行榜（前 50）</view>
+      <view wx:if="{{leaderboardLoading}}" class="lb-loading">加载中...</view>
+      <view wx:elif="{{leaderboard.length === 0}}" class="lb-empty">
+        <text>暂无完赛成绩</text>
+        <text class="lb-tip">比赛结束后录入成绩即可显示</text>
+      </view>
+      <view wx:else class="lb-list">
+        <view class="lb-row {{item.rank <= 3 ? 'lb-top' : ''}}" wx:for="{{leaderboard}}" wx:key="userId">
+          <view class="lb-rank">{{item.rank}}</view>
+          <image class="lb-avatar" src="{{item.avatarUrl || '/images/default-avatar.png'}}" />
+          <view class="lb-name">{{item.nickname || item.userId}}</view>
+          <view class="lb-time">{{formatDuration(item.finishTimeSec)}}</view>
+          <view class="lb-pace">{{formatPace(item.paceSecPerKm)}}</view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <!-- V0.1.134 我的 tab -->
+  <block wx:if="{{isRace && activeTab === 'mine'}}">
+    <view class="card bg-white m-2 p-4 rounded-lg shadow">
+      <view class="section-title">我的成绩</view>
+      <view wx:if="{{myRaceResult}}" class="my-result">
+        <view class="kv-row">
+          <text class="kv-key">完赛时间</text>
+          <text class="kv-val">{{formatDuration(myRaceResult.finishTimeSec)}}</text>
+        </view>
+        <view class="kv-row">
+          <text class="kv-key">配速</text>
+          <text class="kv-val">{{formatPace(myRaceResult.paceSecPerKm)}}</text>
+        </view>
+        <view class="kv-row" wx:if="{{myRaceResult.rank}}">
+          <text class="kv-key">排名</text>
+          <text class="kv-val">#{{myRaceResult.rank}}</text>
+        </view>
+        <view class="kv-row" wx:if="{{myRaceResult.bibNumber}}">
+          <text class="kv-key">号码布</text>
+          <text class="kv-val">{{myRaceResult.bibNumber}}</text>
+        </view>
+        <view class="kv-row">
+          <text class="kv-key">来源</text>
+          <text class="kv-val">{{myRaceResult.source === 'admin_input' ? '官方录入' : '自报'}}</text>
+        </view>
+        <view class="kv-row" wx:if="{{myRaceResult.finisherPhotoUrl}}">
+          <text class="kv-key">终点照</text>
+          <image class="finisher-photo" src="{{myRaceResult.finisherPhotoUrl}}" mode="aspectFill" />
+        </view>
+      </view>
+      <view wx:else class="my-empty">
+        <text>暂无成绩</text>
+        <button class="btn-self-report" bindtap="onTapSelfReport">自报成绩</button>
+      </view>
+    </view>
+  </block>
+
+  <!-- 非赛事类型：原有 summary + detail 展示 -->
+  <block wx:if="{{!isRace}}">
+    <view class="summary bg-white m-2 p-4 rounded-lg shadow" wx:if="{{content.summary}}">
+      <view class="section-title">简介</view>
+      <view class="content-text mt-2">{{content.summary}}</view>
+    </view>
+    <view class="card bg-white m-2 p-4 rounded-lg shadow" wx:if="{{content.detail}}">
+      <view class="section-title">详情</view>
+      <view class="content-text mt-2">{{content.detail}}</view>
+    </view>
+  </block>
 
   <view class="price-bar bg-white p-4 m-2 rounded-lg shadow" wx:if="{{content.price || content.fee}}">
     <view class="price">
@@ -56,6 +189,30 @@
       <view class="actions">
         <button class="btn-cancel" bindtap="onCancelEnroll">取消</button>
         <button class="btn-primary" bindtap="onSubmitEnroll" disabled="{{submitting}}">{{submitting ? '提交中...' : '提交'}}</button>
+      </view>
+    </view>
+  </view>
+
+  <!-- V0.1.134 自报成绩弹层 -->
+  <view class="mask" wx:if="{{showSelfReport}}" bindtap="closeSelfReport">
+    <view class="card" catchtap="">
+      <view class="title">自报成绩</view>
+      <view class="field mt-2">
+        <text class="label">完赛时间（秒）*</text>
+        <input
+          class="input"
+          type="number"
+          placeholder="如 12600（3.5 小时）"
+          value="{{selfReportForm.finishTimeSec}}"
+          bindinput="onInputFinishTime"
+        />
+      </view>
+      <view class="tip">配速将自动计算并显示</view>
+      <view class="actions">
+        <button class="btn-cancel" bindtap="closeSelfReport">取消</button>
+        <button class="btn-primary" bindtap="onSubmitSelfReport" disabled="{{selfReporting}}">
+          {{selfReporting ? '提交中...' : '提交'}}
+        </button>
       </view>
     </view>
   </view>
