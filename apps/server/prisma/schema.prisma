@@ -19,18 +19,18 @@ model User {
   avatarUrl      String?
   phone          String?   @unique // V0.1.129 手机号登录（生产 0 重复安全）
   email          String?   @unique // V0.1.129 邮箱密码登录
-  passwordHash   String?   // V0.1.129 bcrypt hash（邮箱/admin 密码登录）
+  passwordHash   String? // V0.1.129 bcrypt hash（邮箱/admin 密码登录）
   username       String?   @unique // V0.1.129 admin Web 账号登录
   memberLevel    String    @default("free") // free | monthly | quarterly | yearly
   memberExpireAt DateTime?
   points         Int       @default(0)
   certified      Boolean   @default(false)
   // V0.1.40 个人资料扩展（profile 完整实现）
-  gender         String?   // male | female | unknown
-  birthday       String?   // YYYY-MM-DD
-  region         String?   // 如"北京"
-  height         Int?      // cm
-  weight         Float?    // kg
+  gender         String? // male | female | unknown
+  birthday       String? // YYYY-MM-DD
+  region         String? // 如"北京"
+  height         Int? // cm
+  weight         Float? // kg
   stats          Json      @default("{\"totalDistance\":0,\"totalCheckins\":0,\"totalPoints\":0}")
   // V0.1.18：黑名单字段（admin banUser/unbanUser 维护）
   isBanned       Boolean   @default(false)
@@ -39,53 +39,53 @@ model User {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  checkins          Checkin[]
-  orders            Order[]
-  reviews           Review[]   // V0.1.113 评价
-  wallet            Wallet?
-  groupMembers      GroupMember[]
-  ownedGroups       Group[]            @relation("GroupOwner")
-  deviceBindings    DeviceBinding[]
-  meals             Meal[]
-  idMapping         IdMapping?
+  checkins               Checkin[]
+  orders                 Order[]
+  reviews                Review[] // V0.1.113 评价
+  wallet                 Wallet?
+  groupMembers           GroupMember[]
+  ownedGroups            Group[]                 @relation("GroupOwner")
+  deviceBindings         DeviceBinding[]
+  meals                  Meal[]
+  idMapping              IdMapping?
   // 佳明数据导入（B-2）：Activity 复用 RawActivity（无 relation），其余 3 表反向
-  garminSleeps      GarminSleep[]
-  garminFitnessAges GarminFitnessAge[]
-  garminMetrics     GarminMetric[]
+  garminSleeps           GarminSleep[]
+  garminFitnessAges      GarminFitnessAge[]
+  garminMetrics          GarminMetric[]
   // 购物车 + 签到（V0.1.22 B-核心）
-  carts             Cart[]
-  signinRecords     SigninRecord[]
-  addresses         Address[]
-  coupons           Coupon[]
-  shoes             Shoe[]   // V0.1.26 跑鞋
-  goals             Goal[]   // V0.1.28 跑步目标
-  favorites         Favorite[] // V0.1.29 收藏
-  feeds             Feed[]     // V0.1.30 动态
-  feedLikes         FeedLike[] // V0.1.30 点赞
-  feedComments      FeedComment[] // V0.1.30 评论
-  notifications     Notification[] // V0.1.31 收到的通知（接收者视角）
-  notifActions      Notification[] @relation("NotifActor") // V0.1.31 触发的通知（actor 视角）
-  following         Follow[] @relation("Follower") // V0.1.32 我关注的人（follower 视角）
-  followers         Follow[] @relation("Followee") // V0.1.32 关注我的人（followee 视角）
-  familiesOwned     Family[] @relation("FamilyOwner") // V0.1.34 创建的家庭（owner 视角）
-  familyMember      FamilyMember? // V0.1.34 我的家庭关系（1:1，一人一家庭）
-  trainingEnrollment UserPlanEnrollment? // V0.1.41 当前训练计划（1:1，一人一活跃计划）
-  weRunRecords      WeRunRecord[] // V0.1.43 微信运动步数（每日）
-  heartRateRecords  HeartRateRecord[] // V0.1.43 心率历史（BLE 0x180D + 微信运动）
-  spo2Records       SpO2Record[] // V0.1.43 血氧历史（BLE 0x1822）
-  sleepRecords      SleepRecord[] // V0.1.43 睡眠历史（小米数据包导入）
+  carts                  Cart[]
+  signinRecords          SigninRecord[]
+  addresses              Address[]
+  coupons                Coupon[]
+  shoes                  Shoe[] // V0.1.26 跑鞋
+  goals                  Goal[] // V0.1.28 跑步目标
+  favorites              Favorite[] // V0.1.29 收藏
+  feeds                  Feed[] // V0.1.30 动态
+  feedLikes              FeedLike[] // V0.1.30 点赞
+  feedComments           FeedComment[] // V0.1.30 评论
+  notifications          Notification[] // V0.1.31 收到的通知（接收者视角）
+  notifActions           Notification[]          @relation("NotifActor") // V0.1.31 触发的通知（actor 视角）
+  following              Follow[]                @relation("Follower") // V0.1.32 我关注的人（follower 视角）
+  followers              Follow[]                @relation("Followee") // V0.1.32 关注我的人（followee 视角）
+  familiesOwned          Family[]                @relation("FamilyOwner") // V0.1.34 创建的家庭（owner 视角）
+  familyMember           FamilyMember? // V0.1.34 我的家庭关系（1:1，一人一家庭）
+  trainingEnrollment     UserPlanEnrollment? // V0.1.41 当前训练计划（1:1，一人一活跃计划）
+  weRunRecords           WeRunRecord[] // V0.1.43 微信运动步数（每日）
+  heartRateRecords       HeartRateRecord[] // V0.1.43 心率历史（BLE 0x180D + 微信运动）
+  spo2Records            SpO2Record[] // V0.1.43 血氧历史（BLE 0x1822）
+  sleepRecords           SleepRecord[] // V0.1.43 睡眠历史（小米数据包导入）
   bodyCompositionRecords BodyCompositionRecord[] // V0.1.124 体脂秤数据（BLE 小米体脂秤）
-  corosRawEvents CorosRawEvent[] // V0.1.130 COROS Terra webhook 原始数据
-  withdrawalRequests WithdrawalRequest[] // V0.1.105 提现申请（pending/approved/rejected）
-  groupBuyMembers   GroupBuyMember[] // V0.1.37 团购参与记录
+  corosRawEvents         CorosRawEvent[] // V0.1.130 COROS Terra webhook 原始数据
+  withdrawalRequests     WithdrawalRequest[] // V0.1.105 提现申请（pending/approved/rejected）
+  groupBuyMembers        GroupBuyMember[] // V0.1.37 团购参与记录
   // 分销（V0.1.24）
-  inviteCode        String?  @unique
-  distributorLevel  String   @default("V0") // V0 | V1 | V2 | V3
-  onboardingDone    Boolean  @default(false) // V0.1.43 新用户激活向导完成标记
-  distributionOrders DistributionOrder[]
-  teamInvites        Team[]          @relation("TeamInviter")
-  teamInvitees       Team[]          @relation("TeamInvitee")
-  commissionLogs     CommissionLog[]
+  inviteCode             String?                 @unique
+  distributorLevel       String                  @default("V0") // V0 | V1 | V2 | V3
+  onboardingDone         Boolean                 @default(false) // V0.1.43 新用户激活向导完成标记
+  distributionOrders     DistributionOrder[]
+  teamInvites            Team[]                  @relation("TeamInviter")
+  teamInvitees           Team[]                  @relation("TeamInvitee")
+  commissionLogs         CommissionLog[]
 
   @@index([openid])
   @@index([isBanned])
@@ -106,7 +106,7 @@ model Checkin {
   dataSource       String   @default("manual") // manual | garmin
   garminActivityId String?  @unique // 佳明去重键（null = 手动打卡）
   sportType        String? // run | hike | ride | other
-  shoeId           String?  // 关联跑鞋（打卡时选 → 跑鞋自动累计里程，V0.1.26）
+  shoeId           String? // 关联跑鞋（打卡时选 → 跑鞋自动累计里程，V0.1.26）
   createdAt        DateTime @default(now())
 
   user  User   @relation(fields: [userId], references: [id])
@@ -125,7 +125,7 @@ model Group {
   name        String
   ownerId     String
   memberCount Int      @default(0)
-  announce   String?  // V0.1.42 群公告（owner 发，可选）
+  announce    String? // V0.1.42 群公告（owner 发，可选）
   createdAt   DateTime @default(now())
 
   owner    User          @relation("GroupOwner", fields: [ownerId], references: [id])
@@ -168,7 +168,7 @@ model Product {
   orderItems OrderItem[]
   carts      Cart[]
   groupBuys  GroupBuy[] // V0.1.37 团购
-  reviews    Review[]   // V0.1.113 评价
+  reviews    Review[] // V0.1.113 评价
 
   @@index([category, status])
 }
@@ -180,7 +180,7 @@ model GroupBuy {
   id           String    @id @default(cuid())
   productId    String
   groupPrice   Decimal   @db.Decimal(10, 2) // 团购价（低于商品原价）
-  targetCount  Int       // 成团目标人数
+  targetCount  Int // 成团目标人数
   currentCount Int       @default(0) // 当前参与人数
   status       String    @default("active") // active | reached
   endDate      DateTime? // 团购截止（MVP 不强制，仅展示）
@@ -188,7 +188,7 @@ model GroupBuy {
 
   product Product          @relation(fields: [productId], references: [id])
   members GroupBuyMember[]
-  orders  Order[]          // V0.1.37 团购订单
+  orders  Order[] // V0.1.37 团购订单
 
   @@index([status])
 }
@@ -222,39 +222,39 @@ model Cart {
 }
 
 model Order {
-  id              String      @id @default(cuid())
-  userId          String
-  items           OrderItem[]
-  totalAmount     Decimal     @db.Decimal(10, 2)
-  pointsUsed      Int         @default(0)
-  payAmount       Decimal     @db.Decimal(10, 2)
-  status          String      @default("pending_pay") // pending_pay | paid | shipped | done | cancelled
-  payment         Json?
-  address         Json?
+  id                String      @id @default(cuid())
+  userId            String
+  items             OrderItem[]
+  totalAmount       Decimal     @db.Decimal(10, 2)
+  pointsUsed        Int         @default(0)
+  payAmount         Decimal     @db.Decimal(10, 2)
+  status            String      @default("pending_pay") // pending_pay | paid | shipped | done | cancelled
+  payment           Json?
+  address           Json?
   // Phase 4 微信支付 V3 新增
-  payChannel      String? // wxpay | points（默认 null）
-  prepayId        String?
-  wxTransactionId String?     @unique // 幂等 key
-  paidAt          DateTime?
+  payChannel        String? // wxpay | points（默认 null）
+  prepayId          String?
+  wxTransactionId   String?     @unique // 幂等 key
+  paidAt            DateTime?
   // V0.1.24 分销：推广来源分销人（带 inviteCode 下单时落）
-  sourceUserId    String?
+  sourceUserId      String?
   // V0.1.37 团购订单关联（null=普通订单；有值=团购价订单）
-  groupBuyId      String?
+  groupBuyId        String?
   // V0.1.118 赛事报名支付（null=商品订单；'enroll'=赛事报名）
-  contentType     String?
-  contentId       String?
+  contentType       String?
+  contentId         String?
   // V0.1.107 GAP-6 自提核销（订单号末 6 位 + 3 位大写字母数字作 pickupCode）
-  pickupCode         String?   @unique
-  pickupExpiresAt    DateTime? // 默认 30 天过期
-  pickupConfirmedAt  DateTime? // 核销时间
-  pickupConfirmedBy  String?   // 核销人（admin openid）
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  pickupCode        String?     @unique
+  pickupExpiresAt   DateTime? // 默认 30 天过期
+  pickupConfirmedAt DateTime? // 核销时间
+  pickupConfirmedBy String? // 核销人（admin openid）
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
-  user              User                @relation(fields: [userId], references: [id])
-  groupBuy          GroupBuy?           @relation(fields: [groupBuyId], references: [id], onDelete: SetNull)
+  user              User               @relation(fields: [userId], references: [id])
+  groupBuy          GroupBuy?          @relation(fields: [groupBuyId], references: [id], onDelete: SetNull)
   distributionOrder DistributionOrder?
-  reviews           Review[]      // V0.1.113 评价
+  reviews           Review[] // V0.1.113 评价
 
   @@index([userId, createdAt])
   @@index([sourceUserId])
@@ -276,14 +276,14 @@ model OrderItem {
 // ===== 评价（V0.1.113 电商闭环最后一块）=====
 // 用户对已购商品评价（rating 1-5 + content + images）；create 校验订单已购 + 商品在订单内 + @@unique 防重
 model Review {
-  id        String   @id @default(cuid())
-  userId    String
-  productId String
-  orderId   String // 评价来源订单（校验已购 + 防重）
-  rating    Int // 1-5 星
-  content   String?
-  images    String[]
-  createdAt DateTime @default(now())
+  id           String    @id @default(cuid())
+  userId       String
+  productId    String
+  orderId      String // 评价来源订单（校验已购 + 防重）
+  rating       Int // 1-5 星
+  content      String?
+  images       String[]
+  createdAt    DateTime  @default(now())
   replyContent String? // V0.1.116 admin/商家回复
   repliedAt    DateTime?
 
@@ -327,18 +327,18 @@ model SigninRecord {
 // ===== 跑鞋（V0.1.26，跑者向 — 里程管理 + 更换提醒）=====
 // 打卡时关联跑鞋 → currentKm 自动累计 → 达 thresholdKm 提醒更换（防受伤）
 model Shoe {
-  id           String    @id @default(cuid())
-  userId       String
-  brand        String // 品牌（Nike / 必迈 / 路征 ...）
-  model        String // 型号（如 Vaporfly Next%）
-  nickname     String?  // 用户起的名（如"战靴一号"）
-  currentKm    Float    @default(0) // 当前累计里程（km，打卡自动累计）
-  thresholdKm  Float    @default(800) // 更换阈值（默认 800km，防受伤）
-  status       String    @default("active") // active | retired
-  purchasedAt  DateTime?
-  note         String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id          String    @id @default(cuid())
+  userId      String
+  brand       String // 品牌（Nike / 必迈 / 路征 ...）
+  model       String // 型号（如 Vaporfly Next%）
+  nickname    String? // 用户起的名（如"战靴一号"）
+  currentKm   Float     @default(0) // 当前累计里程（km，打卡自动累计）
+  thresholdKm Float     @default(800) // 更换阈值（默认 800km，防受伤）
+  status      String    @default("active") // active | retired
+  purchasedAt DateTime?
+  note        String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   user     User      @relation(fields: [userId], references: [id])
   checkins Checkin[] // 关联打卡（里程来源）
@@ -349,11 +349,11 @@ model Shoe {
 // ===== 家庭空间（V0.1.34，pic 2776 家庭方向）=====
 // 一家一组，owner 创建 + 邀请家人加入；FamilyMember.userId @@unique 强制一人一家庭
 model Family {
-  id          String   @id @default(cuid())
-  name        String
-  ownerId     String
-  inviteCode  String   @unique // 邀请码（家人 joinFamily 输入）
-  createdAt   DateTime @default(now())
+  id         String   @id @default(cuid())
+  name       String
+  ownerId    String
+  inviteCode String   @unique // 邀请码（家人 joinFamily 输入）
+  createdAt  DateTime @default(now())
 
   owner   User           @relation("FamilyOwner", fields: [ownerId], references: [id])
   members FamilyMember[]
@@ -363,11 +363,11 @@ model Family {
 }
 
 model FamilyMember {
-  id        String   @id @default(cuid())
-  familyId  String
-  userId    String   @unique // 一人一家庭（@@unique 强制）
-  role      String   @default("member") // owner | member
-  joinedAt  DateTime @default(now())
+  id       String   @id @default(cuid())
+  familyId String
+  userId   String   @unique // 一人一家庭（@@unique 强制）
+  role     String   @default("member") // owner | member
+  joinedAt DateTime @default(now())
 
   family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -380,12 +380,12 @@ model FamilyMember {
 model Goal {
   id             String   @id @default(cuid())
   userId         String
-  type           String   // monthly | yearly | custom
-  title          String?  // 自定义标题（optional）
-  targetDistance Float    // 目标距离 km
+  type           String // monthly | yearly | custom
+  title          String? // 自定义标题（optional）
+  targetDistance Float // 目标距离 km
   periodStart    DateTime // 周期开始（东八区 0 点）
   periodEnd      DateTime // 周期结束（exclusive）
-  familyId       String?  // V0.1.34 家庭目标（null=个人；有值=家庭目标，进度按家庭成员算）
+  familyId       String? // V0.1.34 家庭目标（null=个人；有值=家庭目标，进度按家庭成员算）
   status         String   @default("active") // active | archived
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -402,7 +402,7 @@ model Goal {
 model Favorite {
   id         String   @id @default(cuid())
   userId     String
-  targetType String   // content | product
+  targetType String // content | product
   targetId   String
   createdAt  DateTime @default(now())
 
@@ -452,18 +452,18 @@ model Notification {
 model Feed {
   id           String   @id @default(cuid())
   userId       String
-  content      String   // 文字内容（最长 500）
+  content      String // 文字内容（最长 500）
   images       String[] // 图片 URL 列表（最多 9）
-  checkinId    String?  // 关联打卡（可选，运动动态）
-  distanceKm   Float?   // 冗余跑量（避免 join，展示用）
-  topic        String?  // V0.1.36 话题（如 "马拉松"；null=无话题）
-  videoUrl     String?  // V0.1.36 外部视频链接（mp4 URL，<video> 播放）
+  checkinId    String? // 关联打卡（可选，运动动态）
+  distanceKm   Float? // 冗余跑量（避免 join，展示用）
+  topic        String? // V0.1.36 话题（如 "马拉松"；null=无话题）
+  videoUrl     String? // V0.1.36 外部视频链接（mp4 URL，<video> 播放）
   likeCount    Int      @default(0)
   commentCount Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  user     User         @relation(fields: [userId], references: [id])
+  user     User          @relation(fields: [userId], references: [id])
   likes    FeedLike[]
   comments FeedComment[]
 
@@ -491,7 +491,7 @@ model FeedComment {
   id        String   @id @default(cuid())
   feedId    String
   userId    String
-  content   String   // 评论内容（最长 200）
+  content   String // 评论内容（最长 200）
   createdAt DateTime @default(now())
 
   feed Feed @relation(fields: [feedId], references: [id], onDelete: Cascade)
@@ -589,11 +589,11 @@ model DistributionOrder {
 
 // 邀请关系（团队树，inviteeId 一人一上线）
 model Team {
-  id         String   @id @default(cuid())
-  inviterId  String // 邀请人（上线）
-  inviteeId  String   @unique // 被邀请人（下线，一人仅一个直接上线）
-  level      Int      @default(1) // 1=直推 2=间推（冗余便于查询）
-  joinedAt   DateTime @default(now())
+  id        String   @id @default(cuid())
+  inviterId String // 邀请人（上线）
+  inviteeId String   @unique // 被邀请人（下线，一人仅一个直接上线）
+  level     Int      @default(1) // 1=直推 2=间推（冗余便于查询）
+  joinedAt  DateTime @default(now())
 
   inviter User @relation("TeamInviter", fields: [inviterId], references: [id])
   invitee User @relation("TeamInvitee", fields: [inviteeId], references: [id])
@@ -649,7 +649,7 @@ model Enrollment {
   type      String
   formData  Json
   status    String   @default("submitted") // submitted | confirmed | cancelled
-  orderId   String?  // V0.1.118 赛事报名支付关联（wxpay 回调查 enrollment confirmed）
+  orderId   String? // V0.1.118 赛事报名支付关联（wxpay 回调查 enrollment confirmed）
   createdAt DateTime @default(now())
 
   content Content @relation(fields: [contentId], references: [id])
@@ -905,11 +905,11 @@ model TrainingPlan {
   key           String   @unique // '5k' / '10k' / 'half' / 'full' / 自定义（admin CRUD 幂等 + seed 安全复跑）
   name          String
   weeks         Int
-  level         String   // beginner | intermediate | challenge | extreme（英文 key，wxss 中文 selector 坑）
+  level         String // beginner | intermediate | challenge | extreme（英文 key，wxss 中文 selector 坑）
   goal          String
   desc          String
   weeklyMileage String
-  targetKm      Float    // 计划总目标跑量（进度计算分母）
+  targetKm      Float // 计划总目标跑量（进度计算分母）
   status        String   @default("active") // active | archived
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
@@ -925,8 +925,8 @@ model UserPlanEnrollment {
   planId   String
   joinedAt DateTime @default(now())
 
-  user User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  plan TrainingPlan  @relation(fields: [planId], references: [id], onDelete: Cascade)
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan TrainingPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
 
   @@index([planId])
 }
@@ -936,8 +936,8 @@ model UserPlanEnrollment {
 model WeRunRecord {
   id        String   @id @default(cuid())
   userId    String
-  date      String   // YYYY-MM-DD（CN 时区）
-  step      Int      // 当日步数
+  date      String // YYYY-MM-DD（CN 时区）
+  step      Int // 当日步数
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -952,7 +952,7 @@ model WeRunRecord {
 model HeartRateRecord {
   id        String   @id @default(cuid())
   userId    String
-  value     Int      // 心率 bpm
+  value     Int // 心率 bpm
   timestamp DateTime // 测量时间（前端上报，BLE notify 时间）
   source    String   @default("ble") // ble | werun | manual
   createdAt DateTime @default(now())
@@ -966,7 +966,7 @@ model HeartRateRecord {
 model SpO2Record {
   id        String   @id @default(cuid())
   userId    String
-  value     Int      // 血氧百分比 0-100
+  value     Int // 血氧百分比 0-100
   timestamp DateTime // 测量时间
   createdAt DateTime @default(now())
 
@@ -979,18 +979,18 @@ model SpO2Record {
 // importXiaomiZip 解析小米睡眠 JSON → upsert by userId+date
 // myTodayHealth 可加 latestSleep 展示（阶段 2 扩展）
 model SleepRecord {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   userId          String
-  date            String   // YYYY-MM-DD（CN 时区，一日一条）
+  date            String // YYYY-MM-DD（CN 时区，一日一条）
   bedtime         DateTime? // 入睡时间
   wakeTime        DateTime? // 起床时间
-  durationSeconds Int?      // 总时长（秒）
-  deepSeconds     Int?      // 深睡
-  lightSeconds    Int?      // 浅睡
-  remSeconds      Int?      // REM
-  awakeSeconds    Int?      // 清醒
-  score           Int?      // 睡眠评分
-  createdAt       DateTime @default(now())
+  durationSeconds Int? // 总时长（秒）
+  deepSeconds     Int? // 深睡
+  lightSeconds    Int? // 浅睡
+  remSeconds      Int? // REM
+  awakeSeconds    Int? // 清醒
+  score           Int? // 睡眠评分
+  createdAt       DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1003,14 +1003,14 @@ model SleepRecord {
 model BodyCompositionRecord {
   id          String   @id @default(cuid())
   userId      String
-  weight      Float    // 体重 kg（BLE uint16 ×0.01）
-  bodyFat     Float?   // 体脂率 %
-  bmi         Float?   // BMI（weight / height²）
-  muscle      Float?   // 肌肉量 kg
-  bone        Float?   // 骨量 kg
-  water       Float?   // 水分率 %
-  visceralFat Float?   // 内脏脂肪等级 1-30
-  impedance   Int?     // 原始阻抗值（体成分秤 BIA）
+  weight      Float // 体重 kg（BLE uint16 ×0.01）
+  bodyFat     Float? // 体脂率 %
+  bmi         Float? // BMI（weight / height²）
+  muscle      Float? // 肌肉量 kg
+  bone        Float? // 骨量 kg
+  water       Float? // 水分率 %
+  visceralFat Float? // 内脏脂肪等级 1-30
+  impedance   Int? // 原始阻抗值（体成分秤 BIA）
   source      String   @default("ble") // ble | manual
   timestamp   DateTime // 测量时间
   createdAt   DateTime @default(now())
@@ -1027,15 +1027,15 @@ model BodyCompositionRecord {
 // - rejected：仅标记状态（不动钱包）
 // - 微信企业付款 API 真对接留待 GAP-6.2（需商户号 + APIv3 证书）
 model WithdrawalRequest {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   userId      String
-  amount      Decimal  @db.Decimal(10, 2) // 申请金额（元，≥10）
-  status      String   @default("pending") // pending | approved | rejected
-  reason      String?  // 拒绝原因（rejected 时填）
-  processedBy String?  // admin openid（approved/rejected 时填）
+  amount      Decimal   @db.Decimal(10, 2) // 申请金额（元，≥10）
+  status      String    @default("pending") // pending | approved | rejected
+  reason      String? // 拒绝原因（rejected 时填）
+  processedBy String? // admin openid（approved/rejected 时填）
   processedAt DateTime? // 审核时间
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
