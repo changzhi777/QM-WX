@@ -11,11 +11,11 @@
  *   lines.push(toCsvHeader(['id', 'name']));
  *   for (const row of rows) lines.push(toCsvRow([row.id, row.name]));
  *   reply.header('Content-Type', 'text/csv; charset=utf-8');
- *   reply.send('﻿' + lines.join('\n'));
+ *   reply.send('\uFEFF' + lines.join('\n'));
  */
 
 /** Excel UTF-8 BOM */
-export const UTF8_BOM = '﻿';
+export const UTF8_BOM = '\uFEFF';
 
 /** 字段转义 */
 function escapeField(value: unknown): string {

@@ -5,6 +5,12 @@
 >
 > ## 📋 变更记录 (Changelog)
 >
+> - **2026-07-12** — 🎯 **V0.1.131 qm-admin Web 账号登录 + V0.1.130 bind-apps 前端页**：pages/bind-apps（手机号/邮箱/密码绑定+状态，三 tab 切换 + 验证码输入 + bcrypt 提交）+ UserOutputSchema +email/+username/+hasPassword；P0 修复（独立 route 从 req.body.payload 取，原 P0 是把整个 body 当 payload 解析导致 bindApps 取不到嵌套 payload）；mine「账号绑定」入口
+> - **2026-07-12** — 🎯 **V0.1.129 多方式认证扩展（前端配合）**：bind-apps 页 + 验证码输入 + 状态显示；前端 api.call vs wx.request 判断标准统一
+> - **2026-07-12** — 🎯 **V0.1.128 COROS 三轨前端**：BLE 设备绑定走通用 device-bind 页 + FIT 文件 chooseMessageFile 选择 → 上传 import + Terra 聚合数据展示（待 Terra API key）
+> - **2026-07-12** — 🎯 **V0.1.127 health 页 + health-history 页体成分卡集成**：pages/health 加体成分紫色卡（体重 + BMI + 6 项体成分 + 引导卡 import 流程 + Promise.allSettled 并行拉取）+ pages/health-history 时间戳预格式化 + 体脂秤数据展示（scale GATT 解析）
+> - **2026-07-11** — 🎯 **V0.1.119 wxpay 赛事真集成前端**：赛事报名走 wx.requestPayment（signType union MD5/HNA256 坑）+ 报名成功页 + 余额支付降级路径
+> - **2026-07-11** — 🎯 **V0.1.117 赛事余额支付 + 用户 tab**：mine 加 my-enrollments 入口 + content-list 赛事报名支持余额/wxpay 双支付
 > - **2026-07-10** — **V0.1.113 评价系统前端**：pages/review-publish（选星 1-5 + content 500 字 + 图片最多 9 张 chooseMedia→uploadFile 上传 + 提交调 review.create）+ product-detail 加评价段（loadReviews 调 review.stats 汇总 avg/count + review.list 前 3 条预览 + 暂无评价兜底）+ order-list done/paid/shipped 商品加「去评价」入口（navigateTo review-publish?productId&orderId&productName）+ app.json 注册；**42→43 页**；typecheck 通过；mine「我的评价」入口 + 我的评价页待后续
 > - **2026-07-10** — 🎯 **V0.1.100 GitHub 主线起点** + 🎯 **V0.1.43 微信运动 + 小米 OAuth + 健康持久化 + onboarding 4 步式激活向导**：`utils/werun.ts` 新增（syncWeRunToday wx.getWeRunData→AES-128-CBC 解密→upsert + getWeRunHistory + syncWeRunIfFirstToday 每日节流 + cnMonthRange）；`utils/ble.ts` 加固（retry3 + hasHr 策略 + 去 services 过滤 + getDeviceServices 诊断）；**4 新页面**（werun 月度柱状图+汇总+手动同步+月份切换 / onboarding 4 步式 welcome→profile→avatar→sync / health-history 心率/血氧历史曲线 / data-import-guide 小米数据包导入指南）；mine 加「重新激活授权」入口替退出登录（**wx.login 总登回原账号，真退出无意义**，改语义为重新走向导填资料/授权）；`app.ts` 加 envVersion 分支（develop→本地 / trial,release→生产）；首页 onShow 加微信运动每日节流；onboarding step3 一键同步微信运动；**页面 38→42 / 表 45→51 / 单元 577→580 / 迁移 19→27**
 > - **2026-07-08** — **V0.1.42 跑群深化** group-detail 改造（群卡+公告+汇总+成员列表）+ **V0.1.41 训练计划配置化** training 进度卡+加入计划 + **V0.1.40 profile 完整** 7 问题修

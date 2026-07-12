@@ -4,6 +4,9 @@
 >
 > ## 📋 变更记录 (Changelog)
 >
+> - **2026-07-12** — 🎯 **V0.1.129 多方式认证 + V0.1.131 qm-admin 登录** ENDPOINTS 加 `auth` 模块 login 4 method（wechat/phone/email/password）+ bindApps + sms-code + send-mail（保留 refresh）；+UserOutputSchema 字段 `email?` / `username?` / `hasPassword`（V0.1.130）+ action 数 +5（auth.sms-code / send-mail / bindApps + login dispatcher 方法）
+> - **2026-07-12** — 🎯 **V0.1.128 COROS 三轨** ENDPOINTS 加 `device.bindApps` 操作扩展（Terra 聚合 API key 配置在 configRepo）
+> - **2026-07-12** — 🎯 **V0.1.127 体脂秤** ENDPOINTS.device 加 `myScaleBind` / `submitBodyComp`（scale GATT 解析 + 入 BodyCompositionRecord 表）；action 数 16→18
 > - **2026-07-10** — **V0.1.113 评价系统** ENDPOINTS 加 `review` 模块（5 action：create/list/stats/myReviews/remove，电商闭环最后一块）
 > - **2026-07-10** — 🎯 **V0.1.100 GitHub 主线起点** + 🎯 **V0.1.43 微信运动 + 小米 OAuth + 健康持久化 + onboarding 4 步式**：`ENDPOINTS.device` 加 3 action（syncWeRun / myWeRun / myHealthHistory），端点 action 数 13→**16**；`API_BASE.prod` 仍 `qingmulife.cn`；本仓未单独发版本（与主仓同步 v0.1.100 跳号）
 > - **2026-07-08** — **V0.1.42 跑群深化** ENDPOINTS sport +3 action（groupDetail / groupMembers / announceGroup）+ **V0.1.41** training +3 joinPlan/myActivePlan/leavePlan + admin +2 upsertTrainingPlan/listTrainingPlans
