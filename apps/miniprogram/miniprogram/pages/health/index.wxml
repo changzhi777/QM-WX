@@ -19,6 +19,33 @@
       </view>
     </view>
 
+    <!-- 体成分卡（最新一次体脂秤测量） -->
+    <view class="card body-comp-card" wx:if="{{bodyComp}}">
+      <view class="bc-header">
+        <text class="bc-title">体成分</text>
+        <text class="bc-ts">{{bodyComp.timestamp}}</text>
+      </view>
+      <view class="bc-main">
+        <view class="bc-weight">{{bodyComp.weight}}<text class="u">kg</text></view>
+        <view class="bc-bmi">BMI {{bodyComp.bmi || '-'}}</view>
+      </view>
+      <view class="bc-grid">
+        <view class="bc-item"><text class="bc-label">体脂率</text><text class="bc-val">{{bodyComp.bodyFat != null ? bodyComp.bodyFat + '%' : '-'}}</text></view>
+        <view class="bc-item"><text class="bc-label">肌肉量</text><text class="bc-val">{{bodyComp.muscle != null ? bodyComp.muscle + 'kg' : '-'}}</text></view>
+        <view class="bc-item"><text class="bc-label">水分率</text><text class="bc-val">{{bodyComp.water != null ? bodyComp.water + '%' : '-'}}</text></view>
+        <view class="bc-item"><text class="bc-label">骨量</text><text class="bc-val">{{bodyComp.bone != null ? bodyComp.bone + 'kg' : '-'}}</text></view>
+        <view class="bc-item"><text class="bc-label">内脏脂肪</text><text class="bc-val">{{bodyComp.visceralFat != null ? bodyComp.visceralFat : '-'}}</text></view>
+        <view class="bc-item"><text class="bc-label">阻抗</text><text class="bc-val">{{bodyComp.impedance != null ? bodyComp.impedance + 'Ω' : '-'}}</text></view>
+      </view>
+    </view>
+
+    <!-- 体成分引导卡（未测量时） -->
+    <view class="card body-comp-empty" wx:else bindtap="onTapGoScale">
+      <view class="bc-empty-title">体成分</view>
+      <view class="bc-empty-tip">连接小米体脂秤，上秤测量查看体重 / 体脂率 / 肌肉量等 6 项指标</view>
+      <view class="bc-empty-btn">去测量 ›</view>
+    </view>
+
     <!-- 健康指标 2 列网格 -->
     <view class="grid">
       <!-- 睡眠卡 -->

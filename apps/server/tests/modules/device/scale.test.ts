@@ -88,7 +88,9 @@ function calcBodyComposition(
     ? Math.round((weight * 0.035) * 100) / 100
     : Math.round((weight * 0.040) * 100) / 100;
   const water = Math.max(35, Math.min(75, Math.round((tbwKg / weight) * 1000) / 10));
-  const visceralFat = bmi > 30 ? Math.round(bmi - 18) : Math.max(1, Math.round((bmi - 15) * 0.8));
+  // 内脏脂肪等级（BMI 基线 + 年龄修正：40 岁后每 5 岁 +1，最高 +5）
+  const ageBonus = age > 40 ? Math.min(5, Math.floor((age - 40) / 5)) : 0;
+  const visceralFat = (bmi > 30 ? Math.round(bmi - 18) : Math.max(1, Math.round((bmi - 15) * 0.8))) + ageBonus;
   return { weight, bodyFat, bmi, muscle, bone, water, visceralFat, impedance };
 }
 
@@ -194,5 +196,13 @@ describe('calcBodyComposition', () => {
     const normalData: ScaleData = { weight: 65, impedance: 480, stabilized: true, source: 'body_composition' };
     const normal = calcBodyComposition(normalData, 170, 'male', 30);
     expect(result.visceralFat).toBeGreaterThan(normal.visceralFat);
+  });
+
+  it('同条件年龄大 → 内脏脂肪等级高（年龄修正）', () => {
+    const data: ScaleData = { weight: 70, impedance: 480, stabilized: true, source: 'body_composition' };
+    const young = calcBodyComposition(data, 170, 'male', 30);
+    const old = calcBodyComposition(data, 170, 'male', 55); // 55岁 → +3 ageBonus
+    expect(old.visceralFat).toBeGreaterThan(young.visceralFat);
+    expect(old.visceralFat - young.visceralFat).toBe(3); // (55-40)/5 = 3
   });
 });

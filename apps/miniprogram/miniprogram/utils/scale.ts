@@ -226,10 +226,11 @@ export function calcBodyComposition(
   // 水分率 = TBW / weight × 100
   const water = Math.max(35, Math.min(75, Math.round((tbwKg / weight) * 1000) / 10));
 
-  // 内脏脂肪等级（简化：基于 BMI）
-  const visceralFat = bmi > 30 ? Math.round(bmi - 18) : Math.max(1, Math.round((bmi - 15) * 0.8));
+  // 内脏脂肪等级（BMI 基线 + 年龄修正：40 岁后每 5 岁 +1，最高 +5）
+  const ageBonus = age > 40 ? Math.min(5, Math.floor((age - 40) / 5)) : 0;
+  const visceralFat = (bmi > 30 ? Math.round(bmi - 18) : Math.max(1, Math.round((bmi - 15) * 0.8))) + ageBonus;
 
-  return { weight, bodyFat, bmi, muscle, bone, water, visceralFat, impedance: z };
+  return { weight, bodyFat, bmi, muscle, bone, water, visceralFat, impedance };
 }
 
 /**
