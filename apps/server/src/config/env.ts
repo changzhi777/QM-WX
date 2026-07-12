@@ -49,6 +49,16 @@ const EnvSchema = z.object({
   TERRA_API_KEY: z.string().optional(),
   TERRA_DEV_ID: z.string().optional(),
   TERRA_WEBHOOK_SECRET: z.string().default(''),
+
+  // V0.1.129 多方式认证（短信/邮件，缺省 stub）
+  SMS_AK: z.string().optional(),
+  SMS_SK: z.string().optional(),
+  SMS_SIGN: z.string().optional(),
+  SMS_TEMPLATE: z.string().optional(),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

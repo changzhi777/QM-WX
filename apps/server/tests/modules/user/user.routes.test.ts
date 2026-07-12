@@ -96,7 +96,7 @@ describe('POST /api/user', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/user',
-      payload: { action: 'bindApps', payload: { boundApps: { garmin: true } } },
+      payload: { action: 'bindApps', payload: { phone: '13800138000' } },
     });
     expect(res.statusCode).toBe(401);
   });
@@ -108,10 +108,10 @@ describe('POST /api/user', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/user',
-      payload: { action: 'bindApps', payload: { boundApps: { garmin: true } } },
+      payload: { action: 'bindApps', payload: { phone: '13800138000' } },
     });
     expect(res.statusCode).toBe(200);
-    expect(mockService.bindApps).toHaveBeenCalledWith('u1', expect.objectContaining({ boundApps: { garmin: true } }));
+    expect(mockService.bindApps).toHaveBeenCalledWith('u1', expect.objectContaining({ phone: '13800138000' }));
   });
 
   it('action=me 缺 user → 401', async () => {

@@ -33,11 +33,9 @@ export const UpdateProfileInputSchema = z.object({
 export type UpdateProfileInput = z.infer<typeof UpdateProfileInputSchema>;
 
 export const BindAppsInputSchema = z.object({
-  boundApps: z.object({
-    garmin: z.boolean().optional(),
-    huawei: z.boolean().optional(),
-    apple: z.boolean().optional(),
-  }),
+  phone: z.string().regex(/^1[3-9]\d{9}$/).optional(),
+  email: z.string().email().optional(),
+  password: z.string().min(6).max(64).optional(), // 绑定密码（≥6 位，bcrypt hash）
 });
 export type BindAppsInput = z.infer<typeof BindAppsInputSchema>;
 

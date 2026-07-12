@@ -11,9 +11,31 @@ import { randomUUID } from 'node:crypto';
 import { userRepo } from '../user/user.repository.js';
 import { Errors } from '../../common/errors.js';
 import { redis } from '../../infra/redis.js';
+import { authService } from './auth.service.js';
+import { issueSmsCode } from './sms-code.js';
+import { sendSms } from './connectors/sms.js';
+import { sendMail } from './connectors/mail.js';
 
 const RefreshInputSchema = z.object({
   refreshToken: z.string().min(1),
+});
+
+/** V0.1.129 统一登录（method + payload，public）*/
+const LoginSchema = z.object({
+  method: z.enum(['wechat', 'phone', 'email', 'password']),
+  payload: z.record(z.unknown()),
+});
+
+/** V0.1.129 发送短信验证码（public，限流由 rate-limit 插件兜底）*/
+const SendSmsSchema = z.object({
+  phone: z.string().regex(/^1[3-9]\d{9}$/, 'invalid phone'),
+});
+
+/** V0.1.129 发送邮件（public，预留）*/
+const SendMailSchema = z.object({
+  to: z.string().email(),
+  subject: z.string().min(1),
+  html: z.string().min(1),
 });
 
 /** 已消费的 refresh token 黑名单 key（一次性轮换：用过即拉黑，防泄露重放） */
@@ -75,6 +97,41 @@ export async function authRoutes(app: FastifyInstance) {
       );
 
       return { code: 0, data: { accessToken: newAccess, refreshToken: newRefresh } };
+    },
+  );
+
+  // V0.1.129 统一登录入口（public，dispatch by method）
+  app.post(
+    '/login',
+    { config: { public: true } },
+    async (req) => {
+      const input = LoginSchema.parse(req.body);
+      const data = await authService.login(app, input);
+      return { code: 0, data };
+    },
+  );
+
+  // V0.1.129 发送短信验证码（public）
+  app.post(
+    '/send-sms',
+    { config: { public: true } },
+    async (req) => {
+      const { phone } = SendSmsSchema.parse(req.body);
+      const code = await issueSmsCode(phone);
+      const result = await sendSms(phone, code);
+      // dev stub 返 devCode 方便联调；生产不泄露
+      return { code: 0, data: { ok: result.ok, devCode: result.devCode } };
+    },
+  );
+
+  // V0.1.129 发送邮件（public，预留）
+  app.post(
+    '/send-mail',
+    { config: { public: true } },
+    async (req) => {
+      const { to, subject, html } = SendMailSchema.parse(req.body);
+      const result = await sendMail(to, subject, html);
+      return { code: 0, data: result };
     },
   );
 }

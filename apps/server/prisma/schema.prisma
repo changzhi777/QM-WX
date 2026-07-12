@@ -17,7 +17,10 @@ model User {
   unionid        String?   @unique
   nickname       String?
   avatarUrl      String?
-  phone          String?
+  phone          String?   @unique // V0.1.129 手机号登录（生产 0 重复安全）
+  email          String?   @unique // V0.1.129 邮箱密码登录
+  passwordHash   String?   // V0.1.129 bcrypt hash（邮箱/admin 密码登录）
+  username       String?   @unique // V0.1.129 admin Web 账号登录
   memberLevel    String    @default("free") // free | monthly | quarterly | yearly
   memberExpireAt DateTime?
   points         Int       @default(0)

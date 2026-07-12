@@ -34,6 +34,7 @@
     "@prisma/client": "^5.10.0",
     "@qm-wx/shared": "workspace:*",
     "adm-zip": "^0.5.18",
+    "bcrypt": "^6.0.0",
     "bullmq": "^5.0.0",
     "csv-parse": "^7.0.1",
     "dotenv": "^16.4.0",
@@ -47,6 +48,7 @@
   },
   "devDependencies": {
     "@types/adm-zip": "^0.5.8",
+    "@types/bcrypt": "^6.0.0",
     "@types/csv-parse": "^1.2.5",
     "@types/node": "^20.11.0",
     "@types/unzipper": "^0.10.11",

@@ -8,8 +8,9 @@
  * - 返回 config（featureFlags / memberLevels / pointsRules）让前端首屏就拿到开关
  */
 import type { FastifyInstance } from 'fastify';
-import { randomUUID } from 'node:crypto';
+import bcrypt from 'bcrypt';
 import { prisma } from '../../infra/prisma.js';
+import { signTokens } from '../../common/helpers/sign-tokens.js';
 import { userRepo } from './user.repository.js';
 import { ludongService } from '../ludong/ludong.service.js';
 import { code2Session } from '../../common/integrations/wx/code2session.js';
@@ -85,14 +86,7 @@ export const userService = {
     }
 
     // 3. 签 JWT
-    const accessToken = await app.jwt.sign(
-      { sub: user.id, id: user.id, openid: user.openid },
-      { expiresIn: '2h' },
-    );
-    const refreshToken = await app.jwt.sign(
-      { sub: user.id, id: user.id, openid: user.openid, kind: 'refresh', jti: randomUUID() },
-      { expiresIn: '30d' },
-    );
+    const { accessToken, refreshToken } = await signTokens(app, user);
 
     // 4. 加载 config
     const config = await configRepo.getLoginConfig();
@@ -147,8 +141,34 @@ export const userService = {
    * 当前 schema 无 boundApps 字段、逻辑未实现。先前的占位实现会"静默成功"
    * 但什么都不写，易让调用方误以为已绑定。改为显式 501，避免误用。
    */
-  async bindApps(_userId: string, _input: BindAppsInput): Promise<never> {
-    throw Errors.notImplemented('绑定运动 APP 功能开发中（Phase 1.1）');
+  /**
+   * 绑定多方式认证（V0.1.129，phone/email/password）
+   *
+   * 用户先微信登录，再绑手机号/邮箱/密码，之后可用绑定方式登录（同一 User）。
+   * 防重：phone/email 全局唯一，已被其他账号绑则拒绝。
+   */
+  async bindApps(userId: string, input: BindAppsInput) {
+    const data: { phone?: string; email?: string; passwordHash?: string } = {};
+    if (input.phone !== undefined) {
+      const exist = await prisma.user.findUnique({ where: { phone: input.phone } });
+      if (exist && exist.id !== userId) throw Errors.badRequest('手机号已被其他账号绑定');
+      data.phone = input.phone;
+    }
+    if (input.email !== undefined) {
+      const exist = await prisma.user.findUnique({ where: { email: input.email } });
+      if (exist && exist.id !== userId) throw Errors.badRequest('邮箱已被其他账号绑定');
+      data.email = input.email;
+    }
+    if (input.password !== undefined) {
+      data.passwordHash = await bcrypt.hash(input.password, 10);
+    }
+    if (Object.keys(data).length === 0) {
+      throw Errors.badRequest('至少提供一个绑定字段（phone/email/password）');
+    }
+
+    const updated = await prisma.user.update({ where: { id: userId }, data });
+    await Cache.del(meCacheKey(userId));
+    return toUserOutput(updated);
   },
 
   /** V0.1.43 完成新用户激活向导（标记 onboardingDone = true，失效 me 缓存）*/
@@ -173,7 +193,7 @@ export const userService = {
 };
 
 /** Prisma row → API output（含 ISO 时间） */
-function toUserOutput(u: {
+export function toUserOutput(u: {
   id: string;
   openid: string;
   nickname: string | null;

@@ -25,7 +25,10 @@ export const ENDPOINTS = {
     resetOnboarding: '/api/user', // V0.1.44 重新激活（重走向导）
   },
   auth: {
+    login: '/api/auth/login', // V0.1.129 统一登录入口（method + payload dispatch）
     refresh: '/api/auth/refresh',
+    sendSms: '/api/auth/send-sms', // V0.1.129 短信验证码
+    sendMail: '/api/auth/send-mail', // V0.1.129 邮件（预留）
   },
   sport: {
     checkin: '/api/sport',
