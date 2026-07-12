@@ -45,4 +45,13 @@
     </view>
     <button class="submit-btn" bindtap="onBindPassword">{{hasPassword ? '修改密码' : '设置密码'}}</button>
   </view>
+
+  <!-- admin 账号（admin Web 登录用）-->
+  <view class="card">
+    <view class="card-title">admin 账号（运营后台登录用）</view>
+    <view class="input-row">
+      <input class="input" placeholder="用户名（≥3位，admin 后台登录用）" value="{{usernameInput}}" bindinput="onUsernameInput" />
+    </view>
+    <button class="submit-btn" bindtap="onBindUsername">设置用户名</button>
+  </view>
 </view>

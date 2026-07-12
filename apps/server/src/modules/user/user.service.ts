@@ -148,7 +148,7 @@ export const userService = {
    * 防重：phone/email 全局唯一，已被其他账号绑则拒绝。
    */
   async bindApps(userId: string, input: BindAppsInput) {
-    const data: { phone?: string; email?: string; passwordHash?: string } = {};
+    const data: { phone?: string; email?: string; passwordHash?: string; username?: string } = {};
     if (input.phone !== undefined) {
       const exist = await prisma.user.findUnique({ where: { phone: input.phone } });
       if (exist && exist.id !== userId) throw Errors.badRequest('手机号已被其他账号绑定');
@@ -161,6 +161,11 @@ export const userService = {
     }
     if (input.password !== undefined) {
       data.passwordHash = await bcrypt.hash(input.password, 10);
+    }
+    if (input.username !== undefined) {
+      const exist = await prisma.user.findUnique({ where: { username: input.username } });
+      if (exist && exist.id !== userId) throw Errors.badRequest('用户名已被占用');
+      data.username = input.username;
     }
     if (Object.keys(data).length === 0) {
       throw Errors.badRequest('至少提供一个绑定字段（phone/email/password）');

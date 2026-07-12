@@ -36,6 +36,7 @@ export const BindAppsInputSchema = z.object({
   phone: z.string().regex(/^1[3-9]\d{9}$/).optional(),
   email: z.string().email().optional(),
   password: z.string().min(6).max(64).optional(), // 绑定密码（≥6 位，bcrypt hash）
+  username: z.string().min(3).max(32).optional(), // V0.1.130 admin Web 账号
 });
 export type BindAppsInput = z.infer<typeof BindAppsInputSchema>;
 

@@ -18,6 +18,8 @@ Page({
     emailPassword: '',
     // 密码表单
     newPassword: '',
+    // V0.1.130 admin 账号（admin Web 登录用）
+    usernameInput: '',
   },
 
   onLoad() {
@@ -136,6 +138,26 @@ Page({
       this.loadMe();
     } catch {
       wx.showToast({ title: '设置失败', icon: 'none' });
+    }
+  },
+
+  // ===== admin 账号（username，admin Web 登录用，普通用户可忽略）=====
+  onUsernameInput(e: WechatMiniprogram.Input) {
+    this.setData({ usernameInput: e.detail.value });
+  },
+  async onBindUsername() {
+    const username = this.data.usernameInput.trim();
+    if (username.length < 3) {
+      wx.showToast({ title: '用户名至少 3 位', icon: 'none' });
+      return;
+    }
+    try {
+      await api.call('user', 'bindApps', { username });
+      wx.showToast({ title: '用户名已设置', icon: 'success' });
+      this.setData({ usernameInput: '' });
+      this.loadMe();
+    } catch {
+      wx.showToast({ title: '设置失败（用户名可能已被占用）', icon: 'none' });
     }
   },
 
