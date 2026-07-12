@@ -168,6 +168,10 @@ Page({
     wx.navigateTo({ url: '/pages/profile/index' });
   },
 
+  goBindApps() {
+    wx.navigateTo({ url: '/pages/bind-apps/index' });
+  },
+
   goMembership() {
     wx.navigateTo({ url: '/pages/membership/index' });
   },

@@ -105,7 +105,7 @@ export async function authRoutes(app: FastifyInstance) {
     '/login',
     { config: { public: true } },
     async (req) => {
-      const input = LoginSchema.parse(req.body);
+      const input = LoginSchema.parse((req.body as { payload?: unknown }).payload ?? {});
       const data = await authService.login(app, input);
       return { code: 0, data };
     },
@@ -116,7 +116,7 @@ export async function authRoutes(app: FastifyInstance) {
     '/send-sms',
     { config: { public: true } },
     async (req) => {
-      const { phone } = SendSmsSchema.parse(req.body);
+      const { phone } = SendSmsSchema.parse((req.body as { payload?: unknown }).payload ?? {});
       const code = await issueSmsCode(phone);
       const result = await sendSms(phone, code);
       // dev stub 返 devCode 方便联调；生产不泄露
@@ -129,7 +129,9 @@ export async function authRoutes(app: FastifyInstance) {
     '/send-mail',
     { config: { public: true } },
     async (req) => {
-      const { to, subject, html } = SendMailSchema.parse(req.body);
+      const { to, subject, html } = SendMailSchema.parse(
+        (req.body as { payload?: unknown }).payload ?? {},
+      );
       const result = await sendMail(to, subject, html);
       return { code: 0, data: result };
     },

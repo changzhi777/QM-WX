@@ -94,6 +94,11 @@
       <view class="arrow">›</view>
     </view>
 
+    <view class="list-item" bindtap="goBindApps">
+      <view class="lbl">账号绑定</view>
+      <view class="arrow">›</view>
+    </view>
+
     <view class="list-item" bindtap="goWeRun">
       <view class="lbl">微信运动</view>
       <view class="arrow">›</view>

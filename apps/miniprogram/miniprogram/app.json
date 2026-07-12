@@ -5,6 +5,7 @@
     "pages/mall/index",
     "pages/mine/index",
     "pages/profile/index",
+    "pages/bind-apps/index",
     "pages/group-detail/index",
     "pages/content-list/index",
     "pages/content-detail/index",

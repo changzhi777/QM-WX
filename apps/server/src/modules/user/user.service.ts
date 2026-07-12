@@ -199,6 +199,9 @@ export function toUserOutput(u: {
   nickname: string | null;
   avatarUrl: string | null;
   phone: string | null;
+  email: string | null;
+  username: string | null;
+  passwordHash: string | null;
   memberLevel: string;
   memberExpireAt: Date | null;
   points: number;
@@ -225,6 +228,9 @@ export function toUserOutput(u: {
     nickname: u.nickname,
     avatarUrl: u.avatarUrl,
     phone: u.phone,
+    email: u.email,
+    username: u.username,
+    hasPassword: Boolean(u.passwordHash),
     memberLevel: u.memberLevel as 'free' | 'monthly' | 'quarterly' | 'yearly',
     memberExpireAt: u.memberExpireAt?.toISOString() ?? null,
     points: u.points,
