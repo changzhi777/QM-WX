@@ -6,6 +6,7 @@
 // 分享（D）：onShareAppMessage；语音（F）：🎤 占位（待同声传译插件开通）
 import { actionUrl } from '@qm-wx/shared/api-contracts';
 import { api, getBaseUrl } from '../../services/api';
+import { ensureLogin } from '../../utils/auth';
 
 interface PlanDay { day: string; type: string; content: string; distanceKm?: number }
 interface PlanStructure {
@@ -53,9 +54,10 @@ Page({
   _tokenBuffer: '' as string,
   _tokenTimer: null as number | null,
 
-  onLoad() {
+  async onLoad() {
     const cached = wx.getStorageSync('aiCoachPersona') as string | '';
     this.setData({ persona: cached || 'buddy' });
+    await ensureLogin(); // V0.1.142 tab 首次进先登录（否则 loadHistory/warmup 401）
     this.loadHistory();
     this.warmup(); // V0.1.141 B 预热 system prompt Cache（首问快）
   },
