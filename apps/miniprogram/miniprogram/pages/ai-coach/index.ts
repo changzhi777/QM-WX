@@ -57,7 +57,11 @@ Page({
   async onLoad() {
     const cached = wx.getStorageSync('aiCoachPersona') as string | '';
     this.setData({ persona: cached || 'buddy' });
-    await ensureLogin(); // V0.1.142 tab 首次进先登录（否则 loadHistory/warmup 401）
+    try {
+      await ensureLogin(); // V0.1.142 tab 首次进先登录
+    } catch {
+      // 登录失败不阻塞（显欢迎语，用户操作时再触发登录）
+    }
     this.loadHistory();
     this.warmup(); // V0.1.141 B 预热 system prompt Cache（首问快）
   },
@@ -132,6 +136,12 @@ Page({
   async onSend() {
     const text = (this.data.inputText || '').trim();
     if (!text || this.data.sending) return;
+    try {
+      await ensureLogin(); // V0.1.142 确保登录（token 有效，防 401）
+    } catch {
+      wx.showToast({ title: '请先登录', icon: 'none' });
+      return;
+    }
     const userMsg: Msg = { role: 'user', content: text, type: 'text' };
     const asstMsg: Msg = { role: 'assistant', content: '', type: 'text', pending: true, suggestions: [] };
     this.setData({
@@ -152,7 +162,11 @@ Page({
         enableChunked: true,
         header: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
         data: { action: 'chatStream', payload: { message, conversationId: this.data.conversationId } },
-        success: () => {
+        success: (res: { statusCode?: number }) => {
+          // V0.1.142 401/403 → token 过期，提示重登（否则流式无数据 assistant 永远 pending）
+          if (res.statusCode === 401 || res.statusCode === 403) {
+            this.onError('登录已过期，请重进小程序');
+          }
           this.setData({ sending: false });
           this.streamingTask = null;
           resolve();
