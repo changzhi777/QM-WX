@@ -159,10 +159,6 @@ Page({
     wx.switchTab({ url: '/pages/sport/index' });
   },
 
-  goMallTab() {
-    wx.switchTab({ url: '/pages/mall/index' });
-  },
-
   // ===== 精简入口（个人/设置）=====
   goProfile() {
     wx.navigateTo({ url: '/pages/profile/index' });
@@ -186,7 +182,7 @@ Page({
 
   /** V0.1.139 AI 私教（smartAgent flag 守卫，wxml feature-gate 包裹）*/
   goAiCoach() {
-    wx.navigateTo({ url: '/pages/ai-coach/index' });
+    wx.switchTab({ url: '/pages/ai-coach/index' });
   },
 
   goWeRun() {
@@ -199,10 +195,6 @@ Page({
 
   goFamily() {
     wx.navigateTo({ url: '/pages/family/index' });
-  },
-
-  goReview() {
-    wx.navigateTo({ url: '/pages/review-my/index' });
   },
 
   goEnrollments() {

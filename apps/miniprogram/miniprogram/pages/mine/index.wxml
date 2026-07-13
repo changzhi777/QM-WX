@@ -69,14 +69,6 @@
       </view>
       <view class="redirect-arrow">前往运动 tab ›</view>
     </view>
-    <view class="redirect-row" bindtap="goMallTab">
-      <view class="redirect-icon">🛒</view>
-      <view class="redirect-text">
-        <view class="redirect-title">商城功能</view>
-        <view class="redirect-desc">购物车 · 优惠券 · 订单 · 钱包 · 积分</view>
-      </view>
-      <view class="redirect-arrow">前往商城 tab ›</view>
-    </view>
   </view>
 
   <!-- V0.1.35 精简：仅保留个人/设置入口 -->
@@ -116,11 +108,6 @@
 
     <view class="list-item" bindtap="goFamily">
       <view class="lbl">家庭空间</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goReview">
-      <view class="lbl">我的评价</view>
       <view class="arrow">›</view>
     </view>
 

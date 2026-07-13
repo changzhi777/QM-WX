@@ -80,7 +80,7 @@ Page({
     if (item.targetType === 'content') {
       wx.navigateTo({ url: `/pages/content-detail/index?id=${item.targetId}` });
     } else {
-      wx.navigateTo({ url: `/pages/product-detail/index?id=${item.targetId}` });
+      wx.showToast({ title: '商城已下线', icon: 'none' });
     }
   },
 });

@@ -1,7 +1,0 @@
-{
-  "navigationBarTitleText": "我的订单",
-  "enablePullDownRefresh": true,
-  "usingComponents": {
-    "error-state": "/components/error-state/index"
-  }
-}

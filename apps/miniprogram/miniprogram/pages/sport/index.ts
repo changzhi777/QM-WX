@@ -53,7 +53,6 @@ Page({
     healthDevices: [
       { icon: '💊', label: '今日健康', url: '/pages/health/index' },
       { icon: '💪', label: '锻炼训练', url: '/pages/training/index' },
-      { icon: '📅', label: '天天跑', url: '/pages/tiantian/index' },
     ],
     socialEvents: [
       { icon: '📰', label: '运动动态', url: '/pages/feed/index' },
