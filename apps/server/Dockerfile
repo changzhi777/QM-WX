@@ -31,6 +31,8 @@ RUN pnpm --filter @qm-wx/server build
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# V0.1.139 防 OOM：Node heap 老生代限 1G（默认 1.5G，在 4G 小内存机吃光会挤死 sshd）
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 # 复制整个 repo：pnpm 的 node_modules 是 .pnpm + 软链结构，局部 COPY 会致软链断裂缺包
 # （全量 COPY 含 .pnpm，软链目标存在；镜像略大但可靠，后续可 pnpm deploy 精简）
 COPY --from=build /repo /app

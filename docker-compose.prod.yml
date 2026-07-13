@@ -51,6 +51,8 @@ services:
       dockerfile: apps/server/Dockerfile
     container_name: qmwx-server
     restart: unless-stopped
+    mem_limit: 1500m
+    memswap_limit: 2g
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }
