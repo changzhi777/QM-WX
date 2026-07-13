@@ -254,6 +254,7 @@ export const ENDPOINTS = {
     conversations: '/api/ai-coach', // V0.1.139 完善：会话列表（多会话管理）
     deleteConversation: '/api/ai-coach', // V0.1.139 完善：删除整个会话
     setPersona: '/api/ai-coach', // V0.1.140：设置 AI 私教人设（scientist/coach/buddy/strict）
+    warmup: '/api/ai-coach', // V0.1.141：预热 system prompt Cache（进页调，首问快）
   },
 } as const;
 

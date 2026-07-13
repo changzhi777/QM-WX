@@ -71,6 +71,7 @@ export const aiCoachService = {
       'Cache-Control': 'no-cache',
       Connection: 'keep-alive',
     });
+    reply.raw.flushHeaders(); // V0.1.141 C 显式冲刷头，确保 SSE 立即发不缓冲
 
     let full = '';
     try {
@@ -243,19 +244,27 @@ export const aiCoachService = {
     await Cache.delByPattern(`ai-coach:ctx:${userId}:*`).catch(() => undefined);
     return { persona: input.persona };
   },
+
+  /** V0.1.141 B 预热：进页调，预 Cache system prompt（首问命中 Cache 省 50ms）*/
+  async warmup(userId: string) {
+    await buildSystemPrompt(userId);
+    return { ok: true };
+  },
 };
 
-/** 加载最近 N 轮对话（user+assistant 成对，时间正序） */
+/** 加载最近 N 轮对话（user+assistant 成对，时间正序）。V0.1.141 E Cache 30s 减查询 */
 async function loadHistory(userId: string, conversationId: string): Promise<ChatMessage[]> {
-  const turns = await prisma.conversationTurn.findMany({
-    where: { userId, conversationId },
-    orderBy: { createdAt: 'desc' },
-    take: HISTORY_TURNS * 2,
+  return Cache.wrap(`ai-coach:hist:${userId}:${conversationId}`, 30, async () => {
+    const turns = await prisma.conversationTurn.findMany({
+      where: { userId, conversationId },
+      orderBy: { createdAt: 'desc' },
+      take: HISTORY_TURNS * 2,
+    });
+    return turns.reverse().map((t) => ({ role: t.role as 'user' | 'assistant', content: t.content }));
   });
-  return turns.reverse().map((t) => ({ role: t.role as 'user' | 'assistant', content: t.content }));
 }
 
-/** 落本轮 user + assistant（createMany 一次写两条） */
+/** 落本轮 user + assistant（createMany 一次写两条）+ V0.1.141 失效 history Cache */
 async function saveTurns(userId: string, conversationId: string, userMsg: string, assistantMsg: string) {
   await prisma.conversationTurn.createMany({
     data: [
@@ -263,4 +272,5 @@ async function saveTurns(userId: string, conversationId: string, userMsg: string
       { userId, conversationId, role: 'assistant', content: assistantMsg },
     ],
   });
+  await Cache.del(`ai-coach:hist:${userId}:${conversationId}`).catch(() => undefined);
 }

@@ -17,6 +17,7 @@ const mockAiCoachService = vi.hoisted(() => ({
   conversations: vi.fn(),
   deleteConversation: vi.fn(),
   setPersona: vi.fn(),
+  warmup: vi.fn(),
 }));
 
 vi.mock('src/modules/ai-coach/ai-coach.service.js', () => ({ aiCoachService: mockAiCoachService }));
@@ -202,6 +203,15 @@ describe('ai-coach routes (V0.1.139)', () => {
     const r = await app.inject({ method: 'POST', url: '/', payload: { action: 'history' } });
     expect(r.statusCode).toBe(200);
     expect(mockAiCoachService.history).toHaveBeenCalled();
+    await app.close();
+  });
+
+  it('warmup → 调 service.warmup（V0.1.141 B 预热，不限流）', async () => {
+    mockAiCoachService.warmup.mockResolvedValue({ ok: true });
+    const app = await buildApp();
+    const r = await app.inject({ method: 'POST', url: '/', payload: { action: 'warmup' } });
+    expect(r.json().data.ok).toBe(true);
+    expect(mockAiCoachService.warmup).toHaveBeenCalledWith('u1');
     await app.close();
   });
 });

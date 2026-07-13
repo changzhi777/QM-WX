@@ -65,6 +65,9 @@ export async function aiCoachRoutes(app: FastifyInstance) {
         const input = SetPersonaInputSchema.parse(payload);
         return { code: 0, data: await aiCoachService.setPersona(userId, input) };
       }
+      case 'warmup': {
+        return { code: 0, data: await aiCoachService.warmup(userId) };
+      }
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
     }

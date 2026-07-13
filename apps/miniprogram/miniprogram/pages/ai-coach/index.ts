@@ -49,11 +49,20 @@ Page({
     personaList: PERSONAS,
   },
   streamingTask: null as WechatMiniprogram.RequestTask | null,
+  // V0.1.141 A throttle：buffer 累积 token + 50ms timer flush（setData 频率降 ~20x）
+  _tokenBuffer: '' as string,
+  _tokenTimer: null as number | null,
 
   onLoad() {
     const cached = wx.getStorageSync('aiCoachPersona') as string | '';
     this.setData({ persona: cached || 'buddy' });
     this.loadHistory();
+    this.warmup(); // V0.1.141 B 预热 system prompt Cache（首问快）
+  },
+
+  /** V0.1.141 B 预热：进页调 warmup，后端预 Cache system prompt */
+  warmup() {
+    api.call('aiCoach', 'warmup', {}).catch(() => undefined);
   },
 
   async loadHistory(cid?: string) {
@@ -255,11 +264,24 @@ Page({
     }
   },
 
+  /** V0.1.141 A throttle：token 进 buffer，50ms timer flush 一次 setData（替代每 token setData）*/
   appendToken(t: string) {
+    this._tokenBuffer += t;
+    if (this._tokenTimer) return;
+    this._tokenTimer = setTimeout(() => {
+      this._tokenTimer = null;
+      this._flushTokenBuffer();
+    }, 50) as unknown as number;
+  },
+
+  _flushTokenBuffer() {
+    if (!this._tokenBuffer) return;
+    const buf = this._tokenBuffer;
+    this._tokenBuffer = '';
     const messages = this.data.messages.slice();
     const last = messages[messages.length - 1];
     if (last && last.role === 'assistant') {
-      last.content += t;
+      last.content += buf;
       last.pending = false;
       messages[messages.length - 1] = last;
       this.setData({ messages });
@@ -268,6 +290,7 @@ Page({
   },
 
   markMsgDone() {
+    this._flushTokenBuffer(); // V0.1.141 流完 flush 剩余 buffer
     const messages = this.data.messages.slice();
     const last = messages[messages.length - 1];
     if (last && last.role === 'assistant') {

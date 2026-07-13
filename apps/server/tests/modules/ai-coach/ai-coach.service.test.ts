@@ -36,10 +36,11 @@ vi.mock('src/modules/ai-coach/context-builder.js', () => ({
 vi.mock('src/infra/cache.js', () => ({
   Cache: {
     delByPattern: vi.fn().mockResolvedValue(0),
-    wrap: vi.fn(),
+    // V0.1.141 loadHistory Cache.wrap：mock 调 loader（不真缓存，测试隔离）
+    wrap: vi.fn(async (_k: string, _t: number, loader: () => Promise<unknown>) => loader()),
     get: vi.fn(),
     set: vi.fn(),
-    del: vi.fn(),
+    del: vi.fn().mockResolvedValue(undefined),
   },
 }));
 
@@ -103,6 +104,7 @@ describe('aiCoachService.chatStream (V0.1.139 流式 + asciiFrame)', () => {
       hijack: vi.fn(),
       raw: {
         writeHead: vi.fn(),
+        flushHeaders: vi.fn(),
         write: (s: string) => writes.push(s),
         end: vi.fn(),
       },
@@ -131,7 +133,7 @@ describe('aiCoachService.chatStream (V0.1.139 流式 + asciiFrame)', () => {
     const writes: string[] = [];
     const mockReply = {
       hijack: vi.fn(),
-      raw: { writeHead: vi.fn(), write: (s: string) => writes.push(s), end: vi.fn() },
+      raw: { writeHead: vi.fn(), flushHeaders: vi.fn(), write: (s: string) => writes.push(s), end: vi.fn() },
     };
     mocks.prisma.conversationTurn.create.mockResolvedValue({ id: 't1' } as never);
 
@@ -289,5 +291,14 @@ describe('aiCoachService.setPersona (V0.1.140 A 人设切换)', () => {
     expect(mocks.prisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'u1' }, data: { aiCoachPersona: 'strict' } }),
     );
+  });
+});
+
+describe('aiCoachService.warmup (V0.1.141 B 预热)', () => {
+  it('调 buildSystemPrompt 预 Cache', async () => {
+    mockBuildSystemPrompt.mockResolvedValue('sys-prompt');
+    const r = await aiCoachService.warmup('u1');
+    expect(r.ok).toBe(true);
+    expect(mockBuildSystemPrompt).toHaveBeenCalledWith('u1');
   });
 });
