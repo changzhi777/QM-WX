@@ -17,11 +17,12 @@
 import { randomUUID } from 'crypto';
 import type { FastifyReply } from 'fastify';
 import { prisma } from '../../infra/prisma.js';
+import { Cache } from '../../infra/cache.js';
 import { buildSystemPrompt } from './context-builder.js';
 import { stubProvider } from './providers/stub.js';
 import { glmProvider } from './providers/glm.js';
 import type { LLMProvider, ChatMessage } from './providers/types.js';
-import type { ChatInput, GeneratePlanInput, PlanStructure, HistoryQuery, RegenerateInput, DeleteConversationInput } from './ai-coach.schema.js';
+import type { ChatInput, GeneratePlanInput, PlanStructure, HistoryQuery, RegenerateInput, DeleteConversationInput, SetPersonaInput } from './ai-coach.schema.js';
 
 const HISTORY_TURNS = 10;
 
@@ -230,6 +231,17 @@ export const aiCoachService = {
       where: { userId, conversationId: input.conversationId },
     });
     return { ok: true };
+  },
+
+  /** 设置 AI 私教人设（V0.1.140 A：4 人设 scientist/coach/buddy/strict）*/
+  async setPersona(userId: string, input: SetPersonaInput) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { aiCoachPersona: input.persona },
+    });
+    // 失效该用户所有 persona 的 system prompt cache（及时，不依赖 TTL）
+    await Cache.delByPattern(`ai-coach:ctx:${userId}:*`).catch(() => undefined);
+    return { persona: input.persona };
   },
 };
 

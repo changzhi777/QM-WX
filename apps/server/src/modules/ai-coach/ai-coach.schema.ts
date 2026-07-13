@@ -68,3 +68,9 @@ export const DeleteConversationInputSchema = z.object({
   conversationId: z.string().min(1),
 });
 export type DeleteConversationInput = z.infer<typeof DeleteConversationInputSchema>;
+
+/** 设置 AI 私教人设（V0.1.140 A：4 人设可切换）*/
+export const SetPersonaInputSchema = z.object({
+  persona: z.enum(['scientist', 'coach', 'buddy', 'strict']),
+});
+export type SetPersonaInput = z.infer<typeof SetPersonaInputSchema>;

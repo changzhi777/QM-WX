@@ -46,6 +46,9 @@
 | `adoptPlan` | `{ plan: PlanStructure }` | `{ planId, planName, joinedAt }` | 采纳计划（TrainingPlan archived + UserPlanEnrollment upsert） |
 | `history` | `{ conversationId?, limit? }` | `{ conversationId, messages[] }` | 完善：加载历史会话（不传 conversationId 取最近；无返空） |
 | `regenerate` | `{ conversationId }` | `{ reply, conversationId }` | 完善：删最后 assistant + 用其前历史重新生成 |
+| `conversations` | — | `{ conversations[] }` | 完善：会话列表（内存 groupBy，多会话管理） |
+| `deleteConversation` | `{ conversationId }` | `{ ok }` | 完善：删除整个会话 |
+| `setPersona` | `{ persona: scientist\|coach\|buddy\|strict }` | `{ persona }` | **V0.1.140 A**：设置 AI 私教人设（User.aiCoachPersona + Cache 失效） |
 
 ---
 

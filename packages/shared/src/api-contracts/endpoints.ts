@@ -253,6 +253,7 @@ export const ENDPOINTS = {
     regenerate: '/api/ai-coach', // V0.1.139 完善：重新生成最后一条 assistant
     conversations: '/api/ai-coach', // V0.1.139 完善：会话列表（多会话管理）
     deleteConversation: '/api/ai-coach', // V0.1.139 完善：删除整个会话
+    setPersona: '/api/ai-coach', // V0.1.140：设置 AI 私教人设（scientist/coach/buddy/strict）
   },
 } as const;
 

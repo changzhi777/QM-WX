@@ -84,6 +84,7 @@ model User {
   inviteCode             String?                 @unique
   distributorLevel       String                  @default("V0") // V0 | V1 | V2 | V3
   onboardingDone         Boolean                 @default(false) // V0.1.43 新用户激活向导完成标记
+  aiCoachPersona         String? // V0.1.140 AI 私教人设（scientist|coach|buddy|strict，默认 buddy）
   distributionOrders     DistributionOrder[]
   teamInvites            Team[]                  @relation("TeamInviter")
   teamInvitees           Team[]                  @relation("TeamInvitee")

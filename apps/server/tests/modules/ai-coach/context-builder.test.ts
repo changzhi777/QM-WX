@@ -41,7 +41,11 @@ vi.mock('src/infra/cache.js', () => ({
 
 import { buildSystemPrompt } from 'src/modules/ai-coach/context-builder.js';
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  // V0.1.140 C：recentRuns（checkin.findMany）默认空
+  mocks.prisma.checkin.findMany.mockResolvedValue([] as never);
+});
 
 describe('buildSystemPrompt (V0.1.139 全量聚合)', () => {
   it('聚合 profile + 跑量 + 跑鞋 → prompt 含画像', async () => {

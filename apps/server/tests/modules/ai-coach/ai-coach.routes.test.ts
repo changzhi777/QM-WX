@@ -16,6 +16,7 @@ const mockAiCoachService = vi.hoisted(() => ({
   regenerate: vi.fn(),
   conversations: vi.fn(),
   deleteConversation: vi.fn(),
+  setPersona: vi.fn(),
 }));
 
 vi.mock('src/modules/ai-coach/ai-coach.service.js', () => ({ aiCoachService: mockAiCoachService }));
@@ -28,6 +29,7 @@ vi.mock('src/modules/ai-coach/ai-coach.schema.js', () => {
     HistoryQuerySchema: passthrough,
     RegenerateInputSchema: passthrough,
     DeleteConversationInputSchema: passthrough,
+    SetPersonaInputSchema: passthrough,
   };
 });
 vi.mock('src/common/errors.js', () => ({
@@ -38,6 +40,9 @@ vi.mock('src/common/errors.js', () => ({
     forbidden: () => Object.assign(new Error('forbidden'), { code: 403, statusCode: 403 }),
   },
 }));
+// V0.1.140 限流用 redis
+const mockRedis = vi.hoisted(() => ({ incr: vi.fn().mockResolvedValue(1), expire: vi.fn().mockResolvedValue(1) }));
+vi.mock('src/infra/redis.js', () => ({ redis: mockRedis }));
 
 import { aiCoachRoutes } from '../../../src/modules/ai-coach/ai-coach.routes.js';
 
@@ -163,6 +168,40 @@ describe('ai-coach routes (V0.1.139)', () => {
       payload: { action: 'deleteConversation', payload: { conversationId: 'c1' } },
     });
     expect(mockAiCoachService.deleteConversation).toHaveBeenCalledWith('u1', { conversationId: 'c1' });
+    await app.close();
+  });
+
+  it('setPersona → 透传 persona（V0.1.140 A）', async () => {
+    mockAiCoachService.setPersona.mockResolvedValue({ persona: 'strict' });
+    const app = await buildApp();
+    const r = await app.inject({
+      method: 'POST', url: '/',
+      payload: { action: 'setPersona', payload: { persona: 'strict' } },
+    });
+    expect(r.json().data.persona).toBe('strict');
+    expect(mockAiCoachService.setPersona).toHaveBeenCalledWith('u1', { persona: 'strict' });
+    await app.close();
+  });
+
+  it('限流：chat 超 30/分 → 429（V0.1.140 E）', async () => {
+    mockRedis.incr.mockResolvedValue(31);
+    const app = await buildApp();
+    const r = await app.inject({
+      method: 'POST', url: '/',
+      payload: { action: 'chat', payload: { message: 'hi' } },
+    });
+    expect(r.statusCode).toBe(429);
+    expect(mockAiCoachService.chat).not.toHaveBeenCalled();
+    await app.close();
+  });
+
+  it('限流：history 非 LLM action 不受限', async () => {
+    mockRedis.incr.mockResolvedValue(100);
+    mockAiCoachService.history.mockResolvedValue({ conversationId: '', messages: [] });
+    const app = await buildApp();
+    const r = await app.inject({ method: 'POST', url: '/', payload: { action: 'history' } });
+    expect(r.statusCode).toBe(200);
+    expect(mockAiCoachService.history).toHaveBeenCalled();
     await app.close();
   });
 });

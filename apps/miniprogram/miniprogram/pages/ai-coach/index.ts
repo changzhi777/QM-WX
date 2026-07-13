@@ -1,8 +1,9 @@
-// AI 私教聊天页（V0.1.139 + 完善：历史持久化 / 新对话 / 快捷问题 / 重新生成 / 停止）
+// AI 私教聊天页（V0.1.140 — 人设可切换 + 建议卡片 + 分享 + 语音占位 + 会话管理）
 //
-// 流式：wx.request enableChunked + onChunkReceived 拿 ArrayBuffer
-//   → 逐字节 fromCharCode 转 ASCII（后端 SSE 帧已 \uXXXX 转义中文，纯 ASCII 安全）
-//   → 累积 buffer 按 "\n\n" 分帧 → data: {...} → JSON.parse 取 t/done/error
+// 流式：wx.request enableChunked + onChunkReceived → abToAscii → 按 \n\n 分帧 → JSON.parse
+// 人设（A）：本地缓存 + setPersona 同步 DB；4 人设 scientist/coach/buddy/strict
+// 建议卡片（B）：assistant reply 末尾 `📋建议：xxx` 标记，正则提取 → 卡片按钮
+// 分享（D）：onShareAppMessage；语音（F）：🎤 占位（待同声传译插件开通）
 import { actionUrl } from '@qm-wx/shared/api-contracts';
 import { api, getBaseUrl } from '../../services/api';
 
@@ -11,23 +12,27 @@ interface PlanStructure {
   title: string; level: string; weeks: number; goal: string;
   weeklyMileage: string; targetKm: number; days: PlanDay[];
 }
+interface Suggestion { type: 'addGoal' | 'adoptPlan' | 'generic'; label: string }
 interface Msg {
   role: 'user' | 'assistant';
   content: string;
   type?: 'text' | 'plan';
   plan?: PlanStructure;
   pending?: boolean;
+  suggestions?: Suggestion[];
 }
 
-const QUICK_QUESTIONS = [
-  '怎么提高配速？',
-  '帮我制定半马训练计划',
-  '跑后怎么恢复？',
-  '跑鞋多久该换？',
-];
+const PERSONAS = [
+  { key: 'buddy', label: '陪跑', emoji: '🤝' },
+  { key: 'scientist', label: '科学', emoji: '🔬' },
+  { key: 'coach', label: '教练', emoji: '🏅' },
+  { key: 'strict', label: '铁血', emoji: '💪' },
+] as const;
+
+const QUICK_QUESTIONS = ['怎么提高配速？', '帮我制定半马训练计划', '跑后怎么恢复？', '跑鞋多久该换？'];
 
 const WELCOME =
-  '你好，我是青沐 AI 私教 🏃。可以问我训练、恢复、营养、伤病、跑鞋或配速，也可以点下方快捷问题，或右上「计划」让我定制训练计划。';
+  '你好，我是青沐 AI 私教 🏃。点上方人设切换风格，问我训练/恢复/营养/伤病，或点「计划」定制训练计划。';
 
 Page({
   data: {
@@ -40,15 +45,17 @@ Page({
     hasHistory: false,
     showConversations: false,
     conversationList: [] as Array<{ conversationId: string; lastMessage: string; lastTime: string; messageCount: number }>,
+    persona: 'buddy' as string,
+    personaList: PERSONAS,
   },
-  // 流式 task 引用（用于停止生成 abort）
   streamingTask: null as WechatMiniprogram.RequestTask | null,
 
   onLoad() {
+    const cached = wx.getStorageSync('aiCoachPersona') as string | '';
+    this.setData({ persona: cached || 'buddy' });
     this.loadHistory();
   },
 
-  /** V0.1.139 完善：加载历史会话（无则显欢迎语 + 快捷问题）。传 cid → 加载指定会话 */
   async loadHistory(cid?: string) {
     try {
       const res = await api.call<{ conversationId: string; messages: Msg[] }>(
@@ -57,16 +64,17 @@ Page({
         cid ? { conversationId: cid } : {},
       );
       if (res.conversationId && res.messages.length) {
-        this.setData({
-          conversationId: res.conversationId,
-          messages: res.messages.map((m) => ({ ...m, type: 'text' as const })),
-          hasHistory: true,
-        });
+        const messages = res.messages.map((m) => ({
+          ...m,
+          type: 'text' as const,
+          suggestions: m.role === 'assistant' ? this.extractSuggestions(m.content) : [],
+        }));
+        this.setData({ conversationId: res.conversationId, messages, hasHistory: true });
         this.scrollBottom();
         return;
       }
     } catch {
-      // history 失败不阻塞（显欢迎语）
+      // history 失败不阻塞
     }
     this.setData({
       messages: [{ role: 'assistant', content: WELCOME, type: 'text' }],
@@ -78,7 +86,21 @@ Page({
     this.setData({ inputText: e.detail.value });
   },
 
-  /** 完善：新对话（清当前会话，重显欢迎语）*/
+  /** A 人设切换：本地缓存 + DB 同步 */
+  async onSelectPersona(e: WechatMiniprogram.Touch) {
+    const persona = (e.currentTarget.dataset as { key: string }).key;
+    if (persona === this.data.persona || this.data.sending) return;
+    this.setData({ persona });
+    wx.setStorageSync('aiCoachPersona', persona);
+    try {
+      await api.call('aiCoach', 'setPersona', { persona });
+      const label = PERSONAS.find((p) => p.key === persona)?.label;
+      wx.showToast({ title: `已切换「${label}」风格`, icon: 'none' });
+    } catch {
+      // 静默（本地已切，DB 失败不阻塞）
+    }
+  },
+
   onNewChat() {
     if (this.data.sending) return;
     this.setData({
@@ -89,7 +111,6 @@ Page({
     });
   },
 
-  /** 完善：快捷问题 → 直接发送 */
   onTapQuick(e: WechatMiniprogram.Touch) {
     const q = (e.currentTarget.dataset as { q: string }).q;
     if (this.data.sending || !q) return;
@@ -101,7 +122,7 @@ Page({
     const text = (this.data.inputText || '').trim();
     if (!text || this.data.sending) return;
     const userMsg: Msg = { role: 'user', content: text, type: 'text' };
-    const asstMsg: Msg = { role: 'assistant', content: '', type: 'text', pending: true };
+    const asstMsg: Msg = { role: 'assistant', content: '', type: 'text', pending: true, suggestions: [] };
     this.setData({
       messages: [...this.data.messages, userMsg, asstMsg],
       inputText: '',
@@ -111,7 +132,6 @@ Page({
     await this.streamChat(text);
   },
 
-  /** 流式对话（enableChunked + onChunkReceived 解析 SSE）*/
   streamChat(message: string): Promise<void> {
     return new Promise((resolve) => {
       const token = wx.getStorageSync('accessToken');
@@ -134,7 +154,6 @@ Page({
         },
       });
       this.streamingTask = task;
-
       let buf = '';
       task.onChunkReceived((res: { data: ArrayBuffer }) => {
         buf += this.abToAscii(res.data);
@@ -148,7 +167,6 @@ Page({
     });
   },
 
-  /** 完善：停止生成（abort 当前流式 task）*/
   onStop() {
     if (this.streamingTask) {
       try {
@@ -162,7 +180,6 @@ Page({
     this.setData({ sending: false });
   },
 
-  /** 完善：重新生成最后一条 assistant（非流式 regenerate）*/
   async onRegenerate() {
     if (this.data.sending || !this.data.conversationId) return;
     const messages = this.data.messages.slice();
@@ -170,6 +187,7 @@ Page({
     if (!last || last.role !== 'assistant' || last.type === 'plan') return;
     last.content = '';
     last.pending = true;
+    last.suggestions = [];
     this.setData({ messages, sending: true });
     try {
       const res = await api.call<{ reply: string; conversationId: string }>('aiCoach', 'regenerate', {
@@ -177,6 +195,7 @@ Page({
       });
       last.content = res.reply;
       last.pending = false;
+      last.suggestions = this.extractSuggestions(res.reply);
       messages[messages.length - 1] = last;
       this.setData({ messages });
       this.scrollBottom();
@@ -190,7 +209,35 @@ Page({
     }
   },
 
-  /** 解析一帧 SSE：data: {...} */
+  /** B 建议提取：reply 末尾 `📋建议：xxx` 标记 → 正则提取 + 简单分类 */
+  extractSuggestions(content: string): Suggestion[] {
+    if (!content) return [];
+    const suggestions: Suggestion[] = [];
+    const regex = /📋建议：([^\n]+)/g;
+    let m: RegExpExecArray | null;
+    while ((m = regex.exec(content)) !== null) {
+      const label = m[1].trim();
+      let type: Suggestion['type'] = 'generic';
+      if (/目标|跑量|公里|km/i.test(label)) type = 'addGoal';
+      else if (/计划|训练|间歇|长距|节奏/i.test(label)) type = 'adoptPlan';
+      suggestions.push({ type, label });
+    }
+    return suggestions;
+  },
+
+  /** B 建议卡片点击：addGoal → goal 页；adoptPlan → 生成计划 */
+  onTapSuggestion(e: WechatMiniprogram.Touch) {
+    const sug = (e.currentTarget.dataset as { sug: Suggestion }).sug;
+    if (sug.type === 'addGoal') {
+      wx.navigateTo({ url: '/pages/goal/index' });
+    } else if (sug.type === 'adoptPlan') {
+      this.setData({ inputText: sug.label });
+      this.onTapGeneratePlan();
+    } else {
+      this.setData({ inputText: sug.label });
+    }
+  },
+
   handleFrame(frame: string) {
     const line = frame.trim();
     if (!line.startsWith('data:')) return;
@@ -200,10 +247,8 @@ Page({
       const obj = JSON.parse(json) as { t?: string; done?: boolean; conversationId?: string; error?: string };
       if (obj.t) this.appendToken(obj.t);
       else if (obj.done) {
-        this.setData({
-          conversationId: obj.conversationId || this.data.conversationId,
-          hasHistory: true,
-        });
+        this.setData({ conversationId: obj.conversationId || this.data.conversationId, hasHistory: true });
+        this.markMsgDone(); // 流完提取建议
       } else if (obj.error) this.onError(obj.error);
     } catch {
       // 跳过非 JSON
@@ -225,8 +270,9 @@ Page({
   markMsgDone() {
     const messages = this.data.messages.slice();
     const last = messages[messages.length - 1];
-    if (last) {
+    if (last && last.role === 'assistant') {
       last.pending = false;
+      last.suggestions = this.extractSuggestions(last.content); // B：流完提取建议
       messages[messages.length - 1] = last;
       this.setData({ messages });
     }
@@ -243,7 +289,6 @@ Page({
     }
   },
 
-  /** ArrayBuffer → ASCII 字符串（分块避免 apply 栈溢出；后端帧纯 ASCII 安全）*/
   abToAscii(buf: ArrayBuffer): string {
     const arr = new Uint8Array(buf);
     let str = '';
@@ -262,13 +307,13 @@ Page({
     wx.showLoading({ title: '生成计划中…' });
     try {
       const { plan } = await api.call<{ plan: PlanStructure }>('aiCoach', 'generatePlan', {
-        message: '请结合我的跑量、目标和跑鞋状态，生成一份个性化训练计划',
+        message: this.data.inputText || '请结合我的跑量、目标和跑鞋状态，生成一份个性化训练计划',
       });
       const messages: Msg[] = [
         ...this.data.messages,
         { role: 'assistant', content: '这是为你定制的训练计划，点击「采纳」即可加入：', type: 'plan', plan },
       ];
-      this.setData({ messages, hasHistory: true });
+      this.setData({ messages, hasHistory: true, inputText: '' });
       this.scrollBottom();
     } catch (e) {
       wx.showToast({ title: (e as Error).message || '生成失败', icon: 'none' });
@@ -297,9 +342,27 @@ Page({
     this.setData({ inputText: '请调整这份计划：' });
   },
 
-  // ===== 会话管理（V0.1.139 完善：多会话列表/切换/删除）=====
+  /** F 语音输入占位（待同声传译插件开通）*/
+  onTapVoice() {
+    wx.showModal({
+      title: '语音输入',
+      content: '语音输入需开通微信「同声传译」插件（小程序后台 → 插件 → 搜索 wx069ba97219f66d99）。开通后即可用 🎤 说话输入。',
+      showCancel: false,
+      confirmText: '知道了',
+    });
+  },
 
-  /** 打开会话列表弹层 */
+  /** D 分享 */
+  onShareAppMessage() {
+    const last = this.data.messages[this.data.messages.length - 1];
+    const text = last?.role === 'assistant' && last.content ? last.content.replace(/📋建议：[^\n]+/g, '').trim() : '';
+    return {
+      title: text ? `AI 私教：${text.slice(0, 40)}…` : '青沐 AI 私教 — 你的私人跑步教练 🏃',
+      path: '/pages/ai-coach/index',
+    };
+  },
+
+  // ===== 会话管理（V0.1.139）=====
   async onShowConversations() {
     if (this.data.sending) return;
     try {
@@ -320,14 +383,12 @@ Page({
     this.setData({ showConversations: false });
   },
 
-  /** 切换到选中会话 */
   async onSelectConversation(e: WechatMiniprogram.Touch) {
     const cid = (e.currentTarget.dataset as { cid: string }).cid;
     this.setData({ showConversations: false });
     await this.loadHistory(cid);
   },
 
-  /** 删除会话（catchtap 阻止冒泡到 item 的 onSelectConversation）*/
   onDeleteConversation(e: WechatMiniprogram.Touch) {
     const cid = (e.currentTarget.dataset as { cid: string }).cid;
     wx.showModal({
@@ -337,7 +398,6 @@ Page({
         if (!res.confirm) return;
         try {
           await api.call('aiCoach', 'deleteConversation', { conversationId: cid });
-          // 刷新列表
           const r = await api.call<{ conversations: Array<{ conversationId: string; lastMessage: string; lastTime: string; messageCount: number }> }>('aiCoach', 'conversations', {});
           this.setData({
             conversationList: r.conversations.map((c) => ({
@@ -345,7 +405,6 @@ Page({
               lastTime: c.lastTime ? c.lastTime.slice(0, 16).replace('T', ' ') : '',
             })),
           });
-          // 删的是当前会话 → 重置欢迎语
           if (cid === this.data.conversationId) {
             this.setData({
               conversationId: '',

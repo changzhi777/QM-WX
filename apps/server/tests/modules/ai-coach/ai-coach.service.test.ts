@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const helpers = require('../../helpers/mockPrisma.ts') as typeof import('../../helpers/mockPrisma.js');
   return helpers.createPrismaMock({
-    models: ['conversationTurn', 'trainingPlan', 'userPlanEnrollment'],
+    models: ['conversationTurn', 'trainingPlan', 'userPlanEnrollment', 'user'],
   });
 });
 
@@ -31,6 +31,16 @@ vi.mock('src/modules/ai-coach/providers/glm.js', () => ({ glmProvider: mockProvi
 vi.mock('src/modules/ai-coach/providers/stub.js', () => ({ stubProvider: mockProvider }));
 vi.mock('src/modules/ai-coach/context-builder.js', () => ({
   buildSystemPrompt: mockBuildSystemPrompt,
+}));
+// V0.1.140 setPersona 用 Cache.delByPattern
+vi.mock('src/infra/cache.js', () => ({
+  Cache: {
+    delByPattern: vi.fn().mockResolvedValue(0),
+    wrap: vi.fn(),
+    get: vi.fn(),
+    set: vi.fn(),
+    del: vi.fn(),
+  },
 }));
 
 import { aiCoachService } from 'src/modules/ai-coach/ai-coach.service.js';
@@ -267,6 +277,17 @@ describe('aiCoachService.deleteConversation (V0.1.139 完善)', () => {
     expect(r.ok).toBe(true);
     expect(mocks.prisma.conversationTurn.deleteMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { userId: 'u1', conversationId: 'c1' } }),
+    );
+  });
+});
+
+describe('aiCoachService.setPersona (V0.1.140 A 人设切换)', () => {
+  it('update User.aiCoachPersona + 失效 cache', async () => {
+    mocks.prisma.user.update.mockResolvedValue({ id: 'u1' } as never);
+    const r = await aiCoachService.setPersona('u1', { persona: 'strict' });
+    expect(r.persona).toBe('strict');
+    expect(mocks.prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'u1' }, data: { aiCoachPersona: 'strict' } }),
     );
   });
 });

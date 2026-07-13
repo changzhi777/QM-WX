@@ -96,7 +96,7 @@
 
     <feature-gate flag="smartAgent">
       <view class="list-item" bindtap="goAiCoach">
-        <view class="lbl">AI 私教 🏃</view>
+        <view class="lbl">AI 私教 🏃<text class="beta-tag" style="font-size:20rpx;color:#fff;background:#ff9800;padding:2rpx 12rpx;border-radius:10rpx;margin-left:12rpx;">测试</text></view>
         <view class="arrow">›</view>
       </view>
     </feature-gate>
