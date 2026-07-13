@@ -10,7 +10,7 @@ import { mockErrors } from '../../helpers/mockErrors.js';
 vi.mock('src/infra/prisma.js', () => ({
   prisma: {
     shoe: { findMany: vi.fn(), create: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
-    checkin: { findMany: vi.fn(), findFirst: vi.fn(), count: vi.fn() },
+    checkin: { findMany: vi.fn(), findFirst: vi.fn(), count: vi.fn(), groupBy: vi.fn() },
   },
 }));
 vi.mock('src/common/errors.js', () => ({ Errors: mockErrors }));
@@ -249,5 +249,37 @@ describe('shoesService.updateThreshold (V0.1.133)', () => {
   it('不存在 → notFound', async () => {
     mockedPrisma.shoe.findFirst.mockResolvedValue(null);
     await expect(shoesService.updateThreshold('u1', { id: 's99', thresholdKm: 800 })).rejects.toThrow();
+  });
+});
+
+// ============================================================
+// V0.1.137 compareShoes
+// ============================================================
+
+describe('shoesService.compareShoes (V0.1.137)', () => {
+  it('正常返 2 双汇总（含 checkinCount + healthRatio）', async () => {
+    mockedPrisma.shoe.findMany.mockResolvedValue([
+      { id: 's1', brand: 'Nike', model: 'Vaporfly', nickname: '战靴一号', status: 'active', currentKm: 600, thresholdKm: 800, purchasedAt: new Date('2026-01-01') },
+      { id: 's2', brand: '必迈', model: '路征', nickname: null, status: 'active', currentKm: 300, thresholdKm: 800, purchasedAt: new Date('2026-05-01') },
+    ] as never);
+    mockedPrisma.checkin.groupBy.mockResolvedValue([
+      { shoeId: 's1', _count: { _all: 50 } },
+      { shoeId: 's2', _count: { _all: 30 } },
+    ] as never);
+
+    const r = await shoesService.compareShoes('u1', ['s1', 's2']);
+    expect(r.shoes).toHaveLength(2);
+    expect(r.shoes[0].checkinCount).toBe(50);
+    expect(r.shoes[0].healthRatio).toBe(75);
+    expect(r.shoes[1].daysSincePurchase).toBeGreaterThan(0);
+  });
+
+  it('ids 数量 != 2 → badRequest', async () => {
+    await expect(shoesService.compareShoes('u1', ['s1'])).rejects.toThrow();
+  });
+
+  it('鞋不属 user → notFound', async () => {
+    mockedPrisma.shoe.findMany.mockResolvedValue([{ id: 's1' }] as never);
+    await expect(shoesService.compareShoes('u1', ['s1', 's99'])).rejects.toThrow();
   });
 });

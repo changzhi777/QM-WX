@@ -1,7 +1,8 @@
 /**
- * review module routes — POST /api/review（V0.1.113 电商评价闭环）
+ * review module routes — POST /api/review（V0.1.113 电商评价闭环 + V0.1.137 鞋评）
  *
- * 评价：create（校验已购）/ list（商品评价列表）/ stats（评分汇总）/ myReviews / remove
+ * 评价：create（商品校验已购 / 鞋校验归属）/ list（商品+鞋通用）/ stats / myReviews / remove
+ * V0.1.137：扩 listByTarget + targetStats（targetType 路由）
  */
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -10,8 +11,10 @@ import { Errors } from '../../common/errors.js';
 import {
   CreateReviewSchema,
   ProductReviewListSchema,
+  TargetReviewListSchema,
   ReviewPageSchema,
   ProductIdSchema,
+  TargetStatsSchema,
   ReviewIdSchema,
 } from './review.schema.js';
 
@@ -38,11 +41,20 @@ export async function reviewRoutes(app: FastifyInstance) {
       case 'create':
         return { code: 0, data: await reviewService.create(userId, parseOrBadRequest(CreateReviewSchema, payload)) };
       case 'list': {
+        // V0.1.137 兼容：旧 list 用 productId / 新用 listByTarget + targetType
         const input = parseOrBadRequest(ProductReviewListSchema, payload);
         return { code: 0, data: await reviewService.listByProduct(input.productId, input) };
       }
+      case 'listByTarget': {
+        const input = parseOrBadRequest(TargetReviewListSchema, payload);
+        return { code: 0, data: await reviewService.listByTarget(input.targetId, input.targetType, input) };
+      }
       case 'stats':
         return { code: 0, data: await reviewService.productStats(parseOrBadRequest(ProductIdSchema, payload).productId) };
+      case 'targetStats': {
+        const input = parseOrBadRequest(TargetStatsSchema, payload);
+        return { code: 0, data: await reviewService.targetStats(input.targetId, input.targetType) };
+      }
       case 'myReviews':
         return { code: 0, data: await reviewService.myReviews(userId, parseOrBadRequest(ReviewPageSchema, payload ?? {})) };
       case 'remove':

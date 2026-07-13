@@ -216,6 +216,10 @@ export const statsService = {
         paceProgressCert: await computePaceProgressCert(userId),
         consecutiveCheckinCert: await computeConsecutiveCheckinCert(userId),
         groupContributionCert: await computeGroupContributionCert(userId),
+        // V0.1.137 跑鞋成就
+        shoesMilestonesCert: await computeShoesMilestonesCert(userId),
+        shoeDaysMilestonesCert: await computeShoeDaysMilestonesCert(userId),
+        shoeCheckinMilestonesCert: await computeShoeCheckinMilestonesCert(userId),
       };
     });
   },
@@ -379,5 +383,87 @@ async function computeGroupContributionCert(userId: string) {
     desc: '本月跑量在跑群内前 3 名',
     achieved: topRanks.length > 0,
     topRanks,
+  };
+}
+
+/**
+ * V0.1.137 跑鞋累计里程里程碑
+ * active + retired 全部鞋的 currentKm 之和
+ */
+async function computeShoesMilestonesCert(userId: string) {
+  const CERTS = [
+    { km: 100, title: '百公里新手', icon: '🏃' },
+    { km: 500, title: '五百公里健将', icon: '👟' },
+    { km: 1000, title: '千里跑神', icon: '🏆' },
+    { km: 3000, title: '鞋履收藏家', icon: '👑' },
+  ];
+  const agg = await prisma.shoe.aggregate({
+    _sum: { currentKm: true },
+    where: { userId },
+  });
+  const total = Math.round((agg._sum.currentKm ?? 0) * 10) / 10;
+  return {
+    type: 'shoes_milestones' as const,
+    title: '跑鞋累计里程',
+    desc: '所有跑鞋累计里程达成',
+    currentTotalKm: total,
+    achieved: CERTS.filter((c) => total >= c.km).map((c) => ({ ...c, achievedKm: total })),
+    next: CERTS.find((c) => total < c.km) ?? null,
+  };
+}
+
+/**
+ * V0.1.137 跑鞋持有天数里程碑
+ * 最早 shoe.purchasedAt 到现在的天数
+ */
+async function computeShoeDaysMilestonesCert(userId: string) {
+  const CERTS = [
+    { days: 30, title: '月度装备者', icon: '📅' },
+    { days: 100, title: '百日陪伴', icon: '🗓️' },
+    { days: 365, title: '年度老友', icon: '🎖️' },
+  ];
+  const oldest = await prisma.shoe.findFirst({
+    where: { userId, purchasedAt: { not: null } },
+    orderBy: { purchasedAt: 'asc' },
+    select: { purchasedAt: true },
+  });
+  if (!oldest?.purchasedAt) {
+    return {
+      type: 'shoe_days' as const,
+      title: '跑鞋持有天数',
+      currentTotalDays: 0,
+      achieved: [],
+      next: CERTS[0],
+    };
+  }
+  const totalDays = Math.floor((Date.now() - oldest.purchasedAt.getTime()) / 86400000);
+  return {
+    type: 'shoe_days' as const,
+    title: '跑鞋持有天数',
+    currentTotalDays: totalDays,
+    achieved: CERTS.filter((c) => totalDays >= c.days).map((c) => ({ ...c, achievedDays: totalDays })),
+    next: CERTS.find((c) => totalDays < c.days) ?? null,
+  };
+}
+
+/**
+ * V0.1.137 跑鞋关联打卡次数里程碑
+ * Checkin where shoeId IS NOT NULL + userId
+ */
+async function computeShoeCheckinMilestonesCert(userId: string) {
+  const CERTS = [
+    { count: 50, title: '半百打卡', icon: '🎯' },
+    { count: 100, title: '百次荣耀', icon: '💯' },
+    { count: 500, title: '五百次传说', icon: '🏅' },
+  ];
+  const total = await prisma.checkin.count({
+    where: { userId, shoeId: { not: null } },
+  });
+  return {
+    type: 'shoe_checkin' as const,
+    title: '跑鞋打卡次数',
+    currentTotalCheckins: total,
+    achieved: CERTS.filter((c) => total >= c.count).map((c) => ({ ...c, achievedCount: total })),
+    next: CERTS.find((c) => total < c.count) ?? null,
   };
 }

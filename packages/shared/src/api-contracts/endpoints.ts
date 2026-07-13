@@ -174,6 +174,8 @@ export const ENDPOINTS = {
     getDetail: '/api/shoes',
     getMileageHistory: '/api/shoes',
     updateThreshold: '/api/shoes',
+    // V0.1.137 跑鞋对比
+    compareShoes: '/api/shoes',
   },
   goal: {
     list: '/api/goal',

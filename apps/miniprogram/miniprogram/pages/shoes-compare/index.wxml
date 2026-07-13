@@ -1,0 +1,30 @@
+<view class="page">
+  <view wx:if="{{loading}}" class="loading">加载中...</view>
+  <block wx:elif="{{shoes.length === 2}}">
+    <!-- 顶部：鞋名 -->
+    <view class="header">
+      <view class="shoe-name">{{shoes[0].nickname || (shoes[0].brand + ' ' + shoes[0].model)}}</view>
+      <view class="vs">VS</view>
+      <view class="shoe-name">{{shoes[1].nickname || (shoes[1].brand + ' ' + shoes[1].model)}}</view>
+    </view>
+
+    <!-- 对比表 -->
+    <view class="table">
+      <view class="row header-row">
+        <view class="cell label">维度</view>
+        <view class="cell">{{shoes[0].nickname || shoes[0].brand}}</view>
+        <view class="cell">{{shoes[1].nickname || shoes[1].brand}}</view>
+      </view>
+      <view wx:for="{{rows}}" wx:key="label" class="row">
+        <view class="cell label">{{item.label}}</view>
+        <view class="cell {{item.winnerIdx === 0 ? 'winner' : ''}}">{{item.values[0]}}</view>
+        <view class="cell {{item.winnerIdx === 1 ? 'winner' : ''}}">{{item.values[1]}}</view>
+      </view>
+    </view>
+
+    <!-- 返回 -->
+    <view class="footer">
+      <button class="btn-back" bindtap="onTapBack">返回跑鞋列表</button>
+    </view>
+  </block>
+</view>

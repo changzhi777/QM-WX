@@ -36,6 +36,12 @@ Page({
       retiringSoonCount: 0,
     } as ShoeStats,
     loading: false,
+    // V0.1.137 跑鞋成就
+    achievements: null as null | {
+      shoesMilestones: { currentTotalKm: number; achieved: any[]; next: any };
+      shoeDays: { currentTotalDays: number; achieved: any[]; next: any };
+      shoeCheckin: { currentTotalCheckins: number; achieved: any[]; next: any };
+    },
     // 添加弹层
     formVisible: false,
     form: {
@@ -55,15 +61,43 @@ Page({
   async loadShoes() {
     this.setData({ loading: true });
     try {
-      const [listRes, statsRes] = await Promise.all([
+      const [listRes, statsRes, certRes] = await Promise.all([
         api.call<{ shoes: Shoe[] }>('shoes', 'list', {}),
         api.call<ShoeStats>('shoes', 'myStats', {}),
+        api.call<{
+          shoesMilestonesCert: any;
+          shoeDaysMilestonesCert: any;
+          shoeCheckinMilestonesCert: any;
+        }>('stats', 'myCertificates', {}),
       ]);
-      this.setData({ shoes: listRes.shoes, stats: statsRes, loading: false });
+      this.setData({
+        shoes: listRes.shoes,
+        stats: statsRes,
+        loading: false,
+        achievements: {
+          shoesMilestones: certRes.shoesMilestonesCert,
+          shoeDays: certRes.shoeDaysMilestonesCert,
+          shoeCheckin: certRes.shoeCheckinMilestonesCert,
+        },
+      });
     } catch {
       this.setData({ loading: false });
       wx.showToast({ title: '加载失败', icon: 'none' });
     }
+  },
+
+  /** V0.1.137 对比 2 双 active 跑鞋 */
+  async onComparePick() {
+    const activeShoes = this.data.shoes.filter((s) => s.status === 'active');
+    if (activeShoes.length < 2) {
+      wx.showToast({ title: '至少需要 2 双 active 跑鞋', icon: 'none' });
+      return;
+    }
+    // 简化：选第一双 + 第二双（生产可弹层多选 picker）
+    const [a, b] = activeShoes;
+    wx.navigateTo({
+      url: `/pages/shoes-compare/index?ids=${a.id},${b.id}`,
+    });
   },
 
   /** 打开添加弹层 */

@@ -12,6 +12,7 @@ import {
   UpdateShoeInputSchema,
   UpdateThresholdInputSchema,
   ShoeIdInputSchema,
+  CompareShoesInputSchema,
 } from './shoes.schema.js';
 
 export async function shoesRoutes(app: FastifyInstance) {
@@ -49,6 +50,10 @@ export async function shoesRoutes(app: FastifyInstance) {
       case 'updateThreshold': {
         const input = UpdateThresholdInputSchema.parse(payload);
         return { code: 0, data: await shoesService.updateThreshold(userId, input) };
+      }
+      case 'compareShoes': {
+        const input = CompareShoesInputSchema.parse(payload);
+        return { code: 0, data: await shoesService.compareShoes(userId, input.ids) };
       }
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });

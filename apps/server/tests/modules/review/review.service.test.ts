@@ -20,6 +20,7 @@ vi.mock('src/infra/prisma.js', () => {
       review: reviewMethods,
       order: { findUnique: vi.fn() },
       orderItem: { findFirst: vi.fn() },
+      shoe: { findFirst: vi.fn() }, // V0.1.137 鞋评校验
     },
   };
 });
@@ -171,5 +172,69 @@ describe('reviewService.remove', () => {
     const result = await reviewService.remove('u1', 'r1');
     expect(result).toEqual({ ok: true });
     expect(mockedPrisma.review.delete).toHaveBeenCalledWith({ where: { id: 'r1' } });
+  });
+});
+
+// ============================================================
+// V0.1.137 鞋评
+// ============================================================
+
+describe('reviewService.create 鞋评 (V0.1.137)', () => {
+  it('鞋属 user → 写库（合成 productId/orderId）', async () => {
+    mockedPrisma.shoe.findFirst.mockResolvedValue({ id: 's1' } as never);
+    mockedPrisma.review.findUnique.mockResolvedValue(null);
+    mockedPrisma.review.create.mockResolvedValue({ id: 'r1' } as never);
+
+    const r = await reviewService.create('u1', {
+      targetType: 'shoe',
+      targetId: 's1',
+      rating: 5,
+      content: '战靴一级棒',
+    });
+
+    expect(r.id).toBe('r1');
+    expect(mockedPrisma.review.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          productId: 'shoe:s1',
+          orderId: 'shoe:s1',
+          content: '[shoe-review] 战靴一级棒',
+        }),
+      }),
+    );
+  });
+
+  it('鞋不属 user → notFound', async () => {
+    mockedPrisma.shoe.findFirst.mockResolvedValue(null);
+    await expect(
+      reviewService.create('u1', {
+        targetType: 'shoe',
+        targetId: 's99',
+        rating: 5,
+      }),
+    ).rejects.toThrow();
+  });
+});
+
+describe('reviewService.targetStats 鞋评 (V0.1.137)', () => {
+  it('targetType=shoe 合成 syntheticId 后查询', async () => {
+    mockedPrisma.review.aggregate.mockResolvedValue({
+      _avg: { rating: 4.5 },
+      _count: { rating: 2 },
+    } as never);
+    mockedPrisma.review.groupBy.mockResolvedValue([
+      { rating: 4, _count: { rating: 1 } },
+      { rating: 5, _count: { rating: 1 } },
+    ] as never);
+
+    const r = await reviewService.targetStats('s1', 'shoe');
+    expect(r.avg).toBe(4.5);
+    expect(r.count).toBe(2);
+    expect(r.distribution[4]).toBe(1);
+    expect(r.distribution[5]).toBe(1);
+    // 校验查询用了合成 id
+    expect(mockedPrisma.review.aggregate).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ productId: 'shoe:s1' }) }),
+    );
   });
 });

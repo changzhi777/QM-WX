@@ -203,6 +203,46 @@ export const shoesService = {
     });
     return { id: input.id, thresholdKm: input.thresholdKm };
   },
+
+  /**
+   * V0.1.137 跑鞋对比（用户选 2 双鞋横向对比）
+   *
+   * 校验：ids.length === 2 且都属 user
+   * 返：两份汇总（基础+健康度+打卡数+持有天数）
+   */
+  async compareShoes(userId: string, ids: string[]) {
+    if (ids.length !== 2) throw Errors.badRequest('请选择 2 双鞋对比');
+    const shoes = await prisma.shoe.findMany({
+      where: { id: { in: ids }, userId },
+    });
+    if (shoes.length !== 2) throw Errors.notFound('请选择属于你的 2 双鞋');
+
+    // 批量查 Checkin count（DRY N+1 规避）
+    const counts = await prisma.checkin.groupBy({
+      by: ['shoeId'],
+      where: { shoeId: { in: ids } },
+      _count: { _all: true },
+    });
+    const countMap = new Map(counts.map((c) => [c.shoeId, c._count._all]));
+
+    return {
+      shoes: shoes.map((s) => ({
+        id: s.id,
+        brand: s.brand,
+        model: s.model,
+        nickname: s.nickname,
+        status: s.status,
+        currentKm: s.currentKm,
+        thresholdKm: s.thresholdKm,
+        healthRatio: s.thresholdKm > 0 ? Math.round((s.currentKm / s.thresholdKm) * 100) : 0,
+        checkinCount: countMap.get(s.id) ?? 0,
+        daysSincePurchase: s.purchasedAt
+          ? Math.floor((Date.now() - s.purchasedAt.getTime()) / 86400000)
+          : null,
+        purchasedAt: s.purchasedAt?.toISOString() ?? null,
+      })),
+    };
+  },
 };
 
 /**

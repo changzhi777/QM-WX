@@ -32,6 +32,7 @@
     "pages/training/index",
     "pages/shoes/index",
     "pages/shoes-detail/index",
+    "pages/shoes-compare/index",
     "pages/admin-race-result/index",
     "pages/annual-report/index",
     "pages/goal/index",

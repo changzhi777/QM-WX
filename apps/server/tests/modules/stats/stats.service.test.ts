@@ -10,10 +10,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('src/infra/prisma.js', () => ({
   prisma: {
-    checkin: { aggregate: vi.fn(), findFirst: vi.fn(), groupBy: vi.fn(), findMany: vi.fn() },
+    checkin: { aggregate: vi.fn(), findFirst: vi.fn(), groupBy: vi.fn(), findMany: vi.fn(), count: vi.fn() },
     enrollment: { findMany: vi.fn() },
     groupMember: { findMany: vi.fn() }, // V0.1.135 group contribution
     group: { findUnique: vi.fn() },
+    shoe: { aggregate: vi.fn(), findFirst: vi.fn() }, // V0.1.137 跑鞋成就
   },
 }));
 
@@ -47,6 +48,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   _redisMockState.cacheStore.clear();
   setupMockRedis();
+  // V0.1.137 默认 shoe mocks（老测试用）
+  mockedPrisma.shoe.aggregate.mockResolvedValue({ _sum: { currentKm: 0 } } as never);
+  mockedPrisma.shoe.findFirst.mockResolvedValue(null);
+  mockedPrisma.checkin.count.mockResolvedValue(0);
 });
 
 describe('statsService.myRunnerStats', () => {
@@ -264,5 +269,49 @@ describe('statsService.myCertificates 多种证书 (V0.1.135)', () => {
     expect(r.consecutiveCheckinCert.achieved).toHaveLength(1); // 7 天达成
     expect(r.groupContributionCert.achieved).toBe(true);
     expect(r.groupContributionCert.topRanks).toHaveLength(1);
+  });
+});
+
+// ============================================================
+// V0.1.137 跑鞋成就
+// ============================================================
+
+describe('statsService.myCertificates 跑鞋成就 (V0.1.137)', () => {
+  it('总跑鞋里程 600 → shoesMilestones 100/500 达成 + days 30 达成 + checkin 100 达成', async () => {
+    // 总跑量 0（V0.1.28 跑量 + marathon milestones）
+    mockedPrisma.checkin.aggregate.mockResolvedValueOnce({
+      _sum: { distance: 0 },
+      _count: 0,
+    } as never);
+    mockedPrisma.enrollment.findMany.mockResolvedValueOnce([]);
+    // computePaceProgressCert
+    mockedPrisma.checkin.findMany.mockResolvedValueOnce([] as never);
+    // computeConsecutiveCheckinCert
+    mockedPrisma.checkin.findMany.mockResolvedValueOnce([] as never);
+    // computeGroupContributionCert
+    mockedPrisma.groupMember.findMany.mockResolvedValueOnce([] as never);
+    // computeShoesMilestonesCert: aggregate sum currentKm = 600
+    mockedPrisma.shoe.aggregate.mockResolvedValueOnce({
+      _sum: { currentKm: 600 },
+    } as never);
+    // computeShoeDaysMilestonesCert: oldest shoe 60 days ago
+    const oldest = new Date(Date.now() - 60 * 86400000);
+    mockedPrisma.shoe.findFirst.mockResolvedValueOnce({
+      purchasedAt: oldest,
+    } as never);
+    // computeShoeCheckinMilestonesCert: count = 100
+    mockedPrisma.checkin.count.mockResolvedValueOnce(100);
+
+    const r = await statsService.myCertificates('u1');
+
+    expect(r.shoesMilestonesCert.currentTotalKm).toBe(600);
+    expect(r.shoesMilestonesCert.achieved).toHaveLength(2); // 100/500
+    expect(r.shoesMilestonesCert.next?.km).toBe(1000);
+
+    expect(r.shoeDaysMilestonesCert.currentTotalDays).toBeGreaterThanOrEqual(59);
+    expect(r.shoeDaysMilestonesCert.achieved).toHaveLength(1); // 30 天
+
+    expect(r.shoeCheckinMilestonesCert.currentTotalCheckins).toBe(100);
+    expect(r.shoeCheckinMilestonesCert.achieved).toHaveLength(2); // 50/100
   });
 });

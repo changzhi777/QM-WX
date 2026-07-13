@@ -79,6 +79,14 @@ export const ShoesActionBodySchema = z.object({
     'getDetail',
     'getMileageHistory',
     'updateThreshold',
+    // V0.1.137
+    'compareShoes',
   ]),
   payload: z.unknown().optional(),
 });
+
+/** V0.1.137 跑鞋对比（2 双） */
+export const CompareShoesInputSchema = z.object({
+  ids: z.array(z.string().min(1)).length(2),
+});
+export type CompareShoesInput = z.infer<typeof CompareShoesInputSchema>;
