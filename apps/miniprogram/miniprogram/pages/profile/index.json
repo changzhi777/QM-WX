@@ -2,6 +2,10 @@
   "navigationBarTitleText": "个人资料",
   "usingComponents": {
     "profile-popup": "/components/profile-popup/index",
-    "error-state": "/components/error-state/index"
+    "error-state": "/components/error-state/index",
+    "van-button": "@vant/weapp/button/index",
+    "van-cell": "@vant/weapp/cell/index",
+    "van-cell-group": "@vant/weapp/cell-group/index",
+    "van-icon": "@vant/weapp/icon/index"
   }
 }

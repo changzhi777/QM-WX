@@ -1,0 +1,140 @@
+<view class="page">
+  <!-- tab 头 -->
+  <view class="tab-bar">
+    <view class="tab {{tab === 'bind' ? 'active' : ''}}" data-tab="bind" bindtap="onSwitchTab">绑定</view>
+    <view class="tab {{tab === 'garmin' ? 'active' : ''}}" data-tab="garmin" bindtap="onSwitchTab">佳明数据</view>
+    <view class="tab {{tab === 'import' ? 'active' : ''}}" data-tab="import" bindtap="onSwitchTab">导入指南</view>
+  </view>
+
+  <!-- ===== 绑定 tab ===== -->
+  <view wx:if="{{tab === 'bind'}}">
+    <view class="loading" wx:if="{{bindLoading}}">加载中...</view>
+    <block wx:else>
+      <!-- 品牌宫格 -->
+      <view class="brand-grid">
+        <view class="brand-card {{!item.available ? 'disabled' : ''}}" wx:for="{{brands}}" wx:key="key" data-key="{{item.key}}" bindtap="onTapBrand">
+          <view class="brand-icon">{{item.icon || '⌚'}}</view>
+          <view class="brand-name">{{item.name}}</view>
+          <view class="brand-cat">{{item._categoryLabel}}</view>
+        </view>
+      </view>
+
+      <!-- 已绑设备 -->
+      <view class="section" wx:if="{{bindings.length > 0}}">
+        <view class="section-title">已绑设备</view>
+        <view class="binding-row" wx:for="{{bindings}}" wx:key="id">
+          <view class="binding-info">
+            <view class="binding-name">{{item.deviceName}}</view>
+            <view class="binding-vendor">{{item.vendor}} · {{item.status}}</view>
+          </view>
+          <view class="binding-unbind" data-vendor="{{item.vendor}}" data-name="{{item.deviceName}}" bindtap="onUnbind">解绑</view>
+        </view>
+      </view>
+
+      <!-- 实时心率卡 -->
+      <view class="section live-card" wx:if="{{liveHr !== null}}">
+        <view class="live-title">实时心率</view>
+        <view class="live-hr">{{liveHr}}<text class="u"> bpm</text></view>
+        <view class="live-meta" wx:if="{{liveBattery !== null}}">电量 {{liveBattery}}%</view>
+        <view class="live-meta" wx:if="{{liveManufacturer}}">{{liveManufacturer}} · {{liveModel || ''}}</view>
+        <view class="live-meta" wx:if="{{liveSpO2}}">血氧 {{liveSpO2.spo2}}% · 脉率 {{liveSpO2.pr}}</view>
+        <view class="live-meta" wx:if="{{liveBodyLocation}}">佩戴 {{liveBodyLocation}}</view>
+      </view>
+
+      <!-- 体脂秤卡 -->
+      <view class="section scale-card" wx:if="{{liveScale}}">
+        <view class="live-title">体脂秤</view>
+        <view class="scale-weight">{{liveScale.weight}}<text class="u"> kg</text></view>
+        <view class="live-meta" wx:if="{{liveScale.bodyFat != null}}">体脂 {{liveScale.bodyFat}}% · BMI {{liveScale.bmi}}</view>
+        <view class="live-meta" wx:if="{{liveScale.muscle != null}}">肌肉 {{liveScale.muscle}}kg · 水分 {{liveScale.water}}%</view>
+        <view class="live-meta" wx:if="{{liveScale.visceralFat != null}}">内脏脂肪 {{liveScale.visceralFat}} · 阻抗 {{liveScale.impedance}}Ω</view>
+        <view class="live-meta {{liveScale.stabilized ? 'ok' : 'wait'}}">{{liveScale.stabilized ? '✓ 已稳定' : '测量中...'}}</view>
+        <button class="btn-submit" wx:if="{{liveScale.stabilized}}" bindtap="onSaveScaleData">保存数据</button>
+      </view>
+
+      <!-- 微信运动卡 -->
+      <view class="section">
+        <view class="section-title">微信运动（30 天）</view>
+        <view class="werun-stats">
+          <view class="w-stat"><text class="w-v">{{werunSummary.totalSteps}}</text><text class="w-l">总步数</text></view>
+          <view class="w-stat"><text class="w-v">{{werunSummary.totalKm}}</text><text class="w-l">总里程km</text></view>
+          <view class="w-stat"><text class="w-v">{{werunSummary.days}}</text><text class="w-l">活跃天</text></view>
+        </view>
+        <button class="btn-submit" bindtap="onSyncWeRun">同步微信运动</button>
+      </view>
+
+      <!-- 调试面板 -->
+      <view class="debug-toggle" bindtap="toggleDebug">{{debugVisible ? '收起' : '展开'}}调试日志（{{debugLog.length}}）</view>
+      <view class="debug-panel" wx:if="{{debugVisible}}">
+        <view class="debug-log" wx:for="{{debugLog}}" wx:key="*this">{{item}}</view>
+      </view>
+    </block>
+  </view>
+
+  <!-- ===== 佳明 tab ===== -->
+  <view wx:if="{{tab === 'garmin'}}">
+    <view class="g-tabs">
+      <view class="g-tab {{gTab === 'pending' ? 'active' : ''}}" data-tab="pending" bindtap="onSwitchGarminTab">待处理</view>
+      <view class="g-tab {{gTab === 'processed' ? 'active' : ''}}" data-tab="processed" bindtap="onSwitchGarminTab">已处理</view>
+    </view>
+    <view class="loading" wx:if="{{gLoading}}">加载中...</view>
+    <view wx:elif="{{gList.length === 0}}" class="empty">暂无{{gTab === 'pending' ? '待处理' : '已处理'}}数据</view>
+    <view wx:else class="g-list">
+      <view class="g-card" wx:for="{{gList}}" wx:key="id">
+        <view class="g-head">
+          <view class="g-type">{{item.sportType || item.type}}</view>
+          <view class="g-time">{{item.startTime}}</view>
+        </view>
+        <view class="g-stats">
+          <text>{{item.distanceKm}} km</text>
+          <text>{{item.durationMin}} min</text>
+          <text wx:if="{{item.avgHr}}">{{item.avgHr}} bpm</text>
+        </view>
+        <view class="g-actions" wx:if="{{gTab === 'pending'}}">
+          <view class="g-btn import" data-id="{{item.id}}" bindtap="onImport">导入打卡</view>
+          <view class="g-btn ignore" data-id="{{item.id}}" bindtap="onIgnore">忽略</view>
+        </view>
+        <view class="g-status" wx:else>{{item.importedAt ? '已导入 ' + item.importedAt : '已忽略'}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ===== 导入 tab ===== -->
+  <view wx:if="{{tab === 'import'}}">
+    <view class="i-brand-grid">
+      <view class="i-brand {{!item.available ? 'disabled' : ''}} {{selectedKey === item.key ? 'selected' : ''}}" wx:for="{{iBrands}}" wx:key="key" data-key="{{item.key}}" bindtap="onTapImportBrand">
+        <view class="i-brand-icon">{{item.icon}}</view>
+        <view class="i-brand-name">{{item.name}}</view>
+      </view>
+    </view>
+
+    <view class="section" wx:if="{{guide}}">
+      <view class="section-title">{{guide.sourceLabel}}</view>
+      <view class="i-source" wx:if="{{guide.sourceUrl}}" bindtap="onCopyUrl">数据源：{{guide.sourceUrl}}（点复制）</view>
+      <view class="i-steps">
+        <view class="i-step" wx:for="{{guide.steps}}" wx:key="text">
+          <text class="i-step-num">{{index + 1}}.</text>
+          <text class="i-step-text">{{item.text}}</text>
+        </view>
+      </view>
+      <button class="btn-submit" wx:if="{{guide.action.available}}" bindtap="onImportAction">{{guide.action.label}}</button>
+      <view class="i-unavailable" wx:else>{{guide.action.label}}</view>
+    </view>
+    <view class="empty" wx:else>选择品牌查看导入指南</view>
+  </view>
+
+  <!-- 扫描弹层 -->
+  <view class="mask" wx:if="{{scanVisible}}" bindtap="closeScan">
+    <view class="scan-panel" catchtap="">
+      <view class="scan-title">{{scanning ? '扫描中...' : '找到的设备'}}</view>
+      <view wx:if="{{foundDevices.length === 0 && !scanning}}" class="empty">未发现设备</view>
+      <view class="scan-list">
+        <view class="scan-item" wx:for="{{foundDevices}}" wx:key="deviceId" data-device="{{item}}" bindtap="onSelectDevice">
+          <view class="scan-name">{{item.name}}</view>
+          <view class="scan-brand {{item.detectedBrand}}">{{item.brandLabel}}</view>
+        </view>
+      </view>
+      <button class="btn-cancel" bindtap="closeScan">关闭</button>
+    </view>
+  </view>
+</view>

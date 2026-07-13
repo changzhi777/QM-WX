@@ -1,6 +1,8 @@
 {
   "navigationBarTitleText": "AI 私教",
   "usingComponents": {
-    "plan-card": "/components/plan-card/index"
+    "plan-card": "/components/plan-card/index",
+    "van-button": "@vant/weapp/button/index",
+    "van-loading": "@vant/weapp/loading/index"
   }
 }

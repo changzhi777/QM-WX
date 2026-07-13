@@ -54,13 +54,9 @@
             <view class="picker">{{groups[groupIndex].name}} <text class="arrow-sm">›</text></view>
           </picker>
         </view>
-        <button
-          class="btn-primary {{submitting ? 'btn-disabled' : ''}} mt-2"
-          bindtap="onSubmitCheckin"
-          disabled="{{submitting}}"
-        >
+        <van-button type="primary" block bindtap="onSubmitCheckin" disabled="{{submitting}}" loading="{{submitting}}" custom-style="margin-top:16rpx">
           {{submitting ? '提交中...' : '打卡'}}
-        </button>
+        </van-button>
       </view>
     </block>
   </view>

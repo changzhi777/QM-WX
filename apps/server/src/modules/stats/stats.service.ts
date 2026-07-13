@@ -8,7 +8,8 @@
  */
 import { prisma } from '../../infra/prisma.js';
 import { Cache } from '../../infra/cache.js';
-import type { MyRunnerStatsQuery, MyAnnualReportQuery } from './stats.schema.js';
+import { publishDailyReport } from '../../infra/mqtt.js';
+import type { MyRunnerStatsQuery, MyAnnualReportQuery, HealthScoreQuery, DailyReportQuery, DailyReportListQuery } from './stats.schema.js';
 
 const RUNNER_STATS_CACHE_TTL_SEC = 120;
 
@@ -223,7 +224,146 @@ export const statsService = {
       };
     });
   },
+
+  // ===== V0.1.144 原型图"今日"tab：健康分数 + AI 简报 + 历史 =====
+
+  /** 健康分数（0-100，步数40%+心率30%+睡眠30%）+ 趋势对比（vs 昨日）*/
+  async healthScore(userId: string, input: HealthScoreQuery) {
+    const now = new Date(Date.now() + 8 * 3600 * 1000);
+    const today = input.date ?? cnDate(now);
+    const yesterday = cnDate(new Date(now.getTime() - 86400 * 1000));
+    const [todaySteps, todayHr, todaySleep, ySteps, yHr, ySleep] = await Promise.all([
+      getTodaySteps(userId, today), getRestingHr(userId, today), getLastNightSleep(userId, today),
+      getTodaySteps(userId, yesterday), getRestingHr(userId, yesterday), getLastNightSleep(userId, yesterday),
+    ]);
+    const score = calcHealthScore(todaySteps, todayHr, todaySleep);
+    const yScore = calcHealthScore(ySteps, yHr, ySleep);
+    return {
+      date: today,
+      score,
+      steps: todaySteps,
+      restingHr: todayHr,
+      sleepHours: todaySleep,
+      trend: { yesterday: yScore, diff: score - yScore },
+    };
+  },
+
+  /** 每日 AI 简报（无则聚合数据+算分+生成文本+存表+MQTT 推；有则返缓存）*/
+  async dailyReport(userId: string, input: DailyReportQuery) {
+    const now = new Date(Date.now() + 8 * 3600 * 1000);
+    const date = input.date ?? cnDate(now);
+    const existing = await prisma.dailyReport.findUnique({ where: { userId_date: { userId, date } } });
+    if (existing) return existing;
+    const [steps, restingHr, sleepHours] = await Promise.all([
+      getTodaySteps(userId, date), getRestingHr(userId, date), getLastNightSleep(userId, date),
+    ]);
+    const healthScore = calcHealthScore(steps, restingHr, sleepHours);
+    const reportText = buildReportText(steps, restingHr, sleepHours, healthScore);
+    const alertText = buildAlertText(steps, restingHr, sleepHours);
+    const report = await prisma.dailyReport.create({
+      data: { userId, date, healthScore, reportText, alertText, steps, restingHr, sleepHours },
+    });
+    // MQTT publish（异步推前端，不阻塞返回；未配置 MQTT 则跳过，前端走 API 兜底）
+    publishDailyReport(userId, report).catch(() => {});
+    return report;
+  },
+
+  /** 历史 AI 报告列表（原型图"历史AI报告"）*/
+  async dailyReportList(userId: string, input: DailyReportListQuery) {
+    const page = input.page ?? 1;
+    const pageSize = input.pageSize ?? 20;
+    const [list, total] = await Promise.all([
+      prisma.dailyReport.findMany({
+        where: { userId },
+        orderBy: { date: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.dailyReport.count({ where: { userId } }),
+    ]);
+    return { list, total, page, pageSize, hasMore: page * pageSize < total };
+  },
+
+  /** V0.1.144 天气（stub，TODO 接和风天气 API + wx.getLocation 位置）*/
+  async weather(userId: string) {
+    // TODO: 接和风天气 API（需 QWEATHER_KEY + 前端传 location 经纬度）
+    // MVP stub：返固定天气占位（前端日期+星期+天气显示）
+    void userId;
+    return {
+      city: '杭州',
+      text: '晴',
+      temperature: 25,
+      feelsLike: 26,
+      humidity: 60,
+      icon: '☀️',
+      updatedAt: new Date().toISOString(),
+    };
+  },
 };
+
+// ============================================================
+// V0.1.144 健康分数 + AI 简报 helper
+// ============================================================
+
+/** CN 时区日期 → YYYY-MM-DD */
+function cnDate(d: Date): string {
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+}
+
+/** 今日步数（WeRunRecord）*/
+async function getTodaySteps(userId: string, date: string): Promise<number> {
+  const r = await prisma.weRunRecord.findUnique({ where: { userId_date: { userId, date } } });
+  return r?.step ?? 0;
+}
+
+/** 静息心率（今日最早心率近似）*/
+async function getRestingHr(userId: string, date: string): Promise<number | null> {
+  const start = `${date}T00:00:00Z`;
+  const end = `${date}T23:59:59Z`;
+  const r = await prisma.heartRateRecord.findFirst({
+    where: { userId, timestamp: { gte: start, lte: end } },
+    orderBy: { timestamp: 'asc' },
+  });
+  return r?.value ?? null;
+}
+
+/** 昨晚睡眠时长（SleepRecord 前一天 durationSeconds / 3600）*/
+async function getLastNightSleep(userId: string, date: string): Promise<number | null> {
+  const d = new Date(date + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() - 1);
+  const yDate = cnDate(d);
+  const r = await prisma.sleepRecord.findUnique({ where: { userId_date: { userId, date: yDate } } });
+  if (!r?.durationSeconds) return null;
+  return Math.round((r.durationSeconds / 3600) * 10) / 10;
+}
+
+/** 健康分数：步数达标率×40 + 心率正常率×30 + 睡眠达标率×30（无数据给半分）*/
+function calcHealthScore(steps: number, restingHr: number | null, sleepHours: number | null): number {
+  const stepScore = Math.min(steps / 8000, 1) * 40;
+  const hrScore = restingHr != null
+    ? (restingHr >= 60 && restingHr <= 80 ? 1 : restingHr < 60 ? Math.max(0, restingHr / 60) : Math.max(0, 1 - (restingHr - 80) / 40)) * 30
+    : 15;
+  const sleepScore = sleepHours != null ? Math.min(sleepHours / 7, 1) * 30 : 15;
+  return Math.round(stepScore + hrScore + sleepScore);
+}
+
+/** 简报文本（规则模板，基于数据 + 分数）*/
+function buildReportText(steps: number, hr: number | null, sleep: number | null, score: number): string {
+  const parts: string[] = [`今日健康分数 ${score} 分`, `步数 ${steps.toLocaleString()} 步${steps < 8000 ? '，低于目标' : '，达标'}`];
+  if (hr != null) parts.push(`静息心率 ${hr} bpm${hr >= 60 && hr <= 80 ? '，良好' : hr > 80 ? '，偏高' : '，偏低'}`);
+  if (sleep != null) parts.push(`昨晚睡眠 ${sleep} 小时${sleep < 7 ? '，不足' : '，充足'}`);
+  if (steps < 8000) parts.push('建议增加日常活动');
+  if (sleep != null && sleep < 6) parts.push('建议今晚早睡');
+  return parts.join('。');
+}
+
+/** 主动提醒（睡眠不足/心率异常/步数过低）*/
+function buildAlertText(steps: number, hr: number | null, sleep: number | null): string | null {
+  if (sleep != null && sleep < 6) return `昨晚睡眠仅 ${sleep} 小时，建议避免高强度运动，以拉伸+散步为主`;
+  if (hr != null && hr > 90) return `静息心率 ${hr} bpm 偏高，建议今日低强度运动`;
+  if (steps < 3000) return `今日步数仅 ${steps} 步，建议增加活动量`;
+  return null;
+}
 
 // ============================================================
 // V0.1.135 多种证书 helper（动态生成，沿用 MILESTONE_CERTS 范式）

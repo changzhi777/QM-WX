@@ -250,6 +250,19 @@ export const aiCoachService = {
     await buildSystemPrompt(userId);
     return { ok: true };
   },
+
+  /** V0.1.144 AI 主动提醒（基于今日数据：睡眠不足/心率异常/步数低，复用 stats.dailyReport.alertText）*/
+  async proactiveAlert(userId: string) {
+    const { statsService } = await import('../stats/stats.service.js');
+    const report = await statsService.dailyReport(userId, {});
+    return {
+      alert: report.alertText,
+      healthScore: report.healthScore,
+      steps: report.steps,
+      restingHr: report.restingHr,
+      sleepHours: report.sleepHours,
+    };
+  },
 };
 
 /** 加载最近 N 轮对话（user+assistant 成对，时间正序）。V0.1.141 E Cache 30s 减查询 */

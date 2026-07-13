@@ -6,6 +6,41 @@ void api;
 
 const app = getApp();
 
+// === 消息弹层（V0.1.143 合并 notification）===
+interface NotifItem {
+  id: string;
+  type: string;
+  targetType: string | null;
+  targetId: string | null;
+  content: string | null;
+  isRead: boolean;
+  createdAt: string;
+  actor: { id: string; nickname: string | null; avatarUrl: string | null };
+  text: string;
+  timeText: string;
+}
+
+const NOTIF_TYPE_TEXT: Record<string, string> = {
+  like: '赞了你的动态',
+  comment: '评论了你的动态',
+  follow: '关注了你',
+  system: '系统消息',
+};
+
+function formatNotifTime(iso: string): string {
+  const d = new Date(iso);
+  const diff = Date.now() - d.getTime();
+  if (diff < 60_000) return '刚刚';
+  if (diff < 3600_000) return `${Math.floor(diff / 60_000)}分钟前`;
+  if (diff < 86400_000) return `${Math.floor(diff / 3600_000)}小时前`;
+  if (diff < 7 * 86400_000) return `${Math.floor(diff / 86400_000)}天前`;
+  return `${d.getMonth() + 1}月${d.getDate()}日`;
+}
+
+function decorateNotif(n: Omit<NotifItem, 'text' | 'timeText'>): NotifItem {
+  return { ...n, text: NOTIF_TYPE_TEXT[n.type] ?? '收到一条通知', timeText: formatNotifTime(n.createdAt) };
+}
+
 const MEMBER_LEVEL_LABEL: Record<string, string> = {
   free: '免费用户',
   monthly: '月度会员',
@@ -48,6 +83,10 @@ Page({
     },
     // 消息未读数（V0.1.31 红点）
     notifUnread: 0,
+    // V0.1.143 消息弹层（合并 notification）
+    showNotif: false,
+    notifList: [] as NotifItem[],
+    notifLoading: false,
   },
 
   onShow() {
@@ -165,20 +204,67 @@ Page({
   },
 
   goBindApps() {
-    wx.navigateTo({ url: '/pages/bind-apps/index' });
+    wx.navigateTo({ url: '/pages/profile/index?tab=bind' });
   },
 
   goMembership() {
     wx.navigateTo({ url: '/pages/membership/index' });
   },
 
-  goNotification() {
-    wx.navigateTo({ url: '/pages/notification/index' });
+  /** V0.1.143 消息弹层（合并 notification，不跳页）*/
+  async onShowNotif() {
+    this.setData({ showNotif: true, notifList: [], notifLoading: true });
+    try {
+      const res = await api.call<{ list: Omit<NotifItem, 'text' | 'timeText'>[]; total: number }>(
+        'notification', 'list', { page: 1, pageSize: 20 },
+      );
+      this.setData({ notifList: res.list.map(decorateNotif), notifLoading: false });
+    } catch {
+      this.setData({ notifLoading: false });
+    }
+  },
+
+  onCloseNotif() {
+    this.setData({ showNotif: false });
+  },
+
+  async onMarkAllNotif() {
+    try {
+      await api.call('notification', 'markAllRead', {});
+      this.setData({
+        notifList: this.data.notifList.map((n) => ({ ...n, isRead: true })),
+        notifUnread: 0,
+      });
+      wx.showToast({ title: '已全部标记', icon: 'success' });
+    } catch {
+      wx.showToast({ title: '操作失败', icon: 'none' });
+    }
+  },
+
+  async onTapNotif(e: WechatMiniprogram.TouchEvent) {
+    const item = e.currentTarget.dataset.item as NotifItem;
+    if (!item.isRead) {
+      this.setData({ notifList: this.data.notifList.map((n) => (n.id === item.id ? { ...n, isRead: true } : n)) });
+      try { await api.call('notification', 'markRead', { notificationId: item.id }); } catch { /* 忽略 */ }
+      this.loadNotifUnread();
+    }
+    if (item.targetType === 'feed' && item.targetId) {
+      this.setData({ showNotif: false });
+      wx.navigateTo({ url: '/pages/feed/index' });
+    }
   },
 
   goDeviceBind() {
-    wx.navigateTo({ url: '/pages/device-bind/index' });
+    wx.navigateTo({ url: '/pages/device/index' });
   },
+
+  // V0.1.143 入口精简 8 项（跑者数据/跑鞋/健康/设备/训练/赛事/跑群/消息）
+  goRunner() { wx.navigateTo({ url: '/pages/runner/index' }); },
+  goShoes() { wx.navigateTo({ url: '/pages/shoes/index' }); },
+  goHealth() { wx.navigateTo({ url: '/pages/health/index' }); },
+  goTraining() { wx.navigateTo({ url: '/pages/training/index' }); },
+  goContent() { wx.navigateTo({ url: '/pages/content-list/index' }); },
+  goGroup() { wx.switchTab({ url: '/pages/sport/index' }); },
 
   /** V0.1.139 AI 私教（smartAgent flag 守卫，wxml feature-gate 包裹）*/
   goAiCoach() {
@@ -186,19 +272,15 @@ Page({
   },
 
   goWeRun() {
-    wx.navigateTo({ url: '/pages/werun/index' });
+    wx.navigateTo({ url: '/pages/health/index?tab=werun' });
   },
 
   goOnboarding() {
     wx.navigateTo({ url: '/pages/onboarding/index' });
   },
 
-  goFamily() {
-    wx.navigateTo({ url: '/pages/family/index' });
-  },
-
   goEnrollments() {
-    wx.navigateTo({ url: '/pages/my-enrollments/index' });
+    wx.navigateTo({ url: '/pages/content-list/index?tab=enrollments' });
   },
 
   goAgreement() {

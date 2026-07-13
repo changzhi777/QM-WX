@@ -1,150 +1,85 @@
 <view class="page">
   <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="refresh" />
 
-  <!-- 正常内容（error 时隐藏） -->
   <block wx:if="{{!error}}">
-  <!-- 头部：用户信息 -->
-  <view class="header">
-    <block wx:if="{{user}}">
-      <view class="user-row" bindtap="goProfile">
-        <image class="avatar" src="{{user.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
-        <view class="info">
-          <view class="nickname">{{user.nickname || '未设置昵称'}}</view>
-          <view class="member">{{memberLabel}} · {{user.points}} 积分</view>
-        </view>
-        <view class="arrow">›</view>
-      </view>
-    </block>
-    <block wx:else>
-      <view class="user-row" bindtap="onTapLogin">
-        <image class="avatar" src="/images/default-avatar.png" mode="aspectFill" />
-        <view class="info">
-          <view class="nickname">点击登录</view>
-          <view class="member">登录后享受更多服务</view>
-        </view>
-      </view>
-    </block>
-  </view>
-
-  <!-- 跑者数据汇总（参考图 2768，stats.myRunnerStats） -->
-  <view class="stats bg-white" wx:if="{{user}}">
-    <view class="stat">
-      <view class="num">{{runnerStats.yearDistance}}</view>
-      <view class="lbl">年跑量(km)</view>
-    </view>
-    <view class="stat">
-      <view class="num">{{runnerStats.yearCheckins}}</view>
-      <view class="lbl">年打卡</view>
-    </view>
-    <view class="stat">
-      <view class="num">{{runnerStats.totalDistance}}</view>
-      <view class="lbl">总跑量(km)</view>
-    </view>
-    <view class="stat">
-      <view class="num">{{runnerStats.avgPace || '-'}}</view>
-      <view class="lbl">平均配速</view>
-    </view>
-  </view>
-
-  <!-- 佳明运动数据（B-2，2026-07-01） -->
-  <view class="stats bg-white mt-2" wx:if="{{user}}" style="display:block;padding:24rpx;">
-    <view style="font-size:30rpx;font-weight:600;margin-bottom:16rpx;">佳明运动数据</view>
-    <view wx:if="{{garminLoading}}" style="color:#999;font-size:26rpx;">加载中…</view>
-    <block wx:elif="{{garminActivities.length}}">
-      <view wx:for="{{garminActivities}}" wx:key="id" style="display:flex;justify-content:space-between;align-items:center;padding:14rpx 0;border-bottom:1rpx solid #f0f0f0;">
-        <view style="font-size:28rpx;flex:1;">{{item.name || item.type}}</view>
-        <view style="font-size:26rpx;color:#666;">{{item.distanceKm}}km · {{item.durationMin}}min</view>
-      </view>
-    </block>
-    <view wx:else style="color:#999;font-size:26rpx;">暂无佳明数据</view>
-  </view>
-
-  <!-- V0.1.35 入口分散引导（运动/商城功能已移到对应 tab）-->
-  <view class="redirect-card">
-    <view class="redirect-row" bindtap="goSportTab">
-      <view class="redirect-icon">🏃</view>
-      <view class="redirect-text">
-        <view class="redirect-title">运动功能</view>
-        <view class="redirect-desc">跑鞋 · 目标 · 证书 · 健康 · 训练 · 动态</view>
-      </view>
-      <view class="redirect-arrow">前往运动 tab ›</view>
-    </view>
-  </view>
-
-  <!-- V0.1.35 精简：仅保留个人/设置入口 -->
-  <view class="list bg-white mt-2">
-    <view class="list-item" bindtap="goNotification">
-      <view class="lbl">消息中心</view>
-      <view class="right">
-        <view class="badge" wx:if="{{notifUnread > 0}}">{{notifUnread > 99 ? '99+' : notifUnread}}</view>
-        <view class="arrow">›</view>
+  <!-- 头部 -->
+  <view class="profile-header">
+    <view class="profile-row" bindtap="goProfile">
+      <view class="avatar">🏃</view>
+      <view class="profile-info">
+        <view class="name">{{user.nickname || '跑者'}}</view>
+        <view class="status">{{memberLabel}} · 已绑定微信运动</view>
       </view>
     </view>
-
-    <view class="list-item" bindtap="goDeviceBind">
-      <view class="lbl">设备绑定</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view wx:if="{{flags.smartAgent}}" class="list-item" bindtap="goAiCoach">
-      <view class="lbl">AI 私教 🏃<text class="beta-tag" style="font-size:20rpx;color:#fff;background:#ff9800;padding:2rpx 12rpx;border-radius:10rpx;margin-left:12rpx;">测试</text></view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goBindApps">
-      <view class="lbl">账号绑定</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goWeRun">
-      <view class="lbl">微信运动</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goOnboarding">
-      <view class="lbl">激活向导</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goFamily">
-      <view class="lbl">家庭空间</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goEnrollments">
-      <view class="lbl">我的报名</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <view class="list-item" bindtap="goProfile">
-      <view class="lbl">个人资料</view>
-      <view class="arrow">›</view>
-    </view>
-
-    <feature-gate flag="membershipPurchase" flags="{{flags}}">
-      <view class="list-item" bindtap="goMembership">
-        <view class="lbl">会员中心</view>
-        <view class="arrow">›</view>
-      </view>
-    </feature-gate>
-
-    <button
-      class="list-item contact"
-      open-type="contact"
-      session-from="mine_page"
-    >
-      <view class="lbl">联系客服</view>
-      <view class="arrow">›</view>
+    <button class="upgrade-btn" bindtap="goMembership">
+      <text>⭐ 升级季度会员 ¥99 — 解锁深度解读+无限问答</text>
+      <text class="arrow">›</text>
     </button>
+  </view>
 
-    <view class="list-item" bindtap="goAgreement">
-      <view class="lbl">用户协议与隐私政策</view>
-      <view class="arrow">›</view>
+  <!-- 设备与数据 -->
+  <view class="m-section-title">设备与数据</view>
+  <van-cell-group>
+    <van-cell title="📱 设备绑定" is-link bindtap="goDeviceBind" />
+    <van-cell title="📊 数据授权管理" is-link bindtap="goDeviceBind" />
+  </van-cell-group>
+
+  <!-- AI 服务 -->
+  <view class="m-section-title">AI服务</view>
+  <van-cell-group>
+    <van-cell title="🤖 AI 私教 NEW" is-link bindtap="goAiCoach" />
+    <van-cell title="📋 我的解读报告" is-link bindtap="goRunner" />
+    <van-cell title="💬 问答历史" is-link bindtap="goAiCoach" />
+  </van-cell-group>
+
+  <!-- 通用 -->
+  <view class="m-section-title">通用</view>
+  <van-cell-group>
+    <van-cell title="🔔 消息中心" is-link bindtap="onShowNotif" value="{{notifUnread > 0 ? (notifUnread > 99 ? '99+' : notifUnread) : ''}}" />
+    <van-cell title="⚙️ 设置（资料/账号绑定）" is-link bindtap="goProfile" />
+    <van-button open-type="contact" session-from="mine_page" block custom-style="text-align:left;border-radius:0;height:96rpx;">❓ 帮助与反馈</van-button>
+    <van-cell title="📄 用户协议" is-link bindtap="goAgreement" />
+  </van-cell-group>
+
+  <!-- 隐藏功能（后续版本上线）-->
+  <view class="hidden-section">
+    <view class="hidden-tip">以下功能已隐藏，将在后续版本上线：</view>
+    <view class="hidden-tags">
+      <text class="hidden-tag">🛒 商城</text>
+      <text class="hidden-tag">👟 跑鞋</text>
+      <text class="hidden-tag">👥 跑群</text>
+      <text class="hidden-tag">🏆 榜单</text>
+      <text class="hidden-tag">📦 打卡</text>
+      <text class="hidden-tag">🎯 赛事</text>
     </view>
   </view>
 
-  <view class="logout" wx:if="{{user}}" bindtap="onTapReactivate">
-    重新激活授权
-  </view>
+  <view class="logout" wx:if="{{user}}" bindtap="onTapReactivate">重新激活授权</view>
   </block>
+
+  <!-- 消息弹层（V0.1.143 合并 notification）-->
+  <view class="mask" wx:if="{{showNotif}}" bindtap="onCloseNotif">
+    <view class="notif-panel" catchtap="">
+      <view class="notif-header">
+        <view class="notif-title">消息</view>
+        <view class="notif-mark-all" wx:if="{{notifList.length}}" bindtap="onMarkAllNotif">全部已读</view>
+      </view>
+      <view wx:if="{{notifLoading}}" class="notif-loading">加载中…</view>
+      <view wx:elif="{{notifList.length === 0}}" class="notif-empty">暂无消息 🔔</view>
+      <scroll-view scroll-y class="notif-list" wx:else>
+        <view class="notif-item {{item.isRead ? '' : 'unread'}}" wx:for="{{notifList}}" wx:key="id" data-item="{{item}}" bindtap="onTapNotif">
+          <image class="notif-avatar" src="{{item.actor.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
+          <view class="notif-body">
+            <view class="notif-row">
+              <view class="notif-name">{{item.actor.nickname || '跑者'}}</view>
+              <view class="notif-text">{{item.text}}</view>
+              <view class="notif-dot" wx:if="{{!item.isRead}}"></view>
+            </view>
+            <view class="notif-content" wx:if="{{item.content}}">{{item.content}}</view>
+            <view class="notif-time">{{item.timeText}}</view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
 </view>

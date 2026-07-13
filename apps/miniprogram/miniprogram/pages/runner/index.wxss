@@ -1,0 +1,128 @@
+/* pages/runner/index.wxss — 跑者数据中心（V0.1.143 合并 goal + certificate + annual-report + weekly-report） */
+.page { min-height: 100vh; background: #f5f5f5; padding-bottom: 140rpx; box-sizing: border-box; }
+
+/* tab 头 */
+.tab-bar { display: flex; background: #fff; position: sticky; top: 0; z-index: 10; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04); }
+.tab { flex: 1; text-align: center; padding: 24rpx 0; font-size: 28rpx; color: #666; position: relative; }
+.tab.active { color: #0FAF8E; font-weight: 600; }
+.tab.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 48rpx; height: 4rpx; background: #0FAF8E; border-radius: 2rpx; }
+
+/* 通用 */
+.loading { text-align: center; color: #999; padding: 80rpx; font-size: 28rpx; }
+.empty { text-align: center; padding: 120rpx 40rpx; }
+.empty-text { font-size: 30rpx; color: #666; }
+.empty-tip { font-size: 24rpx; color: #bbb; margin-top: 12rpx; }
+.empty-inline { font-size: 26rpx; color: #bbb; padding: 20rpx 0; }
+.list { padding: 16rpx; }
+.section { background: #fff; margin: 16rpx; border-radius: 16rpx; padding: 24rpx; }
+.section-title { font-size: 30rpx; font-weight: 600; color: #333; margin-bottom: 20rpx; }
+.footer-tip { text-align: center; font-size: 22rpx; color: #bbb; padding: 32rpx; }
+
+/* 进度条通用 */
+.progress { margin-top: 16rpx; }
+.progress-bar { height: 16rpx; background: #f0f0f0; border-radius: 8rpx; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 8rpx; background: #0FAF8E; transition: width 0.3s; }
+.progress-fill.done { background: #999; }
+.progress-text { font-size: 24rpx; color: #666; margin-top: 8rpx; }
+.progress-text .current { font-size: 30rpx; font-weight: 600; color: #333; }
+
+/* === 目标 tab === */
+.goal-card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; }
+.goal-card.completed { opacity: 0.7; }
+.goal-head { display: flex; align-items: center; gap: 12rpx; }
+.goal-type { font-size: 22rpx; color: #0FAF8E; background: #E6F7F2; padding: 4rpx 14rpx; border-radius: 8rpx; }
+.goal-title { font-size: 30rpx; font-weight: 600; color: #333; flex: 1; }
+.goal-badge { font-size: 24rpx; color: #0FAF8E; }
+.goal-actions { margin-top: 16rpx; padding-top: 16rpx; border-top: 1rpx solid #f0f0f0; display: flex; justify-content: flex-end; }
+.remove-btn { font-size: 24rpx; color: #999; padding: 8rpx 20rpx; border: 1rpx solid #ddd; border-radius: 8rpx; }
+
+.fab { position: fixed; bottom: 40rpx; left: 50%; transform: translateX(-50%); background: #0FAF8E; color: #fff; padding: 20rpx 48rpx; border-radius: 40rpx; font-size: 28rpx; box-shadow: 0 4rpx 16rpx rgba(15,175,142,0.4); z-index: 10; }
+
+/* === 证书 tab === */
+.cert-summary { text-align: center; font-size: 26rpx; color: #666; padding: 24rpx; }
+.next-card { background: linear-gradient(135deg, #0FAF8E, #4FC3A1); margin: 16rpx; border-radius: 16rpx; padding: 32rpx; color: #fff; }
+.next-title { font-size: 26rpx; opacity: 0.9; }
+.next-name { font-size: 34rpx; font-weight: 600; margin: 8rpx 0 20rpx; }
+.next-progress { display: flex; align-items: center; gap: 16rpx; }
+.next-bar { flex: 1; height: 16rpx; background: rgba(255,255,255,0.3); border-radius: 8rpx; overflow: hidden; }
+.next-fill { height: 100%; background: #fff; border-radius: 8rpx; }
+.next-pct { font-size: 28rpx; font-weight: 600; }
+.next-desc { font-size: 24rpx; opacity: 0.85; margin-top: 12rpx; }
+
+.cert-card { display: flex; align-items: center; gap: 16rpx; padding: 16rpx 0; border-bottom: 1rpx solid #f5f5f5; }
+.cert-card:last-child { border-bottom: none; }
+.cert-card.milestone .cert-icon { font-size: 48rpx; }
+.cert-card.marathon .cert-cover { width: 96rpx; height: 96rpx; border-radius: 12rpx; }
+.cert-info { flex: 1; }
+.cert-name { font-size: 28rpx; font-weight: 600; color: #333; }
+.cert-desc { font-size: 24rpx; color: #999; margin-top: 4rpx; }
+.cert-meta { font-size: 22rpx; color: #999; margin-top: 4rpx; }
+.cert-status { font-size: 22rpx; color: #0FAF8E; margin-top: 4rpx; }
+
+.custom-list { }
+.custom-item { display: flex; align-items: center; gap: 12rpx; padding: 16rpx 0; border-bottom: 1rpx solid #f5f5f5; }
+.custom-icon { font-size: 32rpx; }
+.custom-text { flex: 1; font-size: 26rpx; color: #333; }
+.custom-del { font-size: 36rpx; color: #ccc; padding: 0 12rpx; }
+.custom-add { text-align: center; font-size: 26rpx; color: #0FAF8E; padding: 24rpx 0; }
+
+/* === 年报 tab === */
+.year-row { display: flex; align-items: center; justify-content: center; gap: 32rpx; padding: 24rpx; background: #fff; }
+.year-arrow { font-size: 40rpx; color: #0FAF8E; padding: 8rpx 24rpx; }
+.year-text { font-size: 32rpx; font-weight: 600; color: #333; }
+
+.hero-card { background: linear-gradient(135deg, #0FAF8E, #4FC3A1); margin: 16rpx; border-radius: 16rpx; padding: 40rpx; color: #fff; text-align: center; }
+.hero-distance { font-size: 80rpx; font-weight: 700; }
+.hero-distance .u { font-size: 32rpx; margin-left: 8rpx; }
+.hero-label { font-size: 26rpx; opacity: 0.9; margin-top: 8rpx; }
+.hero-grid { display: flex; justify-content: space-around; margin-top: 32rpx; }
+.hero-item { display: flex; flex-direction: column; align-items: center; }
+.hero-item .v { font-size: 36rpx; font-weight: 600; }
+.hero-item .u { font-size: 22rpx; opacity: 0.85; margin-top: 4rpx; }
+
+.chart { }
+.chart-row { display: flex; align-items: center; gap: 12rpx; padding: 10rpx 0; }
+.chart-label { font-size: 22rpx; color: #999; width: 60rpx; }
+.chart-bar-bg { flex: 1; height: 24rpx; background: #f0f0f0; border-radius: 12rpx; overflow: hidden; }
+.chart-bar { height: 100%; background: #0FAF8E; border-radius: 12rpx; transition: width 0.3s; }
+.chart-val { font-size: 22rpx; color: #666; width: 60rpx; text-align: right; }
+
+.highlight-card { background: linear-gradient(135deg, #ff9800, #ffb74d); border-radius: 16rpx; padding: 32rpx; color: #fff; text-align: center; }
+.highlight-label { font-size: 26rpx; opacity: 0.9; }
+.highlight-val { font-size: 56rpx; font-weight: 700; margin: 8rpx 0; }
+.highlight-date { font-size: 24rpx; opacity: 0.85; }
+
+/* === 周报 tab === */
+.weekly-card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; }
+.weekly-head { display: flex; justify-content: space-between; align-items: center; }
+.weekly-name { font-size: 30rpx; font-weight: 600; color: #333; }
+.weekly-period { font-size: 22rpx; color: #999; }
+.weekly-stats { display: flex; justify-content: space-around; margin: 20rpx 0; }
+.w-stat { text-align: center; }
+.w-stat .w-v { display: block; font-size: 36rpx; font-weight: 600; color: #0FAF8E; }
+.w-stat .w-l { font-size: 22rpx; color: #999; }
+.weekly-champion { font-size: 24rpx; color: #ff9800; padding: 12rpx 0; border-top: 1rpx solid #f5f5f5; }
+.weekly-action { font-size: 26rpx; color: #0FAF8E; text-align: right; }
+
+/* === 弹层 === */
+.mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; display: flex; align-items: flex-end; }
+.form-panel { background: #fff; width: 100%; border-radius: 24rpx 24rpx 0 0; padding: 32rpx; box-sizing: border-box; }
+.form-title { font-size: 32rpx; font-weight: 600; color: #333; margin-bottom: 24rpx; }
+.form-item { margin-bottom: 20rpx; }
+.form-item .label { font-size: 26rpx; color: #666; display: block; margin-bottom: 12rpx; }
+.input { background: #f5f5f5; padding: 16rpx 20rpx; border-radius: 8rpx; font-size: 28rpx; }
+.type-chips { display: flex; gap: 12rpx; }
+.type-chip { flex: 1; text-align: center; padding: 16rpx 0; font-size: 26rpx; color: #666; background: #f5f5f5; border-radius: 8rpx; }
+.type-chip.active { background: #0FAF8E; color: #fff; }
+.form-actions { display: flex; gap: 16rpx; margin-top: 32rpx; }
+.btn-cancel, .btn-submit { flex: 1; font-size: 28rpx; border-radius: 8rpx; line-height: 72rpx; padding: 0; margin: 0; }
+.btn-cancel { background: #f5f5f5; color: #666; }
+.btn-submit { background: #0FAF8E; color: #fff; }
+
+/* 战报弹层 */
+.poster-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 200; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.poster-card { display: flex; flex-direction: column; align-items: center; }
+.poster-canvas-wrap { max-height: 80vh; overflow: hidden; }
+.poster-canvas { display: block; }
+.poster-actions { display: flex; gap: 16rpx; margin-top: 24rpx; }
+.poster-actions .btn-cancel, .poster-actions .btn-submit { width: 240rpx; }

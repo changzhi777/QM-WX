@@ -35,3 +35,18 @@
 .tag { padding: 2rpx 10rpx; background: #f0f9f6; color: var(--brand); font-size: 20rpx; border-radius: 4rpx; }
 
 .loading, .end, .empty { padding: 40rpx 0; text-align: center; color: var(--text-tertiary); font-size: 24rpx; }
+
+/* 顶部 tab（内容/报名）*/
+.top-tab-bar { display: flex; background: #fff; position: sticky; top: 0; z-index: 11; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04); }
+.top-tab { flex: 1; text-align: center; padding: 24rpx 0; font-size: 30rpx; color: #666; position: relative; }
+.top-tab.active { color: var(--brand); font-weight: 600; }
+.top-tab.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 48rpx; height: 4rpx; background: var(--brand); border-radius: 2rpx; }
+
+/* 报名卡 */
+.enroll-card { display: flex; background: #fff; margin: 16rpx; border-radius: 16rpx; padding: 24rpx; box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.04); }
+.enroll-cover { width: 160rpx; height: 120rpx; border-radius: 8rpx; flex-shrink: 0; background: #f0f0f0; }
+.enroll-info { flex: 1; margin-left: 16rpx; display: flex; flex-direction: column; }
+.enroll-title { font-size: 28rpx; font-weight: 600; color: #333; }
+.enroll-meta { font-size: 22rpx; color: #999; margin-top: 8rpx; }
+.enroll-status { font-size: 22rpx; color: var(--brand); margin-top: 8rpx; }
+.enroll-status.cancelled { color: #999; }

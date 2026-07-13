@@ -28,16 +28,9 @@
   <!-- 榜单列表 -->
   <view class="list" wx:if="{{!loading}}">
     <view wx:if="{{list.length === 0}}" class="empty">暂无榜单数据</view>
-    <view class="rank-row bg-white" wx:for="{{list}}" wx:key="userId">
-      <view class="rank-num {{item.rank <= 3 ? 'top' : ''}}">{{item.rankIcon}}</view>
-      <image wx:if="{{item.avatarUrl}}" class="avatar" src="{{item.avatarUrl}}" mode="aspectFill" />
-      <view wx:else class="avatar ph">{{item.nickname[0]}}</view>
-      <view class="rank-info">
-        <view class="name">{{item.nickname}}</view>
-        <view class="meta">{{item.checkins}} 次打卡</view>
-      </view>
-      <view class="distance">{{item.distanceDisplay}}<text class="u">km</text></view>
-    </view>
+    <van-cell-group>
+      <van-cell wx:for="{{list}}" wx:key="userId" title="{{item.nickname}}" label="{{item.checkins}} 次打卡" value="{{item.distanceDisplay}} km" />
+    </van-cell-group>
   </view>
 
   <view class="loading" wx:else>加载中...</view>

@@ -30,7 +30,7 @@ const PERSONAS = [
   { key: 'strict', label: '铁血', emoji: '💪' },
 ] as const;
 
-const QUICK_QUESTIONS = ['怎么提高配速？', '帮我制定半马训练计划', '跑后怎么恢复？', '跑鞋多久该换？'];
+const QUICK_QUESTIONS = ['今天该怎么练？', '跑步膝盖疼怎么办？', '最近睡不好怎么调？', '减脂期吃什么？'];
 
 const WELCOME =
   '你好，我是青沐 AI 私教 🏃。点上方人设切换风格，问我训练/恢复/营养/伤病，或点「计划」定制训练计划。';
@@ -43,6 +43,8 @@ Page({
     sending: false,
     scrollTop: 0,
     quickQuestions: QUICK_QUESTIONS,
+    alert: null as string | null, // V0.1.144 AI 主动提醒
+    todayData: null as { steps: number; restingHr: number | null; sleepHours: number | null; healthScore: number } | null,
     hasHistory: false,
     showConversations: false,
     conversationList: [] as Array<{ conversationId: string; lastMessage: string; lastTime: string; messageCount: number }>,
@@ -64,6 +66,20 @@ Page({
     }
     this.loadHistory();
     this.warmup(); // V0.1.141 B 预热 system prompt Cache（首问快）
+    this.loadAlert(); // V0.1.144 AI 主动提醒 + 今日数据条
+  },
+
+  /** V0.1.144 AI 主动提醒（基于今日数据：睡眠不足/心率异常/步数低）+ 头部数据条 */
+  async loadAlert() {
+    try {
+      const res = await api.call<{ alert: string | null; healthScore: number; steps: number; restingHr: number | null; sleepHours: number | null }>('aiCoach', 'proactiveAlert', {});
+      this.setData({
+        alert: res.alert,
+        todayData: { steps: res.steps, restingHr: res.restingHr, sleepHours: res.sleepHours, healthScore: res.healthScore },
+      });
+    } catch {
+      // 静默（无数据时不阻塞）
+    }
   },
 
   /** V0.1.141 B 预热：进页调 warmup，后端预 Cache system prompt */
@@ -254,7 +270,7 @@ Page({
   onTapSuggestion(e: WechatMiniprogram.Touch) {
     const sug = (e.currentTarget.dataset as { sug: Suggestion }).sug;
     if (sug.type === 'addGoal') {
-      wx.navigateTo({ url: '/pages/goal/index' });
+      wx.navigateTo({ url: '/pages/runner/index' });
     } else if (sug.type === 'adoptPlan') {
       this.setData({ inputText: sug.label });
       this.onTapGeneratePlan();

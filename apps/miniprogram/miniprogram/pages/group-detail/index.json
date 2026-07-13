@@ -1,6 +1,10 @@
 {
   "navigationBarTitleText": "群榜单",
   "usingComponents": {
-    "error-state": "/components/error-state/index"
+    "error-state": "/components/error-state/index",
+    "van-button": "@vant/weapp/button/index",
+    "van-cell": "@vant/weapp/cell/index",
+    "van-cell-group": "@vant/weapp/cell-group/index",
+    "van-icon": "@vant/weapp/icon/index"
   }
 }

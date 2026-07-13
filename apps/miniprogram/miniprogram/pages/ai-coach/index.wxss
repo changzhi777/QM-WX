@@ -221,3 +221,21 @@
 .conv-meta { font-size: 22rpx; color: #999; margin-top: 6rpx; }
 .conv-del { font-size: 32rpx; color: #ff6b6b; padding: 8rpx 16rpx; flex-shrink: 0; }
 .conv-empty { text-align: center; padding: 60rpx 0; color: #999; font-size: 26rpx; }
+
+/* V0.1.144 头部今日数据条 + AI 主动提醒（原型图）*/
+.ai-header { background: linear-gradient(135deg, #2D9D78 0%, #1a7a5a 100%); color: #fff; padding: 24rpx 32rpx 28rpx; }
+.ai-page-title { font-size: 32rpx; font-weight: 600; margin-bottom: 16rpx; }
+.today-data-strip { display: flex; gap: 16rpx; background: rgba(255,255,255,0.15); border-radius: 16rpx; padding: 16rpx 20rpx; }
+.td-item { flex: 1; text-align: center; }
+.td-item .td-v { display: block; font-size: 28rpx; font-weight: 700; }
+.td-item .td-l { font-size: 20rpx; opacity: 0.8; }
+
+.ai-alert-card { margin: 16rpx; background: linear-gradient(135deg, #fff8e1, #fff3cd); border-radius: 16rpx; padding: 20rpx; display: flex; gap: 12rpx; align-items: flex-start; border: 1rpx solid #ffe082; }
+.ai-alert-icon { font-size: 32rpx; flex-shrink: 0; }
+.ai-alert-body { flex: 1; }
+.ai-alert-title { font-size: 24rpx; font-weight: 600; color: #e65100; margin-bottom: 6rpx; }
+.ai-alert-text { font-size: 24rpx; color: #795548; line-height: 1.5; }
+
+/* V0.1.144 AI 等待动画（pending + 首个 token 未到）*/
+.thinking { display: flex; align-items: center; gap: 12rpx; }
+.thinking-text { font-size: 26rpx; color: #999; }

@@ -1,108 +1,162 @@
 <view class="page">
-  <!-- 标题 -->
-  <view class="header bg-white">
-    <view class="title">今日健康</view>
-    <view class="subtitle">{{health.date}}</view>
+  <!-- tab 头 -->
+  <view class="tab-bar">
+    <view class="tab {{tab === 'today' ? 'active' : ''}}" data-tab="today" bindtap="onSwitchTab">今日</view>
+    <view class="tab {{tab === 'history' ? 'active' : ''}}" data-tab="history" bindtap="onSwitchTab">历史</view>
+    <view class="tab {{tab === 'werun' ? 'active' : ''}}" data-tab="werun" bindtap="onSwitchTab">微信运动</view>
   </view>
 
-  <view class="loading" wx:if="{{loading}}">加载中...</view>
-
-  <block wx:elif="{{health}}">
-    <!-- 今日运动（顶部大卡） -->
-    <view class="card activity-card" wx:if="{{health.todayActivity}}">
-      <view class="card-title">今日运动</view>
-      <view class="activity-grid">
-        <view class="metric"><text class="v">{{health.todayActivity.totalDistanceKm}}</text><text class="u">km</text></view>
-        <view class="metric"><text class="v">{{health.todayActivity.totalDurationMin}}</text><text class="u">min</text></view>
-        <view class="metric"><text class="v">{{health.todayActivity.totalCalories}}</text><text class="u">kcal</text></view>
-        <view class="metric"><text class="v">{{health.todayActivity.count}}</text><text class="u">次</text></view>
+  <!-- ===== 今日 tab ===== -->
+  <view wx:if="{{tab === 'today'}}">
+    <view class="loading" wx:if="{{healthLoading}}">加载中...</view>
+    <block wx:elif="{{health}}">
+      <view class="t-card t-activity" wx:if="{{health.todayActivity}}">
+        <view class="t-card-title">今日运动</view>
+        <view class="t-activity-grid">
+          <view class="t-metric"><text class="t-v">{{health.todayActivity.totalDistanceKm}}</text><text class="t-u">km</text></view>
+          <view class="t-metric"><text class="t-v">{{health.todayActivity.totalDurationMin}}</text><text class="t-u">min</text></view>
+          <view class="t-metric"><text class="t-v">{{health.todayActivity.totalCalories}}</text><text class="t-u">kcal</text></view>
+          <view class="t-metric"><text class="t-v">{{health.todayActivity.count}}</text><text class="t-u">次</text></view>
+        </view>
       </view>
+
+      <view class="t-card t-body-comp" wx:if="{{bodyComp}}">
+        <view class="t-bc-header"><text class="t-bc-title">体成分</text><text class="t-bc-ts">{{bodyComp.timestamp}}</text></view>
+        <view class="t-bc-main">
+          <view class="t-bc-weight">{{bodyComp.weight}}<text class="t-u">kg</text></view>
+          <view class="t-bc-bmi">BMI {{bodyComp.bmi || '-'}}</view>
+        </view>
+        <view class="t-bc-grid">
+          <view class="t-bc-item"><text class="t-bc-label">体脂率</text><text class="t-bc-val">{{bodyComp.bodyFat != null ? bodyComp.bodyFat + '%' : '-'}}</text></view>
+          <view class="t-bc-item"><text class="t-bc-label">肌肉量</text><text class="t-bc-val">{{bodyComp.muscle != null ? bodyComp.muscle + 'kg' : '-'}}</text></view>
+          <view class="t-bc-item"><text class="t-bc-label">水分率</text><text class="t-bc-val">{{bodyComp.water != null ? bodyComp.water + '%' : '-'}}</text></view>
+          <view class="t-bc-item"><text class="t-bc-label">骨量</text><text class="t-bc-val">{{bodyComp.bone != null ? bodyComp.bone + 'kg' : '-'}}</text></view>
+          <view class="t-bc-item"><text class="t-bc-label">内脏脂肪</text><text class="t-bc-val">{{bodyComp.visceralFat != null ? bodyComp.visceralFat : '-'}}</text></view>
+          <view class="t-bc-item"><text class="t-bc-label">阻抗</text><text class="t-bc-val">{{bodyComp.impedance != null ? bodyComp.impedance + 'Ω' : '-'}}</text></view>
+        </view>
+      </view>
+      <view class="t-card t-body-comp-empty" wx:else bindtap="onTapGoScale">
+        <view class="t-bc-empty-title">体成分</view>
+        <view class="t-bc-empty-tip">连接小米体脂秤，上秤测量查看 6 项指标</view>
+        <view class="t-bc-empty-btn">去测量 ›</view>
+      </view>
+
+      <view class="t-grid">
+        <view class="t-card t-metric-card">
+          <view class="t-card-title">睡眠</view>
+          <block wx:if="{{health.sleep}}">
+            <view class="t-big-num">{{health.sleep.durationHours || '-'}}<text class="t-u">h</text></view>
+            <view class="t-sub-row" wx:if="{{health.sleep.score != null}}">评分 {{health.sleep.score}}</view>
+            <view class="t-sub-row">深睡 {{health.sleep.deepHours || '-'}}h · 浅睡 {{health.sleep.lightHours || '-'}}h</view>
+            <view class="t-sub-row">REM {{health.sleep.remHours || '-'}}h</view>
+          </block>
+          <view class="t-empty" wx:else>暂无数据</view>
+        </view>
+        <view class="t-card t-metric-card">
+          <view class="t-card-title">健身年龄</view>
+          <block wx:if="{{health.fitnessAge}}">
+            <view class="t-big-num">{{health.fitnessAge.currentBioAge || '-'}}<text class="t-u">岁</text></view>
+            <view class="t-sub-row" wx:if="{{health.fitnessAge.vo2Max != null}}">VO₂Max {{health.fitnessAge.vo2Max}}</view>
+            <view class="t-sub-row" wx:if="{{health.fitnessAge.rhr != null}}">静息心率 {{health.fitnessAge.rhr}}</view>
+          </block>
+          <view class="t-empty" wx:else>暂无数据</view>
+        </view>
+        <view class="t-card t-metric-card">
+          <view class="t-card-title">训练准备度</view>
+          <view class="t-big-num" wx:if="{{health.metrics.trainingReadiness != null}}">{{health.metrics.trainingReadiness}}</view>
+          <view class="t-empty" wx:else>暂无数据</view>
+        </view>
+        <view class="t-card t-metric-card">
+          <view class="t-card-title">耐力分数</view>
+          <view class="t-big-num" wx:if="{{health.metrics.enduranceScore != null}}">{{health.metrics.enduranceScore}}</view>
+          <view class="t-empty" wx:else>暂无数据</view>
+        </view>
+        <view class="t-card t-metric-card">
+          <view class="t-card-title">Hill Score</view>
+          <view class="t-big-num" wx:if="{{health.metrics.hillScore != null}}">{{health.metrics.hillScore}}</view>
+          <view class="t-empty" wx:else>暂无数据</view>
+        </view>
+        <view class="t-card t-metric-card placeholder" wx:for="{{placeholderCards}}" wx:key="key">
+          <view class="t-card-title">{{item.label}}</view>
+          <view class="t-placeholder-text">连接设备后查看</view>
+        </view>
+      </view>
+      <view class="t-footer-tip">数据来源：佳明 · 每日自动同步</view>
+    </block>
+    <view class="empty-page" wx:else>暂无健康数据</view>
+  </view>
+
+  <!-- ===== 历史 tab ===== -->
+  <view wx:if="{{tab === 'history'}}">
+    <view class="h-tabs">
+      <view class="h-tab {{activeType === 'hr' ? 'active' : ''}}" data-type="hr" bindtap="onTabChange">❤️ 心率</view>
+      <view class="h-tab {{activeType === 'spo2' ? 'active' : ''}}" data-type="spo2" bindtap="onTabChange">🩸 血氧</view>
+      <view class="h-tab {{activeType === 'steps' ? 'active' : ''}}" data-type="steps" bindtap="onTabChange">👟 步数</view>
+      <view class="h-tab {{activeType === 'sleep' ? 'active' : ''}}" data-type="sleep" bindtap="onTabChange">💤 睡眠</view>
+    </view>
+    <view class="h-ranges">
+      <view class="h-range {{range === 1 ? 'active' : ''}}" data-range="1" bindtap="onRangeChange">今日</view>
+      <view class="h-range {{range === 7 ? 'active' : ''}}" data-range="7" bindtap="onRangeChange">7天</view>
+      <view class="h-range {{range === 30 ? 'active' : ''}}" data-range="30" bindtap="onRangeChange">30天</view>
     </view>
 
-    <!-- 体成分卡（最新一次体脂秤测量） -->
-    <view class="card body-comp-card" wx:if="{{bodyComp}}">
-      <view class="bc-header">
-        <text class="bc-title">体成分</text>
-        <text class="bc-ts">{{bodyComp.timestamp}}</text>
+    <view class="loading" wx:if="{{historyLoading}}">加载中...</view>
+    <block wx:else>
+      <view class="h-stats-card" wx:if="{{points.length > 0}}">
+        <view class="h-stat-item"><view class="h-stat-num">{{stats.avg}}</view><view class="h-stat-label">平均{{typeUnit}}</view></view>
+        <view class="h-stat-item"><view class="h-stat-num">{{stats.max}}</view><view class="h-stat-label">最高</view></view>
+        <view class="h-stat-item"><view class="h-stat-num">{{stats.min}}</view><view class="h-stat-label">最低</view></view>
       </view>
-      <view class="bc-main">
-        <view class="bc-weight">{{bodyComp.weight}}<text class="u">kg</text></view>
-        <view class="bc-bmi">BMI {{bodyComp.bmi || '-'}}</view>
+      <view class="h-chart-card" wx:if="{{points.length > 0}}">
+        <view class="h-chart">
+          <view class="h-bar-item" wx:for="{{points}}" wx:key="index">
+            <view class="h-bar" style="height: {{item.barHeight}}%"></view>
+            <view class="h-bar-label" wx:if="{{item.showLabel}}">{{item.label}}</view>
+          </view>
+        </view>
       </view>
-      <view class="bc-grid">
-        <view class="bc-item"><text class="bc-label">体脂率</text><text class="bc-val">{{bodyComp.bodyFat != null ? bodyComp.bodyFat + '%' : '-'}}</text></view>
-        <view class="bc-item"><text class="bc-label">肌肉量</text><text class="bc-val">{{bodyComp.muscle != null ? bodyComp.muscle + 'kg' : '-'}}</text></view>
-        <view class="bc-item"><text class="bc-label">水分率</text><text class="bc-val">{{bodyComp.water != null ? bodyComp.water + '%' : '-'}}</text></view>
-        <view class="bc-item"><text class="bc-label">骨量</text><text class="bc-val">{{bodyComp.bone != null ? bodyComp.bone + 'kg' : '-'}}</text></view>
-        <view class="bc-item"><text class="bc-label">内脏脂肪</text><text class="bc-val">{{bodyComp.visceralFat != null ? bodyComp.visceralFat : '-'}}</text></view>
-        <view class="bc-item"><text class="bc-label">阻抗</text><text class="bc-val">{{bodyComp.impedance != null ? bodyComp.impedance + 'Ω' : '-'}}</text></view>
+      <view class="empty" wx:if="{{points.length === 0}}">
+        <view class="empty-icon">{{typeIcon}}</view>
+        <view class="empty-text">暂无{{typeLabel}}数据</view>
+        <view class="empty-hint">绑定设备并测量后查看</view>
       </view>
+      <view class="h-recent-card" wx:if="{{recent.length > 0}}">
+        <view class="h-recent-title">最近记录</view>
+        <view class="h-recent-row" wx:for="{{recent}}" wx:key="index">
+          <view class="h-recent-time">{{item.time}}</view>
+          <view class="h-recent-value">{{item.value}}{{typeUnit}}</view>
+        </view>
+      </view>
+    </block>
+  </view>
+
+  <!-- ===== 微信运动 tab ===== -->
+  <view wx:if="{{tab === 'werun'}}">
+    <view class="w-month-bar">
+      <view class="w-arrow" bindtap="prevMonth">‹</view>
+      <view class="w-month-label">{{monthLabel}}</view>
+      <view class="w-arrow" bindtap="nextMonth">›</view>
     </view>
-
-    <!-- 体成分引导卡（未测量时） -->
-    <view class="card body-comp-empty" wx:else bindtap="onTapGoScale">
-      <view class="bc-empty-title">体成分</view>
-      <view class="bc-empty-tip">连接小米体脂秤，上秤测量查看体重 / 体脂率 / 肌肉量等 6 项指标</view>
-      <view class="bc-empty-btn">去测量 ›</view>
+    <view class="w-summary-card">
+      <view class="w-summary-item"><view class="w-num">{{totalSteps}}</view><view class="w-lbl">总步数</view></view>
+      <view class="w-summary-item"><view class="w-num">{{totalKm}}</view><view class="w-lbl">总里程km</view></view>
+      <view class="w-summary-item"><view class="w-num">{{avgSteps}}</view><view class="w-lbl">日均</view></view>
+      <view class="w-summary-item"><view class="w-num">{{days}}</view><view class="w-lbl">活跃天</view></view>
     </view>
-
-    <!-- 健康指标 2 列网格 -->
-    <view class="grid">
-      <!-- 睡眠卡 -->
-      <view class="card metric-card">
-        <view class="card-title">睡眠</view>
-        <block wx:if="{{health.sleep}}">
-          <view class="big-num">{{health.sleep.durationHours || '-'}}<text class="u">h</text></view>
-          <view class="sub-row" wx:if="{{health.sleep.score != null}}">评分 {{health.sleep.score}}</view>
-          <view class="sub-row">深睡 {{health.sleep.deepHours || '-'}}h · 浅睡 {{health.sleep.lightHours || '-'}}h</view>
-          <view class="sub-row">REM {{health.sleep.remHours || '-'}}h</view>
-        </block>
-        <view class="empty" wx:else>暂无数据</view>
-      </view>
-
-      <!-- 健身年龄卡 -->
-      <view class="card metric-card">
-        <view class="card-title">健身年龄</view>
-        <block wx:if="{{health.fitnessAge}}">
-          <view class="big-num">{{health.fitnessAge.currentBioAge || '-'}}<text class="u">岁</text></view>
-          <view class="sub-row" wx:if="{{health.fitnessAge.vo2Max != null}}">VO₂Max {{health.fitnessAge.vo2Max}}</view>
-          <view class="sub-row" wx:if="{{health.fitnessAge.rhr != null}}">静息心率 {{health.fitnessAge.rhr}}</view>
-          <view class="sub-row" wx:if="{{health.fitnessAge.bmi != null}}">BMI {{health.fitnessAge.bmi}}</view>
-        </block>
-        <view class="empty" wx:else>暂无数据</view>
-      </view>
-
-      <!-- 训练准备度 -->
-      <view class="card metric-card">
-        <view class="card-title">训练准备度</view>
-        <view class="big-num" wx:if="{{health.metrics.trainingReadiness != null}}">{{health.metrics.trainingReadiness}}</view>
-        <view class="empty" wx:else>暂无数据</view>
-      </view>
-
-      <!-- 耐力分数 -->
-      <view class="card metric-card">
-        <view class="card-title">耐力分数</view>
-        <view class="big-num" wx:if="{{health.metrics.enduranceScore != null}}">{{health.metrics.enduranceScore}}</view>
-        <view class="empty" wx:else>暂无数据</view>
-      </view>
-
-      <!-- Hill Score -->
-      <view class="card metric-card">
-        <view class="card-title">Hill Score</view>
-        <view class="big-num" wx:if="{{health.metrics.hillScore != null}}">{{health.metrics.hillScore}}</view>
-        <view class="empty" wx:else>暂无数据</view>
-      </view>
-
-      <!-- 占位卡（佳明数据源不支持，显示"连接设备后查看"） -->
-      <view class="card metric-card placeholder" wx:for="{{placeholderCards}}" wx:key="key">
-        <view class="card-title">{{item.label}}</view>
-        <view class="placeholder-text">连接设备后查看</view>
-      </view>
+    <view class="w-chart-card">
+      <view class="w-chart-title">每日步数</view>
+      <view wx:if="{{werunLoading}}" class="empty">加载中…</view>
+      <view wx:elif="{{werunRecords.length === 0}}" class="empty">本月暂无数据，点击下方同步</view>
+      <scroll-view scroll-x class="w-chart-scroll" wx:else>
+        <view class="w-chart-bars">
+          <view class="w-bar-col" wx:for="{{werunRecords}}" wx:key="date">
+            <view class="w-bar" style="height:{{item.barHeight}}%"></view>
+            <view class="w-bar-day">{{item.dayLabel}}</view>
+          </view>
+        </view>
+      </scroll-view>
     </view>
-
-    <!-- 数据来源提示 -->
-    <view class="footer-tip">数据来源：佳明 · 每日自动同步</view>
-  </block>
-
-  <view class="empty-page" wx:else>暂无健康数据</view>
+    <button class="w-sync-btn {{syncing ? 'loading' : ''}}" bindtap="onSync">{{syncing ? '同步中…' : '同步微信运动'}}</button>
+    <view class="w-tip">数据来源：微信运动 · 每日首次进入自动同步</view>
+  </view>
 </view>

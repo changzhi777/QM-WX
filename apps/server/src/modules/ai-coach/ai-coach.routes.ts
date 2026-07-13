@@ -68,6 +68,9 @@ export async function aiCoachRoutes(app: FastifyInstance) {
       case 'warmup': {
         return { code: 0, data: await aiCoachService.warmup(userId) };
       }
+      case 'proactiveAlert': {
+        return { code: 0, data: await aiCoachService.proactiveAlert(userId) };
+      }
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
     }

@@ -1,5 +1,25 @@
 <!-- AI 私教（V0.1.140 UI/UX 优化 — 人设切换 + 建议卡片 + 图标操作 + voice）-->
 <view class="coach-page">
+  <!-- 头部：今日数据条（V0.1.144 原型图）-->
+  <view class="ai-header" wx:if="{{todayData}}">
+    <view class="ai-page-title">🤖 青沐AI运动健康助手</view>
+    <view class="today-data-strip">
+      <view class="td-item"><text class="td-v">{{todayData.steps}}</text><text class="td-l">今日步数</text></view>
+      <view class="td-item"><text class="td-v">{{todayData.restingHr || '--'}}</text><text class="td-l">静息心率</text></view>
+      <view class="td-item"><text class="td-v">{{todayData.sleepHours || '--'}}</text><text class="td-l">昨晚睡眠</text></view>
+      <view class="td-item"><text class="td-v">{{todayData.healthScore}}</text><text class="td-l">健康分</text></view>
+    </view>
+  </view>
+
+  <!-- AI 主动提醒（V0.1.144 原型图）-->
+  <view class="ai-alert-card" wx:if="{{alert}}">
+    <view class="ai-alert-icon">⚠️</view>
+    <view class="ai-alert-body">
+      <view class="ai-alert-title">AI主动提醒</view>
+      <view class="ai-alert-text">{{alert}}</view>
+    </view>
+  </view>
+
   <!-- 人设切换（A）-->
   <view class="persona-bar">
     <view
@@ -33,7 +53,11 @@
       </block>
       <block wx:else>
         <view class="bubble">
-          <text>{{item.content}}{{item.pending ? '▍' : ''}}</text>
+          <view wx:if="{{item.pending && !item.content}}" class="thinking">
+            <van-loading size="20px" type="spinner" color="#2D9D78" />
+            <text class="thinking-text">思考中…</text>
+          </view>
+          <text wx:else>{{item.content}}{{item.pending ? '▍' : ''}}</text>
         </view>
         <!-- B 建议卡片（正则提取 📋建议：）-->
         <view wx:if="{{item.suggestions && item.suggestions.length}}" class="suggestions">
@@ -74,7 +98,7 @@
       <view class="stop-btn" bindtap="onStop">停止</view>
     </block>
     <block wx:else>
-      <view class="send-btn {{!inputText ? 'disabled' : ''}}" bindtap="onSend">发送</view>
+      <van-button type="primary" size="small" round disabled="{{!inputText || sending}}" bindtap="onSend">发送</van-button>
     </block>
   </view>
 

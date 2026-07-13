@@ -1,51 +1,74 @@
 <view class="page">
-  <!-- 5 类 tab -->
-  <view class="tabs bg-white">
-    <view
-      class="tab {{tabIndex === index ? 'tab-active' : ''}}"
-      wx:for="{{tabs}}"
-      wx:key="type"
-      data-idx="{{index}}"
-      bindtap="onTabChange"
-    >
-      {{item.label}}
-    </view>
+  <!-- 顶部 tab：内容 / 我的报名 -->
+  <view class="top-tab-bar">
+    <view class="top-tab {{topTab === 'content' ? 'active' : ''}}" data-tab="content" bindtap="onSwitchTopTab">内容</view>
+    <view class="top-tab {{topTab === 'enrollments' ? 'active' : ''}}" data-tab="enrollments" bindtap="onSwitchTopTab">我的报名</view>
   </view>
 
-  <view class="list">
-    <view
-      class="card bg-white m-2 p-4 rounded-lg shadow"
-      wx:for="{{list}}"
-      wx:key="id"
-      data-id="{{item.id}}"
-      bindtap="goDetail"
-    >
-      <view class="cover-wrap">
-        <image class="cover" src="{{item.cover || '/images/default-cover.png'}}" mode="aspectFill" />
-        <view class="type-badge">{{item.type}}</view>
-      </view>
-      <view class="info">
-        <view class="title">{{item.title}}</view>
-        <view class="summary text-secondary text-sm mt-2" wx:if="{{item.summary}}">{{item.summary}}</view>
-        <view class="meta text-sm text-secondary mt-2">
-          <text wx:if="{{item.date}}">📅 {{item.date}}</text>
-          <text wx:if="{{item.location}}" class="ml">📍 {{item.location}}</text>
-        </view>
-        <view class="footer">
-          <view class="price" wx:if="{{item.price || item.fee}}">
-            <text class="num">{{item.price || item.fee}}</text>
-            <text class="unit">元</text>
-          </view>
-          <view class="tags">
-            <text class="tag" wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this">{{t}}</text>
-          </view>
-        </view>
-      </view>
+  <!-- ===== 内容 tab ===== -->
+  <block wx:if="{{topTab === 'content'}}">
+    <view class="tabs bg-white">
+      <view
+        class="tab {{tabIndex === index ? 'tab-active' : ''}}"
+        wx:for="{{tabs}}"
+        wx:key="type"
+        data-idx="{{index}}"
+        bindtap="onTabChange"
+      >{{item.label}}</view>
     </view>
 
-    <view wx:if="{{loading}}" class="loading">加载中...</view>
-    <view wx:elif="{{!hasMore && list.length > 0}}" class="end">— 没有更多了 —</view>
-    <view wx:elif="{{!loading && list.length === 0}}" class="empty">暂无内容</view>
-    <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="loadRetry" />
-  </view>
+    <view class="list">
+      <view
+        class="card bg-white m-2 p-4 rounded-lg shadow"
+        wx:for="{{list}}"
+        wx:key="id"
+        data-id="{{item.id}}"
+        bindtap="goDetail"
+      >
+        <view class="cover-wrap">
+          <image class="cover" src="{{item.cover || '/images/default-cover.png'}}" mode="aspectFill" />
+          <view class="type-badge">{{item.type}}</view>
+        </view>
+        <view class="info">
+          <view class="title">{{item.title}}</view>
+          <view class="summary text-secondary text-sm mt-2" wx:if="{{item.summary}}">{{item.summary}}</view>
+          <view class="meta text-sm text-secondary mt-2">
+            <text wx:if="{{item.date}}">📅 {{item.date}}</text>
+            <text wx:if="{{item.location}}" class="ml">📍 {{item.location}}</text>
+          </view>
+          <view class="footer">
+            <view class="price" wx:if="{{item.price || item.fee}}">
+              <text class="num">{{item.price || item.fee}}</text>
+              <text class="unit">元</text>
+            </view>
+            <view class="tags">
+              <text class="tag" wx:for="{{item.tags}}" wx:for-item="t" wx:key="*this">{{t}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view wx:if="{{loading}}" class="loading">加载中...</view>
+      <view wx:elif="{{!hasMore && list.length > 0}}" class="end">— 没有更多了 —</view>
+      <view wx:elif="{{!loading && list.length === 0}}" class="empty">暂无内容</view>
+      <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="loadRetry" />
+    </view>
+  </block>
+
+  <!-- ===== 报名 tab ===== -->
+  <block wx:if="{{topTab === 'enrollments'}}">
+    <view class="list">
+      <view class="enroll-card" wx:for="{{enrollments}}" wx:key="id" data-id="{{item.content.id}}" bindtap="goEnrollDetail">
+        <image wx:if="{{item.content.cover}}" class="enroll-cover" src="{{item.content.cover}}" mode="aspectFill" />
+        <view class="enroll-info">
+          <view class="enroll-title">{{item.content.title}}</view>
+          <view class="enroll-meta">{{item.typeLabel}} · {{item.content.date || ''}} {{item.content.location || ''}}</view>
+          <view class="enroll-status {{item.status}}">{{item.statusLabel}} · {{item.createdAt}}</view>
+        </view>
+      </view>
+      <view wx:if="{{eLoading}}" class="loading">加载中...</view>
+      <view wx:elif="{{!eHasMore && enrollments.length > 0}}" class="end">— 没有更多了 —</view>
+      <view wx:elif="{{!eLoading && enrollments.length === 0}}" class="empty">暂无报名记录</view>
+    </view>
+  </block>
 </view>

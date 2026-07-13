@@ -1,0 +1,236 @@
+<view class="page">
+  <!-- tab 头 -->
+  <view class="tab-bar">
+    <view class="tab {{tab === 'goal' ? 'active' : ''}}" data-tab="goal" bindtap="onSwitchTab">目标</view>
+    <view class="tab {{tab === 'certificate' ? 'active' : ''}}" data-tab="certificate" bindtap="onSwitchTab">证书</view>
+    <view class="tab {{tab === 'annual' ? 'active' : ''}}" data-tab="annual" bindtap="onSwitchTab">年报</view>
+    <view class="tab {{tab === 'weekly' ? 'active' : ''}}" data-tab="weekly" bindtap="onSwitchTab">周报</view>
+  </view>
+
+  <!-- ===== 目标 tab ===== -->
+  <view wx:if="{{tab === 'goal'}}">
+    <view class="loading" wx:if="{{goalLoading}}">加载中...</view>
+    <view wx:elif="{{goals.length === 0}}" class="empty">
+      <view class="empty-text">还没有目标</view>
+      <view class="empty-tip">设定一个月度或年度目标吧</view>
+    </view>
+    <view wx:else class="list">
+      <view class="goal-card {{item.completed ? 'completed' : ''}}" wx:for="{{goals}}" wx:key="id">
+        <view class="goal-head">
+          <view class="goal-type">{{item.typeLabel}}</view>
+          <view class="goal-title">{{item.title || item.typeLabel}}</view>
+          <view class="goal-badge" wx:if="{{item.completed}}">✓ 达成</view>
+        </view>
+        <view class="progress">
+          <view class="progress-bar">
+            <view class="progress-fill {{item.completed ? 'done' : ''}}" style="width: {{item.percent > 100 ? 100 : item.percent}}%;"></view>
+          </view>
+          <view class="progress-text">
+            <text class="current">{{item.currentDistance}}</text> / {{item.targetDistance}} km · {{item.percent}}%
+          </view>
+        </view>
+        <view class="goal-actions" wx:if="{{item.status === 'active'}}">
+          <view class="remove-btn" data-id="{{item.id}}" bindtap="onRemoveGoal">删除</view>
+        </view>
+      </view>
+    </view>
+    <view class="fab" bindtap="onAddGoal">+ 设定目标</view>
+  </view>
+
+  <!-- ===== 证书 tab ===== -->
+  <view wx:if="{{tab === 'certificate'}}">
+    <view class="loading" wx:if="{{certLoading}}">加载中...</view>
+    <block wx:elif="{{certs}}">
+      <view class="cert-summary">总跑量 {{certs.totalDistance}} km · {{certs.totalCheckins}} 次打卡</view>
+
+      <!-- 下一里程碑 -->
+      <view class="next-card" wx:if="{{certs.nextMilestone}}">
+        <view class="next-title">下一个里程碑</view>
+        <view class="next-name">{{certs.nextMilestone.title}} · {{certs.nextMilestone.km}} km</view>
+        <view class="next-progress">
+          <view class="next-bar"><view class="next-fill" style="width: {{nextPercent}}%;"></view></view>
+          <text class="next-pct">{{nextPercent}}%</text>
+        </view>
+        <view class="next-desc">{{certs.totalDistance}} / {{certs.nextMilestone.km}} km</view>
+      </view>
+
+      <!-- 里程碑证书 -->
+      <view class="section">
+        <view class="section-title">🏆 里程碑证书（{{certs.milestones.length}}）</view>
+        <view wx:if="{{certs.milestones.length === 0}}" class="empty-inline">暂无，继续跑！</view>
+        <view class="cert-card milestone" wx:for="{{certs.milestones}}" wx:key="km">
+          <view class="cert-icon">🏆</view>
+          <view class="cert-info">
+            <view class="cert-name">{{item.title}}</view>
+            <view class="cert-desc">{{item.desc}}</view>
+            <view class="cert-meta">已跑 {{item.currentKm}} km</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 赛事证书 -->
+      <view class="section">
+        <view class="section-title">🏅 赛事证书（{{certs.marathons.length}}）</view>
+        <view wx:if="{{certs.marathons.length === 0}}" class="empty-inline">暂无，去报名一场马拉松</view>
+        <view class="cert-card marathon" wx:for="{{certs.marathons}}" wx:key="enrollmentId">
+          <image wx:if="{{item.cover}}" class="cert-cover" src="{{item.cover}}" mode="aspectFill" />
+          <view class="cert-info">
+            <view class="cert-name">{{item.title}}</view>
+            <view class="cert-meta" wx:if="{{item.date || item.location}}">{{item.date}} {{item.location}}</view>
+            <view class="cert-status">{{item.status === 'confirmed' ? '已确认' : '已报名'}}</view>
+          </view>
+        </view>
+      </view>
+
+      <!-- 自定义里程碑 -->
+      <view class="section">
+        <view class="section-title">🎯 自定义里程碑</view>
+        <view class="custom-list">
+          <view class="custom-item" wx:for="{{customMilestones}}" wx:key="km">
+            <text class="custom-icon">{{item.icon || '🎯'}}</text>
+            <text class="custom-text">{{item.km}} km · {{item.title}}</text>
+            <view class="custom-del" data-km="{{item.km}}" bindtap="onDeleteCustom">×</view>
+          </view>
+        </view>
+        <view class="custom-add" bindtap="onAddCustom">+ 添加自定义里程碑</view>
+      </view>
+
+      <view class="footer-tip">里程碑证书基于总跑量自动颁发 · 赛事证书需报名马拉松</view>
+    </block>
+  </view>
+
+  <!-- ===== 年报 tab ===== -->
+  <view wx:if="{{tab === 'annual'}}">
+    <view class="loading" wx:if="{{annualLoading}}">加载中...</view>
+    <block wx:elif="{{report}}">
+      <view class="year-row">
+        <view class="year-arrow" bindtap="prevYear">‹</view>
+        <view class="year-text">{{report.year}} 年度报告</view>
+        <view class="year-arrow" bindtap="nextYear">›</view>
+      </view>
+
+      <view class="hero-card">
+        <view class="hero-distance">{{report.yearDistance}}<text class="u">km</text></view>
+        <view class="hero-label">{{report.year}} 年总跑量</view>
+        <view class="hero-grid">
+          <view class="hero-item"><text class="v">{{report.yearCheckins}}</text><text class="u">次打卡</text></view>
+          <view class="hero-item"><text class="v">{{durationHour}}</text><text class="u">小时</text></view>
+          <view class="hero-item"><text class="v">{{report.avgPace || '-'}}</text><text class="u">配速/km</text></view>
+          <view class="hero-item"><text class="v">{{report.activeDays}}</text><text class="u">活跃天</text></view>
+        </view>
+      </view>
+
+      <view class="section">
+        <view class="section-title">月度跑量</view>
+        <view class="chart">
+          <view class="chart-row" wx:for="{{report.monthly}}" wx:key="month">
+            <text class="chart-label">{{item.month}}月</text>
+            <view class="chart-bar-bg">
+              <view class="chart-bar" style="width: {{maxMonthly > 0 ? (item.distance / maxMonthly * 100) : 0}}%;"></view>
+            </view>
+            <text class="chart-val">{{item.distance}}</text>
+          </view>
+        </view>
+      </view>
+
+      <view class="section" wx:if="{{report.longestRun}}">
+        <view class="highlight-card">
+          <view class="highlight-label">🏆 最长单次</view>
+          <view class="highlight-val">{{report.longestRun.distance}} km</view>
+          <view class="highlight-date">{{report.longestRun.date}}</view>
+        </view>
+      </view>
+
+      <view class="footer-tip" wx:if="{{report.yearCheckins === 0}}">{{report.year}} 年还没有打卡，去运动页打卡吧</view>
+      <view class="footer-tip" wx:else>数据来源：手动打卡 + 佳明导入 · 点右上角分享战报</view>
+    </block>
+    <view class="empty" wx:else>暂无数据</view>
+  </view>
+
+  <!-- ===== 周报 tab ===== -->
+  <view wx:if="{{tab === 'weekly'}}">
+    <view class="loading" wx:if="{{weeklyLoading}}">加载中...</view>
+    <view wx:elif="{{reports.length === 0}}" class="empty">
+      <view class="empty-text">本周还没有周报</view>
+      <view class="empty-tip">加入一个跑群开始打卡吧</view>
+    </view>
+    <view wx:else class="list">
+      <view class="weekly-card" wx:for="{{reports}}" wx:key="groupId" data-id="{{item.groupId}}" bindtap="onSelectReport">
+        <view class="weekly-head">
+          <view class="weekly-name">{{item.groupName}}</view>
+          <view class="weekly-period">{{item.startDate}} ~ {{item.endDate}}</view>
+        </view>
+        <view class="weekly-stats">
+          <view class="w-stat"><text class="w-v">{{item.totalDistance}}</text><text class="w-l">公里</text></view>
+          <view class="w-stat"><text class="w-v">{{item.totalCheckins}}</text><text class="w-l">打卡</text></view>
+          <view class="w-stat"><text class="w-v">{{item.totalMembers}}</text><text class="w-l">参与</text></view>
+        </view>
+        <view class="weekly-champion" wx:if="{{item.champion}}">🏆 {{item.champion.nickname}} · {{item.champion.distance}} km</view>
+        <view class="weekly-action">查看战报 ›</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 目标添加弹层 -->
+  <view class="mask" wx:if="{{goalFormVisible}}" bindtap="closeGoalForm">
+    <view class="form-panel" catchtap="">
+      <view class="form-title">设定目标</view>
+      <view class="form-item">
+        <text class="label">类型</text>
+        <view class="type-chips">
+          <view class="type-chip {{goalForm.type === 'monthly' ? 'active' : ''}}" data-type="monthly" bindtap="onSelectType">月度</view>
+          <view class="type-chip {{goalForm.type === 'yearly' ? 'active' : ''}}" data-type="yearly" bindtap="onSelectType">年度</view>
+          <view class="type-chip {{goalForm.type === 'custom' ? 'active' : ''}}" data-type="custom" bindtap="onSelectType">自定义</view>
+        </view>
+      </view>
+      <view class="form-item">
+        <text class="label">目标距离 (km)</text>
+        <input class="input" type="number" value="{{goalForm.targetDistance}}" bindinput="onInputTarget" />
+      </view>
+      <view class="form-item">
+        <text class="label">标题（选填）</text>
+        <input class="input" value="{{goalForm.title}}" bindinput="onInputTitle" placeholder="如 夏季百公里" />
+      </view>
+      <view class="form-actions">
+        <button class="btn-cancel" bindtap="closeGoalForm">取消</button>
+        <van-button type="primary" block bindtap="onSubmitGoal" loading="{{goalSubmitting}}">创建</van-button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 自定义里程碑弹层 -->
+  <view class="mask" wx:if="{{showCustomForm}}" bindtap="closeCustomForm">
+    <view class="form-panel" catchtap="">
+      <view class="form-title">自定义里程碑</view>
+      <view class="form-item">
+        <text class="label">里程 (km)</text>
+        <input class="input" type="number" value="{{customForm.km}}" bindinput="onCustomKm" placeholder="如 888" />
+      </view>
+      <view class="form-item">
+        <text class="label">标题</text>
+        <input class="input" value="{{customForm.title}}" bindinput="onCustomTitle" placeholder="如 发发发" />
+      </view>
+      <view class="form-item">
+        <text class="label">图标（可选）</text>
+        <input class="input" value="{{customForm.icon}}" bindinput="onCustomIcon" placeholder="如 🎯" />
+      </view>
+      <view class="form-actions">
+        <button class="btn-cancel" bindtap="closeCustomForm">取消</button>
+        <van-button type="primary" block bindtap="onSubmitCustom" loading="{{customSubmitting}}">添加</van-button>
+      </view>
+    </view>
+  </view>
+
+  <!-- 周报战报 Canvas 弹层 -->
+  <view class="poster-mask" wx:if="{{current}}" bindtap="onClosePoster">
+    <view class="poster-card" catchtap="">
+      <view class="poster-canvas-wrap">
+        <canvas type="2d" id="posterCanvas" class="poster-canvas" style="width: 750rpx; height: 1200rpx;" />
+      </view>
+      <view class="poster-actions">
+        <button class="btn-cancel" bindtap="onSubscribe">订阅下周报</button>
+        <van-button type="primary" block bindtap="onSavePoster">保存到相册</van-button>
+      </view>
+    </view>
+  </view>
+</view>

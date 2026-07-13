@@ -184,10 +184,9 @@ Page({
     this.setData({ publishVisible: false });
   },
 
-  /** V0.1.36 点话题标签 → 跳话题页 */
-  onTapTopic(e: WechatMiniprogram.TouchEvent) {
-    const topic = e.currentTarget.dataset.topic as string;
-    if (topic) wx.navigateTo({ url: `/pages/topic/index?topic=${encodeURIComponent(topic)}` });
+  /** 话题标签点击（topic 页已删，话题作纯文本展示）*/
+  onTapTopic(_e: WechatMiniprogram.TouchEvent) {
+    // topic 页已合并，保留方法避免 wxml bindtap 报错
   },
 
   /** 点赞/取消（乐观更新） */

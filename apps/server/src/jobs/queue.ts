@@ -241,7 +241,7 @@ export async function enqueueLudongSync() {
 let started = false;
 let schedulerHandle: NodeJS.Timeout | null = null;
 
-import { runWeeklyReportScheduler } from './scheduler.js';
+import { runWeeklyReportScheduler, runDailyReportScheduler } from './scheduler.js';
 
 export async function startJobs() {
   if (started) return;
@@ -253,9 +253,13 @@ export async function startJobs() {
     runWeeklyReportScheduler(env.NODE_ENV === 'production').catch((err) => {
       logger.error({ err }, 'weekly-report scheduler tick failed');
     });
+    runDailyReportScheduler(env.NODE_ENV === 'production').catch((err) => {
+      logger.error({ err }, 'daily-report scheduler tick failed');
+    });
   }, 60_000);
   // 启动时也跑一次（防止上次宕机错过）
   runWeeklyReportScheduler(false).catch(() => {});
+  runDailyReportScheduler(false).catch(() => {});
   // 平台证书刷新（12h repeatable + 启动预热）
   scheduleRefreshCerts().catch((err) => {
     logger.error({ err }, 'schedule refresh-certs failed');

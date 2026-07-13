@@ -9,15 +9,11 @@
   <view class="text mt-2">
     我们非常重视您的隐私。本服务收集的信息包括：
   </view>
-  <view class="text mt-2">
-    1. <text class="bold">微信授权信息</text>：openid、unionid、昵称、头像（用于账号登录与展示）
-  </view>
-  <view class="text mt-2">
-    2. <text class="bold">运动数据</text>：距离、时长、配速、心率、步频（您主动提交的打卡数据）
-  </view>
-  <view class="text mt-2">
-    3. <text class="bold">设备信息</text>：设备型号、操作系统版本（用于问题排查）
-  </view>
+  <van-cell-group>
+    <van-cell title="微信授权信息" label="openid、unionid、昵称、头像（用于账号登录与展示）" />
+    <van-cell title="运动数据" label="距离、时长、配速、心率、步频（您主动提交的打卡数据）" />
+    <van-cell title="设备信息" label="设备型号、操作系统版本（用于问题排查）" />
+  </van-cell-group>
   <view class="text mt-4">
     上述信息仅用于为您提供核心功能，<text class="bold">不会用于商业广告或出售给第三方</text>。
     您可随时通过「我的-退出登录」删除账号及关联数据。

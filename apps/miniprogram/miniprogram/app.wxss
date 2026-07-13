@@ -2,9 +2,9 @@
 
 page {
   /* ===== 设计变量（青沐品牌色） ===== */
-  --brand: #0FAF8E;
+  --brand: #2D9D78;
   --brand-light: #4FC3A1;
-  --brand-dark: #0A8A6E;
+  --brand-dark: #1a7a5a;
   --text-primary: #1a1a1a;
   --text-secondary: #666666;
   --text-tertiary: #999999;
@@ -14,6 +14,16 @@ page {
   --danger: #ff4d4f;
   --warning: #faad14;
   --success: #52c41a;
+
+  /* V0.1.144 Vant Weapp 主题（品牌色 #2D9D78）*/
+  --button-primary-background-color: #2D9D78;
+  --button-primary-border-color: #2D9D78;
+  --tabs-default-color: #2D9D78;
+  --tabs-bottom-bar-color: #2D9D78;
+  --tab-active-text-color: #2D9D78;
+  --switch-on-background-color: #2D9D78;
+  --tag-primary-background-color: #2D9D78;
+  --cell-right-icon-color: #ccc;
 
   font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   font-size: 28rpx;

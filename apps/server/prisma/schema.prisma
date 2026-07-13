@@ -78,6 +78,7 @@ model User {
   bodyCompositionRecords BodyCompositionRecord[] // V0.1.124 体脂秤数据（BLE 小米体脂秤）
   corosRawEvents         CorosRawEvent[] // V0.1.130 COROS Terra webhook 原始数据
   conversationTurns      ConversationTurn[] // V0.1.139 AI 私教对话（多轮记忆）
+  dailyReports           DailyReport[] // V0.1.144 每日 AI 健康简报（健康分数+AI 解读）
   withdrawalRequests     WithdrawalRequest[] // V0.1.105 提现申请（pending/approved/rejected）
   groupBuyMembers        GroupBuyMember[] // V0.1.37 团购参与记录
   // 分销（V0.1.24）
@@ -1105,4 +1106,25 @@ model ConversationTurn {
 
   @@index([userId, conversationId, createdAt])
   @@index([conversationId])
+}
+
+// ===== 每日 AI 健康简报（V0.1.144，原型图"今日"tab 核心）=====
+// 健康分数（0-100，聚合步数/心率/睡眠算）+ AI 解读文本（每日 1 次生成 + 缓存）
+// @@unique([userId, date]) 防重；onDelete Cascade（User 删→简报级联）
+model DailyReport {
+  id          String   @id @default(cuid())
+  userId      String
+  date        String // YYYY-MM-DD（CN 时区）
+  healthScore Int // 0-100
+  reportText  String // AI 解读文本
+  alertText   String? // AI 主动提醒（睡眠不足/心率异常等）
+  steps       Int @default(0) // 当日步数（趋势对比用）
+  restingHr   Int? // 静息心率
+  sleepHours  Float? // 昨晚睡眠时长
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
 }

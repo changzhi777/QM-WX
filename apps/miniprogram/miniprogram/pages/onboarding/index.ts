@@ -84,7 +84,7 @@ Page({
   // ===== Step 2 设备引导 =====
 
   goDeviceBind() {
-    wx.navigateTo({ url: '/pages/device-bind/index' });
+    wx.navigateTo({ url: '/pages/device/index' });
   },
   nextFromDevice() {
     this.setData({ step: 3 });
@@ -96,7 +96,7 @@ Page({
   // ===== Step 3 数据导入 =====
 
   goImportGuide() {
-    wx.navigateTo({ url: '/pages/data-import-guide/index' });
+    wx.navigateTo({ url: '/pages/device/index?tab=import' });
   },
 
   /** V0.1.44 同步微信运动（30 天历史步数）

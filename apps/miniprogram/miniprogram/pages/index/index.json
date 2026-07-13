@@ -1,10 +1,12 @@
 {
-  "navigationBarTitleText": "首页",
+  "navigationBarTitleText": "今日",
   "enablePullDownRefresh": true,
   "usingComponents": {
-    "feature-gate": "/components/feature-gate/index",
     "privacy-popup": "/components/privacy-popup/index",
     "error-state": "/components/error-state/index",
-    "entry-grid": "/components/entry-grid/index"
+    "van-button": "@vant/weapp/button/index",
+    "van-cell": "@vant/weapp/cell/index",
+    "van-cell-group": "@vant/weapp/cell-group/index",
+    "van-icon": "@vant/weapp/icon/index"
   }
 }

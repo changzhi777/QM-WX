@@ -45,7 +45,7 @@
       <view class="form-label">体重 (kg)</view>
       <input class="form-input" type="digit" placeholder="选填" value="{{weight}}" bindinput="onWeightInput"/>
     </view>
-    <button class="next-btn" bindtap="nextFromProfile">下一步</button>
+    <van-button type="primary" block bindtap="nextFromProfile" custom-style="margin-top:32rpx">下一步</van-button>
   </view>
 
   <!-- Step 2 设备 -->
@@ -59,7 +59,7 @@
       </view>
       <view class="guide-arrow">›</view>
     </view>
-    <button class="next-btn" bindtap="nextFromDevice">下一步</button>
+    <van-button type="primary" block bindtap="nextFromDevice" custom-style="margin-top:32rpx">下一步</van-button>
     <view class="skip-btn" bindtap="skipDevice">跳过</view>
   </view>
 
@@ -88,7 +88,7 @@
       </view>
       <view class="guide-arrow">›</view>
     </view>
-    <button class="next-btn" bindtap="nextFromImport">下一步</button>
+    <van-button type="primary" block bindtap="nextFromImport" custom-style="margin-top:32rpx">下一步</van-button>
     <view class="skip-btn" bindtap="skipImport">跳过</view>
   </view>
 

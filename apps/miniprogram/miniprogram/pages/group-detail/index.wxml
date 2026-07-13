@@ -56,17 +56,9 @@
   <!-- V0.1.42 成员列表 -->
   <view class="list bg-white m-2 rounded-lg shadow" wx:if="{{memberList.length > 0}}">
     <view class="section-title">群成员（{{memberList.length}}）</view>
-    <view class="member-item" wx:for="{{memberList}}" wx:key="userId">
-      <image class="avatar" src="{{item.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
-      <view class="info">
-        <view class="name">{{item.nickname}}<text wx:if="{{item.role === 'owner'}}" class="role-tag">群主</text></view>
-        <view class="meta">加入于 {{item.joinedAt}}</view>
-      </view>
-      <view class="stats">
-        <view class="distance">{{item.monthDistance}} km</view>
-        <view class="points">本月</view>
-      </view>
-    </view>
+    <van-cell-group>
+      <van-cell wx:for="{{memberList}}" wx:key="userId" title="{{item.nickname}}{{item.role === 'owner' ? ' · 群主' : ''}}" label="加入于 {{item.joinedAt}}" value="{{item.monthDistance}} km 本月" />
+    </van-cell-group>
   </view>
 
   <view class="p-4"><button class="btn-cancel" bindtap="onTapQuit">退出群</button></view>

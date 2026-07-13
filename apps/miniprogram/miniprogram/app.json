@@ -4,66 +4,43 @@
     "pages/sport/index",
     "pages/mine/index",
     "pages/profile/index",
-    "pages/bind-apps/index",
     "pages/group-detail/index",
     "pages/content-list/index",
     "pages/content-detail/index",
-    "pages/my-enrollments/index",
-    "pages/weekly-report/index",
     "pages/agreement/index",
-    "pages/garmin-data/index",
     "pages/ranking/index",
     "pages/health/index",
-    "pages/device-bind/index",
+    "pages/device/index",
     "pages/training/index",
     "pages/shoes/index",
-    "pages/shoes-detail/index",
-    "pages/shoes-compare/index",
-    "pages/admin-race-result/index",
-    "pages/annual-report/index",
-    "pages/goal/index",
-    "pages/certificate/index",
-    "pages/favorite/index",
+    "pages/runner/index",
     "pages/feed/index",
-    "pages/notification/index",
     "pages/user/index",
-    "pages/family/index",
-    "pages/hot/index",
-    "pages/topic/index",
-    "pages/health-history/index",
-    "pages/data-import-guide/index",
     "pages/onboarding/index",
-    "pages/werun/index",
     "pages/ai-coach/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",
-    "navigationBarBackgroundColor": "#0FAF8E",
-    "navigationBarTitleText": "首页",
+    "navigationBarBackgroundColor": "#2D9D78",
+    "navigationBarTitleText": "今日",
     "navigationBarTextStyle": "white",
-    "backgroundColor": "#f5f5f5"
+    "backgroundColor": "#f5f6f8"
   },
   "tabBar": {
     "color": "#999999",
-    "selectedColor": "#0FAF8E",
+    "selectedColor": "#2D9D78",
     "backgroundColor": "#ffffff",
     "borderStyle": "white",
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "首页",
+        "text": "今日",
         "iconPath": "images/tabbar/home.png",
         "selectedIconPath": "images/tabbar/home-active.png"
       },
       {
-        "pagePath": "pages/sport/index",
-        "text": "运动",
-        "iconPath": "images/tabbar/sport.png",
-        "selectedIconPath": "images/tabbar/sport-active.png"
-      },
-      {
         "pagePath": "pages/ai-coach/index",
-        "text": "AI 私教",
+        "text": "问AI",
         "iconPath": "images/tabbar/mall.png",
         "selectedIconPath": "images/tabbar/mall-active.png"
       },
@@ -76,6 +53,12 @@
     ]
   },
   "style": "v2",
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于显示您所在地点的天气和海拔信息"
+    }
+  },
+  "requiredPrivateInfos": ["getLocation"],
   "sitemapLocation": "sitemap.json",
   "lazyCodeLoading": "requiredComponents"
 }

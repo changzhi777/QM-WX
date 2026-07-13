@@ -41,14 +41,11 @@ Page({
     // V0.1.35 运动入口网格（14 项分 4 段，entry-grid 组件渲染，从 mine 分散到运动 tab）
     sportTools: [
       { icon: '👟', label: '我的跑鞋', url: '/pages/shoes/index' },
-      { icon: '🎯', label: '跑步目标', url: '/pages/goal/index' },
-      { icon: '🏆', label: '我的证书', url: '/pages/certificate/index' },
-      { icon: '📊', label: '年度报告', url: '/pages/annual-report/index' },
+      { icon: '📊', label: '跑者数据', url: '/pages/runner/index' },
     ],
     dataRanks: [
       { icon: '🏅', label: '我的榜单', url: '/pages/ranking/index' },
-      { icon: '📝', label: '跑群周报', url: '/pages/weekly-report/index' },
-      { icon: '📋', label: '佳明数据', url: '/pages/garmin-data/index' },
+      { icon: '📋', label: '佳明数据', url: '/pages/device/index?tab=garmin' },
     ],
     healthDevices: [
       { icon: '💊', label: '今日健康', url: '/pages/health/index' },
@@ -56,7 +53,6 @@ Page({
     ],
     socialEvents: [
       { icon: '📰', label: '运动动态', url: '/pages/feed/index' },
-      { icon: '⭐', label: '我的收藏', url: '/pages/favorite/index' },
       { icon: '📍', label: '赛事·本地', url: '/pages/content-list/index' },
     ],
   },

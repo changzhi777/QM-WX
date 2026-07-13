@@ -1,102 +1,91 @@
 <view class="page">
-  <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="loadData" />
+  <!-- 头部：渐变绿 + 问候 + 健康分数环 -->
+  <view class="today-header">
+    <view class="greeting">{{greeting}}，跑者 🏃</view>
+    <view class="date-weather" wx:if="{{dateStr}}">
+      <text class="date">{{dateStr}} {{weekday}}</text>
+      <text wx:if="{{weather}}" class="weather">{{weather.icon}} {{weather.city}} · {{weather.text}} {{weather.temperature}}°C</text>
+      <text wx:if="{{altitude !== null}}" class="altitude">🏔 {{altitude}}m</text>
+    </view>
+    <view class="location" wx:if="{{locationText}}">📍 {{locationText}}</view>
+    <view class="score-ring">
+      <view class="score-inner">
+        <view class="score-num">{{score.score || '--'}}</view>
+        <view class="score-label">健康分数</view>
+      </view>
+    </view>
+    <view class="trend" wx:if="{{score.trend}}">
+      <block wx:if="{{score.trend.diff > 0}}"><text class="up">↑ 较昨日 +{{score.trend.diff}}</text></block>
+      <block wx:elif="{{score.trend.diff < 0}}"><text class="down">↓ 较昨日 {{score.trend.diff}}</text></block>
+      <block wx:else><text>较昨日持平</text></block>
+    </view>
+  </view>
 
-  <block wx:if="{{!error}}">
-  <!-- Hero 品牌色渐变（V0.1.35 视觉锚点）-->
-  <view class="hero">
-    <block wx:if="{{isLogin && user}}">
-      <view class="hero-user" bindtap="goProfile">
-        <image class="hero-avatar" src="{{user.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
-        <view class="hero-info">
-          <view class="hero-name">{{user.nickname || '跑者'}}</view>
-          <view class="hero-desc">欢迎来到青沐运动 · 继续奔跑 🏃</view>
+  <view class="loading" wx:if="{{loading}}">加载中...</view>
+
+  <block wx:elif="{{report}}">
+    <!-- AI 解读卡 -->
+    <view class="ai-card">
+      <view class="ai-header">
+        <text class="ai-badge">✨ AI解读</text>
+        <text class="ai-title">今日身体简报</text>
+      </view>
+      <view class="ai-body">{{report.reportText}}</view>
+      <view class="ai-alert" wx:if="{{report.alertText}}">⚠️ {{report.alertText}}</view>
+      <view class="ai-footer">
+        <van-button type="primary" size="small" round bindtap="goAskAi">问 AI 详情 →</van-button>
+      </view>
+    </view>
+
+    <!-- 3 数据卡 -->
+    <view class="data-row" wx:if="{{score}}">
+      <view class="data-card">
+        <view class="icon">👟</view>
+        <view class="value">{{score.steps}}</view>
+        <view class="label">今日步数</view>
+      </view>
+      <view class="data-card">
+        <view class="icon">❤️</view>
+        <view class="value">{{score.restingHr || '--'}}</view>
+        <view class="label">静息心率</view>
+      </view>
+      <view class="data-card">
+        <view class="icon">😴</view>
+        <view class="value">{{score.sleepHours || '--'}}</view>
+        <view class="label">昨晚睡眠</view>
+      </view>
+    </view>
+
+    <!-- 本周趋势 -->
+    <view class="section-title" wx:if="{{weekScores.length}}">本周趋势 <text class="more">健康分数 7 日</text></view>
+    <view class="week-chart" wx:if="{{weekScores.length}}">
+      <view class="bars">
+        <view class="bar-item" wx:for="{{weekScores}}" wx:key="index">
+          <view class="bar" style="height:{{item}}%"></view>
         </view>
       </view>
-    </block>
-    <block wx:else>
-      <view class="hero-title">欢迎来到青沐运动</view>
-      <view class="hero-desc">运动 · 社群 · 商城</view>
-      <view class="hero-actions">
-        <view class="link" bindtap="goMine">登录享更多 →</view>
-      </view>
-    </block>
-  </view>
-
-  <!-- 本周数据卡（覆盖 hero 底部，悬浮效果）-->
-  <view class="stats-card" wx:if="{{isLogin}}">
-    <view class="stats-label">本周数据</view>
-    <view class="stats-row" bindtap="goSport">
-      <view class="stats-item">
-        <view class="stats-num">{{userStats.totalDistance}}</view>
-        <view class="stats-unit">公里</view>
-      </view>
-      <view class="stats-item">
-        <view class="stats-num">{{userStats.totalCheckins}}</view>
-        <view class="stats-unit">打卡</view>
-      </view>
-      <view class="stats-item">
-        <view class="stats-num">{{userStats.totalPoints}}</view>
-        <view class="stats-unit">积分</view>
-      </view>
-      <view class="stats-item">
-        <view class="stats-num">{{userStats.avgPace || '-'}}</view>
-        <view class="stats-unit">配速</view>
-      </view>
     </view>
-  </view>
 
-  <!-- V0.1.43 今日健康卡（心率/血氧/步数，BLE + 微信运动）-->
-  <view class="health-card" wx:if="{{isLogin && (todayHealth.hr || todayHealth.spo2 || todayHealth.steps)}}" bindtap="goHealthHistory">
-    <view class="health-header">
-      <view class="health-label">今日健康</view>
-      <view class="health-more">历史 ›</view>
+    <!-- 历史 AI 报告 -->
+    <view class="section-title" wx:if="{{history.length}}">历史 AI 报告</view>
+    <view class="history-list" wx:if="{{history.length}}">
+      <van-cell-group>
+        <van-cell
+          wx:for="{{history}}"
+          wx:key="id"
+          title="{{item.date}}"
+          label="{{item.reportText}}"
+          value="{{item.healthScore}} 分"
+        />
+      </van-cell-group>
     </view>
-    <view class="health-row">
-      <view class="health-item" wx:if="{{todayHealth.hr}}">
-        <view class="health-icon">❤️</view>
-        <view class="health-num">{{todayHealth.hr.value}}</view>
-        <view class="health-unit">心率 bpm</view>
-      </view>
-      <view class="health-item" wx:if="{{todayHealth.spo2}}">
-        <view class="health-icon">🩸</view>
-        <view class="health-num">{{todayHealth.spo2.value}}</view>
-        <view class="health-unit">血氧 %</view>
-      </view>
-      <view class="health-item" wx:if="{{todayHealth.steps}}">
-        <view class="health-icon">👟</view>
-        <view class="health-num">{{todayHealth.steps.value}}</view>
-        <view class="health-unit">步数</view>
-      </view>
-      <view class="health-item" wx:if="{{todayHealth.sleepXiaomi}}">
-        <view class="health-icon">💤</view>
-        <view class="health-num">{{todayHealth.sleepXiaomi.durationHours || '-'}}</view>
-        <view class="health-unit">睡眠 h</view>
-      </view>
-    </view>
-  </view>
-
-  <!-- V0.1.43 数据导入指南（按品牌，国内源）-->
-  <view class="redirect-card" bindtap="goImportGuide">
-    <view class="redirect-row">
-      <view class="redirect-icon">📥</view>
-      <view class="redirect-text">
-        <view class="redirect-title">数据导入指南</view>
-        <view class="redirect-desc">佳明 · 小米 · 微信运动 · 蓝牙（按品牌图文步骤）</view>
-      </view>
-      <view class="redirect-arrow">›</view>
-    </view>
-  </view>
-
-  <!-- 快捷入口（高频 page，entry-grid 渲染）-->
-  <entry-grid title="⚡ 快捷入口" items="{{quickEntries}}" />
-
-  <feature-gate flag="wallet">
-    <view class="wallet-card" bindtap="goMine">
-      <view class="wallet-text">💰 我的钱包</view>
-      <view class="wallet-arrow">›</view>
-    </view>
-  </feature-gate>
   </block>
+
+  <view class="empty" wx:else>
+    <view class="empty-icon">📊</view>
+    <view>暂无健康数据</view>
+    <view class="empty-tip">绑定设备后查看今日简报</view>
+  </view>
 
   <privacy-popup visible="{{showPrivacy}}" bind:agree="onPrivacyAgree" />
 </view>

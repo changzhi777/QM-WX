@@ -23,6 +23,8 @@ try {
   const shutdown = async (signal: string) => {
     app.log.info(`${signal} received, shutting down...`);
     await stopJobs();
+    const { closeMqtt } = await import('./infra/mqtt.js');
+    await closeMqtt();
     await app.close();
     process.exit(0);
   };

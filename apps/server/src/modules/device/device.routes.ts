@@ -125,6 +125,10 @@ export async function deviceRoutes(app: FastifyInstance) {
           const input = (payload ?? {}) as { start: string; end: string };
           return { code: 0, data: await deviceService.syncFromTerra(userId, input) };
         }
+        case 'authList': {
+          // V0.1.144 数据授权管理（各数据源授权状态）
+          return { code: 0, data: await deviceService.authList(userId) };
+        }
         default:
           return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
       }

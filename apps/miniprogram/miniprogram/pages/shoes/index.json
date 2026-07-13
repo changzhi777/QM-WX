@@ -1,4 +1,10 @@
 {
   "navigationBarTitleText": "我的跑鞋",
-  "usingComponents": {}
+  "usingComponents": {
+    "mileage-chart": "/components/mileage-chart/index",
+    "van-button": "@vant/weapp/button/index",
+    "van-cell": "@vant/weapp/cell/index",
+    "van-cell-group": "@vant/weapp/cell-group/index",
+    "van-icon": "@vant/weapp/icon/index"
+  }
 }

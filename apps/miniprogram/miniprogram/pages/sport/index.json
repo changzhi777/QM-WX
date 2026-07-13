@@ -2,6 +2,10 @@
   "navigationBarTitleText": "运动",
   "usingComponents": {
     "error-state": "/components/error-state/index",
-    "entry-grid": "/components/entry-grid/index"
+    "entry-grid": "/components/entry-grid/index",
+    "van-button": "@vant/weapp/button/index",
+    "van-cell": "@vant/weapp/cell/index",
+    "van-cell-group": "@vant/weapp/cell-group/index",
+    "van-icon": "@vant/weapp/icon/index"
   }
 }

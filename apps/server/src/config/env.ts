@@ -64,6 +64,13 @@ const EnvSchema = z.object({
   LLM_BASE_URL: z.string().optional(),
   LLM_API_KEY: z.string().optional(),
   LLM_MODEL: z.string().optional(),
+
+  // V0.1.144 MQTT（EMQX Cloud Serverless，AI 简报推送；缺省走 API 拉）
+  MQTT_HOST: z.string().default('rd133da1.ala.cn-hangzhou.emqxsl.cn'),
+  MQTT_PORT: z.coerce.number().default(8883),
+  MQTT_USERNAME: z.string().optional(),
+  MQTT_PASSWORD: z.string().optional(),
+  MQTT_CA_PATH: z.string().default('certs/emqxsl-ca.crt'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

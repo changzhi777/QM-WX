@@ -8,6 +8,9 @@
       <view class="stat" wx:if="{{stats.retiringSoonCount > 0}}">
         <text class="v warn">{{stats.retiringSoonCount}}</text><text class="u">待更换</text>
       </view>
+      <view class="stat compare-btn" wx:if="{{stats.activeCount >= 2}}" catchtap="onComparePick">
+        <text class="v" style="font-size:28rpx;">对比 2 双 ›</text>
+      </view>
     </view>
   </view>
 
@@ -19,7 +22,7 @@
     </view>
 
     <view
-      class="shoe-card {{item.status === 'retired' ? 'retired' : ''}}"
+      class="shoe-card {{item.status === 'retired' ? 'retired' : ''}} {{selectedShoeId === item.id ? 'expanded' : ''}}"
       wx:for="{{shoes}}"
       wx:key="id"
       data-id="{{item.id}}"
@@ -49,10 +52,87 @@
       <view class="shoe-tip {{item.healthRatio >= 100 ? 'red' : (item.healthRatio >= 70 ? 'yellow' : 'green')}}">
         <block wx:if="{{item.healthRatio >= 100}}">⚠️ 已超阈值，建议尽快更换（防受伤）</block>
         <block wx:elif="{{item.healthRatio >= 70}}">⏰ 接近更换阈值，注意规划</block>
-        <block wx:else>✓ 状态良好</block>
+        <block wx:else>✓ 状态良好 · 点查看详情</block>
       </view>
 
-      <!-- 操作按钮（点卡→详情 / 长按→菜单 / 退役） -->
+      <!-- 展开详情区（V0.1.143 合并 shoes-detail） -->
+      <block wx:if="{{selectedShoeId === item.id}}">
+        <view class="detail-loading" wx:if="{{detailLoading}}">加载中...</view>
+        <block wx:elif="{{detail}}">
+          <view class="detail-section">
+            <view class="detail-meta" wx:if="{{detail.purchasedAt}}">购入：{{detail.purchasedAt}} · 已使用 {{detail.daysSincePurchase}} 天</view>
+            <view class="detail-meta" wx:if="{{detail.note}}">备注：{{detail.note}}</view>
+          </view>
+
+          <!-- 阈值编辑器 -->
+          <view class="detail-section">
+            <view class="detail-title">更换阈值（km）</view>
+            <view class="threshold-current">
+              <text class="num">{{detail.thresholdKm}}</text>
+              <text class="unit">km</text>
+            </view>
+            <slider
+              min="100" max="2000" step="50"
+              value="{{detail.thresholdKm}}"
+              bindchanging="onThresholdChanging"
+              bindchange="onThresholdChange"
+              activeColor="#0FAF8E"
+              block-size="20"
+              show-value="{{false}}"
+              disabled="{{savingThreshold}}"
+            />
+            <view class="threshold-meta">
+              <text>100</text>
+              <text class="draft">待保存：{{thresholdDraft}} km</text>
+              <text>2000</text>
+            </view>
+          </view>
+
+          <!-- 累计统计 -->
+          <view class="detail-section stats-grid">
+            <view class="stat-cell">
+              <text class="stat-num">{{detail.currentKm}}</text>
+              <text class="stat-label">当前里程(km)</text>
+            </view>
+            <view class="stat-cell">
+              <text class="stat-num health-{{detail.healthRatio < 70 ? 'good' : detail.healthRatio <= 100 ? 'warn' : 'bad'}}">{{detail.healthRatio}}%</text>
+              <text class="stat-label">健康度</text>
+            </view>
+            <view class="stat-cell">
+              <text class="stat-num">{{detail.totalCheckins}}</text>
+              <text class="stat-label">累计打卡</text>
+            </view>
+            <view class="stat-cell">
+              <text class="stat-num">{{mileageHistory.totalKm}}</text>
+              <text class="stat-label">合计里程(km)</text>
+            </view>
+          </view>
+
+          <!-- 里程曲线 -->
+          <view class="detail-section">
+            <view class="detail-title-row">
+              <text class="detail-title">里程曲线</text>
+              <view class="period-tabs">
+                <view class="tab {{period === 'weekly' ? 'active' : ''}}" data-period="weekly" bindtap="onPeriodChange">周</view>
+                <view class="tab {{period === 'monthly' ? 'active' : ''}}" data-period="monthly" bindtap="onPeriodChange">月</view>
+              </view>
+            </view>
+            <view wx:if="{{mileageHistory.totalCheckins === 0}}" class="detail-empty">
+              <text>暂无里程数据</text>
+              <text class="detail-empty-tip">去 [sport 打卡] 试试，选这双跑鞋</text>
+            </view>
+            <block wx:else>
+              <mileage-chart
+                points="{{period === 'weekly' ? mileageHistory.weekly : mileageHistory.monthly}}"
+                width="{{chartWidth}}"
+                height="{{chartHeight}}"
+              />
+            </block>
+          </view>
+        </block>
+      </block>
+
+      <!-- 操作按钮 -->
       <view class="shoe-actions" wx:if="{{item.status === 'active'}}">
         <view class="retire-btn" data-id="{{item.id}}" catchtap="onRetire">退役</view>
       </view>
@@ -63,6 +143,36 @@
 
   <!-- 悬浮添加按钮 -->
   <view class="fab" bindtap="onAdd">+ 添加跑鞋</view>
+
+  <!-- 对比弹层（V0.1.143 合并 shoes-compare） -->
+  <view class="mask" wx:if="{{compareVisible}}" bindtap="closeCompare">
+    <view class="compare-panel" catchtap="">
+      <view class="compare-title">跑鞋对比</view>
+      <view wx:if="{{compareLoading}}" class="compare-loading">加载中...</view>
+      <block wx:elif="{{compareShoes.length === 2}}">
+        <view class="compare-header">
+          <view class="compare-name">{{compareShoes[0].nickname || (compareShoes[0].brand + ' ' + compareShoes[0].model)}}</view>
+          <view class="compare-vs">VS</view>
+          <view class="compare-name">{{compareShoes[1].nickname || (compareShoes[1].brand + ' ' + compareShoes[1].model)}}</view>
+        </view>
+        <view class="compare-table">
+          <view class="compare-row compare-header-row">
+            <view class="compare-cell label">维度</view>
+            <view class="compare-cell">{{compareShoes[0].nickname || compareShoes[0].brand}}</view>
+            <view class="compare-cell">{{compareShoes[1].nickname || compareShoes[1].brand}}</view>
+          </view>
+          <view wx:for="{{compareRows}}" wx:key="label" class="compare-row">
+            <view class="compare-cell label">{{item.label}}</view>
+            <view class="compare-cell {{item.winnerIdx === 0 ? 'winner' : ''}}">{{item.values[0]}}</view>
+            <view class="compare-cell {{item.winnerIdx === 1 ? 'winner' : ''}}">{{item.values[1]}}</view>
+          </view>
+        </view>
+      </block>
+      <view class="form-actions">
+        <button class="btn-cancel" bindtap="closeCompare">关闭</button>
+      </view>
+    </view>
+  </view>
 
   <!-- 添加弹层 -->
   <view class="mask" wx:if="{{formVisible}}" bindtap="closeForm">
@@ -84,11 +194,9 @@
         <text class="label">更换阈值</text>
         <view class="threshold-row">
           <slider
-            min="100"
-            max="2000"
-            step="50"
+            min="100" max="2000" step="50"
             value="{{form.thresholdKm}}"
-            bindchanging="onThresholdChanging"
+            bindchanging="onFormThresholdChanging"
             activeColor="#0FAF8E"
             block-size="20"
             show-value="{{false}}"
@@ -100,7 +208,7 @@
       </view>
       <view class="form-actions">
         <button class="btn-cancel" bindtap="closeForm">取消</button>
-        <button class="btn-submit" bindtap="onSubmit" loading="{{submitting}}">添加</button>
+        <van-button type="primary" block bindtap="onSubmit" loading="{{submitting}}">添加</van-button>
       </view>
     </view>
   </view>

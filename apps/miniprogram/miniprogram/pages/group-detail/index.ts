@@ -133,6 +133,6 @@ Page({
   },
 
   goWeeklyReport() {
-    wx.navigateTo({ url: '/pages/weekly-report/index' });
+    wx.navigateTo({ url: '/pages/runner/index' });
   },
 });

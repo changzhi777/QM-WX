@@ -1127,6 +1127,25 @@ export const deviceService = {
       steps: stepUpserts.length,
     };
   },
+
+  /** V0.1.144 数据授权管理（设备绑定状态 + 各数据源授权标志，原型图"我的"tab）*/
+  async authList(userId: string) {
+    const bindings = await prisma.deviceBinding.findMany({ where: { userId } });
+    const vendors = new Set(bindings.map((b) => b.vendor));
+    return {
+      bindings: bindings.map((b) => ({
+        vendor: b.vendor,
+        deviceName: b.accessTokenEnc ?? b.vendorUserId ?? null,
+        status: b.status,
+        lastSyncAt: b.lastSyncAt,
+      })),
+      weRunAuthorized: vendors.has('werun') || vendors.has('wechat'),
+      garminAuthorized: vendors.has('garmin'),
+      xiaomiAuthorized: vendors.has('xiaomi'),
+      corosAuthorized: vendors.has('coros'),
+      bleAuthorized: vendors.has('ble'),
+    };
+  },
 };
 
 // ===== 今日健康看板辅助函数（V0.1.25）=====

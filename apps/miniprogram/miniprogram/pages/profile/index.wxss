@@ -21,3 +21,23 @@
   flex: 1; height: 56rpx; font-size: 28rpx; padding: 0 12rpx;
   background: transparent;
 }
+
+/* tab 头 */
+.tab-bar { display: flex; background: #fff; position: sticky; top: 0; z-index: 10; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04); }
+.tab { flex: 1; text-align: center; padding: 24rpx 0; font-size: 28rpx; color: #666; position: relative; }
+.tab.active { color: var(--brand); font-weight: 600; }
+.tab.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 48rpx; height: 4rpx; background: var(--brand); border-radius: 2rpx; }
+
+/* 绑定 tab（合并自 bind-apps）*/
+.bind-card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin: 16rpx; }
+.bind-card-title { font-size: 28rpx; font-weight: 600; color: #333; margin-bottom: 16rpx; }
+.status-row { display: flex; justify-content: space-between; padding: 14rpx 0; font-size: 26rpx; color: #999; border-bottom: 1rpx solid #f0f0f0; }
+.status-row:last-child { border-bottom: none; }
+.status { color: #ccc; }
+.status.bound { color: var(--brand); }
+.input-row { display: flex; align-items: center; gap: 16rpx; margin-bottom: 16rpx; }
+.bind-card .input { flex: 1; height: 72rpx; background: #f9f9f9; border-radius: 8rpx; padding: 0 20rpx; font-size: 28rpx; box-sizing: border-box; }
+.sms-btn { width: 160rpx; height: 72rpx; line-height: 72rpx; font-size: 24rpx; background: var(--brand); color: #fff; border-radius: 8rpx; padding: 0; margin: 0; }
+.sms-btn[disabled] { background: #ccc; color: #fff; }
+.submit-btn { width: 100%; height: 80rpx; line-height: 80rpx; background: var(--brand); color: #fff; border-radius: 8rpx; font-size: 28rpx; margin-top: 8rpx; padding: 0; }
+.submit-btn::after { border: none; }

@@ -115,11 +115,16 @@ export const ENDPOINTS = {
     // V0.1.130 COROS Terra 聚合（授权 + 手动拉历史；webhook 走 /api/device/terra-webhook public）
     corosAuthUrl: '/api/device',
     syncFromTerra: '/api/device',
+    authList: '/api/device', // V0.1.144 数据授权管理（各数据源授权状态）
   },
   stats: {
     myRunnerStats: '/api/stats',
     myAnnualReport: '/api/stats',
     myCertificates: '/api/stats',
+    healthScore: '/api/stats', // V0.1.144 健康分数（0-100）+ 趋势对比
+    dailyReport: '/api/stats', // V0.1.144 每日 AI 简报（生成+存+MQTT 推）
+    dailyReportList: '/api/stats', // V0.1.144 历史 AI 报告列表
+    weather: '/api/stats', // V0.1.144 天气（stub，TODO 接和风天气 API）
   },
   ranking: {
     groupRankingMulti: '/api/ranking',
@@ -255,6 +260,7 @@ export const ENDPOINTS = {
     deleteConversation: '/api/ai-coach', // V0.1.139 完善：删除整个会话
     setPersona: '/api/ai-coach', // V0.1.140：设置 AI 私教人设（scientist/coach/buddy/strict）
     warmup: '/api/ai-coach', // V0.1.141：预热 system prompt Cache（进页调，首问快）
+    proactiveAlert: '/api/ai-coach', // V0.1.144：AI 主动提醒（睡眠不足/心率异常/步数低）
   },
 } as const;
 

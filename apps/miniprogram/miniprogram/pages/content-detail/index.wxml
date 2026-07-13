@@ -160,13 +160,9 @@
   <view class="footer-placeholder" />
 
   <view class="footer bg-white">
-    <button
-      class="btn-primary"
-      bindtap="onTapEnroll"
-      wx:if="{{content.actionType !== 'none'}}"
-    >
+    <van-button type="primary" block bindtap="onTapEnroll" wx:if="{{content.actionType !== 'none'}}">
       {{content.actionType === 'enroll' ? '立即报名' : content.actionType === 'book' ? '立即预订' : '了解详情'}}
-    </button>
+    </van-button>
   </view>
 
   <!-- 报名弹窗 -->

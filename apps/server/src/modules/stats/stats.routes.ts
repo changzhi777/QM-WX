@@ -7,7 +7,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { statsService } from './stats.service.js';
 import { Errors } from '../../common/errors.js';
-import { MyRunnerStatsQuerySchema, MyAnnualReportQuerySchema } from './stats.schema.js';
+import { MyRunnerStatsQuerySchema, MyAnnualReportQuerySchema, HealthScoreQuerySchema, DailyReportQuerySchema, DailyReportListQuerySchema } from './stats.schema.js';
 
 /** 统一把 Zod 错误转 BusinessError（与 sport.routes 一致） */
 function parseOrBadRequest<S extends z.ZodTypeAny>(schema: S, payload: unknown): z.output<S> {
@@ -39,6 +39,21 @@ export async function statsRoutes(app: FastifyInstance) {
       }
       case 'myCertificates': {
         return { code: 0, data: await statsService.myCertificates(userId) };
+      }
+      case 'healthScore': {
+        const input = parseOrBadRequest(HealthScoreQuerySchema, payload ?? {});
+        return { code: 0, data: await statsService.healthScore(userId, input) };
+      }
+      case 'dailyReport': {
+        const input = parseOrBadRequest(DailyReportQuerySchema, payload ?? {});
+        return { code: 0, data: await statsService.dailyReport(userId, input) };
+      }
+      case 'dailyReportList': {
+        const input = parseOrBadRequest(DailyReportListQuerySchema, payload ?? {});
+        return { code: 0, data: await statsService.dailyReportList(userId, input) };
+      }
+      case 'weather': {
+        return { code: 0, data: await statsService.weather(userId) };
       }
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });

@@ -1,0 +1,99 @@
+/* pages/device/index.wxss — 设备中心（V0.1.143 合并 device-bind + garmin-data + data-import-guide） */
+.page { min-height: 100vh; background: #f5f5f5; padding-bottom: 40rpx; box-sizing: border-box; }
+
+/* tab 头 */
+.tab-bar { display: flex; background: #fff; position: sticky; top: 0; z-index: 10; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04); }
+.tab { flex: 1; text-align: center; padding: 24rpx 0; font-size: 28rpx; color: #666; position: relative; }
+.tab.active { color: #0FAF8E; font-weight: 600; }
+.tab.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 48rpx; height: 4rpx; background: #0FAF8E; border-radius: 2rpx; }
+
+/* 通用 */
+.loading { text-align: center; color: #999; padding: 80rpx; font-size: 28rpx; }
+.empty { text-align: center; padding: 60rpx 40rpx; color: #999; font-size: 26rpx; }
+.section { background: #fff; margin: 16rpx; border-radius: 16rpx; padding: 24rpx; }
+.section-title { font-size: 28rpx; font-weight: 600; color: #333; margin-bottom: 16rpx; }
+
+/* 品牌宫格 */
+.brand-grid { display: flex; flex-wrap: wrap; gap: 16rpx; padding: 16rpx; }
+.brand-card { flex: 1 1 28%; background: #fff; border-radius: 16rpx; padding: 24rpx 16rpx; text-align: center; }
+.brand-card.disabled { opacity: 0.4; }
+.brand-icon { font-size: 48rpx; }
+.brand-name { font-size: 24rpx; color: #333; margin-top: 8rpx; }
+.brand-cat { font-size: 20rpx; color: #999; margin-top: 4rpx; }
+
+/* 已绑设备 */
+.binding-row { display: flex; align-items: center; justify-content: space-between; padding: 16rpx 0; border-bottom: 1rpx solid #f5f5f5; }
+.binding-row:last-child { border-bottom: none; }
+.binding-name { font-size: 28rpx; color: #333; }
+.binding-vendor { font-size: 22rpx; color: #999; margin-top: 4rpx; }
+.binding-unbind { font-size: 24rpx; color: #e64340; padding: 8rpx 20rpx; border: 1rpx solid #e64340; border-radius: 8rpx; }
+
+/* 实时卡 */
+.live-card { background: linear-gradient(135deg, #0FAF8E, #4FC3A1); color: #fff; }
+.live-title { font-size: 26rpx; opacity: 0.9; }
+.live-hr { font-size: 80rpx; font-weight: 700; margin: 8rpx 0; }
+.live-hr .u { font-size: 28rpx; }
+.live-meta { font-size: 24rpx; opacity: 0.9; margin-top: 4rpx; }
+.live-meta.ok { color: #fff; font-weight: 600; }
+.live-meta.wait { color: #ffe082; }
+
+/* 体脂秤 */
+.scale-card { }
+.scale-weight { font-size: 64rpx; font-weight: 700; color: #0FAF8E; margin: 8rpx 0; }
+.scale-weight .u { font-size: 28rpx; }
+
+/* 微信运动 */
+.werun-stats { display: flex; justify-content: space-around; margin: 16rpx 0; }
+.w-stat { text-align: center; }
+.w-stat .w-v { display: block; font-size: 32rpx; font-weight: 600; color: #0FAF8E; }
+.w-stat .w-l { font-size: 22rpx; color: #999; }
+
+/* 按钮 */
+.btn-submit { background: #0FAF8E; color: #fff; border-radius: 40rpx; font-size: 28rpx; line-height: 80rpx; margin-top: 16rpx; }
+.btn-cancel { background: #f5f5f5; color: #666; border-radius: 40rpx; font-size: 28rpx; line-height: 80rpx; margin-top: 16rpx; }
+
+/* 调试面板 */
+.debug-toggle { text-align: center; font-size: 24rpx; color: #999; padding: 24rpx; }
+.debug-panel { background: #fff; margin: 0 16rpx 16rpx; border-radius: 16rpx; padding: 16rpx; max-height: 400rpx; overflow-y: auto; }
+.debug-log { font-size: 20rpx; color: #666; font-family: monospace; padding: 4rpx 0; }
+
+/* === 佳明 tab === */
+.g-tabs { display: flex; background: #fff; padding: 16rpx; gap: 12rpx; }
+.g-tab { flex: 1; text-align: center; padding: 12rpx 0; font-size: 26rpx; color: #666; background: #f5f5f5; border-radius: 8rpx; }
+.g-tab.active { background: #0FAF8E; color: #fff; }
+.g-list { padding: 16rpx; }
+.g-card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; }
+.g-head { display: flex; justify-content: space-between; align-items: center; }
+.g-type { font-size: 28rpx; font-weight: 600; color: #333; }
+.g-time { font-size: 22rpx; color: #999; }
+.g-stats { display: flex; gap: 24rpx; margin: 12rpx 0; font-size: 24rpx; color: #666; }
+.g-actions { display: flex; gap: 12rpx; margin-top: 16rpx; padding-top: 16rpx; border-top: 1rpx solid #f5f5f5; }
+.g-btn { flex: 1; text-align: center; padding: 12rpx 0; font-size: 24rpx; border-radius: 8rpx; }
+.g-btn.import { background: #0FAF8E; color: #fff; }
+.g-btn.ignore { background: #f5f5f5; color: #666; }
+.g-status { font-size: 22rpx; color: #999; margin-top: 8rpx; }
+
+/* === 导入 tab === */
+.i-brand-grid { display: flex; flex-wrap: wrap; gap: 16rpx; padding: 16rpx; }
+.i-brand { flex: 1 1 28%; background: #fff; border-radius: 16rpx; padding: 24rpx 16rpx; text-align: center; }
+.i-brand.disabled { opacity: 0.4; }
+.i-brand.selected { border: 2rpx solid #0FAF8E; }
+.i-brand-icon { font-size: 48rpx; }
+.i-brand-name { font-size: 24rpx; color: #333; margin-top: 8rpx; }
+.i-source { font-size: 22rpx; color: #0FAF8E; margin-bottom: 16rpx; word-break: break-all; }
+.i-steps { }
+.i-step { display: flex; gap: 12rpx; padding: 8rpx 0; font-size: 24rpx; color: #666; }
+.i-step-num { color: #0FAF8E; font-weight: 600; }
+.i-unavailable { text-align: center; font-size: 24rpx; color: #999; padding: 24rpx; }
+
+/* 扫描弹层 */
+.mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 100; display: flex; align-items: flex-end; }
+.scan-panel { background: #fff; width: 100%; border-radius: 24rpx 24rpx 0 0; padding: 32rpx; box-sizing: border-box; max-height: 70vh; overflow-y: auto; }
+.scan-title { font-size: 32rpx; font-weight: 600; color: #333; margin-bottom: 24rpx; }
+.scan-list { }
+.scan-item { display: flex; justify-content: space-between; align-items: center; padding: 20rpx 0; border-bottom: 1rpx solid #f5f5f5; }
+.scan-name { font-size: 28rpx; color: #333; }
+.scan-brand { font-size: 22rpx; padding: 4rpx 14rpx; border-radius: 8rpx; background: #f5f5f5; color: #666; }
+.scan-brand.garmin { background: #E3F2FD; color: #1976D2; }
+.scan-brand.xiaomi { background: #FFF3E0; color: #F57C00; }
+.scan-brand.mi_scale { background: #F3E5F5; color: #7B1FA2; }

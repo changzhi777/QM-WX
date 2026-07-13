@@ -39,3 +39,38 @@ export async function runWeeklyReportScheduler(prod: boolean) {
   );
   logger.info({ today }, 'weekly-report auto job enqueued');
 }
+
+/** 每日 8:00（北京时间）触发：为活跃用户生成 dailyReport + MQTT 推（C 方案定时推）*/
+function isDailyReportTick(now = new Date()): boolean {
+  const cn = new Date(now.getTime() + 8 * 3600 * 1000);
+  return cn.getUTCHours() === 8 && cn.getUTCMinutes() < 2;
+}
+
+let lastDailyTickDate = '';
+
+export async function runDailyReportScheduler(prod: boolean) {
+  if (!prod) return;
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  if (lastDailyTickDate === today) return;
+  if (!isDailyReportTick(now)) return;
+  lastDailyTickDate = today;
+  const { prisma } = await import('../infra/prisma.js');
+  const { statsService } = await import('../modules/stats/stats.service.js');
+  const since = new Date(now.getTime() - 7 * 86400 * 1000);
+  // 活跃用户：最近 7 天有微信运动记录
+  const activeUsers = await prisma.user.findMany({
+    where: { weRunRecords: { some: { createdAt: { gte: since } } } },
+    select: { id: true },
+  });
+  let ok = 0;
+  for (const u of activeUsers) {
+    try {
+      await statsService.dailyReport(u.id, {});
+      ok++;
+    } catch (e) {
+      logger.error({ err: (e as Error).message, userId: u.id }, 'daily-report gen failed');
+    }
+  }
+  logger.info({ total: activeUsers.length, ok }, 'daily-report auto generated + MQTT pushed');
+}

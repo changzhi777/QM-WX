@@ -12,7 +12,9 @@
     "lint": "echo \"TODO: 接入 eslint\""
   },
   "dependencies": {
-    "@qm-wx/shared": "workspace:*"
+    "@qm-wx/shared": "workspace:*",
+    "@vant/weapp": "^1.11.7",
+    "mqtt": "^5.15.2"
   },
   "devDependencies": {
     "miniprogram-api-typings": "^3.0.0",

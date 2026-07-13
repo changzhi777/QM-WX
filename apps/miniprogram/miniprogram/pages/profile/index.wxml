@@ -1,70 +1,121 @@
 <view class="page">
   <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="refreshUser" />
 
-  <!-- 正常内容（error 时隐藏） -->
   <block wx:if="{{!error}}">
-  <!-- 头像 + 昵称 -->
-  <view class="header bg-white p-4">
-    <view class="row" bindtap="onTapEditName">
-      <view class="key">头像</view>
-      <image class="avatar" src="{{user.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
-      <view class="arrow">›</view>
+    <!-- tab 头 -->
+    <view class="tab-bar">
+      <view class="tab {{tab === 'profile' ? 'active' : ''}}" data-tab="profile" bindtap="onSwitchTab">资料</view>
+      <view class="tab {{tab === 'bind' ? 'active' : ''}}" data-tab="bind" bindtap="onSwitchTab">绑定</view>
     </view>
-    <view class="divider" />
-    <view class="row" bindtap="onTapEditName">
-      <view class="key">昵称</view>
-      <view class="value">{{user.nickname || '未设置'}}</view>
-      <view class="arrow">›</view>
-    </view>
-  </view>
 
-  <!-- 资料表单 -->
-  <view class="form bg-white p-4 mt-2">
-    <view class="field">
-      <text class="label">性别</text>
-      <picker mode="selector" range="{{['男','女','不填']}}" bindchange="onPickerGender">
-        <view class="picker">
-          {{form.gender === 'male' ? '男' : form.gender === 'female' ? '女' : '不填'}}
-          <text class="arrow-sm">›</text>
+    <!-- ===== 资料 tab ===== -->
+    <block wx:if="{{tab === 'profile'}}">
+      <view class="header bg-white p-4">
+        <view class="row" bindtap="onTapEditName">
+          <view class="key">头像</view>
+          <image class="avatar" src="{{user.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
+          <view class="arrow">›</view>
         </view>
-      </picker>
-    </view>
-    <view class="field">
-      <text class="label">生日</text>
-      <picker mode="date" value="{{form.birthday}}" bindchange="onPickerBirthday">
-        <view class="picker">{{form.birthday || '请选择'}} <text class="arrow-sm">›</text></view>
-      </picker>
-    </view>
-    <view class="field">
-      <text class="label">地区</text>
-      <input class="input" placeholder="如：北京" value="{{form.region}}" bindinput="onInputRegion" />
-    </view>
-    <view class="field">
-      <text class="label">身高 (cm)</text>
-      <input class="input" type="number" placeholder="如：170" value="{{form.height}}" bindinput="onInputHeight" />
-    </view>
-    <view class="field">
-      <text class="label">体重 (kg)</text>
-      <input class="input" type="digit" placeholder="如：60" value="{{form.weight}}" bindinput="onInputWeight" />
-    </view>
-  </view>
+        <view class="divider" />
+        <view class="row" bindtap="onTapEditName">
+          <view class="key">昵称</view>
+          <view class="value">{{user.nickname || '未设置'}}</view>
+          <view class="arrow">›</view>
+        </view>
+      </view>
 
-  <view class="p-4">
-    <button
-      class="btn-primary {{saving ? 'btn-disabled' : ''}}"
-      bindtap="onSave"
-      disabled="{{saving}}"
-    >
-      {{saving ? '保存中...' : '保存资料'}}
-    </button>
-  </view>
+      <view class="form bg-white p-4 mt-2">
+        <view class="field">
+          <text class="label">性别</text>
+          <picker mode="selector" range="{{['男','女','不填']}}" bindchange="onPickerGender">
+            <view class="picker">
+              {{form.gender === 'male' ? '男' : form.gender === 'female' ? '女' : '不填'}}
+              <text class="arrow-sm">›</text>
+            </view>
+          </picker>
+        </view>
+        <view class="field">
+          <text class="label">生日</text>
+          <picker mode="date" value="{{form.birthday}}" bindchange="onPickerBirthday">
+            <view class="picker">{{form.birthday || '请选择'}} <text class="arrow-sm">›</text></view>
+          </picker>
+        </view>
+        <view class="field">
+          <text class="label">地区</text>
+          <input class="input" placeholder="如：北京" value="{{form.region}}" bindinput="onInputRegion" />
+        </view>
+        <view class="field">
+          <text class="label">身高 (cm)</text>
+          <input class="input" type="number" placeholder="如：170" value="{{form.height}}" bindinput="onInputHeight" />
+        </view>
+        <view class="field">
+          <text class="label">体重 (kg)</text>
+          <input class="input" type="digit" placeholder="如：60" value="{{form.weight}}" bindinput="onInputWeight" />
+        </view>
+      </view>
 
-  <profile-popup
-    visible="{{showPopup}}"
-    initial-nickname="{{user.nickname}}"
-    initial-avatar-url="{{user.avatarUrl}}"
-    bind:close="onPopupClose"
-    bind:success="onProfileUpdated"
-  />
+      <view class="p-4">
+        <van-button type="primary" block bindtap="onSave" disabled="{{saving}}" loading="{{saving}}">
+          {{saving ? '保存中...' : '保存资料'}}
+        </van-button>
+      </view>
+    </block>
+
+    <!-- ===== 绑定 tab（合并自 bind-apps）===== -->
+    <block wx:if="{{tab === 'bind'}}">
+      <view class="bind-card">
+        <view class="bind-card-title">当前绑定</view>
+        <view class="status-row"><text>手机号</text><text class="status {{phone ? 'bound' : ''}}">{{phone || '未绑定'}}</text></view>
+        <view class="status-row"><text>邮箱</text><text class="status {{email ? 'bound' : ''}}">{{email || '未绑定'}}</text></view>
+        <view class="status-row"><text>密码</text><text class="status {{hasPassword ? 'bound' : ''}}">{{hasPassword ? '已设置' : '未设置'}}</text></view>
+      </view>
+
+      <view class="bind-card">
+        <view class="bind-card-title">绑定手机号</view>
+        <view class="input-row">
+          <input class="input" type="number" placeholder="手机号" value="{{smsPhone}}" bindinput="onSmsPhoneInput" maxlength="11" />
+        </view>
+        <view class="input-row">
+          <input class="input" type="number" placeholder="验证码" value="{{smsCode}}" bindinput="onCodeInput" maxlength="6" />
+          <button class="sms-btn" bindtap="onSendSms" disabled="{{smsCountdown > 0}}">{{smsCountdown > 0 ? smsCountdown + 's' : '发送'}}</button>
+        </view>
+        <button class="submit-btn" bindtap="onBindPhone">绑定手机号</button>
+      </view>
+
+      <view class="bind-card">
+        <view class="bind-card-title">绑定邮箱</view>
+        <view class="input-row">
+          <input class="input" placeholder="邮箱地址" value="{{emailInput}}" bindinput="onEmailInput" />
+        </view>
+        <view class="input-row">
+          <input class="input" password="{{true}}" placeholder="设置密码（≥6位，邮箱登录用）" value="{{emailPassword}}" bindinput="onEmailPasswordInput" />
+        </view>
+        <button class="submit-btn" bindtap="onBindEmail">绑定邮箱</button>
+      </view>
+
+      <view class="bind-card">
+        <view class="bind-card-title">{{hasPassword ? '修改密码' : '设置密码'}}</view>
+        <view class="input-row">
+          <input class="input" password="{{true}}" placeholder="新密码（≥6位）" value="{{newPassword}}" bindinput="onNewPasswordInput" />
+        </view>
+        <button class="submit-btn" bindtap="onBindPassword">{{hasPassword ? '修改密码' : '设置密码'}}</button>
+      </view>
+
+      <view class="bind-card">
+        <view class="bind-card-title">admin 账号（运营后台登录用）</view>
+        <view class="input-row">
+          <input class="input" placeholder="用户名（≥3位）" value="{{usernameInput}}" bindinput="onUsernameInput" />
+        </view>
+        <button class="submit-btn" bindtap="onBindUsername">设置用户名</button>
+      </view>
+    </block>
+
+    <profile-popup
+      visible="{{showPopup}}"
+      initial-nickname="{{user.nickname}}"
+      initial-avatar-url="{{user.avatarUrl}}"
+      bind:close="onPopupClose"
+      bind:success="onProfileUpdated"
+    />
   </block>
 </view>

@@ -22,7 +22,25 @@ export type MyAnnualReportQuery = z.infer<typeof MyAnnualReportQuerySchema>;
 export const MyCertificatesQuerySchema = z.object({}).optional();
 export type MyCertificatesQuery = z.infer<typeof MyCertificatesQuerySchema>;
 
+/** V0.1.144 健康分数（聚合步数/心率/睡眠算 0-100）+ 趋势对比 */
+export const HealthScoreQuerySchema = z.object({ date: z.string().optional() });
+export type HealthScoreQuery = z.infer<typeof HealthScoreQuerySchema>;
+
+/** V0.1.144 每日 AI 简报（无则生成 + 存 + MQTT 推；有则返缓存）*/
+export const DailyReportQuerySchema = z.object({ date: z.string().optional() });
+export type DailyReportQuery = z.infer<typeof DailyReportQuerySchema>;
+
+/** V0.1.144 历史 AI 报告列表 */
+export const DailyReportListQuerySchema = z.object({
+  page: z.number().int().min(1).optional(),
+  pageSize: z.number().int().min(1).max(100).optional(),
+});
+export type DailyReportListQuery = z.infer<typeof DailyReportListQuerySchema>;
+
 export const StatsActionBodySchema = z.object({
-  action: z.enum(['myRunnerStats', 'myAnnualReport', 'myCertificates']),
+  action: z.enum([
+    'myRunnerStats', 'myAnnualReport', 'myCertificates',
+    'healthScore', 'dailyReport', 'dailyReportList',
+  ]),
   payload: z.unknown().optional(),
 });
