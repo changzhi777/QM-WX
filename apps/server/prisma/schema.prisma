@@ -77,6 +77,7 @@ model User {
   sleepRecords           SleepRecord[] // V0.1.43 睡眠历史（小米数据包导入）
   bodyCompositionRecords BodyCompositionRecord[] // V0.1.124 体脂秤数据（BLE 小米体脂秤）
   corosRawEvents         CorosRawEvent[] // V0.1.130 COROS Terra webhook 原始数据
+  conversationTurns      ConversationTurn[] // V0.1.139 AI 私教对话（多轮记忆）
   withdrawalRequests     WithdrawalRequest[] // V0.1.105 提现申请（pending/approved/rejected）
   groupBuyMembers        GroupBuyMember[] // V0.1.37 团购参与记录
   // 分销（V0.1.24）
@@ -1086,4 +1087,21 @@ model CorosRawEvent {
 
   @@index([userId, type, receivedAt])
   @@index([terraUserId])
+}
+
+// ===== AI 私教对话（V0.1.139，多轮记忆）=====
+// chat/chatStream 每轮 user+assistant 落库；下次请求带最近 N 轮作上下文
+// onDelete Cascade（User 删→对话级联）；conversationId 一次会话一组（uuid）
+model ConversationTurn {
+  id             String   @id @default(cuid())
+  userId         String
+  conversationId String
+  role           String // user | assistant
+  content        String
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, conversationId, createdAt])
+  @@index([conversationId])
 }

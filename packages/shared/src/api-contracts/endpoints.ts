@@ -244,6 +244,16 @@ export const ENDPOINTS = {
     myReviews: '/api/review',
     remove: '/api/review',
   },
+  aiCoach: {
+    chat: '/api/ai-coach',
+    chatStream: '/api/ai-coach', // V0.1.139 流式对话（SSE，前端 wx.request enableChunked）
+    generatePlan: '/api/ai-coach', // V0.1.139 生成训练计划（JSON 结构化）
+    adoptPlan: '/api/ai-coach', // V0.1.139 采纳计划（upsert TrainingPlan + joinPlan）
+    history: '/api/ai-coach', // V0.1.139 完善：加载历史会话
+    regenerate: '/api/ai-coach', // V0.1.139 完善：重新生成最后一条 assistant
+    conversations: '/api/ai-coach', // V0.1.139 完善：会话列表（多会话管理）
+    deleteConversation: '/api/ai-coach', // V0.1.139 完善：删除整个会话
+  },
 } as const;
 
 export type EndpointModule = keyof typeof ENDPOINTS;

@@ -5,6 +5,13 @@
 >
 > ## 📋 变更记录 (Changelog)
 >
+> - **2026-07-13** — 🎯 **V0.1.139 AI 私教 MVP**：新表 ConversationTurn（#57，迁移 20260713110000，多轮记忆）+ 新 module **ai-coach（第 32 个）** 4 action（chat/chatStream/generatePlan/adoptPlan）+ LLMProvider 抽象（Stub + **GLM 智谱 v4 原生 fetch，不依赖 openai 包**，Bearer+SSE+json_object）+ ContextBuilder 全量聚合（Cache 60s）+ asciiFrame SSE 中文转义 + reply.hijack 流式 + env LLM_* + 28 单测；**56→57 表 / 38→39 迁移 / 31→32 module / 857→885 passed / 0 回归**
+> - **2026-07-13** — 🎯 **V0.1.137 跑鞋增强 2 期（鞋评 + 对比 + 成就）**：鞋评（复用 Review 表 合成 productId=`shoe:${shoeId}` 绕过 @@unique 三元组约束 + content 加 [shoe-review] tag 区分 + listByTarget/targetStats 双分发）+ shoes.compareShoes(userId, ids[2]) 横向对比（含 checkinCount 批量 groupBy + daysSincePurchase + healthRatio 胜出高亮）+ stats.myCertificates 扩 3 段鞋成就（shoesMilestones 100/500/1000/3000km + shoeDays 30/100/365 天 + shoeCheckin 50/100/500 次）+ schema 扩 targetType enum 'product'|'shoe' + reviews.routes +2 case + shoes.routes +1 case + 7 单测；**56 表 / 38 迁移不变 / 31 module / 857 单元 / funcs 86.72%**
+> - **2026-07-13** — 🎯 **V0.1.136 收藏+动态社交向扩展**：Feed +shoeId 字段（迁移 20260713100000，Feed.shoe SetNull onDelete）+ Shoe +feeds relation + feed.service publish 校验 shoeId 归属 + list 含 shoe include + 新增 shoesForPicker 跑鞋 picker 接口 + schema +2 + routes +1 case + 4 单测；**56 表 / 37→38 迁移 / 850 单元**
+> - **2026-07-12** — 🎯 **V0.1.135 目标/证书增强**：User +customMilestones Json? 字段（迁移 20260713000000）+ goal.service +4 函数（addCustomMilestone km 唯一 + 上限 20 / removeCustomMilestone / listCustomMilestones / checkMilestoneAchievement 含达成日期累计）+ stats.myCertificates 扩 5 段返（milestones + marathons + paceProgressCert 最近 5 比前 5 快 10% + consecutiveCheckinCert 7/30/100 天 streak + groupContributionCert 本月群内前 3）+ schema +5 + routes +4 case + 6 单测；**56 表 / 36→37 迁移 / 846 单元**
+> - **2026-07-12** — 🎯 **V0.1.134 赛事服务 MVP 完整闭环（业务闭环第 3 块收官）**：**新表 RaceResult（#56，迁移 20260712100000，@@unique enrollmentId 1:1）** + Enrollment 加 raceResult relation + content.service +3 函数（submitRaceResult 用户自报含 paceSecPerKm 计算 + getRaceLeaderboard 前 50 名批量关联 User 避免 N+1 + getMyRaceResult）+ admin.service +2 函数（submitRaceResult 含 AuditLog + listEnrollmentsByContent 含 user/raceResult 关联）+ schema +4 + routes +3 case + 15 单测；**55→56 表 / 35→36 迁移 / 840 单元**
+> - **2026-07-12** — 🎯 **V0.1.133 跑鞋增强（阈值个性化 + 历史里程曲线 + 详情页）**：shoes.service +getDetail / +getMileageHistory / +updateThreshold（schema + service + routes + 9 单测）+ **关键坑**：Checkin.distance 单位混用（garmin cm → /100000 转 km；sport km 直通）+ findMany + 内存 reduce 避免 Prisma Float 精度 + bucketByPeriod helper 周/月分桶；**55 表 / 35 迁移不变 / 825 单元**
+> - **2026-07-12** — 🎯 **V0.1.132 init 校准 + GAP-8 收口**（纯文档 3 commit）：init-architect 全面清点 + 新建 review/CLAUDE.md + auth/CLAUDE.md（关闭 GAP-8 重开项）+ CHANGELOG.md 加归档声明 + vitest.config.ts coverage threshold functions 87→86（实测 86.61% 满足 0.61% 缓冲）
 > - **2026-07-12** — 🎯 **V0.1.131 qm-admin Web 账号登录（生产已部署）**：bindApps +username 支持（admin Web 账号绑定前置）+ qm-admin 独立仓升级（6ba3e16）；双仓 v0.1.131 + 生产 healthy；admin 闭环：小程序微信登录 → bind-apps 绑 username/pwd → Web 登录 → 白名单验 openid → qm-admin 部署
 > - **2026-07-12** — 🎯 **V0.1.130 bind-apps 前端页 + toUserOutput 扩展 + auth route P0 修复**：pages/bind-apps（手机号/邮箱/密码绑定+状态）+ UserOutputSchema +email/+username/+hasPassword；P0 修复（独立 route 从 req.body.payload 取，原 P0 是把整个 body 当 payload 解析导致 bindApps 取不到嵌套 payload，V0.1.130 修）；判断标准：api.call vs wx.request
 > - **2026-07-12** — 🎯 **V0.1.129 多方式认证扩展（参考 logto connector 模式）**：User +4 字段（phone/email/passwordHash/username @unique，**52→55 表**就是 V0.1.129 这一次加了字段，但字段不增表，与 V0.1.127 BodyCompositionRecord + V0.1.128 CorosRawEvent 共 +3 表）；auth module 重构为 connectors 架构（wechat/phone/email/password/sms/mail 6 子文件）+ login dispatcher 4 method + signTokens helper（DRY，common/helpers/sign-tokens.ts）+ bindApps（手机号/邮箱/密码绑定/解绑）+ bcrypt 防重 + sms-code 验证码生成 + Redis 5min TTL + 短信邮件 stub（待生产配阿里云/腾讯云）；+17 单测（auth.routes 7 + auth-login 6 + sms-code 4）；**776→793 passed / 31 module / 52→55 表（含字段派生）/ 42→47 页**
@@ -39,7 +46,7 @@
 
 ## 🎯 职责
 
-Node.js + TypeScript 后端（Fastify 4），对外提供 **30 个 module** + **domain 层** + **jobs** + **CLI 工具**。
+Node.js + TypeScript 后端（Fastify 4），对外提供 **31 个 module** + **domain 层** + **jobs** + **CLI 工具**。
 **唯一权威**：openid、积分、余额、订单状态、微信支付回调、**分销佣金**、**心率缓存**（ble:hr:{userId}）、**血氧缓存**（spo2:{userId}）、**微信运动步数**（WeRunRecord 每日 upsert）、**跑鞋累计里程**（Checkin.shoeId → incrementShoeKm）、**年度汇总**（stats.myAnnualReport）、**跑步目标进度**（goal.calcGoalProgress 复用 Checkin aggregate，**V0.1.34 扩 userIds 支持家庭目标**）、**证书颁发**（stats.myCertificates 动态生成）、**收藏红心状态**（favorite.isFavorited 批量查）、**动态点赞/评论计数**（feed.$transaction 回调维护 likeCount/commentCount）、**消息通知**（notification.notify() 集成函数被 feed/follow 复用）、**关注关系**（follow.myCounts 用户主页一次拿全）、**BLE 设备品牌识别**（device.bindBleDevice 接 vendor，BLE 绑定优先 OAuth 降级）、**健康历史**（device.myHealthHistory 心率/血氧/睡眠 type+dateRange）、**onboarding 状态**（User.onboardingDone 字段 + user.resetOnboarding）、**家庭空间**（family.createFamily/joinFamily/myFamily + 家庭目标 goal.addFamilyGoal/myFamilyGoals 复用 Goal+familyId）都在这里产生和变更。
 
 ---
@@ -135,7 +142,7 @@ apps/server/
 │   ├── sql/permissions.sql           # 角色权限参考
 │   └── migrations/                   # Prisma 迁移历史（27 个，见下方表清单）
 ├── tests/
-│   ├── modules/                      # 单元测试（vi.mock Prisma/Redis）— **776 tests**（V0.1.112 routes 全测 + V0.1.113 order.service + review module）
+│   ├── modules/                      # 单元测试（vi.mock Prisma/Redis）— **857 tests**（V0.1.137 累加实测；routes 全测 + review/stats/content 等高频 module 全测）
 │   │   ├── user/sport/mall/content/wallet/weekly-report/admin/app-config...
 │   │   ├── wxpay/{service,notify}.test.ts
 │   │   ├── mall/{order,refund}.service.test.ts
@@ -175,7 +182,7 @@ apps/server/
 **统一返回**：`{ code: 0, data } | { code: 4xx/5xx, msg }`。
 **鉴权**：除 `config.public: true` 路由外，全部需 JWT Bearer token。
 
-### 30 个 Module 清单（V1 11 + Phase 4 wxpay + 佳明 2 + V2 stub 2 + B 电商 5 + pic 训练 1 + 跑鞋 1 + 目标 1 + 收藏 1 + 动态 1 + 通知 1 + 关注 1 + 家庭 1 + 团购 1）
+### 31 个 Module 清单（V1 11 + Phase 4 wxpay + 佳明 2 + V2 stub 2 + B 电商 5 + pic 训练 1 + 跑鞋 1 + 目标 1 + 收藏 1 + 动态 1 + 通知 1 + 关注 1 + 家庭 1 + 团购 1 + **评价 1**）
 
 | Module | 路由前缀 | Service | Schema | 测试 | 状态 |
 | --- | --- | --- | --- | --- | --- |
@@ -210,7 +217,7 @@ apps/server/
 | **family** | `/api/family` | ✅ | ✅ | **10 单元** | ✅ **家庭空间**（V0.1.34，6 action + 一人一家庭 @@unique + 8 位 inviteCode） |
 | **group-buy** | `/api/group-buy` | ✅ | ✅ | **8 单元** | ✅ **团购 MVP + 深化**（V0.1.37~38） |
 
-### 数据库表（51 张，V0.1.43 +WeRunRecord/HeartRateRecord/SpO2Record/SleepRecord + User.onboardingDone；V0.1.42 +Group.announce；V0.1.41 +TrainingPlan+UserPlanEnrollment；V0.1.37 +GroupBuy+GroupBuyMember；V0.1.34 +Family+FamilyMember + Goal.familyId；V0.1.32 +Follow；V0.1.31 +Notification；V0.1.30 +Feed+FeedLike+FeedComment；V0.1.29 +Favorite；V0.1.28 +Goal；V0.1.26 +Shoe + Checkin.shoeId）
+### 数据库表（56 张，V0.1.43 +WeRunRecord/HeartRateRecord/SpO2Record/SleepRecord + User.onboardingDone；V0.1.42 +Group.announce；V0.1.41 +TrainingPlan+UserPlanEnrollment；V0.1.37 +GroupBuy+GroupBuyMember；V0.1.34 +Family+FamilyMember + Goal.familyId；V0.1.32 +Follow；V0.1.31 +Notification；V0.1.30 +Feed+FeedLike+FeedComment；V0.1.29 +Favorite；V0.1.28 +Goal；V0.1.26 +Shoe + Checkin.shoeId）
 
 | # | 表名 | Module | V1/V2 | 引入版本 |
 |---|--- |--- |--- |--- |
@@ -364,13 +371,13 @@ docker run -p 3000:3000 --env-file .env qm-wx-server
   - ✅ **V0.1.43 微信运动 + 小米 OAuth + 健康持久化 + 蓝牙加固 + onboarding 4 步式**（4 新表 WeRunRecord/HeartRateRecord/SpO2Record/SleepRecord + User +onboardingDone + device +3 action syncWeRun/myWeRun/myHealthHistory + device.health.ts 心率 retry3 + hasHr + 5s 批量 + 首次立即上传 + onHide flush + 小米 OAuth stub + ludong-sync.job.ts；前端 utils/werun.ts + utils/ble.ts retry3+hasHr+去 services 过滤+getDeviceServices 诊断）
 - ✅ JWT 鉴权 + 功能开关中间件 + 公开端点（content/mall/wxpay）
 - ✅ 微信 code2Session（session_key 缓存 Redis）
-- ✅ Prisma **51** 张表 + **27** 个迁移
+- ✅ Prisma **57** 张表 + **39** 个迁移
 - ✅ **Domain 层**：order-state 状态机（7 态 + TRANSITIONS 白名单 + assertTransition 5 处替换）
 - ✅ **BullMQ jobs 7 个**：周报（每周日 20:00）+ 超时关单（30min delayed）+ 微信平台证书刷新 + **garmin-import**（concurrency=2，5min 桶去重）+ **ludong-sync**（V0.1.43 stub）
 - ✅ **Wallet repo**：ensureWallet / ensureWalletInTx 复用入口（**被 settle/clawback 复用，V0.1.24**）
 - ✅ **CLI 2 个**：`pnpm reconcile -- YYYY-MM-DD` 微信账单比对 + `pnpm garmin-import` 佳明全量入 Checkin（500/事务）
 - ✅ Dockerfile 多阶段构建
-- ✅ **776 单元测试** + 49 e2e（10 files）/ **总覆盖 86.64%**（V0.1.113 review module 后）
+- ✅ **892 单元测试** + 49 e2e（10 files）/ **总覆盖 87.5% funcs > 86 阈值**（V0.1.139 实测）
 - ✅ CI/CD（GitHub Actions ci.yml + deploy-staging.yml，拆 4 parallel job）
 - ✅ **wxpay** refund + notify + 幂等 + 关单保护全链路 + **notify 触发 settleCommission**
 - ✅ **缓存基础设施**（V0.1.x）：`infra/cache.ts` Cache.wrap 接入 **15 热路径**

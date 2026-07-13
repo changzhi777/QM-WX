@@ -1,0 +1,73 @@
+<!-- AI 私教聊天页（V0.1.139 + 完善：历史/新对话/快捷/重新生成/停止/会话管理）-->
+<view class="coach-page">
+  <view class="top-bar">
+    <view class="title">AI 私教 🏃</view>
+    <view class="top-actions">
+      <view class="gen-btn {{sending ? 'disabled' : ''}}" bindtap="onTapGeneratePlan">📋 计划</view>
+      <view class="new-btn {{sending ? 'disabled' : ''}}" bindtap="onNewChat">✨ 新对话</view>
+      <view class="conv-btn {{sending ? 'disabled' : ''}}" bindtap="onShowConversations">💬 会话</view>
+    </view>
+  </view>
+
+  <scroll-view class="msg-list" scroll-y scroll-top="{{scrollTop}}" scroll-with-animation enhanced show-scrollbar="{{false}}">
+    <view wx:for="{{messages}}" wx:key="index" class="msg {{item.role}}">
+      <block wx:if="{{item.type === 'plan'}}">
+        <plan-card plan="{{item.plan}}" bind:adopt="onAdoptPlan" bind:regenerate="onRegeneratePlan" bind:tweak="onTweakPlan" />
+      </block>
+      <block wx:else>
+        <view class="bubble">
+          <text>{{item.content}}{{item.pending ? '▍' : ''}}</text>
+        </view>
+      </block>
+    </view>
+
+    <!-- 重新生成（最后一条 assistant 文本 + 非流式时）-->
+    <view
+      wx:if="{{messages.length > 0 && !sending && messages[messages.length-1].role === 'assistant' && messages[messages.length-1].type !== 'plan' && hasHistory}}"
+      class="regen-row"
+    >
+      <view bindtap="onRegenerate">🔄 重新生成</view>
+    </view>
+  </scroll-view>
+
+  <!-- 快捷问题（无历史/欢迎态 + 非流式时）-->
+  <view class="quick-chips" wx:if="{{!hasHistory && !sending}}">
+    <view wx:for="{{quickQuestions}}" wx:key="*this" class="quick-chip" data-q="{{item}}" bindtap="onTapQuick">{{item}}</view>
+  </view>
+
+  <view class="input-bar">
+    <input class="input" value="{{inputText}}" bindinput="onInput" confirm-type="send" bindconfirm="onSend" placeholder="问我训练、恢复、营养、伤病…" disabled="{{sending}}" adjust-position="{{true}}" />
+    <block wx:if="{{sending}}">
+      <view class="stop-btn" bindtap="onStop">停止</view>
+    </block>
+    <block wx:else>
+      <view class="send-btn {{!inputText ? 'disabled' : ''}}" bindtap="onSend">发送</view>
+    </block>
+  </view>
+
+  <!-- 会话列表弹层（多会话管理）-->
+  <view class="conv-mask" wx:if="{{showConversations}}" bindtap="onCloseConversations">
+    <view class="conv-panel" catchtap="">
+      <view class="conv-head">
+        <text class="conv-title">历史会话</text>
+        <view class="conv-close" bindtap="onCloseConversations">✕</view>
+      </view>
+      <scroll-view class="conv-list" scroll-y>
+        <view
+          wx:for="{{conversationList}}"
+          wx:key="conversationId"
+          class="conv-item"
+          data-cid="{{item.conversationId}}"
+          bindtap="onSelectConversation"
+        >
+          <view class="conv-info">
+            <view class="conv-msg">{{item.lastMessage}}</view>
+            <view class="conv-meta">{{item.messageCount}} 条 · {{item.lastTime}}</view>
+          </view>
+          <view class="conv-del" data-cid="{{item.conversationId}}" catchtap="onDeleteConversation">🗑</view>
+        </view>
+        <view wx:if="{{conversationList.length === 0}}" class="conv-empty">暂无历史会话</view>
+      </scroll-view>
+    </view>
+  </view>
+</view>

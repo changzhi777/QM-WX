@@ -1,0 +1,25 @@
+<!-- 计划卡组件（V0.1.139）— 结构化周计划 + 采纳/重新生成/微调 -->
+<view class="plan-card" wx:if="{{plan}}">
+  <view class="plan-head">
+    <text class="plan-title">{{plan.title}}</text>
+    <text class="plan-level">{{levelLabel}}</text>
+  </view>
+  <view class="plan-meta">{{plan.weeks}} 周 · {{plan.weeklyMileage}} · 目标 {{plan.targetKm}}km</view>
+  <view class="plan-goal">🎯 {{plan.goal}}</view>
+
+  <view class="day-list">
+    <view wx:for="{{plan.days}}" wx:key="day" class="day-item">
+      <view class="day-name">{{item.day}}</view>
+      <view class="day-content">
+        <text class="day-type type-{{item.type}}">{{typeLabel[item.type] || item.type}}</text>
+        <text class="day-text">{{item.content}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="plan-actions">
+    <view class="btn primary" bindtap="onAdopt">采纳计划</view>
+    <view class="btn" bindtap="onRegenerate">重新生成</view>
+    <view class="btn" bindtap="onTweak">对话微调</view>
+  </view>
+</view>

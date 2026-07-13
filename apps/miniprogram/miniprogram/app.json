@@ -49,7 +49,8 @@
     "pages/health-history/index",
     "pages/data-import-guide/index",
     "pages/onboarding/index",
-    "pages/werun/index"
+    "pages/werun/index",
+    "pages/ai-coach/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",

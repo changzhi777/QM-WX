@@ -16,6 +16,9 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['tests/**/*.test.ts'],
+    // e2e 共享真 DB（admin_whitelist / 订单 / 钱包 / ConversationTurn），跨文件并行会相互覆盖状态
+    // 全串行保证隔离（unit mock 不连 DB，串行开销小；可靠性 > 速度）
+    fileParallelism: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],

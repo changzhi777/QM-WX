@@ -199,3 +199,6 @@ export async function getCurrentUser(): Promise<User | null> {
   const cached = wx.getStorageSync('currentUser');
   return (cached as User | null) ?? null;
 }
+
+// V0.1.139 暴露 getBaseUrl 给流式页（wx.request enableChunked 需自拼 URL，不走 api.call）
+export { getBaseUrl };

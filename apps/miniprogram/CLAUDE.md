@@ -5,6 +5,13 @@
 >
 > ## 📋 变更记录 (Changelog)
 >
+> - **2026-07-13** — 🎯 **V0.1.139 AI 私教前端**：**pages/ai-coach/ 新页**（流式 wx.request enableChunked + onChunkReceived + abToAscii 逐字节解码 + 按 \n\n 分帧 + 打字机 setData）+ **components/plan-card/ 新组件**（周计划卡 + 采纳/重新生成/微调，level/type 英文 key→中文 label）+ mine 入口（feature-gate smartAgent）+ app.json +1；**50→51 页 / 9→10 组件**
+> - **2026-07-13** — 🎯 **V0.1.137 跑鞋增强 2 期前端**：**pages/shoes-compare/ 新页**（2 列横向对比表 + 胜出项高亮绿，调 shoes.compareShoes）+ pages/shoes 改造（成就 card 调 stats.myCertificates 3 段鞋成就 + 「对比 2 双」按钮）+ app.json +1 路径；**49→50 页**
+> - **2026-07-13** — 🎯 **V0.1.136 收藏+动态社交向扩展前端**：pages/feed 改造（chooseMedia 多图选择 9 张上限 + 跑鞋 picker 调 feed.shoesForPicker + shoe badge 显示跑鞋信息点击跳 shoes-detail）+ **pages/user 改造 3 tab**（feeds 调 feed.list / favorites 调 favorite.list / stats 调 stats.myRunnerStats）+ **components/collection-poster/ 新组件**（Canvas 2d 3x3 网格合集海报 + 保存相册）+ pages/favorite 改造（多选分享合集按钮）；**49 页 / 组件 +collection-poster**
+> - **2026-07-12** — 🎯 **V0.1.135 目标/证书增强前端**：**components/certificate-poster/ 新组件**（Canvas 2d 海报 + 保存相册）+ **components/goal-share-card/ 新组件**（Canvas 2d 目标达成分享卡）+ pages/certificate 改造（5 段证书展示 + 自定义里程碑编辑表单 addCustomMilestone/removeCustomMilestone + 删除）；**49 页 / 组件 +certificate-poster +goal-share-card**
+> - **2026-07-12** — 🎯 **V0.1.134 赛事服务 MVP 前端**：**pages/admin-race-result/ 新页**（admin 鉴权 + admin.listEnrollmentsByContent + 录入表单 finishTimeSec/rank/bibNumber 调 admin.submitRaceResult）+ pages/content-detail 改造（type=marathon 时 4 tab：详情/路线/排行榜/我的 + 前 50 名榜单调 content.getRaceLeaderboard + 我的成绩卡片调 content.getMyRaceResult + 自报成绩弹层调 content.submitRaceResult + 终点照）+ app.json +1 路径；**48→49 页**
+> - **2026-07-12** — 🎯 **V0.1.133 跑鞋增强前端**：**pages/shoes-detail/ 新页**（基础信息 + 阈值 slider 编辑器调 shoes.updateThreshold + 累计统计 + Canvas 2d 手绘折线图调 shoes.getMileageHistory）+ **components/mileage-chart/ 新组件**（坐标轴 + 最高点高亮 + dpr 适配）+ pages/shoes 卡点跳详情 + 添加弹层加 slider + app.json +1 路径；**47→48 页 / 组件 +mileage-chart**
+> - **2026-07-12** — 🎯 **V0.1.132 init 校准**（纯文档，前端无改动）
 > - **2026-07-12** — 🎯 **V0.1.131 qm-admin Web 账号登录 + V0.1.130 bind-apps 前端页**：pages/bind-apps（手机号/邮箱/密码绑定+状态，三 tab 切换 + 验证码输入 + bcrypt 提交）+ UserOutputSchema +email/+username/+hasPassword；P0 修复（独立 route 从 req.body.payload 取，原 P0 是把整个 body 当 payload 解析导致 bindApps 取不到嵌套 payload）；mine「账号绑定」入口
 > - **2026-07-12** — 🎯 **V0.1.129 多方式认证扩展（前端配合）**：bind-apps 页 + 验证码输入 + 状态显示；前端 api.call vs wx.request 判断标准统一
 > - **2026-07-12** — 🎯 **V0.1.128 COROS 三轨前端**：BLE 设备绑定走通用 device-bind 页 + FIT 文件 chooseMessageFile 选择 → 上传 import + Terra 聚合数据展示（待 Terra API key）
@@ -120,7 +127,7 @@ miniprogram/
     └── tabbar/                     # 8 个 tabBar 图标（4 普通 + 4 选中）
 ```
 
-> 💡 页面数：13（V1 基础）+ 2（佳明 garmin-data/ranking，2026-07-01）+ 3（B 电商核心 cart/points/category，V0.1.22）+ 2（个人中心电商版 address/coupon，V0.1.23）+ 1（分销中心 distribution，V0.1.24）+ 1（天天跑首页 tiantian，V0.1.24）+ 3（pic 新功能页 health/device-bind/training，V0.1.25）+ 1（跑鞋 shoes，V0.1.26）+ 1（年度报告 annual-report，V0.1.27）+ 2（跑步目标 goal + 我的证书 certificate，V0.1.28）+ 1（收藏 favorite，V0.1.29）+ 1（运动动态 feed，V0.1.30）+ 1（消息中心 notification，V0.1.31）+ 1（用户主页 user，V0.1.32）+ 1（家庭空间 family，V0.1.34）+ 1（团购 group-buy + 1 group-buy-detail，V0.1.37）+ 1（红心广场 hot + 1 话题 topic，V0.1.36）+ **4（V0.1.43：werun + onboarding + health-history + data-import-guide）** = **42 页（V0.1.33 不增页仅 device-bind 内部增强；V0.1.100 不增页）**
+> 💡 页面数：13（V1 基础）+ 2（佳明 garmin-data/ranking，2026-07-01）+ 3（B 电商核心 cart/points/category，V0.1.22）+ 2（个人中心电商版 address/coupon，V0.1.23）+ 1（分销中心 distribution，V0.1.24）+ 1（天天跑首页 tiantian，V0.1.24）+ 3（pic 新功能页 health/device-bind/training，V0.1.25）+ 1（跑鞋 shoes，V0.1.26）+ 1（年度报告 annual-report，V0.1.27）+ 2（跑步目标 goal + 我的证书 certificate，V0.1.28）+ 1（收藏 favorite，V0.1.29）+ 1（运动动态 feed，V0.1.30）+ 1（消息中心 notification，V0.1.31）+ 1（用户主页 user，V0.1.32）+ 1（家庭空间 family，V0.1.34）+ 1（团购 group-buy + 1 group-buy-detail，V0.1.37）+ 1（红心广场 hot + 1 话题 topic，V0.1.36）+ **4（V0.1.43：werun + onboarding + health-history + data-import-guide）** + **3（V0.1.133/134/137：shoes-detail + admin-race-result + shoes-compare）** = **50 页（V0.1.33 不增页仅 device-bind 内部增强；V0.1.100/132 不增页）**
 
 ---
 
@@ -175,8 +182,8 @@ wx.request({ url: 'https://...' });
 
 ## 📌 当前状态
 
-- ✅ **42 个页面**全部就位（4 tabBar + 38 子页面）
-- ✅ 4 个组件（feature-gate / error-state / privacy-popup / profile-popup）
+- ✅ **50 个页面**全部就位（4 tabBar + 46 子页面；V0.1.133/134/137 +3 新页）
+- ✅ 9 个组件（feature-gate / error-state / privacy-popup / profile-popup + **entry-grid（V0.1.35）/ mileage-chart（V0.1.133）/ certificate-poster + goal-share-card（V0.1.135）/ collection-poster（V0.1.136）**）
 - ✅ `app.ts` 静默登录逻辑（`silentLogin` 补全 `me` 调用）+ **V0.1.100 envVersion 分支**
 - ✅ `services/api.ts` 统一封装（含 refresh 一次重试 + `actionUrl` 工具）
 - ✅ `utils/auth.ts` / `format.ts` / `config/env.ts` + **`utils/ble.ts`**（V0.1.25 蓝牙 BLE 工具；V0.1.33 加 readBattery/readDeviceInfo/readCharValue；**V0.1.43 retry3+hasHr+去 services 过滤+getDeviceServices 诊断**）+ **`utils/werun.ts`**（V0.1.43 微信运动 session_key AES-128-CBC 解密 + 每日节流）

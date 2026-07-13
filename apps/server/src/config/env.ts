@@ -59,6 +59,11 @@ const EnvSchema = z.object({
   SMTP_PORT: z.coerce.number().optional(),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
+
+  // V0.1.139 AI 私教 LLM（OpenAI 兼容；缺省走 Stub 规则话术，配齐后切真模型）
+  LLM_BASE_URL: z.string().optional(),
+  LLM_API_KEY: z.string().optional(),
+  LLM_MODEL: z.string().optional(),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

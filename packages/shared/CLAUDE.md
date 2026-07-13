@@ -4,6 +4,13 @@
 >
 > ## 📋 变更记录 (Changelog)
 >
+> - **2026-07-13** — 🎯 **V0.1.139 AI 私教** ENDPOINTS 加 `aiCoach` 模块（**6 action**：chat / chatStream 流式 / generatePlan / adoptPlan / history 历史持久化 / regenerate 重新生成）
+> - **2026-07-13** — 🎯 **V0.1.137 跑鞋增强 2 期** ENDPOINTS：shoes +1 action `compareShoes`（横向对比 2 双，shoes action 数 8→9）+ reviews 扩 targetType enum 'product'|'shoe'（鞋评双分发，合成 productId=`shoe:${shoeId}` 绕过 @@unique 三元组）+ stats.myCertificates 返扩 3 段鞋成就（shoesMilestones 100/500/1000/3000km + shoeDays 30/100/365 天 + shoeCheckin 50/100/500 次）
+> - **2026-07-13** — 🎯 **V0.1.136 收藏+动态社交向扩展** ENDPOINTS：feed +1 action `shoesForPicker`（跑鞋 picker 接口，publish 校验 shoeId 归属）+ Feed schema +shoeId optional（前端动态可关联跑鞋，badge 显示）
+> - **2026-07-12** — 🎯 **V0.1.135 目标/证书增强** ENDPOINTS：goal +4 action（addCustomMilestone/removeCustomMilestone/listCustomMilestones/checkMilestoneAchievement，goal action 数 6→10）+ stats.myCertificates 返扩 5 段（+paceProgressCert/consecutiveCheckinCert/groupContributionCert + customMilestones 用户自定义）+ User schema +customMilestones Json?
+> - **2026-07-12** — 🎯 **V0.1.134 赛事服务 MVP** ENDPOINTS：content +3 action（submitRaceResult/getRaceLeaderboard/getMyRaceResult，content action 数 3→6）+ admin +2（submitRaceResult/listEnrollmentsByContent）+ RaceResult schema（@@unique enrollmentId 1:1）
+> - **2026-07-12** — 🎯 **V0.1.133 跑鞋增强** ENDPOINTS：shoes +3 action（getDetail/getMileageHistory/updateThreshold，shoes action 数 5→8）
+> - **2026-07-12** — 🎯 **V0.1.132 init 校准**（纯文档，ENDPOINTS 无改动）
 > - **2026-07-12** — 🎯 **V0.1.129 多方式认证 + V0.1.131 qm-admin 登录** ENDPOINTS 加 `auth` 模块 login 4 method（wechat/phone/email/password）+ bindApps + sms-code + send-mail（保留 refresh）；+UserOutputSchema 字段 `email?` / `username?` / `hasPassword`（V0.1.130）+ action 数 +5（auth.sms-code / send-mail / bindApps + login dispatcher 方法）
 > - **2026-07-12** — 🎯 **V0.1.128 COROS 三轨** ENDPOINTS 加 `device.bindApps` 操作扩展（Terra 聚合 API key 配置在 configRepo）
 > - **2026-07-12** — 🎯 **V0.1.127 体脂秤** ENDPOINTS.device 加 `myScaleBind` / `submitBodyComp`（scale GATT 解析 + 入 BodyCompositionRecord 表）；action 数 16→18
@@ -68,7 +75,7 @@ import {} from '@qm-wx/shared/constants/device-brands';   // V0.1.25 / V0.1.33
 import {} from '@qm-wx/shared/api-contracts';
 ```
 
-### ENDPOINTS 模块清单（截至 2026-07-10 V0.1.100/V0.1.43）
+### ENDPOINTS 模块清单（截至 2026-07-13 V0.1.137）
 
 | 模块 | action 数 | 说明 |
 | --- | ---: | --- |

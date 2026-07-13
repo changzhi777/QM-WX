@@ -88,7 +88,7 @@ describe.skipIf(skip)('退款 happy path e2e（管理员全额退款）', () => 
       update: { value: { openids: [E2E_ADMIN_OPENID] } },
     });
     // 清缓存（admin.isAdmin 有内存缓存）
-    const { invalidateAdminCache } = await import('../../src/modules/admin/admin.routes.js');
+    const { invalidateAdminCache } = await import('../../src/modules/admin/admin.service.js');
     invalidateAdminCache();
 
     // 2. 用户登录

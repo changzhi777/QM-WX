@@ -107,9 +107,9 @@ describe.skipIf(skip)('user 全链路 e2e（P0-1 回归）', () => {
     expect(body.data!.user.nickname).toBe(E2E_NICKNAME_NEW);
   });
 
-  it('bindApps 带 token → 501 Not Implemented（service stub；鉴权通过）', async () => {
-    // 注：bindApps service 暂为 stub（throw notImplemented "Phase 1.1"），不返 200
-    // 关键回归价值：能走到 service 层说明鉴权正确（修过 P0-1 后不再 401）
+  it('bindApps 带 token → 400（V0.1.130 已实现，payload 校验失败但鉴权通过）', async () => {
+    // V0.1.130 bindApps 已实现（phone/email/password 绑定，BindAppsInputSchema 校验）
+    // 发不完整 payload → 400 校验错；关键回归价值：鉴权通过（修过 P0-1 后不再 401）
     const res = await app.inject({
       method: 'POST',
       url: '/api/user',
@@ -119,7 +119,7 @@ describe.skipIf(skip)('user 全链路 e2e（P0-1 回归）', () => {
         payload: { boundApps: { garmin: true } },
       },
     });
-    expect(res.statusCode).toBe(501);
+    expect(res.statusCode).toBe(400);
   });
 
   // ===== 负面用例 =====

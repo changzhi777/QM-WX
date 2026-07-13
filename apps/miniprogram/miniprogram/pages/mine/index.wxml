@@ -94,6 +94,13 @@
       <view class="arrow">›</view>
     </view>
 
+    <feature-gate flag="smartAgent">
+      <view class="list-item" bindtap="goAiCoach">
+        <view class="lbl">AI 私教 🏃</view>
+        <view class="arrow">›</view>
+      </view>
+    </feature-gate>
+
     <view class="list-item" bindtap="goBindApps">
       <view class="lbl">账号绑定</view>
       <view class="arrow">›</view>

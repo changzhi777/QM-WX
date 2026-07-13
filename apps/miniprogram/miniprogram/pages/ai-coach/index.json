@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "AI 私教",
+  "usingComponents": {
+    "plan-card": "/components/plan-card/index"
+  }
+}

@@ -184,6 +184,11 @@ Page({
     wx.navigateTo({ url: '/pages/device-bind/index' });
   },
 
+  /** V0.1.139 AI 私教（smartAgent flag 守卫，wxml feature-gate 包裹）*/
+  goAiCoach() {
+    wx.navigateTo({ url: '/pages/ai-coach/index' });
+  },
+
   goWeRun() {
     wx.navigateTo({ url: '/pages/werun/index' });
   },
