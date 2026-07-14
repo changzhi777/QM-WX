@@ -1,0 +1,25 @@
+# Docker 构建上下文排除（避免本地 node_modules 软链污染 Docker 内 pnpm install）
+# V0.1.149 init：无 .dockerignore 导致 COPY apps/server 覆盖 install 建的 node_modules，bullmq 软链断裂
+
+# 依赖与构建产物（Docker 内 pnpm install --frozen-lockfile 重建）
+**/node_modules
+**/dist
+**/build
+**/*.tsbuildinfo
+
+# Git
+.git
+.gitignore
+
+# 环境与密钥（.env 由 compose env_file 注入）
+.env
+**/.env
+*.pem
+*.key
+
+# 日志与临时
+**/*.log
+*.tmp
+
+# 调试截图（根目录临时产物）
+/*.png
