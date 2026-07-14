@@ -1,31 +1,32 @@
 /**
- * upload routes 冒烟测试
+ * upload routes 路由层测试 — V0.1.149 COS + 本地混合派发
  *
- * 单 endpoint：POST /api/upload（multipart file）
- * 路径：
- * - 未登录 → 401
- * - 无 file → 400
- * - mime 不在白名单 → 400
- * - 正常上传 → 写文件 + 返回 { url, size, mime }
+ * 覆盖：
+ * - 鉴权（未登录 → 401）
+ * - mime 不在白名单 → 400（路由边界）
+ * - type=avatar → 透传 userId + 接收 service.source='cos'
+ * - ?localFallback=1 → service 接收 localFallback=true
+ * - type=feed-image → 业务类型透传
  *
- * 策略：mock @fastify/multipart（自注入 req.file()） + mock fs/promises
+ * 策略：mock 整个 upload.service.uploadFile（service 单测自己 mock fs/cos）
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import Fastify, { type FastifyInstance } from 'fastify';
+import Fastify from 'fastify';
 
-const mockMkdir = vi.fn();
-const mockWriteFile = vi.fn();
-const mockRandomUUID = vi.fn();
-vi.mock('node:fs/promises', () => ({
-  mkdir: (...args: unknown[]) => mockMkdir(...args),
-  writeFile: (...args: unknown[]) => mockWriteFile(...args),
+const mockUploadFile = vi.hoisted(() => vi.fn());
+vi.mock('src/modules/upload/upload.service.js', () => ({
+  uploadFile: mockUploadFile,
+  UPLOAD_MAX_SIZE: 5 * 1024 * 1024,
+  UPLOAD_ALLOWED_MIME: ['image/jpeg', 'image/png', 'image/webp'],
 }));
-vi.mock('node:crypto', () => ({
-  randomUUID: () => mockRandomUUID(),
+vi.mock('src/common/errors.js', () => ({
+  Errors: {
+    unauthorized: () => Object.assign(new Error('unauthorized'), { code: 401, statusCode: 401, name: 'BusinessError' }),
+    badRequest: (msg: string) => Object.assign(new Error(msg), { code: 400, statusCode: 400, name: 'BusinessError' }),
+  },
 }));
 
 import { uploadRoutes } from '../../../src/modules/upload/upload.routes.js';
-import { BusinessError } from '../../../src/common/errors.js';
 
 interface FakeFile {
   filename: string;
@@ -33,138 +34,123 @@ interface FakeFile {
   toBuffer: () => Promise<Buffer>;
 }
 
+/**
+ * duck-typing BusinessError handler —— 跟 app.ts 一致（fastify 4 可能破坏 instanceof，
+ * 测试用 mock 的 Errors.badRequest 不继承真 BusinessError）
+ */
+function installErrorHandler(app: ReturnType<typeof Fastify>) {
+  app.setErrorHandler((err, _req, reply) => {
+    const e = err as unknown as { name?: string; statusCode?: number; code?: number; message?: string };
+    if (e.name === 'BusinessError' && e.statusCode) {
+      return reply.status(e.statusCode).send({ code: e.code, msg: e.message });
+    }
+    return reply.status(e.statusCode || 500).send({ code: e.code || 500, msg: e.message ?? 'unhandled' });
+  });
+}
+
 async function buildApp(opts: { authed?: boolean; file?: FakeFile | null } = {}) {
   const file = opts.file !== undefined ? opts.file : null;
   const app = Fastify();
   app.decorateRequest('user', undefined);
-  // 在 app 顶层直接挂 hook，作用域全局，uploadRoutes 能看到
   app.addHook('onRequest', async (req) => {
-    if (opts.authed !== false) {
+    if (opts.authed) {
       (req as { user?: { id: string } }).user = { id: 'u1' };
+    } else if (opts.authed === false) {
+      // 不设 user
     }
-    (req as unknown as { file: (opts?: unknown) => Promise<FakeFile | null> }).file =
-      async () => file;
+    (req as unknown as { file: () => Promise<FakeFile | null> }).file = async () => file;
   });
-  app.setErrorHandler((err, _req, reply) => {
-    if (err instanceof BusinessError) {
-      return reply.status(err.statusCode).send({ code: err.code, msg: err.message });
-    }
-    return reply.status(500).send({ code: 500, msg: 'unhandled' });
-  });
-  await app.register(uploadRoutes, { prefix: '/api/upload' });
+  installErrorHandler(app);
+  await app.register(uploadRoutes);
   return app;
 }
 
-describe('POST /api/upload', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    mockMkdir.mockResolvedValue(undefined);
-    mockWriteFile.mockResolvedValue(undefined);
-    mockRandomUUID.mockReturnValue('aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee');
-  });
+beforeEach(() => vi.clearAllMocks());
 
-  it('缺 user → 401', async () => {
-    const app = await buildApp({ authed: false, file: null });
-    await app.ready();
-    const res = await app.inject({
-      method: 'POST',
-      url: '/api/upload',
-      payload: {},
-    });
-    expect(res.statusCode).toBe(401);
-  });
-
-  it('无 file → 400', async () => {
-    const app = await buildApp({ file: null });
-    await app.ready();
-    const res = await app.inject({
-      method: 'POST',
-      url: '/api/upload',
-      payload: {},
-    });
-    expect(res.statusCode).toBe(400);
-    expect(res.json().msg).toBe('no file');
-  });
-
-  it('mime 不在白名单（image/gif）→ 400', async () => {
+describe('upload routes V0.1.149', () => {
+  it('未鉴权 → 401', async () => {
     const app = await buildApp({
-      file: {
-        filename: 'pic.gif',
-        mimetype: 'image/gif',
-        toBuffer: async () => Buffer.from('xx'),
-      },
+      authed: false,
+      file: { filename: 'a.jpg', mimetype: 'image/jpeg', toBuffer: async () => Buffer.from('x') },
     });
-    await app.ready();
-    const res = await app.inject({
-      method: 'POST',
-      url: '/api/upload',
-      payload: {},
-    });
-    expect(res.statusCode).toBe(400);
-    expect(res.json().msg).toMatch(/unsupported mime: image\/gif/);
+    const r = await app.inject({ method: 'POST', url: '/', payload: {} });
+    expect(r.statusCode).toBe(401);
+    await app.close();
   });
 
-  it('正常：jpeg + 文件名 → 写 + 返回 url/size/mime', async () => {
-    const buf = Buffer.from('jpeg-data');
+  it('mime 不在白名单（image/gif）→ 400（路由边界兜底）', async () => {
     const app = await buildApp({
-      file: {
-        filename: 'avatar.jpg',
-        mimetype: 'image/jpeg',
-        toBuffer: async () => buf,
-      },
+      authed: true,
+      file: { filename: 'p.gif', mimetype: 'image/gif', toBuffer: async () => Buffer.from('x') },
     });
-    await app.ready();
+    const r = await app.inject({ method: 'POST', url: '/', payload: {} });
+    expect(r.statusCode).toBe(400);
+    expect(r.json().msg).toMatch(/unsupported mime: image\/gif/);
+    expect(mockUploadFile).not.toHaveBeenCalled();
+    await app.close();
+  });
 
-    const res = await app.inject({
-      method: 'POST',
-      url: '/api/upload?type=avatar',
-      payload: {},
+  it('type=avatar → 透传 userId + 接收 service.source="cos"', async () => {
+    mockUploadFile.mockResolvedValue({
+      url: 'https://cos-cdn.qingmulife.cn/avatar/u1-ts-abc.jpg',
+      size: 1024,
+      mime: 'image/jpeg',
+      source: 'cos',
     });
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.data.mime).toBe('image/jpeg');
-    expect(body.data.size).toBe(buf.length);
-    expect(body.data.url).toMatch(/^\/uploads\/avatars\/u1-\d+-aaaaaaaa\.(jpg|jpeg)$/);
-    expect(mockMkdir).toHaveBeenCalledWith(expect.stringContaining('avatars'), { recursive: true });
-    expect(mockWriteFile).toHaveBeenCalledWith(
-      expect.stringContaining('avatars/u1-'),
-      buf,
+    const app = await buildApp({
+      authed: true,
+      file: { filename: 'a.jpg', mimetype: 'image/jpeg', toBuffer: async () => Buffer.from('x') },
+    });
+    const r = await app.inject({ method: 'POST', url: '/?type=avatar', payload: {} });
+    expect(r.statusCode).toBe(200);
+    expect(mockUploadFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'avatar',
+        userId: 'u1',
+        mime: 'image/jpeg',
+        localFallback: false,
+      }),
     );
+    expect(r.json().data.url).toBe('https://cos-cdn.qingmulife.cn/avatar/u1-ts-abc.jpg');
+    expect(r.json().data.source).toBe('cos');
+    await app.close();
   });
 
-  it('无扩展名 + image/png → 用 mimeToExt → .png', async () => {
-    const app = await buildApp({
-      file: {
-        filename: 'weird',
-        mimetype: 'image/png',
-        toBuffer: async () => Buffer.from('png-data'),
-      },
+  it('?localFallback=1 → service 接收 localFallback=true', async () => {
+    mockUploadFile.mockResolvedValue({
+      url: '/uploads/avatar/u1-ts-abc.jpg',
+      size: 1024,
+      mime: 'image/jpeg',
+      source: 'local',
     });
-    await app.ready();
-    const res = await app.inject({
+    const app = await buildApp({
+      authed: true,
+      file: { filename: 'a.jpg', mimetype: 'image/jpeg', toBuffer: async () => Buffer.from('x') },
+    });
+    const r = await app.inject({
       method: 'POST',
-      url: '/api/upload',
+      url: '/?type=avatar&localFallback=1',
       payload: {},
     });
-    expect(res.statusCode).toBe(200);
-    expect(res.json().data.url).toMatch(/\.png$/);
+    expect(r.statusCode).toBe(200);
+    expect(mockUploadFile).toHaveBeenCalledWith(expect.objectContaining({ localFallback: true }));
+    expect(r.json().data.source).toBe('local');
+    await app.close();
   });
 
-  it('无扩展名 + image/webp → .webp', async () => {
+  it('type=feed-image → 业务类型透传', async () => {
+    mockUploadFile.mockResolvedValue({
+      url: 'https://cos-cdn.qingmulife.cn/feed-image/u1-ts.png',
+      size: 2048,
+      mime: 'image/png',
+      source: 'cos',
+    });
     const app = await buildApp({
-      file: {
-        filename: 'no-ext',
-        mimetype: 'image/webp',
-        toBuffer: async () => Buffer.from('webp-data'),
-      },
+      authed: true,
+      file: { filename: 'p.png', mimetype: 'image/png', toBuffer: async () => Buffer.from('xy') },
     });
-    await app.ready();
-    const res = await app.inject({
-      method: 'POST',
-      url: '/api/upload',
-      payload: {},
-    });
-    expect(res.statusCode).toBe(200);
-    expect(res.json().data.url).toMatch(/\.webp$/);
+    await app.inject({ method: 'POST', url: '/?type=feed-image', payload: {} });
+    expect(mockUploadFile).toHaveBeenCalledWith(expect.objectContaining({ type: 'feed-image' }));
+    await app.close();
   });
 });

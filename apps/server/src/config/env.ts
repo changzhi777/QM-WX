@@ -79,6 +79,14 @@ const EnvSchema = z.object({
   // V0.1.148 和风天气 API（qweather.com）
   QWEATHER_KEY: z.string().optional(),
   QWEATHER_API_HOST: z.string().default('nf5b5vtkcp.re.qweatherapi.com'),
+
+  // V0.1.149 腾讯云 COS 对象存储（广州 ap-guangzhou，单桶 qmwx-prod）
+  // 缺省走 本地 fallback（仅 uploads/，重启丢）
+  COS_SECRET_ID: z.string().optional(),
+  COS_SECRET_KEY: z.string().optional(),
+  COS_REGION: z.string().default('ap-guangzhou'),
+  COS_BUCKET: z.string().optional(),
+  COS_CDN_DOMAIN: z.string().optional(),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

@@ -1,53 +1,58 @@
 /**
- * upload module — 接收小程序文件上传
+ * upload module — 接收小程序文件上传（V0.1.149 接入腾讯云 COS）
  *
  * POST /api/upload?type=avatar
  *   multipart: file
- *   返回：{ url, size, mime }
+ *   query:
+ *     - type: avatar | feed-image | cert-poster | misc（默认 misc）
+ *     - localFallback: 1 → 强制本地（调试 / 应急）
+ *   返回：{ code: 0, data: { url, size, mime, source } }
  *
- * Phase 1：存本地 apps/server/uploads/，通过 @fastify/static 暴露
- * Phase 1.1：接 OSS / S3，只换实现
+ * Phase 1：本地
+ * Phase 1.1（V0.1.149）：腾讯云 COS（广州 ap-guangzhou） + 本地 fallback（混合模式）
+ *   - COS 配齐 → 走 COS（公有读 + CDN 域名 cos-cdn.qingmulife.cn）
+ *   - COS 缺配置 → 本地 fallback（重启丢）
+ *   - COS 运行时失败 → 静默 fallback 本地（韧性优先）
+ *   - ?localFallback=1 → 强制本地
  */
 import type { FastifyInstance } from 'fastify';
-import { writeFile, mkdir } from 'node:fs/promises';
-import { join, extname } from 'node:path';
-import { randomUUID } from 'node:crypto';
 import { Errors } from '../../common/errors.js';
-
-const UPLOAD_DIR = join(process.cwd(), 'uploads');
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
+import {
+  uploadFile,
+  UPLOAD_MAX_SIZE,
+  UPLOAD_ALLOWED_MIME,
+} from './upload.service.js';
 
 export async function uploadRoutes(app: FastifyInstance) {
-  app.post('/', async (req) => {
-    if (!req.user) throw Errors.unauthorized();
+  // 限流：5 次/分/用户（防滥用 + COS 成本控制）
+  app.post(
+    '/',
+    { config: { rateLimit: { max: 5, timeWindow: '1 minute' } } },
+    async (req) => {
+      if (!req.user) throw Errors.unauthorized();
 
-    const data = await req.file({ limits: { fileSize: MAX_SIZE } });
-    if (!data) throw Errors.badRequest('no file');
+      const data = await req.file({ limits: { fileSize: UPLOAD_MAX_SIZE } });
+      if (!data) throw Errors.badRequest('no file');
+      if (!UPLOAD_ALLOWED_MIME.includes(data.mimetype)) {
+        throw Errors.badRequest(`unsupported mime: ${data.mimetype}`);
+      }
 
-    if (!ALLOWED_MIME.includes(data.mimetype)) {
-      throw Errors.badRequest(`unsupported mime: ${data.mimetype}`);
-    }
+      const query = (req.query ?? {}) as { type?: string; localFallback?: string };
+      // type 限 1-32 字符 + 字母数字横杠，防 path traversal / 非法字符落到 object key
+      const type = query.type && /^[a-z0-9-]{1,32}$/.test(query.type) ? query.type : 'misc';
+      const localFallback = query.localFallback === '1';
 
-    const ext = extname(data.filename ?? '') || mimeToExt(data.mimetype);
-    const filename = `${req.user.id}-${Date.now()}-${randomUUID().slice(0, 8)}${ext}`;
-    const subdir = 'avatars';
-    const dir = join(UPLOAD_DIR, subdir);
-    await mkdir(dir, { recursive: true });
+      const buffer = await data.toBuffer();
+      const result = await uploadFile({
+        buffer,
+        mime: data.mimetype,
+        filename: data.filename ?? undefined,
+        type,
+        userId: req.user.id,
+        localFallback,
+      });
 
-    const filepath = join(dir, filename);
-    const buffer = await data.toBuffer();
-    await writeFile(filepath, buffer);
-
-    // 公开 URL（@fastify/static 暴露 /uploads/ 前缀）
-    const publicUrl = `/uploads/${subdir}/${filename}`;
-    return { code: 0, data: { url: publicUrl, size: buffer.length, mime: data.mimetype } };
-  });
-}
-
-function mimeToExt(mime: string): string {
-  if (mime === 'image/jpeg') return '.jpg';
-  if (mime === 'image/png') return '.png';
-  if (mime === 'image/webp') return '.webp';
-  return '.bin';
+      return { code: 0, data: result };
+    },
+  );
 }
