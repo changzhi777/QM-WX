@@ -26,12 +26,12 @@
       </view>
       <view class="feed-actions">
         <view class="action {{item.liked ? 'liked' : ''}}" data-id="{{item.id}}" bindtap="onToggleLike">
-          {{item.liked ? '❤️' : '🤍'}} {{item.likeCount}}
+          {{item.liked ? '已赞' : '赞'}} {{item.likeCount}}
         </view>
         <view class="action" data-id="{{item.id}}" bindtap="onOpenComment">
-          💬 {{item.commentCount}}
+          评论 {{item.commentCount}}
         </view>
-        <button class="action share-btn" open-type="share" data-id="{{item.id}}">📤 分享</button>
+        <button class="action share-btn" open-type="share" data-id="{{item.id}}">分享</button>
       </view>
     </view>
 
