@@ -33,6 +33,9 @@
 | [**PHASE-4-2-PREP.md**](PHASE-4-2-PREP.md) | **Phase 4.1 → 4.2 切真生产 playbook**（商户号/证书/env 模板/监控/回滚/9 项 checklist） | ✅ **新增** |
 | [**API-AUDIT.md**](API-AUDIT.md) | **API 审查报告**：P0/P1 清单（P0-1 user 鉴权 / P1 admin schema 内联，**均已在 working tree 修复**） | ✅ **新增** |
 | [**VERIFY-CHECKLIST.md**](VERIFY-CHECKLIST.md) | **V0.1.121 真机验证 + wxpay 商户配置清单**（功能矩阵 + 商户号批后步骤 + payment flag SQL + 回滚） | ✅ **新增** |
+| [**qweather-api.md**](qweather-api.md) | **和风天气 API 对接说明**（`stats.weather` action + 凭据管理 + 长沙默认值 + V0.1.148 API KEY 明文暴露修复记录） | ✅ **V0.1.148 新增** |
+| [**C-DEPLOY-CHECKLIST.md**](C-DEPLOY-CHECKLIST.md) | **C 部署清单 — Terra API key + 微信体验版上传**（挂账主人手动操作项，含 Terra 申请流程 + 微信开发者工具/公众平台步骤 + 真机验证项） | ✅ **V0.1.148 新增** |
+| [**COS-STORAGE.md**](COS-STORAGE.md) | **腾讯云 COS 对象存储 — 部署与对接文档**（V0.1.149 引入；混合模式 server putObject + 本地 fallback；CAM 最小权限 + CDN + 控制台 7 步清单） | ✅ **V0.1.149 新增** |
 
 ---
 

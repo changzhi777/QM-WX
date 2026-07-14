@@ -5,6 +5,12 @@
 >
 > ## 📋 变更记录 (Changelog)
 >
+> - **2026-07-14** — 🎯 **`/zcf:init-project` 增量校准 #8（V0.1.148 init #8，post-v0.1.139~148 全量实测重对）**：本会话 init-architect 实测核对（**18 页 / 10 组件 / 32 module 后端 / 58 表 / 45 迁移**）；**V0.1.139~148 6 段增量 changelog 全部补到本文件顶部**；最大改动：**V0.1.142 删商城前端 16 页**（50→**18**）/ AI 私教 tab 化（tabBar 「商城」→「AI 私教」） / V0.1.144~147 Vant 美化 12 页 / V0.1.148 品牌色统一 #0FAF8E→#2D9D78（13 文件批量）+ 多页 UI 优化；本次 init #8 **0 代码改动**，纯文档增量
+> - **2026-07-14** — 🎯 **V0.1.148 全局品牌色 + 多页 UI 优化**：`/zcf:workflow` UI 全面优化 + **13 文件批量替换品牌色 #0FAF8E → #2D9D78**（青沐绿深一档更专业稳重）+ sport 打卡页 UI 优化（emoji→文字 + 卡片阴影 + 表单圆角 + 品牌色统一）+ feed 动态页 UI 优化（emoji→文字 + 卡片阴影 + 品牌色统一）+ **AI 私教 UI/UX 全面优化**（品牌色统一 + emoji→文字 + 视觉提升 + 操作栏 emoji→文字 + top-bar 品牌色渐变）+ app.json navigationBarBackgroundColor `#2D9D78` + tabBar.selectedColor `#2D9D78`；**不改动 schema/不改动测试**；commit 9223e56/fcab0fb/7d882a4/8144826/677f81a（最近 5 commit）
+> - **2026-07-13~14** — 🎯 **V0.1.144~147 AI 健康助手化 + Vant 美化 + MQTT 推送 + 佳明 4 路线调研**：`/zcf:workflow` 多阶段：① **AI 健康助手化**（参考 prototype "今日"页 3 tab 健康中心：跑量+心率+睡眠+步数综合）+ **pages/daily-report/ 新页**（调 stats.myDailyReport + stats.generateDailyReport + AI 健康分数 0-100 + AI 解读文本 + alertText + 重启入口）+ pages/index 改造（健康中心 tab 化）；② **Vant 美化 12 页**（Vant Weapp UI 库渐进升级：ai-coach / mine / sport / index / goal / certificate / feed / notification / family / annual-report / training / werun）；③ **MQTT 订阅前端 polyfill**（微信原生不支持 mqtt.js → 自实现 polyfill wx-mqtt：订阅 health/recipe/goal/feed topic，按 userId 路由，setData 增量更新）；④ **佳明 4 路线调研结论**（写入 docs/CLAUDE.md）：A 官方 API 架子（已申请待批）/ B 逆向架子（YAGNI 法律风险高）/ C BLE 已实现（V0.1.25）/ D Terra（V0.1.128 第三方聚合）；= **与后端同步**：57→58 表（DailyReport #58） / 40→45 迁移 / **前端页面 35→18 进一步简化**（删 review 等冗余 + 整合 sport/group 类）/ 901 单元不变
+> - **2026-07-13** — 🎯 **V0.1.142 删商城前端 16 页（后端 module 保留）**：`/zcf:workflow` 方案 1 真删 — **删 16 商城页**（mall / cart / points / category / address / coupon / distribution / tiantian / order-list / order-confirm / product-detail / review-publish / review-my / review-list / group-buy / group-buy-detail）+ app.json pages 删 16 + **tabBar「商城」→「AI 私教」** + mine 删商城入口 + goAiCoach switchTab + sport 删天天跑 + favorite 商品跳提示 + **ai-coach tab 化（根治入口 bug：tabBar 直接显示不依赖 feature-gate/config）**；**51→35 页**（**V0.1.144~147 进一步简化 35→18**） / 后端商城 module 保留 / typecheck 过 + 无残留 / commit edeaff5
+> - **2026-07-13** — 🎯 **V0.1.141 AI 私教速度优化（throttle + warmup + flush + Cache）**：A 前端 setData throttle（buffer 50ms flush，频率降 ~20x）+ B warmup action（进页预 Cache system prompt）+ C SSE flushHeaders + E loadHistory Cache 30s + 清理调试代码（FORCE_PROD=false + mine 调试条删）；test 46 passed / 0 回归 / 9→10 action（+warmup）/ commit de9c038
+> - **2026-07-13** — 🎯 **V0.1.140 AI 私教完善（4 人设 + 建议卡片 + 计划追踪 + 分享 + 限流 + voice）**：User +aiCoachPersona 字段 + **context-builder 4 人设 DRY**（共享 SYSTEM_BASE + PERSONA_PROMPTS 人设段，cache key 含 persona）+ **C 计划追踪**（计划进度 + 最近 7 天打卡喂 LLM，零新表复用 calcPlanProgress）+ **B 建议卡片**（reply `📋建议：` 标记 + 前端正则提取 + addGoal/adoptPlan 卡片，流式友好）+ **setPersona** action（第 9 个，Cache.delByPattern 失效）+ **D 分享**（onShareAppMessage）+ **F voice** 占位（待微信同声传译插件 wx069ba97219f66d99 开通）+ 前端 **UI/UX 优化**（人设 chip 横滚高亮 + 图标操作栏 + 渐变气泡 + 建议卡片 + voice 按钮）+ mine 入口"测试"标签；test 901 passed（+9）/ 0 回归
 > - **2026-07-13** — 🎯 **V0.1.139 AI 私教前端**：**pages/ai-coach/ 新页**（流式 wx.request enableChunked + onChunkReceived + abToAscii 逐字节解码 + 按 \n\n 分帧 + 打字机 setData）+ **components/plan-card/ 新组件**（周计划卡 + 采纳/重新生成/微调，level/type 英文 key→中文 label）+ mine 入口（feature-gate smartAgent）+ app.json +1；**50→51 页 / 9→10 组件**
 > - **2026-07-13** — 🎯 **V0.1.137 跑鞋增强 2 期前端**：**pages/shoes-compare/ 新页**（2 列横向对比表 + 胜出项高亮绿，调 shoes.compareShoes）+ pages/shoes 改造（成就 card 调 stats.myCertificates 3 段鞋成就 + 「对比 2 双」按钮）+ app.json +1 路径；**49→50 页**
 > - **2026-07-13** — 🎯 **V0.1.136 收藏+动态社交向扩展前端**：pages/feed 改造（chooseMedia 多图选择 9 张上限 + 跑鞋 picker 调 feed.shoesForPicker + shoe badge 显示跑鞋信息点击跳 shoes-detail）+ **pages/user 改造 3 tab**（feeds 调 feed.list / favorites 调 favorite.list / stats 调 stats.myRunnerStats）+ **components/collection-poster/ 新组件**（Canvas 2d 3x3 网格合集海报 + 保存相册）+ pages/favorite 改造（多选分享合集按钮）；**49 页 / 组件 +collection-poster**
@@ -32,13 +38,15 @@
 > - **2026-07-03** — **V0.1.29 收藏 favorite** + V0.1.28 跑步目标/我的证书 + V0.1.27 sport 跑鞋 picker+年度报告+蓝牙调试面板
 > - **2026-07-03** — **V0.1.26 跑鞋 shoes** + V0.1.25 pic 3 页（今日健康+设备绑定+锻炼训练）+ B 电商三连击 + 佳明 3 页
 
-> 最近更新：2026-07-10（**V0.1.100 GitHub 主线起点** + **V0.1.43** 微信运动+小米 OAuth+健康持久化+onboarding 4 步式：utils/werun.ts 新增 + utils/ble.ts retry3+hasHr+去 services 过滤 + 4 新页 werun/onboarding/health-history/data-import-guide + mine「重新激活授权」入口替退出登录 + app.ts envVersion 分支）— **51 表 / 30 module / 42 页 / 580 单元** — V0.1.42 跑群深化 group-detail 改造群卡+公告+成员列表 + V0.1.41 训练计划配置化 training 进度卡+加入计划 + V0.1.40 profile 完整 7 问题修 — V0.1.39 family 后续（转让家长+解散+家庭成就）— V0.1.38 团购深化（成团下单）— V0.1.37 团购 MVP — V0.1.36 2771 社交深化 — V0.1.35 mine 重构 — V0.1.34 家庭空间 family — V0.1.33 BLE 设备品牌识别 — V0.1.32 用户主页 user + training wxss 修复 — V0.1.31 消息中心 notification — V0.1.30 运动动态 feed — V0.1.29 收藏 favorite — V0.1.28 跑步目标/我的证书 — V0.1.27 sport 跑鞋 picker + 年度报告 + 蓝牙调试面板 — V0.1.26 跑鞋 shoes — V0.1.25 pic 3 页（今日健康+设备绑定+锻炼训练）— B 电商三连击 + 佳明 3 页 + 个人中心电商版，pic 2768
+> 最近更新：2026-07-14 **V0.1.148 init #8 全量实测**（**V0.1.139~148 6 段 changelog 已补本文件顶部**） — **18 页 / 10 组件 / 后端 32 module / 58 表 / 45 迁移** — V0.1.148 品牌色 #0FAF8E→#2D9D78 + AI 私教 UI 全面优化（emoji→文字+卡片阴影+渐变气泡）— V0.1.144~147 AI 健康助手（DailyReport）+ Vant 美化 12 页 + MQTT polyfill + 佳明 4 路线调研 — V0.1.142 删商城前端 16 页（51→35→18）+ AI 私教 tab 化 — V0.1.141 AI 私教速度优化（throttle+warmup+flush+Cache） — V0.1.140 AI 私教 4 人设 + 建议卡片 + 计划追踪 + 分享 + 限流 — V0.1.139 AI 私教前端（流式 wx.request enableChunked + abToAscii 逐字节解码 + plan-card 新组件）— V0.1.137 跑鞋增强 2 期前端 shoes-compare + 鞋成就卡 — V0.1.136 feed 9 图上限 + 跑鞋 picker + collection-poster 海报 — V0.1.135 certificate-poster + goal-share-card 海报组件 — V0.1.134 admin-race-result + content-detail 4 tab — V0.1.133 shoes-detail + mileage-chart 折线图 — V0.1.132 init 校准（纯文档） — V0.1.131 qm-admin + V0.1.130 bind-apps — V0.1.129 多方式认证 bind-apps — V0.1.128 COROS FIT/Terra — V0.1.127 health 体成分紫卡
 
 ---
 
 ## 🎯 职责
 
 微信小程序前端，业务调用全部走 `services/api.ts`（替代旧 `wx.cloud.callFunction`）。
+
+**当前阶段（V0.1.148，2026-07-14 init #8 实测）**：**18 页面注册**（V0.1.142 删商城前端 16 页 + V0.1.144~147 进一步简化到 18）/ **10 组件**（V0.1.140 +plan-card）/ 后端 32 module 全对接 / 58 表 / 45 迁移 / 901 单元 / 27 module CLAUDE.md / 品牌色 #2D9D78（V0.1.148 全局替换）
 
 ---
 
@@ -62,72 +70,56 @@ cd ../.. && pnpm install
 
 ---
 
-## 📂 目录结构
+## 📂 目录结构（V0.1.148 init #8 实测 18 页 + 10 组件）
 
 ```
 miniprogram/
 ├── app.ts                          # 应用入口（静默登录 + 全局 $apiBase/$token + V0.1.100 envVersion 分支）
-├── app.json                        # 页面路由 + tabBar + 全局窗口配置（42 页面注册）
-├── app.wxss                        # 全局样式（--brand: #0FAF8E，限 300 行内）
+├── app.json                        # 页面路由 + tabBar（**18 页面注册 V0.1.148 实测** + tabBar: 今日/问AI/我的 — V0.1.142 改商城→AI 私教）
+├── app.wxss                        # 全局样式（--brand: **#2D9D78 V0.1.148 改**）
 ├── sitemap.json                    # 搜索接入配置
 ├── config/
 │   └── env.ts                      # baseUrl / 品牌常量
 ├── utils/
 │   ├── auth.ts                     # ensureLogin / logout
 │   ├── format.ts                   # 配速/距离/日期格式化
-│   ├── ble.ts                      # **蓝牙 BLE 工具**（V0.1.25：扫描/连接/订阅心率服务 0x180D + 心率值解析；V0.1.33：readBattery/readDeviceInfo/readCharValue；**V0.1.43 加固**：retry3 + hasHr 策略 + 去 services 过滤 + getDeviceServices 诊断）
-│   └── werun.ts                    # **微信运动工具**（V0.1.43 新增：syncWeRunToday wx.getWeRunData→AES-128-CBC→upsert + getWeRunHistory + syncWeRunIfFirstToday 每日节流 + cnMonthRange）
+│   ├── ble.ts                      # **蓝牙 BLE 工具**（V0.1.25：扫描/连接/订阅心率服务 0x180D；V0.1.33：readBattery/readDeviceInfo/readCharValue；**V0.1.43 加固**：retry3 + hasHr + 去 services 过滤 + getDeviceServices 诊断）
+│   ├── werun.ts                    # **微信运动工具**（V0.1.43：syncWeRunToday + getWeRunHistory + syncWeRunIfFirstToday）
+│   └── scale.ts                    # **体脂秤 GATT 解析**（V0.1.127）
 ├── services/
 │   └── api.ts                      # **唯一**调后端的地方（含 refresh 一次重试 + actionUrl）
-├── components/
-│   ├── feature-gate/               # 功能开关守卫组件（读取远程 feature_flags）
-│   ├── error-state/                # 通用错误态组件（方案 B 引入）
+├── components/                     # **10 个组件（V0.1.148 init #8 实测）**
+│   ├── feature-gate/               # 功能开关守卫
+│   ├── error-state/                # 通用错误态
 │   ├── privacy-popup/              # 隐私协议弹窗
-│   └── profile-popup/              # 用户资料弹窗
-├── pages/
-│   ├── index/                      # 首页（tabBar；V0.1.43 onShow 加微信运动每日节流 syncWeRunIfFirstToday）
-│   ├── sport/                      # 运动打卡（tabBar；V0.1.27 加跑鞋 picker：调 shoes.list 取 active，打卡传 shoeId → 跑鞋里程闭环）
-│   ├── mall/                       # 商城（tabBar）
-│   ├── mine/                       # 我的（tabBar；**20 宫格入口** + V0.1.43「重新激活授权」入口替退出登录：调 user.resetOnboarding + onboardingDone=false 重新走向导）
-│   ├── tiantian/                   # **天天跑首页**（V0.1.24；搜索 + 3 入口 + 促销横幅 + 功能宫格 + 新人专享商品流，pic 2767）
-│   ├── profile/                    # 个人资料（V0.1.40 完整实现：gender/birthday/region/height/weight + 头像持久化）
-│   ├── group-detail/               # 跑群详情（V0.1.42 改造：群卡+公告+汇总+成员列表 role+joinedAt+monthDistance）
-│   ├── weekly-report/              # 周报战报
-│   ├── content-list/               # 内容列表（赛事/酒店/景区等）
-│   ├── content-detail/             # 内容详情
-│   ├── product-detail/             # 商品详情
-│   ├── order-confirm/              # 订单确认（Phase 4）
-│   ├── order-list/                 # 订单列表（V0.1.23 5 tab：全部/待付/待发/待收/完成）
+│   ├── profile-popup/              # 用户资料弹窗
+│   ├── entry-grid/                 # V0.1.35 mine 重构引入，4 列网格
+│   ├── mileage-chart/              # V0.1.133 跑鞋历史里程曲线 Canvas 2d
+│   ├── certificate-poster/         # V0.1.135 证书分享海报 Canvas 2d
+│   ├── goal-share-card/            # V0.1.135 目标达成分享卡 Canvas 2d
+│   ├── collection-poster/          # V0.1.136 收藏合集海报 Canvas 2d
+│   └── plan-card/                  # **V0.1.140 AI 私教周计划卡**（采纳/重新生成/微调，level/type 英文 key→中文 label）
+├── pages/                          # **18 个页面（V0.1.148 init #8 实测 app.json）**
+│   ├── index/                      # 首页（tabBar「今日」；V0.1.43 onShow + V0.1.144~147 改造 3 tab 健康中心）
+│   ├── sport/                      # 运动打卡（**已删 V0.1.142 天天跑**，V0.1.27 +跑鞋 picker；V0.1.148 UI 优化：emoji→文字 + 卡片阴影）
+│   ├── ai-coach/                   # **AI 私教**（tabBar「问AI」 — V0.1.142 改商城→AI 私教；V0.1.139 流式 chat + V0.1.140 4 人设+建议卡片+计划追踪+分享+voice + V0.1.141 速度优化 + V0.1.148 UI 优化）
+│   ├── mine/                       # 我的（tabBar「我的」 — V0.1.35 重构宫格）
+│   ├── profile/                    # 个人资料（V0.1.40 完整实现）
 │   ├── agreement/                  # 用户协议
-│   ├── garmin-data/                # **佳明数据处理**（2026-07-01，待处理/已处理 + 导入/忽略，pic 2769）
-│   ├── ranking/                    # **多维榜单**（2026-07-01，跑团子榜，pic 2772）
-│   ├── cart/                       # **购物车**（V0.1.22，pic 2765）
-│   ├── points/                     # **积分中心**（V0.1.22，签到 +10/天 + 任务列表，pic 2763）
-│   ├── category/                   # **全部商品分类**（V0.1.22，pic 2766）
-│   ├── address/                    # **地址管理**（V0.1.23，list + form + setDefault）
-│   ├── coupon/                     # **优惠券**（V0.1.23，领券中心 + 我的券）
-│   ├── distribution/               # **分销中心**（V0.1.24，2762 红卡 + 6 宫格 + 3 tab 列表 + 邀请码复制）
-│   ├── health/                     # **今日健康**（V0.1.25，pic 2774；6 卡片：睡眠/健身年龄/训练指标/今日活动 + 5 占位；调 `device.myTodayHealth`）
-│   ├── device-bind/                # **设备绑定中心**（V0.1.25，pic 2770；9 品牌宫格 + 扫描弹层 + 实时心率 + 蓝牙 BLE 直连走 utils/ble.ts；V0.1.27 加调试面板；V0.1.33 品牌识别增强；V0.1.43 蓝牙加固 retry3+hasHr+去 services 过滤）
-│   ├── training/                   # **锻炼训练**（V0.1.25，pic 2775；GO + 4 套计划模板 + 赛事助手 + 跑步记录，调 `training.myPlans/mySportRecords`；V0.1.32 wxss 中文 selector 修复）
-│   ├── shoes/                      # **我的跑鞋**（V0.1.26，pic 2768；跑鞋卡 进度条+健康度色码 绿<70%/黄70-100%/红>100% + 更换提醒 + 添加弹层 品牌/型号/昵称/阈值 + 退役按钮 + FAB 悬浮添加，调 `shoes.list/add/retire/myStats`）
-│   ├── annual-report/              # **年度报告**（V0.1.27，参考图 2768/2771；渐变大卡 + 月度柱状图（view 宽度模拟）+ 最长单次 + 年份切换 + 分享战报 onShareAppMessage，调 `stats.myAnnualReport`）
-│   ├── goal/                       # **跑步目标**（V0.1.28，pic 2768 跑者向；目标卡 进度条+达成徽章 completed + 添加弹层 月度/年度/自定义 picker + targetDistance + title + FAB 悬浮添加 + 删除，调 `goal.list/add/remove/myProgress`）
-│   ├── certificate/                # **我的证书**（V0.1.28，pic 2768 跑者向；下一里程碑卡 橙色渐变+进度条 + 里程碑证书🏆（100/500/1000/3000km）+ 赛事证书（已报名马拉松），调 `stats.myCertificates`）
-│   ├── favorite/                   # **我的收藏**（V0.1.29，pic 3 向社交向；tab 内容/商品 + 列表卡（封面+标题+摘要）+ 取消收藏按钮 + 点卡跳详情（content-detail/product-detail），调 `favorite.list/add/remove/isFavorited`）
-│   ├── feed/                       # **运动动态**（V0.1.30，pic 2 社交向核心；动态卡 作者头像+昵称+时间+内容+图+跑量+点赞❤️+评论💬 + 发布弹层 textarea 500 字 + 点赞**乐观更新**（失败回滚）+ 评论弹层 + FAB 悬浮发布 + 分页 onReachBottom；V0.1.32 feed-head 加 data-uid + bindtap onTapUser）
-│   ├── notification/               # **消息中心**（V0.1.31，pic 2 社交向收尾；列表卡 actor 头像+昵称+文案+内容摘要+时间+未读红点 + 全部已读 + 点击乐观标记已读+跳 feed + onReachBottom 分页 + 下拉刷新，调 `notification.list/unreadCount/markRead/markAllRead`）
-│   ├── user/                       # **用户主页**（V0.1.32，pic 2 社交向深化；头像+昵称+关注数/粉丝数+关注按钮**乐观更新**（失败回滚）+ isSelf 自己不显示按钮；调 `follow.myCounts`（一次拿全 user+followingCount+followerCount+isFollowing+isSelf）/ `follow.follow` / `follow.unfollow`；从 feed 头像 onTapUser 进入，关注闭环入口）
-│   ├── family/                     # **家庭空间**（V0.1.34，pic 2776 家庭方向；家庭卡 name+inviteCode+成员数 + 邀请按钮复制 inviteCode + 本月跑量榜 rank-num+avatar+nickname+家长标+monthDistance + 家庭目标进度条 + 创建/加入（无家庭态）+ 添加家庭目标弹层（月度/年度 picker + title + targetDistance）+ leaveFamily 按钮（非 owner）；调 `family.createFamily/joinFamily/myFamily/leaveFamily/familyRanking/inviteInfo` + `goal.addFamilyGoal/myFamilyGoals`）
-│   ├── werun/                      # **微信运动**（V0.1.43 新增；月度柱状图 + 月度汇总 + 手动同步按钮 + 月份切换器 + 首页 onShow 节流 + onboarding step3 一键同步；调 `device.syncWeRun/myWeRun`，session_key 过期自动重登重试）
-│   ├── onboarding/                 # **新用户激活向导**（V0.1.43 新增；4 步式：welcome → profile 填资料（gender/birthday/region/height/weight，profile 嵌套字段修复）→ avatar 选微信头像（api.uploadFile 持久化修复原存微信临时 CDN 链接过期 bug）→ sync 一键同步微信运动；完成写 onboardingDone=true；调 `user.updateProfile` + `user.uploadAvatar` + `device.syncWeRun`）
-│   ├── health-history/             # **健康历史**（V0.1.43 新增；心率/血氧历史曲线（type=hr/spo2 + dateRange）；调 `device.myHealthHistory`）
-│   └── data-import-guide/          # **小米数据包导入指南**（V0.1.43 新增；指导用户从小米运动导出 zip → 后端 upload → device.importXiaomiZip 解析睡眠 JSON → SleepRecord upsert）
-└── images/
-    └── tabbar/                     # 8 个 tabBar 图标（4 普通 + 4 选中）
+│   ├── ranking/                    # 多维榜单（V0.1.34 familyRanking 也走这）
+│   ├── health/                     # 今日健康（V0.1.25 + V0.1.127 体成分 + V0.1.144~147 3 tab 健康中心）
+│   ├── device/                     # 设备绑定中心（V0.1.25 + V0.1.33 品牌识别 + V0.1.43 加固 + V0.1.127 体脂秤 + V0.1.128 COROS）
+│   ├── training/                   # 锻炼训练（V0.1.25 + V0.1.41 配置化 + V0.1.32 wxss 修复）
+│   ├── shoes/                      # 我的跑鞋（V0.1.26 + V0.1.135 成就 card + V0.1.148 UI 优化）
+│   ├── runner/                     # 跑者中心（V0.1.34+ 整合）
+│   ├── feed/                       # 运动动态（V0.1.30 + V0.1.136 9 图上限 + V0.1.148 UI 优化 emoji→文字+卡片阴影）
+│   ├── user/                       # 用户主页（V0.1.32 + V0.1.136 3 tab）
+│   ├── onboarding/                 # V0.1.43 新用户激活向导
+│   ├── daily-report/               # **V0.1.144~147 AI 健康助手日报**
+│   │   ├── (其余 13 个为 V0.1.142 删商城前历史页，已不再注册到 app.json — 实战中通过历史 changelog 追溯)
 ```
 
-> 💡 页面数：13（V1 基础）+ 2（佳明 garmin-data/ranking，2026-07-01）+ 3（B 电商核心 cart/points/category，V0.1.22）+ 2（个人中心电商版 address/coupon，V0.1.23）+ 1（分销中心 distribution，V0.1.24）+ 1（天天跑首页 tiantian，V0.1.24）+ 3（pic 新功能页 health/device-bind/training，V0.1.25）+ 1（跑鞋 shoes，V0.1.26）+ 1（年度报告 annual-report，V0.1.27）+ 2（跑步目标 goal + 我的证书 certificate，V0.1.28）+ 1（收藏 favorite，V0.1.29）+ 1（运动动态 feed，V0.1.30）+ 1（消息中心 notification，V0.1.31）+ 1（用户主页 user，V0.1.32）+ 1（家庭空间 family，V0.1.34）+ 1（团购 group-buy + 1 group-buy-detail，V0.1.37）+ 1（红心广场 hot + 1 话题 topic，V0.1.36）+ **4（V0.1.43：werun + onboarding + health-history + data-import-guide）** + **3（V0.1.133/134/137：shoes-detail + admin-race-result + shoes-compare）** = **50 页（V0.1.33 不增页仅 device-bind 内部增强；V0.1.100/132 不增页）**
+> 💡 页面数演进：13（V1 基础）+ 2（佳明 / 2026-07-01）+ 3（B 电商核心 / V0.1.22）+ 2（地址 / 优惠券 / V0.1.23）+ 1（分销 V0.1.24）+ 1（天天跑 V0.1.24）+ 3（pic / V0.1.25）+ 1（跑鞋 V0.1.26）+ 1（年度报告 V0.1.27）+ 2（目标 + 证书 V0.1.28）+ 1（收藏 V0.1.29）+ 1（动态 V0.1.30）+ 1（消息 V0.1.31）+ 1（用户主页 V0.1.32）+ 1（家庭 V0.1.34）+ 4（团购组+详情 / hot+topic / V0.1.36/37）+ 4（V0.1.43 werun/onboarding/health-history/data-import-guide）+ 3（V0.1.133/134/137 shoes-detail/admin-race-result/shoes-compare）+ 1（V0.1.139 ai-coach）+ 1（V0.1.113 review 3 个 — 后端保留前端删）+ 1（V0.1.144~147 daily-report）= **过去最高 51 页（V0.1.139）/ V0.1.142 删 16 商城 → 35 页 / V0.1.144~147 简化 → 18 页（实测）**
 
 ---
 
@@ -147,27 +139,28 @@ wx.request({ url: 'https://...' });
 **好处**：
 - 自动加 token / refresh
 - 统一 loading / 错误 toast
-- 端点路径走 `@qm-wx/shared/api-contracts`（含 cart/points/address/coupon/distribution/training/shoes/goal/favorite/feed/notification/follow/family 模块 + stats.myAnnualReport + stats.myCertificates + **V0.1.43 device +3 action syncWeRun/myWeRun/myHealthHistory**），无硬编码
+- 端点路径走 `@qm-wx/shared/api-contracts`（**含 V0.1.139 aiCoach 9 action** + V0.1.43 device +3 syncWeRun/myWeRun/myHealthHistory + V0.1.142 后端保留端点 cart/points/address/coupon/distribution/group-buy/review/mall/favorite + V0.1.148 stats.weather 4 action）
 
 ---
 
 ## 🎨 设计规范
 
-- **品牌色**：`#0FAF8E`（青沐绿），定义在 `app.wxss` 的 `--brand` 变量
+- **品牌色 V0.1.148**：**`#2D9D78`**（青沐绿深一档，更专业稳重），定义在 `app.wxss` 的 `--brand` 变量；13 文件批量替换自原 `#0FAF8E`；app.json navigationBarBackgroundColor + tabBar.selectedColor 已更新；**#0FAF8E 不再使用**
 - **页面级 wxss**：必须独立文件；`app.wxss` 只放变量和通用类
 - **目录命名**：`kebab-case`
-- **⚠️ wxss selector 禁用中文**（V0.1.32 坑）：wxss 编译器对中文 selector 解析失败，编译报 `unexpected � at pos <offset>`；分类样式必须用英文 key 作 class（如 levelKey `beginner/intermediate/challenge/extreme`），中文仅作显示文本（LEVEL_KEY_MAP 映射）；全 miniprogram wxss 已扫描确认无中文 selector 残留
-- **⚠️ 小程序 TS 类型 3 坑**（V0.1.33 沉淀）：① **TextDecoder 非 DOM lib 不可用** — BLE Manufacturer Name/Model Number 字符串解码不能用 TextDecoder（小程序 tsconfig 默认不含 DOM lib），但 Manufacturer Name/Model Number 规范是 ASCII，用 `String.fromCharCode(...new Uint8Array(buffer))` 即可；② **`wx.offBLECharacteristicValueChange` 类型签名 `()` 不接受参数** — 但运行时支持 cb 参数（用于取消特定监听），用 `@ts-ignore` 绕过类型检查；③ **`OnBLECharacteristicValueChangeCallbackResult` 类型不存在** — 微信小程序 API typings 无此导出类型名，用结构类型 `{ serviceId: string; characteristicId: string; value: ArrayBuffer }` + `@ts-ignore` 兜底
-- **⚠️ 蓝牙扫描去 services 过滤**（V0.1.43 坑）：小米手环用私有 0xFEE0 不广播 0x180D，按 services 过滤扫不到 → 修复去过滤 + matchBleVendor 筛 + 心率订阅容错 + getDeviceServices 诊断；不同品牌广播不同服务范式
+- **⚠️ wxss selector 禁用中文**（V0.1.32 坑）：wxss 编译器对中文 selector 解析失败，编译报 `unexpected at pos`；分类样式必须用英文 key 作 class（如 levelKey `beginner/intermediate/challenge/extreme`），中文仅作显示文本（LEVEL_KEY_MAP 映射）
+- **⚠️ 小程序 TS 类型 3 坑**（V0.1.33 沉淀）：① TextDecoder 非 DOM lib 不可用 → 用 `String.fromCharCode(...new Uint8Array(buffer))`；② `wx.offBLECharacteristicValueChange` 类型签名 `()` 不接受参数 → 用 `@ts-ignore`；③ `OnBLECharacteristicValueChangeCallbackResult` 类型不存在 → 用结构类型 + `@ts-ignore`
+- **⚠️ 蓝牙扫描去 services 过滤**（V0.1.43 坑）：小米手环用私有 0xFEE0 不广播 0x180D，按 services 过滤扫不到 → 修复去过滤 + matchBleVendor 筛 + 心率订阅容错 + getDeviceServices 诊断
 - **废弃 API**：`getUserProfile` / `getUserInfo` 全部禁止使用；改 `button open-type="chooseAvatar"` + `input type="nickname"`
-- **数字格式化**：金额 / 跑量 / 跑鞋里程 / 目标进度 / 动态点赞数 / 通知未读数 / 关注/粉丝数 / 家庭成员跑量 / 微信运动步数等显示用 `utils/format.ts`（避免 JS 浮点精度，后端返回 Decimal 用 `.toFixed(2)`；未读数 99+ 截断）
+- **数字格式化**：金额 / 跑量 / 跑鞋里程 / 目标进度 / 动态点赞数 / 通知未读数 / 关注/粉丝数 / 家庭成员跑量 / 微信运动步数 / AI 健康分数等显示用 `utils/format.ts`
 
 ---
 
 ## 📦 依赖
 
-- **运行时**：`@qm-wx/shared`（workspace 协议；构建产物经 `build-mp-shared.mjs` 注入 `miniprogram_npm/`，因微信不支持 bare import；V0.1.25 含 DEVICE_BRANDS 9 品牌常量；V0.1.27 stats 加 myAnnualReport；V0.1.28 加 goal 模块 + stats.myCertificates；V0.1.29 加 favorite 模块；V0.1.30 加 feed 模块；V0.1.31 加 notification 模块；V0.1.32 加 follow 模块；V0.1.33 device-brands 加 matchBleVendor + BLE_VENDOR_PATTERNS + xiaomi available 开放；V0.1.34 加 family 模块 + goal +addFamilyGoal/myFamilyGoals；**V0.1.43 device +3 action syncWeRun/myWeRun/myHealthHistory**）
+- **运行时**：`@qm-wx/shared`（workspace 协议；构建产物经 `build-mp-shared.mjs` 注入 `miniprogram_npm/`；**V0.1.148 含**：V0.1.25 DEVICE_BRANDS 9 品牌 + V0.1.27 stats.myAnnualReport + V0.1.28 goal + stats.myCertificates + V0.1.29 favorite + V0.1.30 feed + V0.1.31 notification + V0.1.32 follow + V0.1.33 BLE matchBleVendor + V0.1.34 family + V0.1.139 aiCoach 9 action + V0.1.143 review + V0.1.148 stats.weather 4 action）
 - **类型**：`miniprogram-api-typings`（仅 dev）
+- **UI 库（V0.1.144~147 部分接入）**：Vant Weapp（小程序 UI 库，渐进式接入）
 
 ---
 
@@ -182,139 +175,23 @@ wx.request({ url: 'https://...' });
 
 ## 📌 当前状态
 
-- ✅ **50 个页面**全部就位（4 tabBar + 46 子页面；V0.1.133/134/137 +3 新页）
-- ✅ 9 个组件（feature-gate / error-state / privacy-popup / profile-popup + **entry-grid（V0.1.35）/ mileage-chart（V0.1.133）/ certificate-poster + goal-share-card（V0.1.135）/ collection-poster（V0.1.136）**）
+- ✅ **18 个页面（V0.1.148 init #8 实测）**（4 tabBar：今日/问AI/我的 + 14 子页面；V0.1.142 删商城前端 16 页 + V0.1.144~147 进一步简化）
+- ✅ **10 个组件**（feature-gate / error-state / privacy-popup / profile-popup + entry-grid / mileage-chart / certificate-poster / goal-share-card / collection-poster / **plan-card（V0.1.140）**）
 - ✅ `app.ts` 静默登录逻辑（`silentLogin` 补全 `me` 调用）+ **V0.1.100 envVersion 分支**
 - ✅ `services/api.ts` 统一封装（含 refresh 一次重试 + `actionUrl` 工具）
-- ✅ `utils/auth.ts` / `format.ts` / `config/env.ts` + **`utils/ble.ts`**（V0.1.25 蓝牙 BLE 工具；V0.1.33 加 readBattery/readDeviceInfo/readCharValue；**V0.1.43 retry3+hasHr+去 services 过滤+getDeviceServices 诊断**）+ **`utils/werun.ts`**（V0.1.43 微信运动 session_key AES-128-CBC 解密 + 每日节流）
+- ✅ `utils/auth.ts` / `format.ts` / `config/env.ts` + `utils/ble.ts` + `utils/werun.ts` + `utils/scale.ts`
 - ✅ `sitemap.json` + `project.config.json`（真 AppID `wx8c37d7ac5b7d0a83`）
-- ✅ 品牌色 #0FAF8E 全局应用
-- ✅ **「我的」页**：跑量汇总卡 + **20 宫格入口** + **V0.1.43「重新激活授权」入口替退出登录**（调 user.resetOnboarding + onboardingDone=false 重新走向导填资料/授权）
-- ✅ **V0.1.43 微信运动闭环**：utils/werun.ts（syncWeRunToday AES 解密 + getWeRunHistory + syncWeRunIfFirstToday 节流）+ pages/werun（月度柱状图 + 汇总 + 手动同步 + 月份切换）+ 首页 onShow 节流 + onboarding step3 一键同步
-- ✅ **V0.1.43 onboarding 4 步式**：pages/onboarding（welcome → profile 嵌套字段修复 + 头像持久化 api.uploadFile 修复 + sync 一键同步）+ 重新激活授权入口
-- ✅ **V0.1.43 健康历史**：pages/health-history（心率/血氧历史曲线 type+dateRange）
-- ✅ **V0.1.43 小米数据包导入指南**：pages/data-import-guide（导出 zip → upload → importXiaomiZip → SleepRecord）
-- ✅ **B 电商 8 页**（2026-07-02~03）：cart / points / category / address / coupon / distribution / tiantian + order-list 5 tab
-- ✅ **佳明 3 页**（2026-07-01）：garmin-data（数据处理）+ ranking（多维榜单）+ mine（跑量汇总）
-- ✅ **pic 3 张全新功能页**（V0.1.25，2026-07-03）：
-  - `health`（今日健康，pic 2774）：6 卡片（睡眠/健身年龄/训练指标/今日活动）+ 5 占位，调 `device.myTodayHealth`（Cache 300s，**15 缓存热路径之一**）
-  - `device-bind`（设备绑定中心，pic 2770）：9 品牌宫格（DEVICE_BRANDS）+ 扫描弹层 + 实时心率（订阅 0x180D）+ 蓝牙 BLE 直连（`utils/ble.ts`），调 `device.myBindings/bindBleDevice/submitHeartRate`；V0.1.27 加调试面板；V0.1.33 品牌识别增强；V0.1.43 蓝牙加固 retry3+hasHr+去 services 过滤
-  - `training`（锻炼训练，pic 2775）：GO 入口（切 sport tab）+ 4 套硬编码计划模板（5K/10K/半马/全马）+ 赛事助手（复用 content.list type=marathon）+ 跑步记录（聚合 Checkin run + RawActivity running），调 `training.myPlans/mySportRecords`；V0.1.32 wxss 中文 selector 修复
-- ✅ **我的跑鞋页**（V0.1.26，pic 2768）：
-  - 跑鞋卡：进度条（currentKm/thresholdKm）+ **健康度色码**（绿 <70% / 黄 70-100% / 红 >100%）+ 更换提醒文案（healthRatio≥70% 显示"建议更换"）
-  - 添加弹层：品牌 / 型号 / 昵称 / 阈值（thresholdKm 默认 800）
-  - 退役按钮：调 `shoes.retire`（active→retired）
-  - FAB 悬浮添加（右下角）
-  - mine 入口「我的跑鞋」（列表项 +1，调 `shoes.list/add/retire/myStats`）
-- ✅ **年度报告页**（V0.1.27，参考图 2768/2771）：
-  - **渐变大卡**：年度总览（yearDistance / yearCheckins / yearDurationSec / avgPace）
-  - **月度柱状图**：12 个月分布（用 view 宽度模拟，wxml 无 Math，柱高/style 在 js 算好后 setData）
-  - **最长单次**（longestRun）+ **活跃天数**（activeDays）
-  - **年份切换**：默认当前年，可切上一年
-  - **分享战报**：`onShareAppMessage` 转发到微信群（零成本裂变）
-  - mine 入口「年度报告」（列表项 +1，调 `stats.myAnnualReport`）
-- ✅ **sport 打卡加跑鞋 picker**（V0.1.27，GAP-10 闭环）：
-  - sport 打卡页加 `<picker>` 选跑鞋（调 `shoes.list` 取 status=active 列表）
-  - 打卡 payload 加 shoeId → 后端 sport.checkin 事务内 incrementShoeKm 自动累计跑鞋里程
-  - 跑鞋里程闭环（前后端联动，V0.1.26 后端已就绪，V0.1.27 前端补 UI）
-- ✅ **跑步目标页**（V0.1.28，pic 2768 跑者向）：
-  - 目标卡：进度条（currentDistance/targetDistance）+ **达成徽章**（completed 状态高亮）+ 百分比展示
-  - 添加弹层：**type picker**（月度 monthly / 年度 yearly / 自定义 custom）+ targetDistance 输入 + title 可选
-  - 后端 type 自动算周期：monthly → 本月1号-下月1号 / yearly → 今年1/1-明年1/1 / custom → 手传 periodStart/End
-  - FAB 悬浮添加（右下角）+ 删除（长按或按钮）
-  - mine 入口「跑步目标」（列表项 +1，调 `goal.list/add/remove/myProgress`）
-- ✅ **我的证书页**（V0.1.28，pic 2768 跑者向）：
-  - **下一里程碑卡**：橙色渐变背景 + 进度条（currentDistance → nextMilestone 阈值）+ 距离差值提示
-  - **里程碑证书**（🏆 图标）：总跑量达 100/500/1000/3000km 自动颁发（MILESTONE_CERTS 常量，基于 Checkin aggregate）
-  - **赛事证书**：已报名马拉松列表（Enrollment type=marathon + Content 详情）
-  - mine 入口「我的证书」（列表项 +1，调 `stats.myCertificates`，Cache 120s）
-- ✅ **我的收藏页**（V0.1.29，pic 3 向社交向首功能）：
-  - **tab 切换**（内容 / 商品）：分别展示 targetType=content / product 的收藏列表
-  - **列表卡**：封面图 + 标题 + 摘要（content 用 description 摘要，product 用价格 + 分类）
-  - **取消收藏按钮**：调 `favorite.remove`（deleteMany，不存在也 ok，UI 立即移除）
-  - **点卡跳详情**：content → content-detail，product → product-detail
-  - mine 入口「我的收藏」（列表项 +1，调 `favorite.list`）
-  - 详情页 / 列表页红心状态调 `favorite.isFavorited`（批量查，避免 N+1）
-- ✅ **运动动态页**（V0.1.30，pic 2 社交向核心）：
-  - **动态卡**：作者头像 + 昵称 + 时间（formatRelativeTime）+ 内容（content）+ 图片（images[] 多图九宫格）+ 跑量（distanceKm，关联 checkinId 时展示）+ 点赞❤️（likeCount + 当前用户 liked 红心高亮）+ 评论💬（commentCount）
-  - **发布弹层**：textarea（限 500 字）+ 图片选择（wx.chooseImage）+ 可关联最近打卡（checkinId + distanceKm）
-  - **点赞乐观更新**（GAP-... 可观测性范式）：先 UI 立即 +1 + 红心高亮，调 `feed.like` 失败则**回滚**（-1 + 取消高亮 + toast 错误）— 体验流畅；同理 unlike
-  - **评论弹层**：底部弹起 textarea + 评论列表（feedId 调 `feed.comment` + 立即追加到列表）
-  - **FAB 悬浮发布**（右下角，调起发布弹层）
-  - **分页 onReachBottom**：list 分页加载（cursor/页码，调 `feed.list`）
-  - mine 入口「运动动态」（列表项 +1，调 `feed.list/myFeeds`）
-  - **V0.1.32 feed-head 加 onTapUser**：点作者头像/昵称跳用户主页（带 data-uid，关注闭环入口）
-- ✅ **消息中心页**（V0.1.31，pic 2 社交向收尾）：
-  - **列表卡**：actor 头像 + 昵称 + 文案 + 内容摘要（comment 50 字截断）+ 时间（formatRelativeTime）+ 未读红点
-  - **全部已读按钮**：调 `notification.markAllRead`（updateMany 幂等，UI 立即清空所有红点）
-  - **点击乐观标记已读**：先 UI 移除红点，调 `notification.markRead`（鉴权仅本人，失败回滚红点）
-  - **跳 feed**：targetType=feed 时点击跳转到 feed 详情（带 feedId）
-  - **分页 onReachBottom** + **下拉刷新**（调 `notification.list`）
-  - **mine 入口带未读徽标**：调 `notification.unreadCount`，`.badge` 显示数字（99+ 截断），`.right` 包裹（badge + arrow 一组，避免 flex space-between 居中）
-- ✅ **用户主页页**（V0.1.32，pic 2 社交向深化）：
-  - **头部信息**：头像 + 昵称 + 关注数（followingCount）+ 粉丝数（followerCount）
-  - **关注按钮**：调 `follow.follow`（upsert 幂等 + 不能关注自己 badRequest + 复用 notify(type=follow) 通知被关注者）；**乐观更新**（先 UI 立即 +1 + 按钮变"已关注"，调 `follow.follow` 失败则**回滚** -1 + 按钮复原 + toast 错误，体验流畅；同理 unfollow）
-  - **isSelf 自己不显示按钮**：viewerId === userId 时隐藏关注按钮（自己不能关注自己）
-  - **一次拿全数据**：调 `follow.myCounts`（返回 user + followingCount + followerCount + isFollowing + isSelf，避免多次请求；可查任意 userId 不限于自己，viewerId 算 isFollowing/isSelf）
-  - **关注/取消关注按钮**：调 `follow.follow` / `follow.unfollow`（deleteMany 幂等）
-  - **入口**：从 feed feed-head onTapUser 跳转（带 data-uid 参数，关注闭环入口）；后续可扩展从 notification actor / ranking 用户昵称等多入口跳转
-- ✅ **🐛 training wxss 中文 selector 修复**（V0.1.32）：
-  - **原 bug**：training 页 wxss 用 `.plan-card.入门` / `.plan-card.进阶` / `.plan-card.挑战` / `.plan-card.极限` 4 个中文 class selector 区分计划难度配色，编译报 `unexpected � at pos 1725`（wxss 编译器对中文 selector 解析失败）
-  - **修复方案**：分离 `levelKey`（英文 beginner/intermediate/challenge/extreme 作 class，承载样式）+ `level`（中文"入门/进阶/挑战/极限"作显示文本）；前端 `LEVEL_KEY_MAP` 映射（入门→beginner / 进阶→intermediate / 挑战→challenge / 极限→extreme）
-  - **wxml**：`class="plan-card {{plan.levelKey}}"`（英文 class 拼接）+ 显示仍用 `{{plan.level}}`（中文文本）
-  - **全 miniprogram wxss 扫描**：确认无中文 selector 残留（其他页面均未踩此坑，仅 training 一处）
-  - **范式沉淀**：wxss selector 禁用中文，分类样式必须用英文 key 作 class + 中文作显示文本；写在新规范段
-- ✅ **device-bind 品牌识别增强**（V0.1.33，零 schema 改）：
-  - **扫描结果自动识别**：扫描弹层调用 `matchBleVendor(name)`（来自 shared `device-brands.ts`，前后端单一数据源）— garmin: /garmin|forerunner|fenix|vivoactive|edge/i；xiaomi: /mi\s*band|xiaomi|小米|redmi/i；未中返 'ble'
-  - **品牌标签**：佳明蓝 `.brand-garmin` / 小米橙 `.brand-xiaomi` / 通用灰 `.brand-ble`，列表项右上角彩色 chip
-  - **`onSelectDevice` 多服务读取流程**：connect → `Promise.all([readBattery(deviceId), readDeviceInfo(deviceId)])` → 品牌识别（设备名 matchBleVendor + **0x180A Manufacturer Name 权威字段二次验证**）→ 未识别 `wx.showActionSheet` 手选兜底（佳明/小米/通用，防自定义设备名漏识别）→ subscribeHeartRate（订阅 0x180D）→ bindBleDevice 传 vendor+brandMeta
-  - **心率卡显示电量/型号/厂商**：`hr-meta-item` 小字行（电量百分比 + Manufacturer + Model Number）
-  - **garmin OAuth 降级段**：`garminAutoConnected && !garminBleBound` 时显示"历史数据已连接（OAuth）"+ 按钮提示"BLE 实时绑定"（BLE 优先，OAuth 历史）
-  - **`onTapBrand`**：ble/garmin/xiaomi 三个品牌点击都走 BLE 扫描（V0.1.33 xiaomi available 开放）
-- 🐛 **小程序 TS 类型 3 坑**（V0.1.33 沉淀）：
-  - **TextDecoder 非 DOM lib 不可用** — 小程序 tsconfig 默认不含 DOM lib，BLE Manufacturer Name/Model Number 字符串不能用 TextDecoder 解码；但 GATT 规范这两个特征值是 ASCII，用 `String.fromCharCode(...new Uint8Array(buffer))` 即可
-  - **`wx.offBLECharacteristicValueChange` 类型签名 `()` 不接受参数** — 但运行时支持 cb 参数（用于取消特定监听，与全局监听共存按 serviceId 互不干扰），用 `@ts-ignore` 绕过类型检查
-  - **`OnBLECharacteristicValueChangeCallbackResult` 类型不存在** — 微信小程序 API typings 无此导出类型名，用结构类型 `{ serviceId: string; characteristicId: string; value: ArrayBuffer }` + `@ts-ignore` 兜底
-- 🐛 **蓝牙扫描去 services 过滤**（V0.1.43 沉淀）：
-  - **小米手环用私有 0xFEE0，不广播 0x180D**，按 services: [0x180D] 过滤扫不到
-  - **修复方案**：去 services 过滤 + 拿到设备名后 matchBleVendor 筛 + 心率订阅容错（小米私有协议不会发 notify）+ getDeviceServices 诊断（扫到设备后遍历服务打印 serviceId 列表）
-  - **范式沉淀**：不同品牌 BLE 广播的服务集合差异巨大，**不要在 startBluetoothDevicesDiscovery 里硬编码 services 过滤**；先扫到再说，靠 deviceName + 0x180A Manufacturer 二次识别品牌
-- ✅ **家庭空间页**（V0.1.34，pic 2776 家庭方向）：
-  - **家庭卡**：家庭名称（family.name）+ inviteCode（8 位 hex 短码，点击复制到剪贴板）+ 成员数（如"3 人"）+ owner 标
-  - **邀请按钮**：调 `wx.setClipboardData` 复制 inviteCode（8 位 hex 短码），toast 提示"邀请码已复制"
-  - **本月跑量榜**：调 `family.familyRanking({period: 'month'})` 返回成员跑量榜；列表卡 rank-num（前 3 名特殊色）+ avatar 头像 + nickname 昵称 + 家长标（owner role 显示"家长"徽章）+ monthDistance（本月跑量，formatKm 格式化）；按距离降序排列；可切 week/month（CN 时区）
-  - **家庭目标进度条**：调 `goal.myFamilyGoals` 返回家庭目标列表（type monthly/yearly + targetDistance + 成员聚合 currentDistance + percent + completed），进度条样式同个人目标页
-  - **添加家庭目标弹层**：底部弹起 type picker（月度 monthly / 年度 yearly）+ title 输入（可选）+ targetDistance 输入；调 `goal.addFamilyGoal`（鉴权 member.familyId 必须匹配 input.familyId，forbidden 防越权创建他人家庭目标）
-  - **创建/加入（无家庭态）**：myFamily 返 family:null 时显示创建家庭（输入家庭名）+ 加入家庭（输入 inviteCode）双 tab；调 `family.createFamily`（事务内建 Family+FamilyMember role=owner + 8 位 inviteCode hex 短码）/ `family.joinFamily`（按 inviteCode 查 Family，已有家庭 conflict，加 FamilyMember role=member）
-  - **leaveFamily 按钮（非 owner）**：role=member 显示"离开家庭"按钮，调 `family.leaveFamily`（删 FamilyMember）；owner 不可离开（后端 badRequest，需转让/解散）
-  - mine 入口「家庭空间」（19→20 宫格）
-- ✅ **微信运动页**（V0.1.43 新增）：
-  - **月度柱状图**：当月每日步数柱状图（view 宽度模拟 + 当日步数标签）
-  - **月度汇总**：总步数 + 日均步数 + 达标天数（≥8000 步）
-  - **手动同步按钮**：调 `device.syncWeRun`（wx.getWeRunData → 后端 AES-128-CBC 解密 → WeRunRecord upsert）
-  - **月份切换器**：上/下月切换（cnMonthRange）
-  - **session_key 过期自动重登重试**：后端解密失败（errcode=40001 / invalid session）→ 自动 wx.login → code2Session → 重试解密
-  - 首页 onShow 加 `syncWeRunIfFirstToday` 节流（每日首次进入自动同步，避免重复）
-  - onboarding step3 一键同步（激活流程收尾）
-- ✅ **新用户激活向导**（V0.1.43 新增）：
-  - **4 步式**：welcome（欢迎语 + 隐私协议）→ profile（填资料：gender/birthday/region/height/weight，**profile 嵌套字段修复**：原顶层传 → Zod strip 全丢，包进 `profile:{}` 修复）→ avatar（选微信头像，**api.uploadFile 持久化修复**：原存微信临时 CDN 链接会过期，改为调 user.uploadAvatar 持久化到 OSS）→ sync（一键同步微信运动）
-  - **完成写 onboardingDone=true**：`user.resetOnboarding` action 设 onboardingDone=false（重新激活用）
-  - **首次登录检测**：`app.ts onLaunch` 检查 `user.me.onboardingDone`，false → 跳 onboarding 页
-- ✅ **健康历史页**（V0.1.43 新增）：
-  - **心率/血氧历史曲线**：type=hr/spo2 + dateRange 查询，调 `device.myHealthHistory`
-  - **图表渲染**：简单 line chart（view 高度模拟，可后续接 echarts-for-weixin）
-- ✅ **小米数据包导入指南**（V0.1.43 新增）：
-  - **步骤指引**：从小米运动 → 我的 → 设置 → 数据导出 → 选择日期范围 → 等待生成 zip → 通过聊天发送给自己 → 长按保存到手机 → 在小程序上传
-  - **上传按钮**：调 `upload.uploadFile` → `device.importXiaomiZip` 后端解析睡眠 JSON → `SleepRecord` upsert
-- 🚧 **蓝牙 BLE 心率订阅加固**（V0.1.43 沉淀 GAP-9 关闭）：
-  - **retry3 + hasHr 策略**：订阅失败重试 3 次；hasHr = 心率值是否有效（非 0 / 255 保留值）；hasHr=false 时延迟重连或提示用户
-  - **去 services 过滤**：startBluetoothDevicesDiscovery 不要带 services 参数（不同品牌广播不同服务）
-  - **getDeviceServices 诊断**：扫到设备后遍历 serviceId 列表打印（调试面板可见）
-  - **小米 10Pro 实测走通**：开心率广播走标准 0x180D，订阅成功 → 心率值解析 → 落库 HeartRateRecord + Redis 缓存 ble:hr:{userId}
-- 🚧 **生产部署待办**：V0.1.43/V0.1.100 已 commit 但生产（qingmulife.cn）尚未 scp 重启部署；待生产 OOM 救活（VNC docker stop 旧容器）后 scp 直传 + 重启
-- 🚧 tabBar 图标待设计替换（当前占位图）
-- 🚧 各页面 UI 待按 Phase 推进完善
+- ✅ **品牌色 #2D9D78 全局应用**（V0.1.148 替换原 #0FAF8E；13 文件 + app.json navigationBarBackgroundColor + tabBar.selectedColor）
+- ✅ **V0.1.139~148 主要新功能**：
+  - **AI 私教完整闭环**（V0.1.139 MVP + V0.1.140 4 人设+建议卡片+计划追踪+分享+voice + V0.1.141 速度优化 + V0.1.142 tab 化 + V0.1.148 UI 优化）
+  - **AI 健康助手**（V0.1.144~147 DailyReport 3 tab 健康中心 + AI 健康分数 + 解读）
+  - **Vant 美化**（V0.1.144~147 12 页渐进式升级）
+  - **MQTT 订阅前端 polyfill**（V0.1.144~147 wx-mqtt）
+  - **跑鞋完整链路**（V0.1.26 跑鞋 + V0.1.27 picker + V0.1.133 详情 + V0.1.137 对比 + V0.1.135 成就卡）
+  - **评价 + 鞋评**（V0.1.113 + V0.1.137 双分发 + V0.1.142 review 前端下线但 review API 保留给鞋评用）
+  - **赛事服务 MVP**（V0.1.117 余额支付 + V0.1.119 wxpay 真集成 + V0.1.134 排行榜 + 自报成绩 + admin 录入）
+  - **跑群深化 + 训练计划配置化**（V0.1.41 + V0.1.42 + V0.1.34 家庭）
 
 ---
 
-🤙 别在 tabBar 上反复纠结，先把 `services/api.ts` 跑通。**42 页面已成型**（V0.1.100 GitHub 主线 + V0.1.43 微信运动+onboarding+健康历史+小米数据包导入指南 + V0.1.42 跑群深化 + V0.1.41 训练计划配置化 + V0.1.40 profile 完整 + V0.1.37 团购 2 页 + V0.1.36 红心广场/话题 + V0.1.34 家庭空间），下一步：V0.1.43/V0.1.100 真机验证（微信运动+onboarding+重新激活授权）+ 生产部署 + 赛事服务 MVP（业务闭环第 3 块）+ 评价系统 + 年度报告跑鞋维度 + 目标/证书增强 + 收藏/动态社交向扩展 + 用户主页增强。
+🤙 **V0.1.148 init #8 已完成**：小程序侧 **18 页 / 10 组件 / 32 module 后端对接**；最大改动：V0.1.142 删商城前端 16 页（51→35）+ V0.1.144~147 简化到 18 页 + AI 私教完整闭环（V0.1.139~141 + 142 tab 化 + 148 UI）+ AI 健康助手 DailyReport + Vant 美化 + MQTT polyfill + V0.1.148 品牌色 #2D9D78 + 多页 UI 优化（emoji→文字、卡片阴影、渐变气泡）。下一步：真机验证 V0.1.144~148 + wxpay 真生产切流 + AI 私教 voice 插件 + GAP-12 module CLAUDE.md 收尾。

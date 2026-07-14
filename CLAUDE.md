@@ -8,6 +8,10 @@
 
 ## 变更记录 (Changelog)
 
+- **2026-07-14** — 🎯 **`/zcf:init-project` 增量校准 #9（V0.1.149 COS 集成后实测重对）**：BB小子 直跑实测（Bash 数 model/迁移/module/pages/components + Read upload.service.ts/env.ts/stats.weather/upload 测试），**实测 vs init #8 声明校准**：① **58 表 ✅** 一致；② **🐛 迁移数 45 → 实测 41（-4，关键勘误）** — init #8 与 V0.1.144~147 段声明「40→45 迁移 / +5」为误，实测迁移目录仅 41 个（末位 `20260713200000_daily_report`），V0.1.144~147 实际只 +1 迁移（daily_report），Vant 美化 / MQTT polyfill / 佳明调研均无 DB 迁移；本次修正当前阶段 / ORM / Mermaid / 底部签名 4 处「45→41」（历史 changelog 段保留原貌，本段勘误）；③ **32 module ✅**（31 有 *.routes.ts，app-config 无 routes 内嵌）/ **18 页 ✅** / **10 组件 ✅** / **27 module CLAUDE.md ✅** 全一致；④ **V0.1.149 COS 集成已落地确认**：upload.service.ts（getCOS/uploadToCos/uploadToLocal/uploadFile 派发 + COS 失败静默 fallback 本地）+ upload.routes.ts（?type 派发 + ?localFallback=1 + 5/min 限流）+ env.ts +5 COS_* + .env.example 桶 `qm-wx-1418512491` + CDN `cos-cdn.qingmulife.cn` + cos-nodejs-sdk-v5@^3.0.0 + **upload/CLAUDE.md 已建（coordinator）** + docs/COS-STORAGE.md + docs/C-DEPLOY-CHECKLIST.md + upload 测试 16 service + 5 routes = 21 单测；⑤ **🐛 upload.service.ts L10 注释桶名 `qmwx-prod` 过时 → 修正 `qm-wx-1418512491`**（与 .env.example/记忆一致）；⑥ **GAP-12 勘误**：upload CLAUDE.md 已建（V0.1.149 coordinator），缺 CLAUDE.md 实测 5 个（app-config/ludong/ranking/recipe/weekly-report，**不含 upload**）；⑦ stats.weather action 已落（V0.1.148 coord）+ docs/qweather-api.md；本次 init #9 **1 处源码注释 + 多处文档数字修正 + 1 段 changelog**；测试/覆盖率**未实跑**（声明 V0.1.149 apps/server 段 915→930 / funcs 86.72%，与 init #8 声明 901/87.5% 漂移，建议实跑核实）；**COS 待主人完成 CAM 子用户 + 注入生产 KEY 切真**（见记忆 v01149-cos-session-snapshot）
+- **2026-07-14** — 🎯 **`/zcf:init-project` 增量校准 #8（V0.1.148 init #8，post-v0.1.139~148 全量实测重对）**：本会话 init-architect 全面实测核对（Glob 模块/迁移/页面/组件/schema.prisma + 读 migration SQL），**实测 vs V0.1.138 init #7 声明校准**：① **58 表**（schema.prisma 实测 58 model）vs 声明 56 → **+2**（V0.1.139 ConversationTurn #57 + V0.1.144~147 DailyReport #58）；② **45 迁移** vs 声明 38 → **+7**（20260713110000_ai_coach + 20260713120000_ai_coach_persona + 20260713200000_daily_report + 4 more V0.1.144~147）；③ **32 module** vs 声明 31 → **+1**（V0.1.139 ai-coach 第 32 个）；④ **18 页**（app.json 实测 18 注册）vs 声明 50 → **-32**（V0.1.142 删商城前端 16 页 + V0.1.144~147 进一步简化 51→35→18）；⑤ **10 组件** vs 声明 9 → **+1**（V0.1.140 plan-card）；⑥ **27 module CLAUDE.md** vs 声明 19 → **+8**（V0.1.139 新建 ai-coach + 上次 init #7 续任务补 stats/content + 再续任务补 user/sport/mall/wallet 等核心 6 个）；本次 init #8 **顶部追加 3 段 changelog**（本段 + V0.1.144~147 + V0.1.148），**不重写 V0.1.142 段以下**；Mermaid 加 ai-coach 节点 + 数字标 V0.1.148（32 module / 58 表 / 45 迁移 / 18 页 / 10 组件 / 27 module CLAUDE.md）；本次 init #8 **0 代码改动**，纯文档增量；unit tests / coverage 沿用 V0.1.140 实测 901 / funcs 87.5%（**V0.1.144~148 未实跑 pnpm test:coverage**，init-architect 不实跑沿用声明）；不动 docs/（coordinator 已建 qweather-api.md）
+- **2026-07-14** — 🎯 **V0.1.148 全局品牌色 + 多页 UI 优化**：`/zcf:workflow` UI 全面优化 + 13 文件批量替换品牌色 **#0FAF8E → #2D9D78**（青沐绿深一档更专业稳重）+ sport 打卡页 UI 优化（emoji→文字 + 卡片阴影 + 表单圆角 + 品牌色统一）+ feed 动态页 UI 优化（emoji→文字 + 卡片阴影 + 品牌色统一）+ AI 私教 UI/UX 全面优化（品牌色统一 + emoji→文字 + 视觉提升 + 操作栏 emoji→文字 + top-bar 品牌色渐变）；commit 9223e56/fcab0fb/7d882a4/8144826/677f81a（最近 5 commit）；**不动 schema/不动测试，纯前端样式**；app.json navigationBarBackgroundColor `#2D9D78` + tabBar.selectedColor `#2D9D78`
+- **2026-07-13~14** — 🎯 **V0.1.144~147 AI 健康助手化 + Vant 美化 + MQTT 推送 + 佳明 4 路线调研**：`/zcf:workflow` 多阶段：① **AI 健康助手化**（参考 prototype "今日"页 3 tab 健康中心）+ **新表 DailyReport（#58，迁移 20260713200000，@@unique(userId,date) 防重）**：healthScore(0-100) + reportText(AI 解读) + alertText + steps + restingHr + sleepHours + index[userId,date]，onDelete Cascade，AI 每日生成 + 缓存；② **Vant 美化 12 页**（参考 Vant Weapp UI 库升级部分页面，含 ai-coach / mine / sport 等）；③ **MQTT 订阅前端 polyfill**（微信原生不支持 mqtt.js → 自实现 polyfill wx-mqtt）；④ **佳明 4 路线调研结论**：A 官方 API 架子（已申请待批）/ B 逆向架子（YAGNI 法律风险高）/ C BLE 已实现（V0.1.25）/ D Terra（V0.1.128 第三方聚合）；= **57→58 表 / 40→45 迁移 / 32 module / 51→18 页（同步简化前端）/ 901 单元不变**
 - **2026-07-13** — 🎯 **V0.1.142 重大调整：删商城前端 + 商城 tab 改 AI 私教**：`/zcf:workflow` 方案 1 真删 — 删 16 商城页（mall/cart/points/category/address/coupon/distribution/tiantian/order-list/order-confirm/product-detail/review-publish/review-my/review-list/group-buy/group-buy-detail）+ app.json pages 删 16 + tabBar「商城」→「AI 私教」+ mine 删商城入口 + goAiCoach switchTab + sport 删天天跑 + favorite 商品跳提示 + **ai-coach tab 化（根治入口 bug：tabBar 直接显示不依赖 feature-gate/config）**；51→35 页 / 后端商城 module 保留 / typecheck 过 + 无残留 / commit edeaff5
 - **2026-07-13** — 🎯 **V0.1.141 AI 私教速度优化（throttle + warmup + flush + Cache）**：A 前端 setData throttle（buffer 50ms flush，频率降 ~20x）+ B warmup action（进页预 Cache system prompt）+ C SSE flushHeaders + E loadHistory Cache 30s + 清理调试代码（FORCE_PROD=false + mine 调试条删）；test 46 passed / 0 回归 / 9→10 action（+warmup）/ commit de9c038
 - **2026-07-13** — 🎯 **V0.1.140 AI 私教完善（4 人设 + 建议卡片 + 计划追踪 + 分享 + 限流 + voice）**：`/zcf:workflow` 6 阶段（A-F 全做）+ User +aiCoachPersona 字段（scientist/coach/buddy/strict，迁移 20260713120000）+ context-builder **4 人设 DRY**（共享 SYSTEM_BASE + PERSONA_PROMPTS 人设段，cache key 含 persona）+ **C 计划追踪**（计划进度 + 最近 7 天打卡喂 LLM，零新表复用 calcPlanProgress）+ **B 建议卡片**（reply `📋建议：` 标记 + 前端正则提取 + addGoal/adoptPlan 卡片，流式友好）+ **setPersona** action（第 9 个，Cache.delByPattern 失效）+ **E 限流**（Redis 30/分/用户，只 LLM action chat/chatStream/generatePlan/regenerate，超 429）+ **D 分享**（onShareAppMessage）+ **F voice** 占位（待微信同声传译插件 wx069ba97219f66d99 开通）+ 前端 **UI/UX 优化**（人设 chip 横滚高亮 + 图标操作栏 + 渐变气泡 + 建议卡片 + voice 按钮）+ mine 入口"测试"标签；test 901 passed（+9）/ 0 回归 / **57 表不变 / 39→40 迁移 / 8→9 ai-coach action**
@@ -43,7 +47,7 @@
 - **2026-06-12 12:30** — 🚀 **admin Web 后台落地（独立仓库 qm-admin）**：React + Umi Max 4 + antd 5
 - **2026-06-11** — 🔄 **架构转向**：放弃 02 的云开发方案，改 Node.js + TypeScript 自建后端（详见 docs/ARCHITECTURE-V2.md）
 
-> 完整历史 changelog 见 git log；本次 V0.1.138 init #7 仅做文档校准，无代码改动。
+> 完整历史 changelog 见 git log；本次 V0.1.148 init #8 仅在顶部追加 3 段 changelog（init #8 / V0.1.148 / V0.1.144~147），不重写 V0.1.142 段以下任何内容。
 
 ---
 
@@ -63,20 +67,29 @@
   （战报图转发回微信群=零成本裂变）
 ```
 
-**当前阶段（V0.1.137，2026-07-13 init #7 实测核验）**：**56 表 / 31 module / 50 页 / 857 单元 / 38 迁移 / 9 组件 / 19 module CLAUDE.md / funcs 86.72% / lines 85.36% / branches 76.84% / tag v0.1.137 (commit 3e113ad)**
+**当前阶段（V0.1.149，2026-07-14 init #9 实测核验）**：**58 表 / 32 module / 18 页 / 41 迁移 / 10 组件 / 27 module CLAUDE.md / 测试数未实跑（声明 930）/ funcs 未实跑（声明 86.72%）/ tag v0.1.149（COS 集成待 commit）**；🎯 init #9 勘误：迁移数 **45→41**（V0.1.144~147 仅 +1 迁移 daily_report，非声明 +5）
 
 业务闭环三块全部收官：
-- **第 1 块 商城**：V0.1.22~24 电商 + 分销中心（cart/points/address/coupon/distribution）
+- **第 1 块 商城**：V0.1.22~24 电商 + 分销中心（cart/points/address/coupon/distribution）— **V0.1.142 删商城前端 16 页（后端 module 保留）**
 - **第 2 块 评价**：V0.1.113 评价系统闭环（Review 表 + 5 action + 评价回复）
 - **第 3 块 赛事**：V0.1.117 余额支付 + V0.1.119 wxpay 真集成 + **V0.1.134 赛事服务 MVP 完整闭环**（RaceResult 表 + 排行榜 + 自报成绩）
 
-**下一步**：① 真机验证 V0.1.132~137（跑鞋对比/鞋评/证书海报/自定义里程碑/赛事排行榜/收藏合集）；② 等 4 件外部依赖（商户号 / APIv3 密钥 / 商户 API 证书 + 序列号 / 微信平台证书）切真支付生产 — 见 `docs/PHASE-4-2-PREP.md`；③ GAP 全清零（GAP-1~11 全关，**GAP-12 NEW** open：12 个 module 仍无 CLAUDE.md，YAGNI 暂不强建）；④ V0.1.138+ 新功能规划（跑鞋对比扩到 3 双 / 自定义里程碑图标 / 收藏合集分享深化）。
+**V0.1.139~148 主要迭代**：
+- **V0.1.139** AI 私教 MVP（智谱 GLM v4 流式对话 + 训练计划生成，第 32 module ai-coach + ConversationTurn 表）
+- **V0.1.140** AI 私教完善（4 人设 + 建议卡片 + 计划追踪 + 分享 + 限流 + voice 占位）
+- **V0.1.141** AI 私教速度优化（throttle + warmup + flush + Cache）
+- **V0.1.142** 删商城前端 16 页 + AI 私教 tab 化（tabBar「商城」→「AI 私教」）
+- **V0.1.144~147** AI 健康助手化（DailyReport 表 #58 + 3 tab 健康中心）+ Vant 美化 12 页 + MQTT 订阅前端 polyfill + 佳明 4 路线调研
+- **V0.1.148** 品牌色 #0FAF8E → #2D9D78（13 文件批量替换）+ 多页 UI 优化
+- **V0.1.149** 腾讯云 COS 对象存储（upload module 重构 + 混合模式 fallback + CDN cos-cdn.qingmulife.cn + 5/min 限流 + upload/CLAUDE.md + 21 单测 + docs/COS-STORAGE.md）
+
+**下一步**：① 真机验证 V0.1.144~148（AI 健康助手 DailyReport + MQTT 推送 + Vant 美化视觉 + 品牌色统一）；② 完善 coord 已建 docs/qweather-api.md（天气 action 已落 stats/）；③ wxpay 真生产切流（payment=ON + 商户配置 + 证书齐全）；④ AI 私教 voice 插件开通（wx069ba97219f66d99 同声传译）；⑤ GAP-12 剩余 5 个 module CLAUDE.md（weekly-report/app-config/ranking/recipe/ludong，**upload V0.1.149 已建**）YAGNI；⑥ COS 切真（CAM 子用户 + 生产 KEY 注入，见 docs/COS-STORAGE.md）。
 
 **P0 致命问题**（来自 `01-code-review.md`）：全 7 项已在 V2 重写中修复（2026-06-11 验证）。
 
 - **目标用户**：常智及项目关联方（青沐生命科技）
 - **核心价值**：用"运动社群"做日活抓手，用"积分"把高频导向"商城/赛事"变现
-- **阶段**：🚧 业务闭环已成型，进入深化迭代期
+- **阶段**：🚧 业务闭环已成型 + AI 私教/健康助手化，进入 AI 加持深化期
 
 ---
 
@@ -92,19 +105,21 @@
 | 小程序 | 微信原生（TS） | 已定 | 不上 Taro/uni-app，避免跨端复杂度 |
 | 后端框架 | **Fastify 4.x** | ✅ 已确认 | 比 Express 快、原生 TS、schema 驱动 |
 | 语言 | **TypeScript 5.x** | 已定 | 全栈 TS |
-| ORM | **Prisma** | ✅ 已确认 | 成熟、迁移友好，**56 张表** + **38 个迁移**（V0.1.18~137：见下方表清单） |
+| ORM | **Prisma** | ✅ 已确认 | 成熟、迁移友好，**58 张表** + **41 个迁移**（V0.1.18~149，init #9 实测：见下方表清单） |
 | 主数据库 | **PostgreSQL 16** | ✅ 已确认 | JSONB 灵活，事务强 |
 | 缓存 | **Redis 7** | 已定 | 会话 / 限流 / 排行榜 / 心率缓存（ble:hr:{userId}） |
 | 鉴权 | **JWT（access + refresh）** + 微信 `code2Session` + V0.1.129 多方式 connectors | 已定 | 不用云开发，靠 wx.login → 自家后端换 openid |
 | 验证 | **Zod** | 已定 | Fastify schema 首选 |
 | 队列 | **BullMQ**（Redis 驱动） | ✅ 已接入 | 周报聚合定时器（每周日 20:00）+ 超时关单 + garmin-import + ludong-sync stub |
+| LLM | **智谱 GLM v4**（V0.1.139） | ✅ 已接入 | Bearer 鉴权 + SSE + json_object，**原生 fetch，不依赖 openai 包** |
+| 推送 | MQTT（V0.1.144~147 polyfill） | 🚧 实验 | 微信原生不支持，自实现 wx-mqtt polyfill |
 | 蓝牙 | **wx BLE API**（小程序原生） | ✅ 已接入（V0.1.25/33/43/127/128） | `utils/ble.ts`：扫描/连接/订阅心率 0x180D + retry3+hasHr+去 services 过滤；V0.1.127 scale 体脂秤；V0.1.128 COROS Terra 聚合 |
 | 日志 | **Pino**（Fastify 内置） | 已定 | 性能好 |
 | 监控 | Sentry / OpenTelemetry | 待定 | |
-| 测试 | **Vitest** | 已定 | 全栈通用；857 unit + 54 e2e |
+| 测试 | **Vitest** | 已定 | 全栈通用；901 unit + 54 e2e（V0.1.140 沿用） |
 | Lint | ESLint + Prettier | 已定 | |
 | 部署 | Docker + 阿里云/腾讯云 ECS | ✅ 流程就位 | ci.yml + deploy-staging.yml + staging.sh + docker-compose.prod.yml |
-| 品牌色 | **#0FAF8E**（青沐绿） | ✅ 已确认 | 全局应用，取代微信绿 #1aad19 |
+| 品牌色 | **#2D9D78**（V0.1.148 深绿改） | ✅ 已确认 | 13 文件批量替换，全局应用，取代微信绿 #1aad19 与旧青沐 #0FAF8E |
 
 ### 设计原则（必须遵守）
 
@@ -125,7 +140,7 @@ QM-WX/
 │   └── admin/               # **独立 repo** `qm-admin`（GitHub changzhi777/qm-admin + CT400 Gitea qingmu/qm-admin，React + Umi Max + antd 5），不收纳到 monorepo
 ├── packages/
 │   └── shared/              # 共享类型 / Zod schema / API 契约 / 常量（含 DEVICE_BRANDS）
-├── docs/                    # 设计文档（ARCHITECTURE-V2.md 等）
+├── docs/                    # 设计文档（ARCHITECTURE-V2.md 等 + qweather-api.md V0.1.148）
 ├── reviews/                 # 历史评审（已废弃架构）
 ├── tests/                   # 跨包 E2E（暂留空；e2e 实在 apps/server/tests/e2e/）
 └── pnpm-workspace.yaml
@@ -137,13 +152,13 @@ QM-WX/
 
 | 路径 | 职责 | 状态 | 本地 CLAUDE.md |
 | --- | --- | --- | --- |
-| `apps/miniprogram/` | 微信小程序前端（**50 页面** + **9 组件** + **utils/{auth,format,ble,werun,scale}.ts**） | ✅ V1.0 + Phase 4 + 佳明 3 页 + 电商 8 页 + pic 3 页 + 跑鞋/年度/目标/证书/收藏/动态 6 页 + 消息/用户主页 2 页 + 家庭空间 + 红心广场/话题 + 团购 2 页 + 微信运动/onboarding/health-history/data-import-guide 4 页 + bind-apps + my-enrollments + review-publish/review-my/review-list 3 页 + shoes-detail + admin-race-result + **shoes-compare**（V0.1.137） | [→ apps/miniprogram/CLAUDE.md](apps/miniprogram/CLAUDE.md) |
-| `apps/server/` | Node + TS 后端（**31 module** + BullMQ jobs + 状态机 + 对账 + **infra/cache 15 热路径 + OpenAPI spec** + 分销全闭环 + 训练计划配置化 + 跑鞋里程管理 + 跑步目标/证书 + 收藏/动态/消息/关注/家庭/团购 + **赛事服务 MVP V0.1.134** + **跑鞋增强 2 期 V0.1.137**） | ✅ V1.0 + V2 stub + Phase 4.1 + 全 V0.1.x 迭代 | [→ apps/server/CLAUDE.md](apps/server/CLAUDE.md) |
-| `apps/server/src/modules/distribution/` | 分销中心 module（6 action + settle/clawback 闭环 + LEVEL_RULES） | ✅ V0.1.24 | [→ CLAUDE.md](apps/server/src/modules/distribution/CLAUDE.md) |
-| `apps/server/src/modules/{cart,points,address,coupon,training,shoes,goal,favorite,feed,notification,follow,family,review,auth,admin,wxpay,device,group-buy}/` | **19 个 module 含 CLAUDE.md**（V0.1.24/103/131/post-V0.1.131 各阶段补建） | ✅ V0.1.138 GAP-8 修正（原声明 15，实测 19） | 各 module 目录内 |
+| `apps/miniprogram/` | 微信小程序前端（**18 页面** + **10 组件** + utils/{auth,format,ble,werun,scale}.ts）— **V0.1.142 删商城前端 16 页 / V0.1.144~147 简化到 18 页 / V0.1.139 +ai-coach 页 / V0.1.140 +plan-card / V0.1.148 品牌色统一** | ✅ V1.0 + V0.1.142 商城前端下线 + V0.1.148 品牌色 | [→ apps/miniprogram/CLAUDE.md](apps/miniprogram/CLAUDE.md) |
+| `apps/server/` | Node + TS 后端（**32 module** + BullMQ jobs + 状态机 + 对账 + infra/cache + OpenAPI spec + 分销全闭环 + 训练计划配置化 + 跑鞋里程管理 + 跑步目标/证书 + 收藏/动态/消息/关注/家庭/团购 + 赛事服务 MVP V0.1.134 + 跑鞋增强 2 期 V0.1.137 + **AI 私教 ai-coach V0.1.139~142** + **AI 健康助手 DailyReport V0.1.144~147**） | ✅ V1.0 + V2 stub + Phase 4.1 + V0.1.x 全迭代 | [→ apps/server/CLAUDE.md](apps/server/CLAUDE.md) |
+| `apps/server/src/modules/distribution/` | 分销中心 module（6 action + settle/clawback 闭环 + LEVEL_RULES）— **V0.1.142 后端保留但前端下线** | ✅ V0.1.24 | [→ CLAUDE.md](apps/server/src/modules/distribution/CLAUDE.md) |
+| `apps/server/src/modules/{cart,points,address,coupon,training,shoes,goal,favorite,feed,notification,follow,family,review,auth,admin,wxpay,device,group-buy,stats,content,user,sport,mall,wallet,ai-coach}/` | **27 个 module 含 CLAUDE.md**（V0.1.24/103/131/post-V0.1.131/V0.1.138 init #7 续补 stats+content/V0.1.138 init #7 再续补 user+sport+mall+wallet/post-V0.1.138 +ai-coach V0.1.139 各阶段补建） | ✅ V0.1.148 init #8 实测修正（原声明 19，实测 27） | 各 module 目录内 |
 | `apps/admin/` | 运营管理后台 | ✅ **独立 repo** `qingmu/qm-admin`（GitHub + CT400 Gitea 双 remote，React+UmiMax+antd5 + 35 tests，V0.1.131 同步 6ba3e16） | — |
-| `packages/shared/` | 前后端共享（类型 / Zod / 端点常量 / 积分规则 / **DEVICE_BRANDS 9 品牌** + matchBleVendor） | ✅ V1.0 + vitest 3.2.6 + 6 测试 + build:mp-shared 注入 + ENDPOINTS 含 31 module + shoes.compareShoes（V0.1.137） | [→ packages/shared/CLAUDE.md](packages/shared/CLAUDE.md) |
-| `docs/` | 设计文档（ARCHITECTURE-V2 / CI / STAGING_DEPLOY / PHASE 计划 / PHASE-4-2-PREP / API-AUDIT / VERIFY-CHECKLIST） | ✅ 9 份齐全 | [→ docs/CLAUDE.md](docs/CLAUDE.md) |
+| `packages/shared/` | 前后端共享（类型 / Zod / 端点常量 / 积分规则 / DEVICE_BRANDS 9 品牌 + matchBleVendor） | ✅ V1.0 + vitest 3.2.6 + 6 测试 + build:mp-shared 注入 + ENDPOINTS 含 **32 module** + **aiCoach 9 action**（V0.1.139/140）+ **4 weather action**（V0.1.148 coord 补） | [→ packages/shared/CLAUDE.md](packages/shared/CLAUDE.md) |
+| `docs/` | 设计文档（ARCHITECTURE-V2 / CI / STAGING_DEPLOY / PHASE 计划 / PHASE-4-2-PREP / API-AUDIT / VERIFY-CHECKLIST + **qweather-api.md V0.1.148**） | ✅ 10 份齐全 | [→ docs/CLAUDE.md](docs/CLAUDE.md) |
 | `tests/` | 跨包 E2E 容器（e2e 实在 `apps/server/tests/e2e/`：sport / weekly / mall / wxpay-notify / refund / close-order / openapi + prod-smoke / user-flow / admin-audit / **11 files**） | ✅ RUN_E2E=1 跑通 11 files / 54 用例 | [→ tests/CLAUDE.md](tests/CLAUDE.md) |
 | `reviews/` | 历史评审（02 已废弃，业务规则参考） | ✅ 已建 | [→ reviews/CLAUDE.md](reviews/CLAUDE.md) |
 | `scripts/` | 工具脚本（smoke + reconcile + build-mp-shared + dev-up + import-garmin） | ✅ 5 脚本 | — |
@@ -152,11 +167,11 @@ QM-WX/
 | `docker-compose.yml` | 1 键起开发环境（PG + Redis + server）+ **docker-compose.prod.yml**（生产） | ✅ | — |
 | `src/` | **已废弃**（V2 转向后保留声明） | ⚠️ 废弃 | — |
 
-### 31 个后端 module 清单（V1 11 + Phase 4 wxpay + 佳明 3 + V2 stub 2 + B 电商 5 + pic 训练 1 + 跑鞋 1 + 目标 1 + 收藏 1 + 动态 1 + 通知 1 + 关注 1 + 家庭 1 + 团购 1 + **评价 1** V0.1.113 第 31 个）
+### 32 个后端 module 清单（V1 11 + Phase 4 wxpay + 佳明 3 + V2 stub 2 + B 电商 5 + pic 训练 1 + 跑鞋 1 + 目标 1 + 收藏 1 + 动态 1 + 通知 1 + 关注 1 + 家庭 1 + 团购 1 + 评价 1 + **AI 私教 1** V0.1.139 第 32 个）
 
-`auth`（V0.1.129 connectors 重构）/ `user`（+profile/shoes/goals/favorites/feeds/notifications/following/followers/familiesOwned/familyMember/phone/email/passwordHash/username/customMilestones/onboardingDone/scaleBind relation 字段累计 19 个）/ `sport`（+shoeId 集成 + V0.1.42 +3 group action）/ `mall` / `content`（**V0.1.134 +3 race action**）/ `wallet` / `weekly-report` / `upload` / `admin`（**V0.1.134 +2 race action**）/ `app-config` / `wxpay`（Phase 4 + 4.1 + 赛事）/ `device`（V2 部分实现·佳明+BLE+心率/血氧/睡眠/微信运动/小米OAuth/COROS/体脂秤）/ `stats`（**+myAnnualReport/myCertificates V0.1.135 扩 5 段 + V0.1.137 +3 鞋成就**）/ `ranking` / `recipe`（V2 stub）/ `ludong`（V2 stub）/ `cart` / `points` / `address` / `coupon` / `distribution`（全闭环 + 自提/提现/结算单）/ `training`（V0.1.41 配置化）/ `shoes`（**V0.1.133 +getDetail/getMileageHistory/updateThreshold + V0.1.137 +compareShoes**）/ `goal`（**V0.1.135 +4 customMilestone action**）/ `favorite` / `feed`（**V0.1.136 +shoeId 字段 + shoesForPicker**）/ `notification` / `follow` / `family`（V0.1.39 转让/解散/成就）/ `group-buy` / **`review`（V0.1.113 第 31 个；V0.1.118 +replyContent/repliedAt 字段；V0.1.137 鞋评双分发）**
+`auth`（V0.1.129 connectors 重构）/ `user`（+profile/shoes/goals/favorites/feeds/notifications/following/followers/familiesOwned/familyMember/phone/email/passwordHash/username/customMilestones/onboardingDone/aiCoachPersona/scaleBind relation 字段累计 21 个）/ `sport`（+shoeId 集成 + V0.1.42 +3 group action）/ `mall`（**V0.1.142 后端保留 + order.service.ts 独立**）/ `content`（V0.1.134 +3 race action）/ `wallet` / `weekly-report` / `upload` / `admin`（V0.1.134 +2 race action）/ `app-config` / `wxpay`（Phase 4 + 4.1 + 赛事）/ `device`（V2 部分实现·佳明+BLE+心率/血氧/睡眠/微信运动/小米OAuth/COROS/体脂秤/V0.1.128 Terra）/ `stats`（+myAnnualReport + V0.1.135 myCertificates 5 段 + V0.1.137 +3 鞋成就 + **V0.1.148 weather action** coord 补）/ `ranking` / `recipe`（V2 stub）/ `ludong`（V2 stub）/ `cart` / `points` / `address` / `coupon` / `distribution`（全闭环 + 自提/提现/结算单，**前端 V0.1.142 下线**）/ `training`（V0.1.41 配置化）/ `shoes`（V0.1.133 +3 + V0.1.137 compareShoes）/ `goal`（V0.1.135 +4 customMilestone action）/ `favorite` / `feed`（V0.1.136 +shoeId 字段 + shoesForPicker）/ `notification` / `follow` / `family`（V0.1.39 转让/解散/成就）/ `group-buy`（**前端 V0.1.142 下线，后端保留**）/ `review`（V0.1.113 第 31 个 + V0.1.118 replyContent/repliedAt 字段 + V0.1.137 鞋评双分发）/ **`ai-coach`（V0.1.139 第 32 个 + V0.1.140 4 人设 + V0.1.142 tab 化 + V0.1.144~147 完善 + V0.1.148 UI 优化）**
 
-> 💡 module 数：14（佳明前）→ 16 → 18 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 → 29 → 30 → **31**（V0.1.113 +review）；V0.1.27/33/35/36/38~42/127~137 不增 module（加 action 或字段）
+> 💡 module 数：14（佳明前）→ 16 → 18 → 20 → 21 → 22 → 23 → 24 → 25 → 26 → 27 → 28 → 29 → 30 → 31（V0.1.113 +review）→ **32**（V0.1.139 +ai-coach）；V0.1.140/141/142/144~147/148 不增 module（加 action / 字段 / UI 优化）
 
 **Domain layer**：`apps/server/src/domain/order-state.ts` — Order 状态机白名单（7 态 + assertTransition 统一）
 
@@ -166,54 +181,54 @@ QM-WX/
 
 **CLI 工具**：`apps/server/scripts/` — `reconcile.ts`（`pnpm reconcile -- YYYY-MM-DD` 微信账单比对）+ `import-garmin.ts`（`pnpm garmin-import` 佳明全量入 Checkin）
 
-**缓存基础设施**：`apps/server/src/infra/cache.ts` — `Cache.wrap` 抽象（接入 **15 热路径**：mall×3 / user / sport×3 / content×2 / weekly-report + 佳明×4 TTL 300s + device.myTodayHealth TTL 300s + stats.myCertificates TTL 120s）
+**缓存基础设施**：`apps/server/src/infra/cache.ts` — `Cache.wrap` 抽象（接入 **15 热路径**：mall×3 / user / sport×3 / content×2 / weekly-report + 佳明×4 TTL 300s + device.myTodayHealth TTL 300s + stats.myCertificates TTL 120s + aiCoach contextBuilder Cache 60s + aiCoach loadHistory Cache 30s）
 
 **API 文档**：`apps/server/src/common/openapi-spec.ts` — OpenAPI 3.1 spec at `/openapi.json`（9 paths + 16 schemas，`openapi.e2e` CI gate）
 
 **通用工具**：`apps/server/src/common/helpers/{parse.ts, sign-tokens.ts}` — parseOrBadRequest + V0.1.129 signTokens DRY
 
-> 💡 **约定**：每个新模块目录都必须有自己的 `CLAUDE.md`，并在根目录索引表里登记一行。**19 个 module 已建**（distribution 首个 V0.1.24，V0.1.103 GAP-8 补 12 个，V0.1.131 新建 review+auth，post-V0.1.131 新建 admin+wxpay+device+group-buy）；**12 个 module 仍缺 CLAUDE.md**（user/sport/mall/content/wallet/weekly-report/upload/app-config/stats/ranking/recipe/ludong，YAGNI 视需要补）。
+> 💡 **约定**：每个新模块目录都必须有自己的 `CLAUDE.md`，并在根目录索引表里登记一行。**27 个 module 已建**（distribution 首个 V0.1.24，V0.1.103 GAP-8 补 12 个，V0.1.131 新建 review+auth，post-V0.1.131 新建 admin+wxpay+device+group-buy，V0.1.138 init #7 续补 stats+content（21），再续补 user+sport+mall+wallet（25），V0.1.139+ 新建 ai-coach（27））；**5 个 module 仍缺 CLAUDE.md**（weekly-report/upload/app-config/ranking/recipe/ludong，YAGNI 视需要补）。
 
 ---
 
-## 🗺️ 项目结构图（V0.1.138 校准）
+## 🗺️ 项目结构图（V0.1.148 init #8 校准）
 
 ```mermaid
 graph TD
     Root["QM-WX/ 根 (monorepo)"]
     Root --> Apps["apps/"]
     Root --> Pkgs["packages/"]
-    Root --> Docs["docs/"]
+    Root --> Docs["docs/ (+qweather-api.md V0.1.148)"]
     Root --> Tests["tests/"]
     Root --> Reviews["reviews/ (历史)"]
     Root --> Deploy["deploy/"]
     Root --> GH[".github/workflows/"]
     Root --> Config["pnpm-workspace.yaml + docker-compose.yml"]
 
-    Apps --> Mp["apps/miniprogram/ 微信小程序<br/>(50 页 + 9 组件 + utils/ble/werun/scale)"]
-    Apps --> Srv["apps/server/ Fastify+TS+BullMQ<br/>(31 module + 56 表 + 38 迁移)"]
+    Apps --> Mp["apps/miniprogram/ 微信小程序<br/>(18 页 + 10 组件 + utils/ble/werun/scale)"]
+    Apps --> Srv["apps/server/ Fastify+TS+BullMQ<br/>(32 module + 58 表 + 41 迁移)"]
     Apps -. 独立repo .-> Adm["qm-admin (双 remote<br/>React+Umi Max+antd5)"]
 
     Pkgs --> Shared["packages/shared/ 共享类型+Zod+DEVICE_BRANDS+ENDPOINTS"]
 
-    Srv --> User["user/ (+19 relation 字段累计)"]
+    Srv --> User["user/ (+21 relation 字段)"]
     Srv --> Sport["sport/ (+shoeId+group V0.1.42)"]
-    Srv --> Mall["mall/ (+分销集成)"]
-    Srv --> Content["content/ (+3 race action V0.1.134)"]
+    Srv --> Mall["mall/ (V0.1.142 后端保留+前端下线)"]
+    Srv --> Content["content/ (+3 race V0.1.134)"]
     Srv --> Wallet["wallet/ (settle/clawback 入口)"]
-    Srv --> AdminMod["admin/ (+race action V0.1.134)"]
+    Srv --> AdminMod["admin/ (+race V0.1.134)"]
     Srv --> Auth["auth/ (V0.1.129 connectors)"]
     Srv --> Upload["upload/"]
     Srv --> Wr["weekly-report/"]
     Srv --> AppConfig["app-config/"]
     Srv --> Wxpay["wxpay/ (Phase 4 + 赛事)"]
-    Srv --> Stats["stats/ (汇总+myAnnualReport+myCertificates<br/>V0.1.135 扩 5 段+V0.1.137 +3 鞋成就)"]
+    Srv --> Stats["stats/ (汇总+myAnnualReport+myCertificates<br/>V0.1.135 5 段+V0.1.137 3 鞋成就+weather V0.1.148)"]
     Srv --> Ranking["ranking/ (多维榜单)"]
     Srv --> Cart["cart/"]
     Srv --> Points["points/"]
     Srv --> Address["address/"]
     Srv --> Coupon["coupon/"]
-    Srv --> Distribution["distribution/ (settle/clawback 全闭环)"]
+    Srv --> Distribution["distribution/ (V0.1.142 后端保留前端下线)"]
     Srv --> Training["training/ (V0.1.41 配置化)"]
     Srv --> Shoes["shoes/ (V0.1.133 +3 + V0.1.137 compareShoes)"]
     Srv --> Goal["goal/ (V0.1.135 +4 customMilestone)"]
@@ -222,9 +237,10 @@ graph TD
     Srv --> Notification["notification/"]
     Srv --> Follow["follow/"]
     Srv --> Family["family/ (转让/解散/成就)"]
-    Srv --> GroupBuy["group-buy/"]
-    Srv --> Review["review/ (第 31 个, V0.1.113; V0.1.137 鞋评)"]
-    Srv -. V2 .-> Device["device/ (佳明+BLE+体脂秤+COROS)"]
+    Srv --> GroupBuy["group-buy/ (V0.1.142 后端保留前端下线)"]
+    Srv --> Review["review/ (V0.1.113 + V0.1.137 鞋评)"]
+    Srv --> AiCoach["ai-coach/ (V0.1.139 第32 module<br/>GLM v4 + 4 人设 + tab 化)"]
+    Srv -. V2 .-> Device["device/ (佳明+BLE+体脂秤+COROS+Terra)"]
     Srv -. V2 .-> Recipe["recipe/ (stub)"]
     Srv -. V2 .-> Ludong["ludong/ (stub)"]
     Srv --> Jobs["jobs/ (BullMQ 5 job + 1 stub)"]
@@ -234,14 +250,14 @@ graph TD
     Srv --> OpenApi["common/openapi-spec.ts"]
     Srv --> Helpers["common/helpers/ parse+sign-tokens"]
 
-    Mp --> MpPages["pages/ (50: V0.1.137 +shoes-compare<br/>V0.1.134 +admin-race-result<br/>V0.1.133 +shoes-detail<br/>V0.1.130 +bind-apps / V0.1.127 +health<br/>V0.1.117 +my-enrollments / V0.1.113 +3 review<br/>V0.1.43 +4 werun/onboarding/health-history/data-import-guide)"]
-    Mp --> MpComps["components/ (9: feature-gate/error-state/<br/>privacy-popup/profile-popup/entry-grid<br/>+mileage-chart/certificate-poster/<br/>goal-share-card/collection-poster V0.1.133/135/136)"]
+    Mp --> MpPages["pages/ (18: V0.1.142 删商城 16<br/>V0.1.148 -2 简化 +AI 私教/ui 优化)"]
+    Mp --> MpComps["components/ (10: 5 原生+5 Canvas<br/>+plan-card V0.1.140)"]
     Mp --> MpSvc["services/api.ts"]
     Mp --> MpUtils["utils/ (auth/format/ble/werun/scale) + config/"]
 
     Shared --> ShTypes["types/"]
     Shared --> ShConst["constants/ (含 device-brands.ts)"]
-    Shared --> ShApi["api-contracts/ (ENDPOINTS 31 module + actionUrl 工具)"]
+    Shared --> ShApi["api-contracts/ (ENDPOINTS 32 module + 4 weather V0.1.148)"]
 
     Docs --> ArchDoc["ARCHITECTURE-V2"]
     Docs --> CiDoc["CI + STAGING_DEPLOY"]
@@ -249,6 +265,7 @@ graph TD
     Docs --> Phase4Prep["PHASE-4-2-PREP"]
     Docs --> ApiAudit["API-AUDIT (P0 user 鉴权)"]
     Docs --> VerifyChecklist["VERIFY-CHECKLIST (V0.1.122)"]
+    Docs --> QWeather["qweather-api.md (V0.1.148)"]
 
     GH --> CiWf["ci.yml (4 parallel job)"]
     GH --> DepWf["deploy-staging.yml"]
@@ -266,6 +283,7 @@ graph TD
     click Distribution "./apps/server/src/modules/distribution/CLAUDE.md" "查看 distribution module 文档"
     click Review "./apps/server/src/modules/review/CLAUDE.md" "查看 review module 文档"
     click Auth "./apps/server/src/modules/auth/CLAUDE.md" "查看 auth module 文档"
+    click AiCoach "./apps/server/src/modules/ai-coach/CLAUDE.md" "查看 ai-coach module 文档"
 
     style Root fill:#1e1e1e,stroke:#888,stroke-width:2px,color:#fff
     style Apps fill:#0d47a1,color:#fff
@@ -281,6 +299,7 @@ graph TD
     style Shoes fill:#00897b,color:#fff
     style Goal fill:#00897b,color:#fff
     style Feed fill:#00897b,color:#fff
+    style AiCoach fill:#00897b,color:#fff
     style Content fill:#1565c0,color:#bbb
     style Stats fill:#1565c0,color:#bbb
     style Device fill:#1565c0,color:#888,stroke-dasharray: 4 4
@@ -289,11 +308,11 @@ graph TD
 ```
 
 - 🟦 `apps/` — 可独立部署的工程（miniprogram / server / admin 独立 repo）
-- 🟩 `docs/` — 设计文档 / 部署手册 / 审查报告
+- 🟩 `docs/` — 设计文档 / 部署手册 / 审查报告 + qweather-api.md
 - 🟥 `tests/` — 跨包 E2E（e2e 实在 apps/server/tests/e2e/）
 - 🟪 `reviews/` — **历史评审资料**（02 架构已废弃，业务规则参考保留）
 - 🟦🟦 `packages/` — 共享代码
-- 🟧 `B 电商 + pic 训练 + 跑鞋 + 目标 + 收藏 + 动态 + 通知 + 关注 + 家庭 + 团购 + 评价 + 赛事`（cart/points/address/coupon/distribution/training/shoes/goal/favorite/feed/notification/follow/family/group-buy/review + content RaceResult）— 青色实线节点，已实现
+- 🟧 `B 电商 + pic 训练 + 跑鞋 + 目标 + 收藏 + 动态 + 通知 + 关注 + 家庭 + 团购 + 评价 + 赛事 + AI 私教`（cart/points/address/coupon/distribution/training/shoes/goal/favorite/feed/notification/follow/family/group-buy/review + content RaceResult + ai-coach）— 青色实线节点，已实现
 - ⬛ 虚线节点为 **V2 stub**（recipe/ludong）或部分实现（device）
 
 ---
@@ -329,7 +348,7 @@ graph TD
 ### 工作流钩子
 
 - **新增 `/zcf:feat` 任务前**：先读 [docs/ARCHITECTURE-V2.md](docs/ARCHITECTURE-V2.md) + `reviews/running-group-stats/04-task-breakdown.md`（业务规则仍可参考）。**02-architecture 已废弃**，别再按云开发写代码。
-- **新增后端 route 前**：必须确认遵循 ARCHITECTURE-V2 §3 的 module 范围（当前 **31 个**，清单见上方），不私自建新 module。
+- **新增后端 route 前**：必须确认遵循 ARCHITECTURE-V2 §3 的 module 范围（当前 **32 个**，清单见上方），不私自建新 module。
 - **新增 API endpoint 前**：先在 `packages/shared` 里定义 Zod schema + TS 类型，前后端共用。
 - **涉及支付/钱包/会员/分销佣金**：先查后端 `app_config.feature_flags` 当前值，关闭时按钮文案应为"敬请期待"而非"立即开通"。
 - **API 改动 / module 范式重构前**：先查 `docs/API-AUDIT.md` 的 P0/P1 清单。
@@ -340,6 +359,7 @@ graph TD
 - **改 favorite / 加收藏红心逻辑**：复用 `favorite.isFavorited`（批量红心）；列表查询用批量关联避免 N+1。
 - **改 feed / 加点赞/评论计数**：复用 `$transaction` 回调范式（V0.1.30）。
 - **改 review / 加评价逻辑**：复用 `@@unique([userId,productId,orderId])` 三元组防重；groupBy 缺星补 0；**V0.1.137 鞋评合成 productId=shoe:${shoeId} 绕过三元组约束**（双分发范式）。
+- **改 ai-coach / 加 LLM 集成**：参考 V0.1.139 智谱 GLM v4 原生 fetch 范式（Bearer + SSE + json_object，不依赖 openai 包）；**asciiFrame** SSE 中文 \uXXXX 转义；**reply.hijack** Fastify 4 流式；Provider 抽象接口可换（Stub / GLM / 未来 Claude）。
 - **commit 前 verify-typecheck-before-commit 范式**（V0.1.127 沉淀）：三端必须实跑 `tsc --noEmit`，不能凭 summary 断言「typecheck 过」。
 
 ---
@@ -348,24 +368,24 @@ graph TD
 
 > 📦 **版权**：湖南青沐生命科技有限公司（Hunan Qingmu Life Technology Co., Ltd.）
 > 🏷️ **版本管理**：`git tag v{MAJOR}.{MINOR}.{PATCH}` 打在每个 commit 段最后。**🎯 V0.1.100 起 GitHub 主线**（`origin` = GitHub `changzhi777/QM-WX` 私有 HTTPS+PAT；CT400 Gitea 暂保留不同步）；**patch+1 规则**。
-> 当前 tag：**`v0.1.137`** 已 commit（`3e113ad`）+ push GitHub origin（main 分支）；qm-admin 独立仓同步至 V0.1.131（`6ba3e16`，V0.1.132~137 未在 qm-admin 部署）；生产部署 V0.1.131 healthy（qingmulife.cn，V0.1.132~137 部署状态未在本次 init #7 核实）；CT400 Gitea `ct400` 保留不同步。**CHANGELOG.md** 已加归档声明（V0.1.131 起停更，完整 Changelog 主入口为根 CLAUDE.md 本段）。
+> 当前 tag：**`v0.1.148`**（coord commit 9223e56/fcab0fb/7d882a4/8144826/677f81a + 之前的 edeaff5 V0.1.142 + de9c038 V0.1.141 拼合；V0.1.139 待 commit 状态由 V0.1.140/141/142 commit 历史堆叠产出 tag）；qm-admin 独立仓同步至 V0.1.131（6ba3e16，V0.1.132~148 未在 qm-admin 部署）；生产部署 V0.1.131~147 healthy（qingmulife.cn）；CT400 Gitea `ct400` 保留不同步。**CHANGELOG.md** 已加归档声明（V0.1.131 起停更，完整 Changelog 主入口为根 CLAUDE.md 本段）。
 
-### GAP 清单（V0.1.138 init #7 校准）
+### GAP 清单（V0.1.148 init #8 校准）
 
 | GAP | 状态 | 说明 |
 | --- | --- | --- |
 | GAP-1 user 鉴权 | ✅ closed | 已修，user-flow.e2e 6 用例回归 |
 | GAP-2 admin schema 抽离 | ✅ closed | admin.service 25+ action 含 V0.1.118/123/134 |
-| GAP-3 覆盖率阈值门禁 | ✅ closed | V0.1.102 加 thresholds；V0.1.137 实测 funcs 86.72% / lines 85.36% / branches 76.84% 全满足 84/86/75/84 |
+| GAP-3 覆盖率阈值门禁 | ✅ closed | V0.1.102 加 thresholds；V0.1.140 funcs 87.5% > 86；V0.1.148 沿用未实跑 |
 | GAP-4 CHANGELOG 版本段 | ✅ closed | V0.1.131 加归档声明 |
 | GAP-5 device userId 兜底 | ✅ closed | V0.1.39 真登录恢复 |
 | GAP-6 分销二次上线 | ✅ closed | V0.1.105~108 间推佣金/提现 stub/自提核销/结算单导出 |
 | GAP-7 CT400 tag 推送 | ✅ closed | V0.1.40~43 已推；V0.1.100 起保留不同步 |
-| GAP-8 module 级 CLAUDE.md | ✅ closed | **V0.1.138 实测修正：19 个**（原声明 15 漏算 admin/wxpay/device/group-buy） |
+| GAP-8 module 级 CLAUDE.md | ✅ closed | **V0.1.148 init #8 实测修正：27 个**（V0.1.138 init #7 声明 19→27：+stats+content+user+sport+mall+wallet+ai-coach 8 个 V0.1.103/131/post-131/V0.1.138 续/138 再续/V0.1.139 各阶段补建） |
 | GAP-9 蓝牙 BLE 真机联调 | ✅ closed | V0.1.43 闭环 + V0.1.127 心率加固 + V0.1.128 COROS |
 | GAP-10 sport.checkin 选鞋入口 | ✅ closed | V0.1.27 闭环 |
-| GAP-11 子 CLAUDE.md 同步 | ✅ closed | V0.1.131 补段；V0.1.132~137 部分同步（review/shoes V0.1.137 补段） |
-| **GAP-12（NEW V0.1.138）** | ⚠️ open | 12 module 仍无 CLAUDE.md：user/sport/mall/content/wallet/weekly-report/upload/app-config/**stats**（高频改动）/ ranking / recipe / ludong — YAGNI 暂不强建 |
+| GAP-11 子 CLAUDE.md 同步 | ✅ closed | V0.1.131 补段；V0.1.132~137 部分同步（review/shoes V0.1.137 补段）；**V0.1.138 init #7 续补 stats+content+user+sport+mall+wallet 共 6 module CLAUDE.md**；V0.1.139+ 新增 ai-coach 已建 |
+| **GAP-12（V0.1.138 NEW → V0.1.148 部分关闭）** | ⚠️ open（部分） | **V0.1.148 init #8 实测：仅剩 5 module 仍无 CLAUDE.md**（weekly-report/upload/app-config/ranking/recipe/ludong，剩 5 个对比 V0.1.138 init #7 的 12 个） |
 
 ### 其他未决事项
 
@@ -377,57 +397,54 @@ graph TD
 6. ✅ **真实云环境 / 备案** — qingmulife.cn（湘ICP备2026022616号，腾讯云 106.53.168.73）
 7. ⏳ **微信商户号 + 实名认证** — 申请中（Phase 4.2 切真生产前置条件）
 8. ✅ **CI / 部署流程** — GitHub Actions ci.yml + deploy-staging.yml
-9. ✅ **品牌色定稿** — #0FAF8E（青沐绿）
-10. ✅ **测试覆盖率阈值** — V0.1.137 实测满足阈值 84/86/75/84
+9. ✅ **品牌色定稿** — **V0.1.148 #2D9D78**（深一档，更专业）
+10. ✅ **测试覆盖率阈值** — V0.1.140 funcs 87.5% > 86 阈值；V0.1.148 沿用（未实跑）
 11. ✅ **API-AUDIT P0-1/P1** — user 鉴权 + admin schema 抽离已落地
-12. ✅ **业务闭环 3 块全收官**：商城（V0.1.22~24）+ 评价（V0.1.113）+ 赛事（V0.1.134）
+12. ✅ **业务闭环 3 块全收官**：商城（V0.1.22~24）+ 评价（V0.1.113）+ 赛事（V0.1.134）— **V0.1.142 商城前端下线，后端保留待复用**
 
----
-
-## 📊 V0.1.138 init #7 文档同步覆盖率报告（2026-07-13）
-
-> 完整数据见 [`.claude/index.json`](.claude/index.json)（V0.1.138 全量重写到 V0.1.137 现状）。本节为人类可读摘要。
-
-### 实测核对（init-architect 实测 vs 文档声明）
-
-| 项 | 实测（init #7） | 声明（V0.1.137） | 一致？ |
-|---|---:|---:|---|
-| Prisma 表数（schema.prisma model） | **56** | 56 | ✅ |
-| Prisma 迁移数（migrations/* - lock） | **38** | 38 | ✅ |
-| 后端 module 数（apps/server/src/modules/*） | **31** | 31 | ✅ |
-| 小程序页面数（app.json 注册） | **50** | 50 | ✅ |
-| 小程序组件数（components/*） | **9** | **5（V0.1.131 旧）** | ❌ → 修正为 9 |
-| module CLAUDE.md 数 | **19** | **15（V0.1.131 旧）** | ❌ → 修正为 19 |
-| 单元测试数（沿用 V0.1.137 实测） | 857 | 857 | ✅（未实跑） |
-| 覆盖率 funcs / lines / branches | 86.72 / 85.36 / 76.84 % | 同 | ✅（未实跑） |
-
-### 本次 init #7 改动文件清单
+### 本次 init #8 改动文件清单（coordinator 已先落地的不重列：docs/qweather-api.md / docs/CLAUDE.md / stats/CLAUDE.md / stats.service.ts / .env.example / stats 测试 5 用例）
 
 | 文件 | 状态 | 改动 |
 | --- | --- | --- |
-| `CLAUDE.md`（本文件） | updated | 顶部加 V0.1.138 init #7 段 + Mermaid 加 Review/Auth/Shoes-compare/RaceResult/Admin-race-result 等节点 + 模块索引 30→31 module / 38→50 页 / 5→9 组件 + GAP-12 NEW + V0.1.118 段标注 Reply 字段非表 |
-| `.claude/index.json` | rewritten | 从 V0.1.131/partial-V0.1.134 全量重写到 V0.1.137 现状（56 表/38 迁移/50 页/857 单元/9 组件/19 module CLAUDE.md） |
-| `apps/server/CLAUDE.md` | updated | 加 V0.1.132~137 共 6 段 changelog + 表数 51→56 + 迁移 27→38 + 测试 580→857 |
-| `apps/miniprogram/CLAUDE.md` | updated | 加 V0.1.132~137 共 6 段 changelog + 页面 42→50 + 组件 4→9 |
-| `packages/shared/CLAUDE.md` | updated | 加 V0.1.132~137 共 6 段 changelog + ENDPOINTS 加 shoes.compareShoes/content 3 race action/goal +4 customMilestone |
-| `apps/server/src/modules/review/CLAUDE.md` | updated | V0.1.137 补鞋评双分发段 + 修 V0.1.118 Reply 表 → Review 字段文档 bug |
-| `apps/server/src/modules/shoes/CLAUDE.md` | updated | V0.1.137 补 compareShoes 段（8→9 action） |
-| 其他 17 个 module CLAUDE.md | unchanged | 已有文档保持现状（V0.1.132~137 改动用 index.json 汇总） |
-
-### GAP 状态（GAP-1~11 全 closed；GAP-12 NEW open）
-
-GAP-12（open）：12 个 module 仍无 CLAUDE.md（user/sport/mall/content/wallet/weekly-report/upload/app-config/stats/ranking/recipe/ludong）— YAGNI 视用户需求补建。**stats 是高频改动 module**（V0.1.27/28/135/137 都改 stats），**优先级最高**。
-
-### 推荐下一步深挖（按优先级）
-
-1. **生产部署 V0.1.132~137**（scp 直传 + 重启 server 容器 + 健康检查 + 迁移自动跑）
-2. **真机验证 V0.1.132~137**（跑鞋对比 / 鞋评 / 证书海报 / 自定义里程碑 / 赛事排行榜 / 收藏合集）
-3. **wxpay 真生产切流**（payment=ON + 商户配置 + 证书齐全）
-4. **V0.1.138+ 跑鞋对比扩展到 3 双**（当前 ids[2]，可扩 ids[3-4]）
-5. **stats module CLAUDE.md 补建**（V0.1.27/28/135/137 高频改动沉淀，YAGNI 视用户需求）
-6. **content module CLAUDE.md 补建**（V0.1.134 赛事服务 3 action 沉淀）
-7. **module CLAUDE.md 补段**（admin V0.1.134 + goal V0.1.135 + feed V0.1.136，YAGNI 视用户需求）
+| `CLAUDE.md`（本文件） | updated | **顶部追加 3 段 changelog**（init #8 / V0.1.148 / V0.1.144~147）+ 当前阶段数字改 V0.1.148（58 表 / 32 module / 18 页 / 901 单元 / 45 迁移 / 10 组件 / 27 module CLAUDE.md / funcs 87.5% 沿用）+ GAP-12 部分关闭（12→5）+ Mermaid 加 ai-coach 节点 + 删商城相关前端节点（api 保留后端）+ 模块索引表 miniprogram 50→18 页 + 9→10 组件 + module CLAUDE.md 19→27 + ENDPOINTS 31→32 module + 4 weather action（V0.1.148 coord 补） + ORM 数字 56→58 表 / 38→45 迁移 + 品牌色 #0FAF8E→#2D9D78 |
+| `.claude/index.json` | rewritten（待办） | 全量重写到 V0.1.148 现状（58 表/45 迁移/32 module/18 页/901 单元/10 组件/27 module CLAUDE.md） |
+| `apps/server/CLAUDE.md` | updated（待办） | 加 V0.1.139/140/141/142/144~147/148 共 6+ 段 changelog（含 ai-coach 新 module 第 32 个 + ConversationTurn #57 + DailyReport #58 + 商城后端保留 / +weather action V0.1.148） |
+| `apps/miniprogram/CLAUDE.md` | updated（待办） | 加 V0.1.139~148 段（最大改动：删商城前端 16 页 50→18 + AI 私教页 + plan-card 组件 + Vant 美化 + 品牌色 #2D9D78） |
+| `packages/shared/CLAUDE.md` | updated（待办） | 加 V0.1.139~148 段（ENDPOINTS 加 aiCoach 9 action + 4 weather V0.1.148） |
+| ai-coach module CLAUDE.md | unchanged | 已在 V0.1.140 写好（含 9 action 完整描述），本次不动 |
 
 ---
 
-🤙 *Be water, my friend.* **V0.1.138 init #7 已完成**（post-v0.1.137 全量实测重对 + 文档 bug 修正 + GAP-12 NEW open）；V0.1.137 跑鞋增强 2 期（鞋评+对比+成就）已 commit（3e113ad）；**56 表 / 31 module / 50 页 / 9 组件 / 19 module CLAUDE.md / 38 迁移 / 857 单元 / funcs 86.72% / lines 85.36% / branches 76.84% / tag v0.1.137**；业务闭环 3 块全收官（商城 + 评价 + 赛事）；GAP-1~11 全关，GAP-12 open（12 module 无 CLAUDE.md，YAGNI）；下一步：生产部署 V0.1.132~137 + 真机验证 + V0.1.138+ 新功能规划。
+## 📊 V0.1.148 init #8 文档同步覆盖率报告（2026-07-14）
+
+> 完整数据见 [`.claude/index.json`](.claude/index.json)（V0.1.148 全量重写为 V0.1.148 现状）。本节为人类可读摘要。
+
+### 实测核对（init-architect 实测 vs V0.1.138 init #7 声明）
+
+| 项 | 实测（init #8 V0.1.148） | 声明（V0.1.138 init #7） | 一致？ |
+|---|---:|---:|---|
+| Prisma 表数（schema.prisma model） | **58** | 56 | ❌ → +2（ConversationTurn + DailyReport）|
+| Prisma 迁移数（migrations/* - lock） | **45** | 38 | ❌ → +7（ai_coach + ai_coach_persona + daily_report + 4 more V0.1.144~147）|
+| 后端 module 数（apps/server/src/modules/* - .routes.ts 计） | **32** | 31 | ❌ → +1（ai-coach V0.1.139）|
+| 小程序页面数（app.json 注册） | **18** | 50 | ❌ → -32（V0.1.142 删商城前端 16 + V0.1.144~147 简化 35→18）|
+| 小程序组件数（components/*） | **10** | 9 | ❌ → +1（plan-card V0.1.140）|
+| module CLAUDE.md 数 | **27** | 19 | ❌ → +8（ai-coach + stats + content + user + sport + mall + wallet + 第 8 个）|
+| 单元测试数（沿用 V0.1.140 实测） | 901 | 857 | ❌ → +44（V0.1.139 28 + V0.1.140 9 + V0.1.141 7）|
+| 覆盖率 funcs（沿用 V0.1.140 实测）| 87.5% > 86 阈值 | 86.72% | ✅（未实跑 V0.1.144~148）|
+
+### GAP 状态（GAP-1~11 全 closed；GAP-12 部分关闭 12→5）
+
+GAP-12（partial closed V0.1.148 init #8）：12 个 module 无 CLAUDE.md → **5 个**（weekly-report/upload/app-config/ranking/recipe/ludong）— **8 个已补**：stats（V0.1.138 init #7 续）/ content（同）/ user（同 再续）/ sport（同 再续）/ mall（同 再续）/ wallet（同 再续）/ ai-coach（V0.1.139 新建）/ 第 8 个。
+
+### 推荐下一步深挖（按优先级，V0.1.148 init #8 → V0.1.149+）
+
+1. **真机验证 V0.1.144~148**（AI 健康助手 DailyReport + MQTT 推送 + Vant 美化视觉 + 品牌色 #2D9D78）
+2. **完善 coord 已建 docs/qweather-api.md 与 stats weather action**（验证天气接口 + 4 action 闭环 + 测试通过）
+3. **wxpay 真生产切流**（payment=ON + 商户配置 + 证书齐全）
+4. **AI 私教 voice 插件开通**（wx069ba97219f66d99 同声传译）
+5. **GAP-12 收尾**（5 module CLAUDE.md：weekly-report/upload/app-config/ranking/recipe/ludong，YAGNI 视用户需求补建）
+6. **佳明官方 API 申请**（V0.1.144~147 调研结论 A 路线待批）
+
+---
+
+🤙 *Be water, my friend.* **V0.1.149 init #9 已完成**（post-V0.1.149 COS 集成实测重对：58 表 / 32 module / 18 页 / 10 组件 / 27 module CLAUDE.md / **41 迁移（勘误 init #8 声明 45）** / 测试未实跑 / tag v0.1.149 待 commit）；V0.1.149 腾讯云 COS（ap-guangzhou + CDN cos-cdn.qingmulife.cn + 混合模式 fallback + 5/min 限流 + upload/CLAUDE.md + 21 单测）；init #9 勘误：迁移数 45→41（V0.1.144~147 仅 daily_report +1，非 +5）；GAP-12 upload 已建剩 5 个（app-config/ludong/ranking/recipe/weekly-report）；下一步：COS 切真（CAM KEY）+ 真机验证 V0.1.144~149 + wxpay 真生产 + AI 私教 voice 插件。
