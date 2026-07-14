@@ -264,6 +264,8 @@ Page({
   goHealth() { wx.navigateTo({ url: '/pages/health/index' }); },
   goTraining() { wx.navigateTo({ url: '/pages/training/index' }); },
   goContent() { wx.navigateTo({ url: '/pages/content-list/index' }); },
+  goRanking() { wx.navigateTo({ url: '/pages/ranking/index' }); },
+  goFeed() { wx.navigateTo({ url: '/pages/feed/index' }); },
   goGroup() { wx.switchTab({ url: '/pages/sport/index' }); },
 
   /** V0.1.139 AI 私教（smartAgent flag 守卫，wxml feature-gate 包裹）*/

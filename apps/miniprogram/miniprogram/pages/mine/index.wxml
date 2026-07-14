@@ -2,62 +2,59 @@
   <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="refresh" />
 
   <block wx:if="{{!error}}">
-  <!-- 头部 -->
-  <view class="profile-header">
-    <view class="profile-row" bindtap="goProfile">
+  <!-- A 用户卡（V0.1.152 卡片化）-->
+  <view class="card user-card">
+    <view class="user-row" bindtap="goProfile">
       <view class="avatar">🏃</view>
-      <view class="profile-info">
+      <view class="user-info">
         <view class="name">{{user.nickname || '跑者'}}</view>
         <view class="status">{{memberLabel}} · 已绑定微信运动</view>
       </view>
     </view>
     <button class="upgrade-btn" bindtap="goMembership">
-      <text>⭐ 升级季度会员 ¥99 — 解锁深度解读+无限问答</text>
+      <text>升级季度会员 ¥99 — 解锁深度解读+无限问答</text>
       <text class="arrow">›</text>
     </button>
   </view>
 
-  <!-- 设备与数据 -->
-  <view class="m-section-title">设备与数据</view>
-  <van-cell-group>
-    <van-cell title="📱 设备绑定" is-link bindtap="goDeviceBind" />
-    <van-cell title="📊 数据授权管理" is-link bindtap="goDeviceBind" />
-  </van-cell-group>
-
-  <!-- AI 服务 -->
-  <view class="m-section-title">AI服务</view>
-  <van-cell-group>
-    <van-cell title="🤖 AI 私教 NEW" is-link bindtap="goAiCoach" />
-    <van-cell title="📋 我的解读报告" is-link bindtap="goRunner" />
-    <van-cell title="💬 问答历史" is-link bindtap="goAiCoach" />
-  </van-cell-group>
-
-  <!-- 通用 -->
-  <view class="m-section-title">通用</view>
-  <van-cell-group>
-    <van-cell title="🔔 消息中心" is-link bindtap="onShowNotif" value="{{notifUnread > 0 ? (notifUnread > 99 ? '99+' : notifUnread) : ''}}" />
-    <van-cell title="⚙️ 设置（资料/账号绑定）" is-link bindtap="goProfile" />
-    <van-button open-type="contact" session-from="mine_page" block custom-style="text-align:left;border-radius:0;height:96rpx;">❓ 帮助与反馈</van-button>
-    <van-cell title="📄 用户协议" is-link bindtap="goAgreement" />
-  </van-cell-group>
-
-  <!-- 隐藏功能（后续版本上线）-->
-  <view class="hidden-section">
-    <view class="hidden-tip">以下功能已隐藏，将在后续版本上线：</view>
-    <view class="hidden-tags">
-      <text class="hidden-tag">🛒 商城</text>
-      <text class="hidden-tag">👟 跑鞋</text>
-      <text class="hidden-tag">👥 跑群</text>
-      <text class="hidden-tag">🏆 榜单</text>
-      <text class="hidden-tag">📦 打卡</text>
-      <text class="hidden-tag">🎯 赛事</text>
+  <!-- B 运动入口卡（4 列网格，V0.1.152 隐藏功能上线 + 上传数据包新）-->
+  <view class="card">
+    <view class="card-title">运动</view>
+    <view class="entry-grid">
+      <view class="entry-item" bindtap="goSportTab"><view class="entry-icon">🏃</view><view class="entry-label">打卡</view></view>
+      <view class="entry-item" bindtap="goShoes"><view class="entry-icon">👟</view><view class="entry-label">跑鞋</view></view>
+      <view class="entry-item" bindtap="goTraining"><view class="entry-icon">📋</view><view class="entry-label">训练</view></view>
+      <view class="entry-item" bindtap="goRanking"><view class="entry-icon">🏆</view><view class="entry-label">榜单</view></view>
+      <view class="entry-item" bindtap="goDeviceBind"><view class="entry-icon">📤</view><view class="entry-label">上传数据</view></view>
+      <view class="entry-item" bindtap="goContent"><view class="entry-icon">🎯</view><view class="entry-label">赛事</view></view>
+      <view class="entry-item" bindtap="goFeed"><view class="entry-icon">📰</view><view class="entry-label">动态</view></view>
+      <view class="entry-item" bindtap="goHealth"><view class="entry-icon">❤️</view><view class="entry-label">健康</view></view>
     </view>
+  </view>
+
+  <!-- C AI 服务卡 -->
+  <view class="card">
+    <view class="card-title">AI 服务</view>
+    <view class="cell" bindtap="goAiCoach"><text class="cell-label">AI 私教</text><text class="cell-new">NEW</text><text class="cell-arrow">›</text></view>
+    <view class="cell" bindtap="goRunner"><text class="cell-label">我的解读报告</text><text class="cell-arrow">›</text></view>
+  </view>
+
+  <!-- D 设置卡 -->
+  <view class="card">
+    <view class="cell" bindtap="onShowNotif">
+      <text class="cell-label">消息中心</text>
+      <text class="cell-badge" wx:if="{{notifUnread > 0}}">{{notifUnread > 99 ? '99+' : notifUnread}}</text>
+      <text class="cell-arrow">›</text>
+    </view>
+    <view class="cell" bindtap="goProfile"><text class="cell-label">设置（资料/账号绑定）</text><text class="cell-arrow">›</text></view>
+    <button class="cell cell-btn" open-type="contact" session-from="mine_page">帮助与反馈</button>
+    <view class="cell" bindtap="goAgreement"><text class="cell-label">用户协议</text><text class="cell-arrow">›</text></view>
   </view>
 
   <view class="logout" wx:if="{{user}}" bindtap="onTapReactivate">重新激活授权</view>
   </block>
 
-  <!-- 消息弹层（V0.1.143 合并 notification）-->
+  <!-- 消息弹层（V0.1.143 合并 notification，保留）-->
   <view class="mask" wx:if="{{showNotif}}" bindtap="onCloseNotif">
     <view class="notif-panel" catchtap="">
       <view class="notif-header">
@@ -65,7 +62,7 @@
         <view class="notif-mark-all" wx:if="{{notifList.length}}" bindtap="onMarkAllNotif">全部已读</view>
       </view>
       <view wx:if="{{notifLoading}}" class="notif-loading">加载中…</view>
-      <view wx:elif="{{notifList.length === 0}}" class="notif-empty">暂无消息 🔔</view>
+      <view wx:elif="{{notifList.length === 0}}" class="notif-empty">暂无消息</view>
       <scroll-view scroll-y class="notif-list" wx:else>
         <view class="notif-item {{item.isRead ? '' : 'unread'}}" wx:for="{{notifList}}" wx:key="id" data-item="{{item}}" bindtap="onTapNotif">
           <image class="notif-avatar" src="{{item.actor.avatarUrl || '/images/default-avatar.png'}}" mode="aspectFill" />
