@@ -172,6 +172,13 @@ export async function deviceRoutes(app: FastifyInstance) {
     return { code: 0, data: result };
   });
 
+  // V0.1.146 A 路线：Garmin Health API push 回调（public，无 JWT，Garmin 推送 JSON）
+  app.post('/garmin-health-webhook', async (req) => {
+    const { garminHealthWebhook } = await import('./garmin-health.js');
+    const result = await garminHealthWebhook(req.body);
+    return { code: 0, data: result };
+  });
+
   // V0.1.130 Terra webhook（public，无 JWT，Terra 签名验证）
   // app.ts 已挂 req.rawBody（原始字节，验签用）
   app.post('/terra-webhook', async (req) => {

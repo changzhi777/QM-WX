@@ -71,6 +71,10 @@ const EnvSchema = z.object({
   MQTT_USERNAME: z.string().optional(),
   MQTT_PASSWORD: z.string().optional(),
   MQTT_CA_PATH: z.string().default('certs/emqxsl-ca.crt'),
+
+  // V0.1.146 A 路线：Garmin Health API 官方（OAuth 1.0a，需申请）
+  GARMIN_CONSUMER_KEY: z.string().optional(),
+  GARMIN_CONSUMER_SECRET: z.string().optional(),
 });
 
 const parsed = EnvSchema.safeParse(process.env);
