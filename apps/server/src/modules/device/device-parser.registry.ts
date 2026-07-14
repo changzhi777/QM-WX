@@ -10,6 +10,7 @@
 import { deviceService } from '../device/device.service.js';
 import { sportService } from '../sport/sport.service.js';
 import { generalOcr, parseSportScore } from '../../infra/ocr.js';
+import { XMLParser } from 'fast-xml-parser';
 
 export type DataUploadType =
   | 'xiaomi_zip'
@@ -44,9 +45,39 @@ export const PARSERS: Record<DataUploadType, Parser> = {
     const r = (await deviceService.importCorosFit(userId, buffer)) as Record<string, unknown>;
     return { summary: '佳明 FIT 已导入（来源标 coros，待 garmin 区分）', detail: r };
   },
-  // Stub：待实现（需 fast-xml-parser 解析 Health export.xml Workout 记录）
-  apple_health: async () => {
-    throw new Error('apple_health 解析待实现（Phase 2 续：fast-xml-parser + Workout 提取）');
+  // Phase 2：苹果 Health export.xml → Workout（跑步）→ 循环建 Checkin（dataSource=apple_health）
+  apple_health: async (userId, buffer) => {
+    const xml = buffer.toString('utf8');
+    const parsed = new XMLParser({ ignoreAttributes: false }).parse(xml);
+    const raw = parsed?.HealthData?.Workout ?? [];
+    const list = Array.isArray(raw) ? raw : [raw];
+    let imported = 0;
+    for (const w of list) {
+      const type = w.workoutActivityType ?? w['@_workoutActivityType'];
+      if (type !== 'HKWorkoutActivityTypeRunning') continue;
+      const distRaw = Number(w.totalDistance ?? w['@_totalDistance']) || null;
+      const unit = w.totalDistanceUnit ?? w['@_totalDistanceUnit'];
+      const distanceKm = distRaw != null
+        ? unit === 'mi' ? distRaw * 1.609 : distRaw
+        : null;
+      const durationSec = Number(w.duration ?? w['@_duration']) || null;
+      const startDate = String(w.startDate ?? w['@_startDate'] ?? new Date().toISOString());
+      if (distanceKm != null && distanceKm > 0) {
+        try {
+          await sportService.checkin(userId, {
+            distance: distanceKm,
+            durationSec: durationSec ?? undefined,
+            date: startDate.slice(0, 10),
+            dataSource: 'apple_health',
+            sportType: 'run',
+          } as never);
+          imported++;
+        } catch {
+          // 单条失败跳过，继续下一条
+        }
+      }
+    }
+    return { summary: `苹果 Health 导入 ${imported} 条跑步（共 ${list.length} Workout）`, detail: { imported, total: list.length } };
   },
   // Stub：待主人提供华为运动健康导出样本
   huawei_export: async () => {
