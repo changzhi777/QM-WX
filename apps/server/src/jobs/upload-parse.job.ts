@@ -32,7 +32,13 @@ export async function processUploadParse(data: UploadParseJobData): Promise<{ ok
 
   try {
     const buffer = await getObject(record.objectKey);
-    const result = await parser(record.userId, buffer, record.password ?? undefined);
+    // parser 超时保护（30s，防 invalid 输入如 fake FIT 卡住 fit-file-parser 不返回）
+    const result = await Promise.race([
+      parser(record.userId, buffer, record.password ?? undefined),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('parser 超时(30s)')), 30_000),
+      ),
+    ]);
     await prisma.uploadRecord.update({
       where: { id: record.id },
       data: { status: 'parsed', parsedResult: result as never, errorMsg: null },
