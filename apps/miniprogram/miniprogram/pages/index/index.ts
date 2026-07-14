@@ -46,6 +46,8 @@ Page({
     weather: null as { city: string; text: string; temperature: number; feelsLike: number; icon: string } | null,
     altitude: null as number | null,
     locationText: '' as string,
+    latitude: null as number | null,
+    longitude: null as number | null,
   },
 
   onLoad() {
@@ -65,6 +67,8 @@ Page({
       });
       this.setData({
         altitude: res.altitude ? Math.round(res.altitude) : null,
+        latitude: res.latitude,
+        longitude: res.longitude,
         locationText: `${res.latitude.toFixed(2)}°, ${res.longitude.toFixed(2)}°`,
       });
     } catch {
@@ -111,7 +115,7 @@ Page({
         api.call<DailyReport>('stats', 'dailyReport', {}),
         api.call<HealthScoreRes>('stats', 'healthScore', {}),
         api.call<{ list: HistoryItem[]; total: number }>('stats', 'dailyReportList', { page: 1, pageSize: 7 }),
-        api.call<{ city: string; text: string; temperature: number; feelsLike: number; icon: string }>('stats', 'weather', {}),
+        api.call<{ city: string; text: string; temperature: number; feelsLike: number; icon: string }>('stats', 'weather', this.data.latitude != null ? { lat: this.data.latitude, lon: this.data.longitude } : {}),
       ]);
       const weekScores = historyRes.list.slice(0, 7).reverse().map((h) => h.healthScore);
       this.setData({

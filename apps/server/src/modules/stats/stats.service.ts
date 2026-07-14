@@ -289,8 +289,8 @@ export const statsService = {
   async weather(userId: string, input?: { lat?: number; lon?: number }) {
     void userId;
     const key = env.QWEATHER_KEY;
-    const lat = input?.lat ?? 30.27;
-    const lon = input?.lon ?? 120.15;
+    const lat = input?.lat ?? 28.23;
+    const lon = input?.lon ?? 112.94;
     const location = `${lon.toFixed(2)},${lat.toFixed(2)}`;
     if (!key) {
       return { city: '杭州', text: '晴', temperature: 25, feelsLike: 26, humidity: 60, icon: '999', updatedAt: new Date().toISOString() };
