@@ -38,10 +38,10 @@
   <view class="top-bar">
     <view class="title">AI 私教</view>
     <view class="top-actions">
-      <view class="op-btn {{sending ? 'disabled' : ''}}" bindtap="onTapGeneratePlan">📋</view>
-      <view class="op-btn {{sending ? 'disabled' : ''}}" bindtap="onNewChat">✨</view>
-      <view class="op-btn {{sending ? 'disabled' : ''}}" bindtap="onShowConversations">💬</view>
-      <button class="op-btn share-btn" open-type="share">📤</button>
+      <view class="op-btn {{sending ? 'disabled' : ''}}" bindtap="onTapGeneratePlan">计划</view>
+      <view class="op-btn {{sending ? 'disabled' : ''}}" bindtap="onNewChat">新聊</view>
+      <view class="op-btn {{sending ? 'disabled' : ''}}" bindtap="onShowConversations">历史</view>
+      <button class="op-btn share-btn" open-type="share">分享</button>
     </view>
   </view>
 
