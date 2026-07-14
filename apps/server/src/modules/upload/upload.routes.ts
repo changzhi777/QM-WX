@@ -25,7 +25,14 @@ import {
 import { createUploadRecord, myUploads } from './upload-record.service.js';
 
 // 走 COS 中转异步解析的数据包/截图 type（建 UploadRecord + 入队）；图片 type（avatar/feed-image/misc）不建
-const RECORD_TYPES = new Set(['xiaomi_zip', 'coros_fit', 'sport_screenshot']);
+const RECORD_TYPES = new Set([
+  'xiaomi_zip',
+  'coros_fit',
+  'garmin_fit',
+  'apple_health',
+  'huawei_export',
+  'sport_screenshot',
+]);
 
 export async function uploadRoutes(app: FastifyInstance) {
   // 限流：5 次/分/用户（防滥用 + COS 成本控制）
