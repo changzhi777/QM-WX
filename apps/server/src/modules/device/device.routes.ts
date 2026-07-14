@@ -120,6 +120,10 @@ export async function deviceRoutes(app: FastifyInstance) {
           // V0.1.130 生成 Terra widget 授权 URL
           return { code: 0, data: await deviceService.corosAuthUrl(userId) };
         }
+        case 'garminAuthUrl': {
+          // V0.1.146 D 路线：Garmin Terra 授权 URL（复用 COROS 通道）
+          return { code: 0, data: await deviceService.garminAuthUrl(userId) };
+        }
         case 'syncFromTerra': {
           // V0.1.130 Terra REST 手动拉历史 activity
           const input = (payload ?? {}) as { start: string; end: string };

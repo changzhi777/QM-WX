@@ -19,6 +19,7 @@ import unzipper from 'unzipper';
 import FitParser from 'fit-file-parser';
 import {
   generateTerraAuthUrl,
+  generateGarminAuthUrl,
   isTerraConfigured,
   verifyTerraSignature,
   parseTerraActivity,
@@ -907,6 +908,11 @@ export const deviceService = {
    */
   async corosAuthUrl(userId: string): Promise<{ url: string; configured: boolean }> {
     return { url: generateTerraAuthUrl(userId), configured: isTerraConfigured() };
+  },
+
+  /** V0.1.146 D 路线：Garmin Terra 授权 URL（复用 COROS 通道，resource=garmin） */
+  async garminAuthUrl(userId: string): Promise<{ url: string; configured: boolean }> {
+    return { url: generateGarminAuthUrl(userId), configured: isTerraConfigured() };
   },
 
   /**

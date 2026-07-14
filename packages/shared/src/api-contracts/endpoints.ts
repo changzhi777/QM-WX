@@ -114,6 +114,7 @@ export const ENDPOINTS = {
     importToCheckin: '/api/device',
     // V0.1.130 COROS Terra 聚合（授权 + 手动拉历史；webhook 走 /api/device/terra-webhook public）
     corosAuthUrl: '/api/device',
+    garminAuthUrl: '/api/device', // V0.1.146 D 路线：Garmin Terra 授权（复用 COROS 通道）
     syncFromTerra: '/api/device',
     authList: '/api/device', // V0.1.144 数据授权管理（各数据源授权状态）
   },

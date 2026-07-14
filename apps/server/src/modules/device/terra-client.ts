@@ -19,6 +19,13 @@ export function generateTerraAuthUrl(userId: string): string {
   return `https://tryterra.co/scan/${devId}?reference_id=${encodeURIComponent(userId)}&resource=coros`;
 }
 
+/** V0.1.146 D 路线：Garmin Terra 授权 URL（复用 COROS 通道，resource=garmin） */
+export function generateGarminAuthUrl(userId: string): string {
+  const devId = env.TERRA_DEV_ID;
+  if (!devId) return '';
+  return `https://tryterra.co/scan/${devId}?reference_id=${encodeURIComponent(userId)}&resource=garmin`;
+}
+
 /** 配置就绪（devId + apiKey + webhookSecret 齐全） */
 export function isTerraConfigured(): boolean {
   return Boolean(env.TERRA_DEV_ID && env.TERRA_API_KEY && env.TERRA_WEBHOOK_SECRET);
