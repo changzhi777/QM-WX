@@ -12,7 +12,7 @@
  * - email-notify：邮件通知
  * - image-render：战报图生成
  */
-import { Queue, Worker, type Processor } from 'bullmq';
+import { Queue, Worker, type Processor, type Job } from 'bullmq';
 import { redis } from '../infra/redis.js';
 import { env } from '../config/env.js';
 import { processWeeklyReport } from './weekly-report.job.js';
@@ -111,12 +111,12 @@ function startWorker<T>(name: string, processor: Processor<T>, concurrency = 1) 
 
 /** 启动所有 worker（应用启动时调用） */
 export function startWorkers() {
-  startWorker('weekly-report', async (job) => {
+  startWorker('weekly-report', async (job: Job) => {
     const { groupId, period } = job.data as { groupId?: string; period?: string };
     return processWeeklyReport({ groupId, period });
   }, 2);
 
-  startWorker('close-order', async (job) => {
+  startWorker('close-order', async (job: Job) => {
     return processCloseOrder(job.data as CloseOrderJobData);
   }, 4);
 
@@ -124,7 +124,7 @@ export function startWorkers() {
     return processRefreshPlatformCerts();
   }, 1);
 
-  startWorker('garmin-import', async (job) => {
+  startWorker('garmin-import', async (job: Job) => {
     return processGarminImport(job.data as GarminImportJobData);
   }, 2);
 
