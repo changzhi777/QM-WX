@@ -9,19 +9,19 @@
 
 /* GO 跑步卡（品牌色渐变） */
 .go-card {
-  background: linear-gradient(135deg, #0FAF8E, #0d9b7e);
+  background: linear-gradient(135deg, #2D9D78, #1a7a5a);
   margin: 0 16rpx 16rpx; padding: 32rpx; border-radius: 16rpx; color: #fff;
 }
 .go-label { font-size: 28rpx; opacity: 0.9; margin-bottom: 20rpx; }
 .target-row { display: flex; gap: 16rpx; margin-bottom: 24rpx; }
 .target-opt { flex: 1; text-align: center; padding: 16rpx 0; background: rgba(255,255,255,0.2); border-radius: 8rpx; font-size: 26rpx; }
-.target-opt.on { background: #fff; color: #0FAF8E; font-weight: 600; }
-.go-btn { background: #fff !important; color: #0FAF8E; font-size: 36rpx; font-weight: 600; border-radius: 12rpx; line-height: 88rpx; }
+.target-opt.on { background: #fff; color: #2D9D78; font-weight: 600; }
+.go-btn { background: #fff !important; color: #2D9D78; font-size: 36rpx; font-weight: 600; border-radius: 12rpx; line-height: 88rpx; }
 
 /* 跑步汇总 */
 .summary-card { background: #fff; margin: 0 16rpx 16rpx; padding: 24rpx; border-radius: 16rpx; display: flex; justify-content: space-around; }
 .sum-item { text-align: center; }
-.sum-item .v { font-size: 36rpx; font-weight: 600; color: #0FAF8E; }
+.sum-item .v { font-size: 36rpx; font-weight: 600; color: #2D9D78; }
 .sum-item .u { font-size: 22rpx; color: #999; margin-left: 4rpx; }
 
 /* 分段 */
@@ -33,11 +33,11 @@
 .plan-scroll { white-space: nowrap; padding-bottom: 8rpx; }
 .plan-card { display: inline-block; width: 280rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; margin-right: 16rpx; vertical-align: top; box-sizing: border-box; position: relative; }
 .plan-level { font-size: 22rpx; padding: 4rpx 12rpx; border-radius: 6rpx; display: inline-block; margin-bottom: 12rpx; }
-.plan-card.beginner .plan-level { background: #E6F7F2; color: #0FAF8E; }
+.plan-card.beginner .plan-level { background: #E6F7F2; color: #2D9D78; }
 .plan-card.intermediate .plan-level { background: #E6F4FF; color: #1890ff; }
 .plan-card.challenge .plan-level { background: #FFF7E6; color: #fa8c16; }
 .plan-card.extreme .plan-level { background: #FFE6E6; color: #e64340; }
-.plan-joined { position: absolute; top: 12rpx; right: 12rpx; background: #0FAF8E; color: #fff; font-size: 20rpx; padding: 2rpx 12rpx; border-radius: 12rpx; }
+.plan-joined { position: absolute; top: 12rpx; right: 12rpx; background: #2D9D78; color: #fff; font-size: 20rpx; padding: 2rpx 12rpx; border-radius: 12rpx; }
 .plan-name { font-size: 30rpx; font-weight: 600; color: #333; }
 .plan-weeks { font-size: 24rpx; color: #999; margin-top: 6rpx; }
 .plan-goal { font-size: 24rpx; color: #666; margin-top: 12rpx; }
@@ -55,7 +55,7 @@
 .record-card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 12rpx; }
 .record-head { display: flex; justify-content: space-between; margin-bottom: 12rpx; }
 .record-source { font-size: 22rpx; padding: 2rpx 12rpx; border-radius: 6rpx; }
-.record-source.garmin { background: #E6F7F2; color: #0FAF8E; }
+.record-source.garmin { background: #E6F7F2; color: #2D9D78; }
 .record-source.manual { background: #f5f5f5; color: #999; }
 .record-date { font-size: 22rpx; color: #999; }
 .record-body { display: flex; gap: 40rpx; }
@@ -70,7 +70,7 @@
 .ap-leave { font-size: 24rpx; color: #e64340; padding: 4rpx 16rpx; border: 1rpx solid #e64340; border-radius: 20rpx; }
 .ap-progress { display: flex; align-items: center; gap: 16rpx; }
 .ap-bar { flex: 1; height: 16rpx; background: #f0f0f0; border-radius: 8rpx; overflow: hidden; }
-.ap-fill { height: 100%; background: linear-gradient(90deg, #0FAF8E, #0d9b7e); border-radius: 8rpx; }
-.ap-percent { font-size: 28rpx; font-weight: 600; color: #0FAF8E; min-width: 80rpx; text-align: right; }
+.ap-fill { height: 100%; background: linear-gradient(90deg, #2D9D78, #1a7a5a); border-radius: 8rpx; }
+.ap-percent { font-size: 28rpx; font-weight: 600; color: #2D9D78; min-width: 80rpx; text-align: right; }
 .ap-meta { font-size: 24rpx; color: #999; margin-top: 12rpx; }
 .ap-done { font-size: 24rpx; color: #fa8c16; margin-top: 8rpx; }

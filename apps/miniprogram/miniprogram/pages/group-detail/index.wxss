@@ -50,14 +50,14 @@
 .gc-owner-name { font-size: 24rpx; color: #666; }
 .gc-summary { display: flex; justify-content: space-between; padding: 16rpx 0; border-top: 1rpx solid #f0f0f0; border-bottom: 1rpx solid #f0f0f0; }
 .gc-stat { display: flex; align-items: baseline; gap: 4rpx; }
-.gc-stat .v { font-size: 32rpx; font-weight: 600; color: var(--brand, #0FAF8E); }
+.gc-stat .v { font-size: 32rpx; font-weight: 600; color: var(--brand, #2D9D78); }
 .gc-stat .u { font-size: 22rpx; color: #999; }
 .gc-announce { margin-top: 16rpx; padding: 16rpx; background: #f9f9f9; border-radius: 8rpx; position: relative; }
 .gc-announce-empty { display: flex; align-items: center; justify-content: center; border: 1rpx dashed #ddd; background: #fff; }
 .gc-announce-label { font-size: 24rpx; color: #666; margin-bottom: 8rpx; }
-.gc-announce-empty .gc-announce-label { margin-bottom: 0; color: #0FAF8E; }
+.gc-announce-empty .gc-announce-label { margin-bottom: 0; color: #2D9D78; }
 .gc-announce-text { font-size: 26rpx; color: #333; line-height: 1.6; }
-.gc-edit { position: absolute; top: 12rpx; right: 12rpx; font-size: 22rpx; color: #0FAF8E; padding: 4rpx 12rpx; }
+.gc-edit { position: absolute; top: 12rpx; right: 12rpx; font-size: 22rpx; color: #2D9D78; padding: 4rpx 12rpx; }
 
 .section-title { font-size: 28rpx; font-weight: 600; color: #333; padding: 24rpx 24rpx 12rpx; border-bottom: 1rpx solid #f0f0f0; }
-.role-tag { display: inline-block; font-size: 18rpx; color: #fff; background: #0FAF8E; padding: 2rpx 10rpx; border-radius: 8rpx; margin-left: 8rpx; vertical-align: middle; }
+.role-tag { display: inline-block; font-size: 18rpx; color: #fff; background: #2D9D78; padding: 2rpx 10rpx; border-radius: 8rpx; margin-left: 8rpx; vertical-align: middle; }

@@ -4,8 +4,8 @@
 /* tab 头 */
 .tab-bar { display: flex; background: #fff; position: sticky; top: 0; z-index: 10; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04); }
 .tab { flex: 1; text-align: center; padding: 24rpx 0; font-size: 28rpx; color: #666; position: relative; }
-.tab.active { color: #0FAF8E; font-weight: 600; }
-.tab.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 48rpx; height: 4rpx; background: #0FAF8E; border-radius: 2rpx; }
+.tab.active { color: #2D9D78; font-weight: 600; }
+.tab.active::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 48rpx; height: 4rpx; background: #2D9D78; border-radius: 2rpx; }
 
 /* 通用 */
 .loading { text-align: center; color: #999; padding: 80rpx; font-size: 28rpx; }
@@ -20,14 +20,14 @@
 .t-card-title { font-size: 28rpx; font-weight: 600; color: #333; margin-bottom: 16rpx; }
 .t-activity-grid { display: flex; justify-content: space-around; }
 .t-metric { text-align: center; }
-.t-metric .t-v { font-size: 40rpx; font-weight: 700; color: #0FAF8E; display: block; }
+.t-metric .t-v { font-size: 40rpx; font-weight: 700; color: #2D9D78; display: block; }
 .t-metric .t-u { font-size: 22rpx; color: #999; }
 
 .t-bc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
 .t-bc-title { font-size: 28rpx; font-weight: 600; color: #333; }
 .t-bc-ts { font-size: 22rpx; color: #999; }
 .t-bc-main { display: flex; align-items: baseline; gap: 24rpx; margin-bottom: 20rpx; }
-.t-bc-weight { font-size: 56rpx; font-weight: 700; color: #0FAF8E; }
+.t-bc-weight { font-size: 56rpx; font-weight: 700; color: #2D9D78; }
 .t-bc-weight .t-u { font-size: 28rpx; }
 .t-bc-bmi { font-size: 26rpx; color: #666; }
 .t-bc-grid { display: flex; flex-wrap: wrap; }
@@ -42,7 +42,7 @@
 
 .t-grid { display: flex; flex-wrap: wrap; gap: 16rpx; padding: 0 16rpx; }
 .t-metric-card { flex: 1 1 40%; margin: 0; }
-.t-big-num { font-size: 48rpx; font-weight: 700; color: #0FAF8E; }
+.t-big-num { font-size: 48rpx; font-weight: 700; color: #2D9D78; }
 .t-big-num .t-u { font-size: 24rpx; }
 .t-sub-row { font-size: 22rpx; color: #999; margin-top: 6rpx; }
 .t-empty { font-size: 24rpx; color: #ccc; }
@@ -53,20 +53,20 @@
 /* === 历史 tab（h- 前缀）=== */
 .h-tabs { display: flex; background: #fff; padding: 16rpx; gap: 12rpx; }
 .h-tab { flex: 1; text-align: center; padding: 12rpx 0; font-size: 24rpx; color: #666; background: #f5f5f5; border-radius: 8rpx; }
-.h-tab.active { background: #0FAF8E; color: #fff; }
+.h-tab.active { background: #2D9D78; color: #fff; }
 .h-ranges { display: flex; padding: 0 16rpx 16rpx; gap: 12rpx; }
 .h-range { padding: 8rpx 24rpx; font-size: 24rpx; color: #666; background: #fff; border-radius: 20rpx; }
-.h-range.active { background: #0FAF8E; color: #fff; }
+.h-range.active { background: #2D9D78; color: #fff; }
 
 .h-stats-card { display: flex; background: #fff; margin: 16rpx; border-radius: 16rpx; padding: 24rpx; }
 .h-stat-item { flex: 1; text-align: center; }
-.h-stat-num { font-size: 40rpx; font-weight: 700; color: #0FAF8E; }
+.h-stat-num { font-size: 40rpx; font-weight: 700; color: #2D9D78; }
 .h-stat-label { font-size: 22rpx; color: #999; margin-top: 4rpx; }
 
 .h-chart-card { background: #fff; margin: 16rpx; border-radius: 16rpx; padding: 24rpx; padding-bottom: 56rpx; }
 .h-chart { display: flex; align-items: flex-end; height: 300rpx; gap: 4rpx; }
 .h-bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; position: relative; }
-.h-bar { width: 80%; background: #0FAF8E; border-radius: 4rpx 4rpx 0 0; min-height: 4rpx; }
+.h-bar { width: 80%; background: #2D9D78; border-radius: 4rpx 4rpx 0 0; min-height: 4rpx; }
 .h-bar-label { font-size: 18rpx; color: #999; margin-top: 8rpx; position: absolute; bottom: -28rpx; }
 
 .h-recent-card { background: #fff; margin: 16rpx; border-radius: 16rpx; padding: 24rpx; }
@@ -78,12 +78,12 @@
 
 /* === 微信运动 tab（w- 前缀）=== */
 .w-month-bar { display: flex; align-items: center; justify-content: center; gap: 32rpx; padding: 24rpx; background: #fff; }
-.w-arrow { font-size: 40rpx; color: #0FAF8E; padding: 8rpx 24rpx; }
+.w-arrow { font-size: 40rpx; color: #2D9D78; padding: 8rpx 24rpx; }
 .w-month-label { font-size: 30rpx; font-weight: 600; color: #333; }
 
 .w-summary-card { display: flex; background: #fff; margin: 16rpx; border-radius: 16rpx; padding: 24rpx; }
 .w-summary-item { flex: 1; text-align: center; }
-.w-num { font-size: 36rpx; font-weight: 700; color: #0FAF8E; }
+.w-num { font-size: 36rpx; font-weight: 700; color: #2D9D78; }
 .w-lbl { font-size: 22rpx; color: #999; margin-top: 4rpx; }
 
 .w-chart-card { background: #fff; margin: 16rpx; border-radius: 16rpx; padding: 24rpx; }
@@ -91,9 +91,9 @@
 .w-chart-scroll { white-space: nowrap; }
 .w-chart-bars { display: inline-flex; align-items: flex-end; height: 300rpx; gap: 8rpx; padding-bottom: 32rpx; }
 .w-bar-col { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; width: 40rpx; height: 100%; }
-.w-bar { width: 100%; background: #0FAF8E; border-radius: 4rpx 4rpx 0 0; min-height: 4rpx; }
+.w-bar { width: 100%; background: #2D9D78; border-radius: 4rpx 4rpx 0 0; min-height: 4rpx; }
 .w-bar-day { font-size: 18rpx; color: #999; margin-top: 8rpx; }
 
-.w-sync-btn { margin: 24rpx 16rpx; background: #0FAF8E; color: #fff; border-radius: 40rpx; font-size: 28rpx; line-height: 80rpx; }
+.w-sync-btn { margin: 24rpx 16rpx; background: #2D9D78; color: #fff; border-radius: 40rpx; font-size: 28rpx; line-height: 80rpx; }
 .w-sync-btn.loading { opacity: 0.6; }
 .w-tip { text-align: center; font-size: 22rpx; color: #bbb; padding: 16rpx; }

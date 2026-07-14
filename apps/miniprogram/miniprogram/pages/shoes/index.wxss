@@ -7,7 +7,7 @@
 .header .title { font-size: 36rpx; font-weight: 600; color: #333; }
 .stats-row { display: flex; gap: 40rpx; margin-top: 20rpx; align-items: baseline; }
 .stat { display: flex; align-items: baseline; gap: 4rpx; }
-.stat .v { font-size: 36rpx; font-weight: 600; color: #0FAF8E; }
+.stat .v { font-size: 36rpx; font-weight: 600; color: #2D9D78; }
 .stat .v.warn { color: #fa8c16; }
 .stat .u { font-size: 22rpx; color: #999; }
 .compare-btn { margin-left: auto; }
@@ -25,7 +25,7 @@
 .shoe-head { display: flex; justify-content: space-between; align-items: center; }
 .shoe-name { font-size: 32rpx; font-weight: 600; color: #333; flex: 1; }
 .shoe-status { font-size: 22rpx; padding: 4rpx 16rpx; border-radius: 8rpx; }
-.shoe-status.active { background: #E6F7F2; color: #0FAF8E; }
+.shoe-status.active { background: #E6F7F2; color: #2D9D78; }
 .shoe-status.retired { background: #f5f5f5; color: #999; }
 .shoe-sub { font-size: 24rpx; color: #999; margin-top: 6rpx; }
 
@@ -33,7 +33,7 @@
 .progress { margin-top: 20rpx; }
 .progress-bar { height: 16rpx; background: #f0f0f0; border-radius: 8rpx; overflow: hidden; }
 .progress-fill { height: 100%; border-radius: 8rpx; transition: width 0.3s; }
-.progress-fill.green { background: #0FAF8E; }
+.progress-fill.green { background: #2D9D78; }
 .progress-fill.yellow { background: #fa8c16; }
 .progress-fill.red { background: #e64340; }
 .progress-text { font-size: 24rpx; color: #666; margin-top: 8rpx; }
@@ -42,7 +42,7 @@
 
 /* 健康度提示 */
 .shoe-tip { font-size: 24rpx; margin-top: 12rpx; }
-.shoe-tip.green { color: #0FAF8E; }
+.shoe-tip.green { color: #2D9D78; }
 .shoe-tip.yellow { color: #fa8c16; }
 .shoe-tip.red { color: #e64340; }
 
@@ -58,22 +58,22 @@
 .detail-title-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16rpx; }
 
 .threshold-current { text-align: center; margin: 16rpx 0; }
-.threshold-current .num { font-size: 56rpx; font-weight: 700; color: #0FAF8E; }
+.threshold-current .num { font-size: 56rpx; font-weight: 700; color: #2D9D78; }
 .threshold-current .unit { font-size: 28rpx; color: #888; margin-left: 8rpx; }
 .threshold-meta { display: flex; justify-content: space-between; font-size: 22rpx; color: #999; margin-top: 8rpx; }
-.threshold-meta .draft { color: #0FAF8E; font-weight: 600; }
+.threshold-meta .draft { color: #2D9D78; font-weight: 600; }
 
 .stats-grid { display: flex; flex-wrap: wrap; justify-content: space-between; }
 .stat-cell { flex: 0 0 48%; text-align: center; padding: 12rpx 0; }
 .stat-num { display: block; font-size: 40rpx; font-weight: 700; color: #222; margin-bottom: 6rpx; }
-.stat-num.health-good { color: #0FAF8E; }
+.stat-num.health-good { color: #2D9D78; }
 .stat-num.health-warn { color: #f59e0b; }
 .stat-num.health-bad { color: #ef4444; }
 .stat-label { font-size: 24rpx; color: #888; }
 
 .period-tabs { display: flex; background: #f5f5f5; border-radius: 24rpx; padding: 4rpx; }
 .period-tabs .tab { font-size: 24rpx; padding: 6rpx 20rpx; border-radius: 20rpx; color: #666; }
-.period-tabs .tab.active { background: #0FAF8E; color: #fff; }
+.period-tabs .tab.active { background: #2D9D78; color: #fff; }
 .detail-empty { text-align: center; padding: 40rpx 0; color: #999; }
 .detail-empty-tip { display: block; margin-top: 12rpx; font-size: 24rpx; color: #bbb; }
 
@@ -90,12 +90,12 @@
 .compare-header-row { background: #f0f0f0; font-weight: 600; }
 .compare-cell { flex: 1; padding: 20rpx 12rpx; font-size: 26rpx; text-align: center; color: #333; }
 .compare-cell.label { flex: 0 0 200rpx; background: #fafbfc; color: #666; font-size: 24rpx; }
-.compare-cell.winner { color: #0FAF8E; font-weight: 700; background: #f0f9f6; }
+.compare-cell.winner { color: #2D9D78; font-weight: 700; background: #f0f9f6; }
 
 /* 悬浮添加按钮 */
 .fab {
   position: fixed; bottom: 40rpx; left: 50%; transform: translateX(-50%);
-  background: #0FAF8E; color: #fff; padding: 20rpx 48rpx;
+  background: #2D9D78; color: #fff; padding: 20rpx 48rpx;
   border-radius: 40rpx; font-size: 28rpx;
   box-shadow: 0 4rpx 16rpx rgba(15, 175, 142, 0.4);
   z-index: 10;
@@ -114,9 +114,9 @@
 .input { background: #f5f5f5; padding: 16rpx 20rpx; border-radius: 8rpx; font-size: 28rpx; }
 .threshold-row { display: flex; align-items: center; gap: 16rpx; }
 .threshold-slider { flex: 1; }
-.threshold-val { font-size: 26rpx; color: #0FAF8E; font-weight: 600; min-width: 100rpx; }
+.threshold-val { font-size: 26rpx; color: #2D9D78; font-weight: 600; min-width: 100rpx; }
 .threshold-tip { font-size: 22rpx; color: #bbb; margin-top: 8rpx; }
 .form-actions { display: flex; gap: 16rpx; margin-top: 32rpx; }
 .btn-cancel, .btn-submit { flex: 1; font-size: 28rpx; border-radius: 8rpx; line-height: 72rpx; padding: 0; margin: 0; }
 .btn-cancel { background: #f5f5f5; color: #666; }
-.btn-submit { background: #0FAF8E; color: #fff; }
+.btn-submit { background: #2D9D78; color: #fff; }

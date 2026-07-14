@@ -358,7 +358,7 @@ Page({
       ctx.scale(dpr, dpr);
 
       const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT);
-      grad.addColorStop(0, '#0FAF8E');
+      grad.addColorStop(0, '#2D9D78');
       grad.addColorStop(1, '#4FC3A1');
       ctx.fillStyle = grad;
       ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -385,7 +385,7 @@ Page({
 
       const colW = (CANVAS_WIDTH - 120) / 3;
       ctx.textAlign = 'center';
-      ctx.fillStyle = '#0FAF8E';
+      ctx.fillStyle = '#2D9D78';
       ctx.font = 'bold 56px sans-serif';
       ctx.fillText(`${report.totalDistance}`, 60 + colW / 2, 380);
       ctx.fillText(`${report.totalCheckins}`, 60 + colW * 1.5, 380);
@@ -433,7 +433,7 @@ Page({
         ctx.font = '24px sans-serif';
         ctx.textAlign = 'left';
         ctx.fillText(m.nickname, 170, y + 40);
-        ctx.fillStyle = '#0FAF8E';
+        ctx.fillStyle = '#2D9D78';
         ctx.font = 'bold 24px sans-serif';
         ctx.textAlign = 'right';
         ctx.fillText(`${m.distance} km`, CANVAS_WIDTH - 110, y + 40);

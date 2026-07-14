@@ -3,7 +3,7 @@
 .loading { text-align: center; color: #999; padding: 120rpx 0; font-size: 28rpx; }
 
 .header {
-  background: linear-gradient(135deg, #0faf8e 0%, #4dd0c0 100%);
+  background: linear-gradient(135deg, #2d9d78 0%, #4dd0c0 100%);
   padding: 60rpx 0 48rpx;
   display: flex;
   flex-direction: column;
@@ -17,7 +17,7 @@
 .feed-list { padding: 0 16rpx; }
 .feed-card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; }
 .feed-content { font-size: 28rpx; color: #333; line-height: 1.5; }
-.feed-shoe { font-size: 22rpx; color: #0faf8e; margin-top: 8rpx; }
+.feed-shoe { font-size: 22rpx; color: #2d9d78; margin-top: 8rpx; }
 .feed-meta { font-size: 22rpx; color: #999; margin-top: 12rpx; }
 .feed-time { color: #ccc; }
 .empty { text-align: center; color: #999; font-size: 26rpx; padding: 60rpx 0; }

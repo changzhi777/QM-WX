@@ -25,7 +25,7 @@
   transition: all 0.2s;
 }
 .persona-chip.active {
-  background: linear-gradient(135deg, #0FAF8E, #0d9b7e);
+  background: linear-gradient(135deg, #2D9D78, #1a7a5a);
   box-shadow: 0 4rpx 12rpx rgba(15, 175, 142, 0.3);
 }
 .persona-emoji { font-size: 32rpx; }
@@ -164,7 +164,7 @@
   padding: 0 32rpx;
   height: 72rpx;
   line-height: 72rpx;
-  background: linear-gradient(135deg, #0FAF8E, #0d9b7e);
+  background: linear-gradient(135deg, #2D9D78, #1a7a5a);
   color: #fff;
   border-radius: 36rpx;
   font-size: 28rpx;

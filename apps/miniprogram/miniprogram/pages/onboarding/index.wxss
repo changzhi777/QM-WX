@@ -15,7 +15,7 @@
   background: #f0f0f0;
 }
 .progress-step.active {
-  background: var(--brand, #0faf8e);
+  background: var(--brand, #2d9d78);
   color: #fff;
 }
 .progress-line {
@@ -25,7 +25,7 @@
   margin: 0 8rpx;
 }
 .progress-line.active {
-  background: var(--brand, #0faf8e);
+  background: var(--brand, #2d9d78);
 }
 
 /* 内容 */
@@ -84,7 +84,7 @@
   border-radius: 12rpx;
 }
 .gender-btn.active {
-  background: var(--brand, #0faf8e);
+  background: var(--brand, #2d9d78);
   color: #fff;
 }
 
@@ -122,7 +122,7 @@
 
 /* 按钮 */
 .next-btn {
-  background: var(--brand, #0faf8e);
+  background: var(--brand, #2d9d78);
   color: #fff;
   border-radius: 16rpx;
   font-size: 32rpx;
