@@ -53,7 +53,8 @@ export async function statsRoutes(app: FastifyInstance) {
         return { code: 0, data: await statsService.dailyReportList(userId, input) };
       }
       case 'weather': {
-        return { code: 0, data: await statsService.weather(userId) };
+        const input = (payload ?? {}) as { lat?: number; lon?: number };
+        return { code: 0, data: await statsService.weather(userId, input) };
       }
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });

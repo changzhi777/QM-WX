@@ -8,6 +8,7 @@
  */
 import { prisma } from '../../infra/prisma.js';
 import { Cache } from '../../infra/cache.js';
+import { env } from '../../config/env.js';
 import { publishDailyReport } from '../../infra/mqtt.js';
 import type { MyRunnerStatsQuery, MyAnnualReportQuery, HealthScoreQuery, DailyReportQuery, DailyReportListQuery } from './stats.schema.js';
 
@@ -284,20 +285,42 @@ export const statsService = {
     return { list, total, page, pageSize, hasMore: page * pageSize < total };
   },
 
-  /** V0.1.144 天气（stub，TODO 接和风天气 API + wx.getLocation 位置）*/
-  async weather(userId: string) {
-    // TODO: 接和风天气 API（需 QWEATHER_KEY + 前端传 location 经纬度）
-    // MVP stub：返固定天气占位（前端日期+星期+天气显示）
+  /** V0.1.148 真天气（和风 API + 逆地理）；无 key 或失败走 stub */
+  async weather(userId: string, input?: { lat?: number; lon?: number }) {
     void userId;
-    return {
-      city: '杭州',
-      text: '晴',
-      temperature: 25,
-      feelsLike: 26,
-      humidity: 60,
-      icon: '☀️',
-      updatedAt: new Date().toISOString(),
-    };
+    const key = env.QWEATHER_KEY;
+    const lat = input?.lat ?? 30.27;
+    const lon = input?.lon ?? 120.15;
+    const location = `${lon.toFixed(2)},${lat.toFixed(2)}`;
+    if (!key) {
+      return { city: '杭州', text: '晴', temperature: 25, feelsLike: 26, humidity: 60, icon: '999', updatedAt: new Date().toISOString() };
+    }
+    try {
+      const apiHost = env.QWEATHER_API_HOST;
+      const headers = { 'X-QW-Api-Key': key };
+      const [cityRes, weatherRes] = await Promise.all([
+        fetch(`https://${apiHost}/geo/v2/city/lookup?location=${location}`, { headers }),
+        fetch(`https://${apiHost}/v7/weather/now?location=${location}`, { headers }),
+      ]);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cityData = await cityRes.json() as any;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const weatherData = await weatherRes.json() as any;
+      const city = cityData?.location?.[0]?.adm2 ?? cityData?.location?.[0]?.name ?? '未知';
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const now = (weatherData?.now ?? {}) as any;
+      return {
+        city,
+        text: now.text ?? '未知',
+        temperature: parseInt(now.temp ?? '25'),
+        feelsLike: parseInt(now.feelsLike ?? '26'),
+        humidity: parseInt(now.humidity ?? '60'),
+        icon: now.icon ?? '999',
+        updatedAt: new Date().toISOString(),
+      };
+    } catch {
+      return { city: '未知', text: '获取失败', temperature: 0, feelsLike: 0, humidity: 0, icon: '999', updatedAt: new Date().toISOString() };
+    }
   },
 };
 
