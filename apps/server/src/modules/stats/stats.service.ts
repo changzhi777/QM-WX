@@ -293,7 +293,8 @@ export const statsService = {
     const lon = input?.lon ?? 112.94;
     const location = `${lon.toFixed(2)},${lat.toFixed(2)}`;
     if (!key) {
-      return { city: '杭州', text: '晴', temperature: 25, feelsLike: 26, humidity: 60, icon: '999', updatedAt: new Date().toISOString() };
+      // 默认经纬度 28.23N, 112.94E → 长沙（实际地理坐标，非「杭州」历史 bug 修复）
+      return { city: '长沙', text: '晴', temperature: 25, feelsLike: 26, humidity: 60, icon: '999', updatedAt: new Date().toISOString() };
     }
     try {
       const apiHost = env.QWEATHER_API_HOST;

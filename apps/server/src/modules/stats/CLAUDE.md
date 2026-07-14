@@ -19,6 +19,7 @@
 | `myRunnerStats` | `userId + {year?, month?}` | 跑者数据中心汇总（年/月/总跑量+打卡+平均配速） | Cache.wrap 120s，默认今年/本月 |
 | `myAnnualReport` | `userId + {year?}` | 年度报告（年汇总+月度分布+最长单次+活跃天数） | V0.1.27，单次 groupBy 替代 12 次 aggregate |
 | `myCertificates` | `userId` | 我的证书（里程碑+赛事+配速进步+连续打卡+群内前3+跑鞋成就） | V0.1.28，动态生成零建表；V0.1.135 扩多种；V0.1.137 扩跑鞋成就 |
+| `weather` | `userId + {lat?, lon?}` | 今日天气（城市+温度+天气描述+体感+湿度+图标） | V0.1.148 真天气（和风 API Host + X-QW-Api-Key 头）；无 KEY 或 fetch 失败走 stub（长沙晴 25°C）；前端今日 tab 调 |
 
 ## 数据模型（Prisma）
 

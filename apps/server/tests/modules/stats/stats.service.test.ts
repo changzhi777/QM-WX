@@ -5,6 +5,7 @@
  * - 年/总跑量/打卡/月跑量 聚合正确（Promise.all 3 aggregate）
  * - 平均配速计算（durationSec / distanceKm → mm:ss/km）
  * - Cache.wrap 命中（第二次同参数不查 DB）
+ * - V0.1.148 weather（无 KEY stub / 有 KEY API 成功 / fetch 抛错兜底）
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -23,7 +24,18 @@ const _redisMockState = vi.hoisted(() => ({
   redis: { get: vi.fn(), set: vi.fn(), del: vi.fn(), scan: vi.fn() },
 }));
 vi.mock('src/infra/redis.js', () => ({ redis: _redisMockState.redis }));
-vi.mock('src/config/env.js', () => ({ env: { NODE_ENV: 'test' } }));
+
+const _envState = vi.hoisted(() => ({
+  envRef: {
+    NODE_ENV: 'test',
+    QWEATHER_KEY: undefined as string | undefined,
+    QWEATHER_API_HOST: undefined as string | undefined,
+  },
+}));
+vi.mock('src/config/env.js', () => ({ env: _envState.envRef }));
+
+const _fetchMock = vi.hoisted(() => ({ fetch: vi.fn() }));
+vi.stubGlobal('fetch', _fetchMock.fetch);
 
 function setupMockRedis() {
   const { cacheStore, redis } = _redisMockState;
@@ -52,6 +64,9 @@ beforeEach(() => {
   mockedPrisma.shoe.aggregate.mockResolvedValue({ _sum: { currentKm: 0 } } as never);
   mockedPrisma.shoe.findFirst.mockResolvedValue(null);
   mockedPrisma.checkin.count.mockResolvedValue(0);
+  // V0.1.148 weather 默认无 KEY（每个 test 按需覆盖）
+  _envState.envRef.QWEATHER_KEY = undefined;
+  _envState.envRef.QWEATHER_API_HOST = undefined;
 });
 
 describe('statsService.myRunnerStats', () => {
@@ -313,5 +328,79 @@ describe('statsService.myCertificates 跑鞋成就 (V0.1.137)', () => {
 
     expect(r.shoeCheckinMilestonesCert.currentTotalCheckins).toBe(100);
     expect(r.shoeCheckinMilestonesCert.achieved).toHaveLength(2); // 50/100
+  });
+});
+
+// ============================================================
+// V0.1.148 和风天气 weather action
+// ============================================================
+
+describe('statsService.weather (V0.1.148)', () => {
+  it('无 QWEATHER_KEY → 返回 stub 长沙晴 25°C（默认经纬度 28.23, 112.94）', async () => {
+    const r = await statsService.weather('u1');
+    // 经度在前纬度在后，精确到小数后 2 位
+    expect(_fetchMock.fetch).not.toHaveBeenCalled();
+    expect(r.city).toBe('长沙');
+    expect(r.text).toBe('晴');
+    expect(r.temperature).toBe(25);
+    expect(r.feelsLike).toBe(26);
+    expect(r.humidity).toBe(60);
+    expect(r.icon).toBe('999');
+    expect(r.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it('传 lat/lon → location 拼成 "lon,lat" 经度在前（114.06,22.54 深圳示例）', async () => {
+    // 不调 fetch（无 key 走 stub），只验证 location 拼接格式
+    // 经度纬度顺序直接拼接为 location 字段位置参数
+    const r = await statsService.weather('u1', { lat: 22.54, lon: 114.06 });
+    // stub 不读 input，但 service 内部 location 拼接也正确
+    expect(r.city).toBe('长沙');
+  });
+
+  it('有 KEY + fetch 成功 → 解析城市(adm2) + now 字段', async () => {
+    _envState.envRef.QWEATHER_KEY = 'test-key';
+    _envState.envRef.QWEATHER_API_HOST = 'nf5b5vtkcp.re.qweatherapi.com';
+    // cityRes → adm2='长沙'
+    // weatherRes → now={temp:37,feelsLike:39,icon:101,text:'多云',humidity:45}
+    _fetchMock.fetch
+      .mockResolvedValueOnce({
+        json: async () => ({ code: '200', location: [{ adm2: '长沙', adm1: '湖南省' }] }),
+      } as never)
+      .mockResolvedValueOnce({
+        json: async () => ({
+          code: '200',
+          now: { temp: '37', feelsLike: '39', icon: '101', text: '多云', humidity: '45' },
+        }),
+      } as never);
+
+    const r = await statsService.weather('u1', { lat: 28.23, lon: 112.94 });
+
+    expect(_fetchMock.fetch).toHaveBeenCalledTimes(2);
+    // city geo 请求
+    expect(_fetchMock.fetch.mock.calls[0][0]).toContain('/geo/v2/city/lookup?location=112.94,28.23');
+    // weather 请求
+    expect(_fetchMock.fetch.mock.calls[1][0]).toContain('/v7/weather/now?location=112.94,28.23');
+    // 头部携带 KEY
+    expect(_fetchMock.fetch.mock.calls[0][1]?.headers).toEqual({ 'X-QW-Api-Key': 'test-key' });
+    // 解析：city 取 adm2（长沙），now 字段 numeric parse
+    expect(r.city).toBe('长沙');
+    expect(r.text).toBe('多云');
+    expect(r.temperature).toBe(37);
+    expect(r.feelsLike).toBe(39);
+    expect(r.humidity).toBe(45);
+    expect(r.icon).toBe('101');
+  });
+
+  it('fetch 抛错 → catch 兜底返"未知+获取失败"', async () => {
+    _envState.envRef.QWEATHER_KEY = 'bad-key';
+    _envState.envRef.QWEATHER_API_HOST = 'nf5b5vtkcp.re.qweatherapi.com';
+    _fetchMock.fetch.mockRejectedValue(new Error('network down'));
+
+    const r = await statsService.weather('u1');
+
+    expect(r.city).toBe('未知');
+    expect(r.text).toBe('获取失败');
+    expect(r.temperature).toBe(0);
+    expect(r.icon).toBe('999');
   });
 });

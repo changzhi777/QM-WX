@@ -10,6 +10,7 @@ const mockStatsService = vi.hoisted(() => ({
   myRunnerStats: vi.fn(),
   myAnnualReport: vi.fn(),
   myCertificates: vi.fn(),
+  weather: vi.fn(), // V0.1.148
 }));
 
 vi.mock('src/modules/stats/stats.service.js', () => ({ statsService: mockStatsService }));
@@ -87,6 +88,19 @@ describe('stats routes', () => {
     const app = await buildApp({ authed: true });
     const r = await app.inject({ method: 'POST', url: '/', payload: { action: 'myCertificates' } });
     expect(mockStatsService.myCertificates).toHaveBeenCalledWith('u1');
+    await app.close();
+  });
+
+  it('weather (V0.1.148) → 透传 lat/lon', async () => {
+    mockStatsService.weather.mockResolvedValue({ city: '长沙', temperature: 37 });
+    const app = await buildApp({ authed: true });
+    const r = await app.inject({
+      method: 'POST', url: '/',
+      payload: { action: 'weather', payload: { lat: 28.23, lon: 112.94 } },
+    });
+    expect(mockStatsService.weather).toHaveBeenCalledWith('u1', { lat: 28.23, lon: 112.94 });
+    expect(r.statusCode).toBe(200);
+    expect(r.json().data.city).toBe('长沙');
     await app.close();
   });
 });
