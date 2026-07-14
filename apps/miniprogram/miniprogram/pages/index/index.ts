@@ -3,6 +3,7 @@
 import { api } from '../../services/api';
 import { ensureLogin } from '../../utils/auth';
 import { syncWeRunIfFirstToday } from '../../utils/werun';
+import { subscribeDailyReport, unsubscribeDailyReport } from '../../utils/mqtt';
 
 interface DailyReport {
   id: string;
@@ -103,6 +104,9 @@ Page({
   async loadData() {
     try {
       await ensureLogin();
+      // V0.1.144 MQTT 订阅每日简报推送（ensureLogin 后 user 有 id；收到推送自动更新）
+      const u = getApp().globalData.user;
+      if (u?.id) subscribeDailyReport(u.id, (r) => this.onMqttMessage(r));
       const [reportRes, scoreRes, historyRes, weatherRes] = await Promise.all([
         api.call<DailyReport>('stats', 'dailyReport', {}),
         api.call<HealthScoreRes>('stats', 'healthScore', {}),
@@ -134,5 +138,14 @@ Page({
       title: `我的健康分数 ${score} 分，来看看你的今日身体简报`,
       path: '/pages/index/index',
     };
+  },
+
+  /** V0.1.144 MQTT 收到推送 → 更新今日简报 */
+  onMqttMessage(report: unknown) {
+    this.setData({ report: report as DailyReport });
+  },
+
+  onUnload() {
+    unsubscribeDailyReport();
   },
 });
