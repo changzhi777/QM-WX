@@ -15,8 +15,8 @@ import { join, extname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import COS from 'cos-nodejs-sdk-v5';
 
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_SIZE = 50 * 1024 * 1024; // 50MB（V0.1.150 数据包扩展）
+const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'application/zip', 'application/octet-stream'];
 const UPLOAD_DIR = join(process.cwd(), 'uploads');
 
 // ---------- COS 工厂（每次新建；mock 单测时无需关心缓存；SDK 构造廉价可接受） ----------
@@ -54,7 +54,8 @@ export function mimeToExt(mime: string): string {
   if (mime === 'image/jpeg') return '.jpg';
   if (mime === 'image/png') return '.png';
   if (mime === 'image/webp') return '.webp';
-  return '.bin';
+  if (mime === 'application/zip') return '.zip';
+  return '.bin'; // octet-stream（fit 等数据包）→ uploadToCos 靠 filename extname 推断 .fit
 }
 
 export function shouldUseCos(input: { localFallback?: boolean }): boolean {

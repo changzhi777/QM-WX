@@ -14,6 +14,7 @@ import { Errors } from '../../common/errors.js';
 import { walletRepo } from '../wallet/wallet.repo.js';
 import { toCsvHeader, toCsvRow, UTF8_BOM } from '../../common/csv.js';
 import { assertTransition, type OrderStatus } from '../../domain/order-state.js';
+import { enqueueUploadParse } from '../../jobs/queue.js';
 import type {
   UpsertContentInput,
   UpsertProductInput,
@@ -1029,4 +1030,46 @@ export async function listEnrollmentsByContent(adminOpenid: string, contentId: s
       };
     }),
   };
+}
+
+// ===== V0.1.150 上传记录管理（后台 COS 中转解析）=====
+export async function listUploads(input: {
+  userId?: string;
+  type?: string;
+  status?: string;
+  page: number;
+  pageSize: number;
+}) {
+  const where = {
+    ...(input.userId ? { userId: input.userId } : {}),
+    ...(input.type ? { type: input.type } : {}),
+    ...(input.status ? { status: input.status } : {}),
+  };
+  const [list, total] = await Promise.all([
+    prisma.uploadRecord.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (input.page - 1) * input.pageSize,
+      take: input.pageSize,
+      include: { user: { select: { id: true, nickname: true, phone: true } } },
+    }),
+    prisma.uploadRecord.count({ where }),
+  ]);
+  return {
+    list: list.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })),
+    total,
+    page: input.page,
+    pageSize: input.pageSize,
+  };
+}
+
+export async function retryParse(input: { id: string }) {
+  const record = await prisma.uploadRecord.findUnique({ where: { id: input.id } });
+  if (!record) throw Errors.notFound('上传记录不存在');
+  await prisma.uploadRecord.update({
+    where: { id: input.id },
+    data: { status: 'pending', errorMsg: null },
+  });
+  await enqueueUploadParse(input.id);
+  return { ok: true };
 }

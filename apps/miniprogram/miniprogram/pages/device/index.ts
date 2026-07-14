@@ -472,6 +472,39 @@ Page({
     });
   },
 
+  // ===== V0.1.150 上传运动数据包（COS 中转 → 后台异步解析）=====
+  async onUploadData(e: WechatMiniprogram.TouchEvent) {
+    const type = e.currentTarget.dataset.type as 'xiaomi_zip' | 'coros_fit';
+    wx.chooseMessageFile({
+      count: 1,
+      type: 'file',
+      extension: type === 'xiaomi_zip' ? ['zip'] : ['fit'],
+      success: async (r) => {
+        if (!r.tempFiles.length) return;
+        const path = r.tempFiles[0].path;
+        // 小米 ZIP 加密包需密码
+        let password: string | undefined;
+        if (type === 'xiaomi_zip') {
+          const pwdRes = await wx.showModal({ title: '小米数据包密码', editable: true, placeholderText: '加密 ZIP 密码' });
+          if (!pwdRes.confirm || !pwdRes.content) {
+            wx.showToast({ title: '需要密码', icon: 'none' });
+            return;
+          }
+          password = pwdRes.content;
+        }
+        wx.showLoading({ title: '上传中...' });
+        try {
+          await api.uploadDataFile(path, type, password);
+          wx.hideLoading();
+          wx.showToast({ title: '已上传，后台解析中', icon: 'none', duration: 2500 });
+        } catch {
+          wx.hideLoading();
+          wx.showToast({ title: '上传失败', icon: 'none' });
+        }
+      },
+    });
+  },
+
   // ===== 佳明 tab =====
   async loadGarminList() {
     this.setData({ gLoading: true });

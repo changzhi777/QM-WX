@@ -65,6 +65,7 @@ model User {
   feedLikes              FeedLike[] // V0.1.30 点赞
   feedComments           FeedComment[] // V0.1.30 评论
   notifications          Notification[] // V0.1.31 收到的通知（接收者视角）
+  uploads                UploadRecord[]          @relation("UserUploads") // V0.1.150 上传记录（COS 中转异步解析）
   notifActions           Notification[]          @relation("NotifActor") // V0.1.31 触发的通知（actor 视角）
   following              Follow[]                @relation("Follower") // V0.1.32 我关注的人（follower 视角）
   followers              Follow[]                @relation("Followee") // V0.1.32 关注我的人（followee 视角）
@@ -769,6 +770,27 @@ model RawActivity {
   @@unique([vendor, vendorActivityId])
   @@index([userId, startTime])
   @@index([userId, status])
+}
+
+// ===== V0.1.150 · 上传记录（COS 中转 + 异步解析留底，后台可追溯/重跑）=====
+model UploadRecord {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String // xiaomi_zip | coros_fit | sport_screenshot（Phase 2/3 扩 garmin_fit|huawei_export|apple_health）
+  cosUrl       String // 公开 URL（CDN 或 COS 默认域名）
+  objectKey    String // COS key（后台 getObject 下载用）
+  mime         String
+  size         Int
+  status       String   @default("pending") // pending | parsing | parsed | failed
+  password     String?  // 小米 ZIP 加密包（仅 xiaomi_zip，上传时一并传）
+  parsedResult Json?    // 解析结果摘要（导入条数/距离/时长）
+  errorMsg     String?
+  createdAt    DateTime @default(now())
+
+  user User @relation("UserUploads", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([status])
 }
 
 // ===== V2 · 菜谱 =====

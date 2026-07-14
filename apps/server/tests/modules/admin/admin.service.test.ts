@@ -23,6 +23,7 @@ const mockPrisma = vi.hoisted(() => ({
   enrollment: { findUnique: vi.fn(), findMany: vi.fn() }, // V0.1.134 admin.submitRaceResult + listEnrollmentsByContent
   raceResult: { upsert: vi.fn(), findMany: vi.fn() }, // V0.1.134 admin.submitRaceResult + listEnrollmentsByContent
   appConfig: { findUnique: vi.fn() }, // V0.1.134 isAdmin 缓存
+  uploadRecord: { findMany: vi.fn(), count: vi.fn(), findUnique: vi.fn(), update: vi.fn() }, // V0.1.150 上传记录
   $transaction: vi.fn(), // V0.1.105 提现审核用
 }));
 
@@ -32,6 +33,10 @@ vi.mock('src/infra/prisma.js', () => ({ prisma: mockPrisma }));
 vi.mock('src/common/middleware/feature-gate.js', () => ({
   invalidateFeatureFlagsCache: () => undefined,
 }));
+
+// V0.1.150 admin.retryParse 调 enqueueUploadParse（避免真连 Redis）
+const mockEnqueueUploadParse = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+vi.mock('src/jobs/queue.js', () => ({ enqueueUploadParse: mockEnqueueUploadParse }));
 
 import {
   banUser,
@@ -49,6 +54,8 @@ import {
   addReviewReply,
   submitRaceResult,
   listEnrollmentsByContent,
+  listUploads,
+  retryParse,
 } from '../../../src/modules/admin/admin.service.js';
 import { BusinessError } from '../../../src/common/errors.js';
 
@@ -660,5 +667,37 @@ describe('admin.service · listEnrollmentsByContent (V0.1.134)', () => {
 
   it('非 admin 鉴权失败', async () => {
     await expect(listEnrollmentsByContent('not-admin', 'c1')).rejects.toThrow();
+  });
+});
+
+// ===== V0.1.150 上传记录管理 =====
+describe('listUploads / retryParse (V0.1.150)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPrisma.uploadRecord.findMany.mockResolvedValue([
+      { id: 'r1', type: 'coros_fit', createdAt: new Date(), user: { nickname: 'n' } },
+    ]);
+    mockPrisma.uploadRecord.count.mockResolvedValue(1);
+    mockPrisma.uploadRecord.findUnique.mockResolvedValue({ id: 'r1', userId: 'u1' });
+    mockPrisma.uploadRecord.update.mockResolvedValue({});
+  });
+
+  it('listUploads 分页 + total + include user', async () => {
+    const r = await listUploads({ type: 'coros_fit', page: 1, pageSize: 20 });
+    expect(r.total).toBe(1);
+    expect(r.list[0]).toHaveProperty('user');
+  });
+
+  it('retryParse 记录不存在 → notFound', async () => {
+    mockPrisma.uploadRecord.findUnique.mockResolvedValue(null);
+    await expect(retryParse({ id: 'x' })).rejects.toThrow();
+  });
+
+  it('retryParse 重置 pending + 入队', async () => {
+    await retryParse({ id: 'r1' });
+    expect(mockPrisma.uploadRecord.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 'r1' }, data: { status: 'pending', errorMsg: null } }),
+    );
+    expect(mockEnqueueUploadParse).toHaveBeenCalledWith('r1');
   });
 });

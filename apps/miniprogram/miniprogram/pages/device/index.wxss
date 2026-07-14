@@ -97,3 +97,10 @@
 .scan-brand.garmin { background: #E3F2FD; color: #1976D2; }
 .scan-brand.xiaomi { background: #FFF3E0; color: #F57C00; }
 .scan-brand.mi_scale { background: #F3E5F5; color: #7B1FA2; }
+
+/* V0.1.150 上传数据包区 */
+.upload-section { margin: 24rpx 0; padding: 24rpx; background: #fff; border-radius: 16rpx; box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.06); }
+.upload-section .section-title { font-size: 30rpx; font-weight: 600; color: #2D9D78; margin-bottom: 12rpx; }
+.upload-hint { font-size: 24rpx; color: #888; margin-bottom: 20rpx; }
+.upload-row { display: flex; gap: 20rpx; }
+.upload-btn { flex: 1; background: #2D9D78; color: #fff; font-size: 26rpx; border-radius: 12rpx; margin: 0; line-height: 80rpx; }

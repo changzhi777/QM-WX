@@ -84,6 +84,12 @@ export const ENDPOINTS = {
     // V0.1.134 赛事成绩 admin 录入
     submitRaceResult: '/api/admin',
     listEnrollmentsByContent: '/api/admin',
+    listUploads: '/api/admin', // V0.1.150 上传记录管理（COS 中转解析后台）
+    retryParse: '/api/admin', // V0.1.150 重新解析（重置 pending + 入队）
+  },
+  upload: {
+    upload: '/api/upload', // multipart 文件上传（wx.uploadFile，?type=xxx）
+    records: '/api/upload/records', // V0.1.150 myUploads（用户查自己的上传记录 + 解析状态）
   },
   device: {
     listBindings: '/api/device',

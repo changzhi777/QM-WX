@@ -22,6 +22,10 @@ import {
   UPLOAD_MAX_SIZE,
   UPLOAD_ALLOWED_MIME,
 } from './upload.service.js';
+import { createUploadRecord, myUploads } from './upload-record.service.js';
+
+// 走 COS 中转异步解析的数据包/截图 type（建 UploadRecord + 入队）；图片 type（avatar/feed-image/misc）不建
+const RECORD_TYPES = new Set(['xiaomi_zip', 'coros_fit', 'sport_screenshot']);
 
 export async function uploadRoutes(app: FastifyInstance) {
   // 限流：5 次/分/用户（防滥用 + COS 成本控制）
@@ -38,9 +42,11 @@ export async function uploadRoutes(app: FastifyInstance) {
       }
 
       const query = (req.query ?? {}) as { type?: string; localFallback?: string };
-      // type 限 1-32 字符 + 字母数字横杠，防 path traversal / 非法字符落到 object key
-      const type = query.type && /^[a-z0-9-]{1,32}$/.test(query.type) ? query.type : 'misc';
+      // type 限 1-32 字符 + 字母数字下划线横杠（xiaomi_zip / coros_fit / avatar / feed-image 等）
+      const type = query.type && /^[a-z0-9_-]{1,32}$/.test(query.type) ? query.type : 'misc';
       const localFallback = query.localFallback === '1';
+      // 小米 ZIP 加密包密码（header 传，不进 URL 日志；仅 xiaomi_zip 用）
+      const password = req.headers['x-upload-password'] as string | undefined;
 
       const buffer = await data.toBuffer();
       const result = await uploadFile({
@@ -52,7 +58,30 @@ export async function uploadRoutes(app: FastifyInstance) {
         localFallback,
       });
 
-      return { code: 0, data: result };
+      // 数据包/截图 type + COS 上传成功 → 建 UploadRecord → 入队异步解析（本地 fallback 不建）
+      let uploadRecordId: string | undefined;
+      if (result.source === 'cos' && RECORD_TYPES.has(type)) {
+        const objectKey = decodeURIComponent(new URL(result.url).pathname.slice(1));
+        const record = await createUploadRecord(req.user.id, {
+          type,
+          cosUrl: result.url,
+          objectKey,
+          mime: result.mime,
+          size: result.size,
+          password: password || undefined,
+        });
+        uploadRecordId = record.id;
+      }
+
+      return { code: 0, data: { ...result, uploadRecordId } };
     },
   );
+
+  // 用户查自己的上传记录（V0.1.150）
+  app.post('/records', async (req) => {
+    if (!req.user) throw Errors.unauthorized();
+    const { page } = (req.body as { page?: number }) ?? {};
+    return { code: 0, data: await myUploads(req.user.id, page) };
+  });
 }
+

@@ -37,6 +37,8 @@ import {
   ListGroupBuysSchema,
   UpsertTrainingPlanSchema,
   ListTrainingPlansSchema,
+  ListUploadsSchema,
+  RetryParseSchema,
   ListWithdrawalsSchema,
   WithdrawalIdSchema,
   RejectWithdrawalSchema,
@@ -99,6 +101,11 @@ export async function adminRoutes(app: FastifyInstance) {
         return { code: 0, data: await adminService.listTrainingPlans(ListTrainingPlansSchema.parse(payload ?? {})) };
       case 'stats':
         return { code: 0, data: await adminService.stats() };
+      // ===== 上传记录管理（V0.1.150 COS 中转解析）=====
+      case 'listUploads':
+        return { code: 0, data: await adminService.listUploads(ListUploadsSchema.parse(payload ?? {})) };
+      case 'retryParse':
+        return { code: 0, data: await adminService.retryParse(RetryParseSchema.parse(payload)) };
       // ===== 黑名单 + 审计（V0.1.18 新增）=====
       case 'banUser':
         return {

@@ -99,6 +99,19 @@ export const RefundOrderSchema = z.object({
   reason: z.string().max(80).optional(),
 });
 
+// ===== V0.1.150 上传记录管理 =====
+export const ListUploadsSchema = z.object({
+  userId: z.string().optional(),
+  type: z.string().optional(),
+  status: z.enum(['pending', 'parsing', 'parsed', 'failed']).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export const RetryParseSchema = z.object({
+  id: z.string().min(1),
+});
+
 // ===== 新增：管理类 list / stats（P1-2）=====
 export const ListUsersSchema = z.object({
   keyword: z.string().max(64).optional(),

@@ -20,6 +20,7 @@ import { processCloseOrder, type CloseOrderJobData } from './close-order.job.js'
 import { processRefreshPlatformCerts } from './refresh-certs.job.js';
 import { processGarminImport, type GarminImportJobData } from './garmin-import.job.js';
 import { processLudongSync } from './ludong-sync.job.js';
+import { processUploadParse, type UploadParseJobData } from './upload-parse.job.js';
 import { logger } from '../common/logger.js';
 
 const QUEUE_PREFIX = 'qmwx';
@@ -89,6 +90,17 @@ export const ludongSyncQueue = new Queue('ludong-sync', {
   },
 });
 
+export const uploadParseQueue = new Queue('upload-parse', {
+  connection: redis,
+  prefix: QUEUE_PREFIX,
+  defaultJobOptions: {
+    attempts: 2,
+    backoff: { type: 'fixed', delay: 5_000 },
+    removeOnComplete: { count: 500, age: 86400 },
+    removeOnFail: { count: 1000, age: 7 * 86400 },
+  },
+});
+
 // ===== Worker 集合 =====
 const workers: Worker[] = [];
 
@@ -131,6 +143,10 @@ export function startWorkers() {
   startWorker('ludong-sync', async () => {
     return processLudongSync();
   }, 1);
+
+  startWorker('upload-parse', async (job: Job) => {
+    return processUploadParse(job.data as UploadParseJobData);
+  }, 2);
 }
 
 /** 优雅关闭 */
@@ -235,6 +251,14 @@ export async function enqueueGarminImport(data: GarminImportJobData) {
 /** 工具：手动触发一次律动 outbox 投递（admin / 运维用,不等 5min tick） */
 export async function enqueueLudongSync() {
   return ludongSyncQueue.add('sync-now', {});
+}
+
+/**
+ * 工具：入队上传文件解析（upload-record.service.createUploadRecord 调用）
+ * jobId 用 recordId：保证幂等（同 record 多次入队只跑一次）
+ */
+export async function enqueueUploadParse(recordId: string) {
+  return uploadParseQueue.add('parse', { recordId }, { jobId: `parse-${recordId}` });
 }
 
 // ===== 启动 / 关闭集成 =====

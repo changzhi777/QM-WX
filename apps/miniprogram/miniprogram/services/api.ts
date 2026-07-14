@@ -188,9 +188,57 @@ export const api = {
     if (body.code !== 0) {
       throw new Error((body as { msg: string }).msg ?? 'upload failed');
     }
-    // V0.1.40：拼完整 URL（upload 返相对 /uploads/，小程序 image 需完整 https URL）
-    const relativeUrl = (body as { data: { url: string } }).data.url;
-    return `${getBaseUrl()}${relativeUrl}`;
+    // V0.1.40/149：COS 返完整 https URL 直接用；本地 fallback 返相对 /uploads/ 拼 baseUrl
+    const url = (body as { data: { url: string } }).data.url;
+    return url.startsWith('http') ? url : `${getBaseUrl()}${url}`;
+  },
+
+  /**
+   * 上传运动数据包（V0.1.150）→ COS → UploadRecord → 异步解析
+   * @param type xiaomi_zip（需 password）/ coros_fit
+   */
+  async uploadDataFile(
+    tempFilePath: string,
+    type: 'xiaomi_zip' | 'coros_fit',
+    password?: string,
+  ): Promise<{ url: string; uploadRecordId?: string }> {
+    const token = wx.getStorageSync('accessToken');
+    const res = await new Promise<WechatMiniprogram.UploadFileSuccessCallbackResult>((resolve, reject) => {
+      wx.uploadFile({
+        url: `${getBaseUrl()}/api/upload?type=${type}`,
+        filePath: tempFilePath,
+        name: 'file',
+        header: {
+          ...(token ? { authorization: `Bearer ${token}` } : {}),
+          ...(password ? { 'x-upload-password': password } : {}),
+        },
+        success: resolve,
+        fail: reject,
+      });
+    });
+    const body = JSON.parse(res.data) as ApiResponse<{ url: string; uploadRecordId?: string }>;
+    if (body.code !== 0) throw new Error((body as { msg: string }).msg ?? 'upload failed');
+    return body.data!;
+  },
+
+  /**
+   * 查我的上传记录（V0.1.150，POST /api/upload/records，看解析状态）
+   */
+  async myUploads(page = 1): Promise<{ items: unknown[]; total: number }> {
+    const token = wx.getStorageSync('accessToken');
+    const res = await new Promise<WechatMiniprogram.RequestSuccessCallbackResult>((resolve, reject) => {
+      wx.request({
+        url: `${getBaseUrl()}/api/upload/records`,
+        method: 'POST',
+        header: { 'content-type': 'application/json', ...(token ? { authorization: `Bearer ${token}` } : {}) },
+        data: { page },
+        success: resolve,
+        fail: reject,
+      });
+    });
+    const body = JSON.parse(res.data as string) as ApiResponse<{ items: unknown[]; total: number }>;
+    if (body.code !== 0) throw new Error((body as { msg: string }).msg ?? 'myUploads failed');
+    return body.data!;
   },
 };
 

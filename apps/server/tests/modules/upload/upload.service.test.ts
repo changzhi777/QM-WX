@@ -62,12 +62,12 @@ beforeEach(() => {
 });
 
 describe('constants', () => {
-  it('UPLOAD_MAX_SIZE = 5MB', () => {
-    expect(UPLOAD_MAX_SIZE).toBe(5 * 1024 * 1024);
+  it('UPLOAD_MAX_SIZE = 50MB（V0.1.150 数据包扩展）', () => {
+    expect(UPLOAD_MAX_SIZE).toBe(50 * 1024 * 1024);
   });
 
-  it('UPLOAD_ALLOWED_MIME 仅允许 jpeg/png/webp', () => {
-    expect(UPLOAD_ALLOWED_MIME).toEqual(['image/jpeg', 'image/png', 'image/webp']);
+  it('UPLOAD_ALLOWED_MIME 含 zip/octet-stream（数据包）', () => {
+    expect(UPLOAD_ALLOWED_MIME).toEqual(['image/jpeg', 'image/png', 'image/webp', 'application/zip', 'application/octet-stream']);
   });
 });
 

@@ -2,6 +2,11 @@
 
 > 📍 面包屑：[根目录](../../../../CLAUDE.md) > [apps/server](../../../CLAUDE.md) > modules > **upload**
 
+## 📋 变更记录
+
+- **2026-07-15** — 🎯 **V0.1.150 Phase 1 COS 异步解析 pipeline**：扩 50MB + zip/octet-stream + type 加下划线 + header `x-upload-password`（小米 ZIP）；新增 **upload-record.service**（createUploadRecord 有 parser 入队 / myUploads / getUpload 鉴权）；**upload.routes 建 UploadRecord + POST /records myUploads**；数据包 type（xiaomi_zip/coros_fit）上传后入 BullMQ upload-parse 队列异步解析（复用 device-parser.registry + device 解析器）；15 新单测 / 99 全过
+- **2026-07-14** — V0.1.149 腾讯云 COS 接入（ap-guangzhou + 混合模式 fallback + 5/min 限流）；21 单测
+
 ## 职责
 
 接收小程序文件上传（multipart），统一接入**腾讯云 COS 对象存储**（V0.1.149 起），保留**本地 fallback** 的混合模式。**单 endpoint**：`POST /api/upload?type=xxx`。

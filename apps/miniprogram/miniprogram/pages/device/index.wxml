@@ -101,6 +101,15 @@
 
   <!-- ===== 导入 tab ===== -->
   <view wx:if="{{tab === 'import'}}">
+    <!-- V0.1.150 上传运动数据包（COS 中转 → 后台异步解析）-->
+    <view class="upload-section">
+      <view class="section-title">上传数据包（自动解析）</view>
+      <view class="upload-hint">选文件 → 上传 COS → 后台自动解析导入运动数据</view>
+      <view class="upload-row">
+        <button class="upload-btn" data-type="xiaomi_zip" bindtap="onUploadData">上传小米 ZIP</button>
+        <button class="upload-btn" data-type="coros_fit" bindtap="onUploadData">上传 COROS FIT</button>
+      </view>
+    </view>
     <view class="i-brand-grid">
       <view class="i-brand {{!item.available ? 'disabled' : ''}} {{selectedKey === item.key ? 'selected' : ''}}" wx:for="{{iBrands}}" wx:key="key" data-key="{{item.key}}" bindtap="onTapImportBrand">
         <view class="i-brand-icon">{{item.icon}}</view>
