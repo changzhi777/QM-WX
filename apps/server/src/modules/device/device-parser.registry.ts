@@ -8,6 +8,8 @@
  * Stub（待实现）：apple_health（需 fast-xml-parser）/ huawei_export（需样本）/ sport_screenshot（需 OCR，Phase 3）
  */
 import { deviceService } from '../device/device.service.js';
+import { sportService } from '../sport/sport.service.js';
+import { generalOcr, parseSportScore } from '../../infra/ocr.js';
 
 export type DataUploadType =
   | 'xiaomi_zip'
@@ -50,9 +52,31 @@ export const PARSERS: Record<DataUploadType, Parser> = {
   huawei_export: async () => {
     throw new Error('huawei_export 解析待样本（华为运动健康导出格式 proprietary）');
   },
-  // Stub：Phase 3 OCR（腾讯云通用 OCR + 成绩正则 + 入 Checkin）
-  sport_screenshot: async () => {
-    throw new Error('sport_screenshot OCR 待实现（Phase 3）');
+  // Phase 3：截图 OCR（腾讯云通用 OCR + 成绩正则 + 自动建 Checkin，Q2=A 全自动）
+  sport_screenshot: async (userId, buffer) => {
+    const lines = await generalOcr(buffer);
+    const score = parseSportScore(lines);
+    let checkinCreated = false;
+    let checkinError: string | undefined;
+    if (score.distanceKm != null && score.distanceKm > 0) {
+      try {
+        await sportService.checkin(userId, {
+          distance: score.distanceKm,
+          durationSec: score.durationSec ?? undefined,
+          date: new Date().toISOString().slice(0, 10),
+          dataSource: 'sport_screenshot',
+          sportType: 'run',
+        } as never);
+        checkinCreated = true;
+      } catch (e) {
+        // Checkin 校验失败不阻塞，存 OCR 文本 + 成绩可追溯（人工兜底）
+        checkinError = (e as Error).message;
+      }
+    }
+    return {
+      summary: `截图 OCR：${score.distanceKm ?? '?'}km${checkinCreated ? '（已自动打卡）' : '（未打卡，存 OCR 文本）'}`,
+      detail: { ocrLines: lines.slice(0, 20), score, checkinCreated, checkinError },
+    };
   },
 };
 
