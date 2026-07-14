@@ -82,11 +82,11 @@ export async function uploadToCos(input: UploadInput): Promise<UploadResult> {
     ContentType: input.mime,
   });
 
-  // 公开 URL：优先 CDN 域名，否则 COS 默认域名
+  // 公开 URL：优先 CDN 域名，否则 COS 默认域名（{bucket}.cos.{region}.myqcloud.com）
   const cdn = env.COS_CDN_DOMAIN?.trim();
   const url = cdn
     ? `https://${cdn}/${key}`
-    : `https://${env.COS_BUCKET}-${env.COS_SECRET_ID!.slice(0, 8)}.cos.${env.COS_REGION}.myqcloud.com/${key}`;
+    : `https://${env.COS_BUCKET}.cos.${env.COS_REGION}.myqcloud.com/${key}`;
 
   return { url, size: input.buffer.length, mime: input.mime, source: 'cos' };
 }

@@ -172,7 +172,7 @@ describe('uploadToCos (V0.1.149)', () => {
     });
 
     expect(r.url).toMatch(
-      /^https:\/\/qmwx-prod-AKIDxxxx\.cos\.ap-guangzhou\.myqcloud\.com\/feed-image\/u1-\d+-[0-9a-f]{8}\.jpg$/,
+      /^https:\/\/qmwx-prod\.cos\.ap-guangzhou\.myqcloud\.com\/feed-image\/u1-\d+-[0-9a-f]{8}\.jpg$/,
     );
   });
 
