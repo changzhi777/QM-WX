@@ -77,16 +77,16 @@
   word-break: break-word;
 }
 .msg.user .bubble {
-  background: linear-gradient(135deg, #0FAF8E, #0d9b7e);
+  background: linear-gradient(135deg, #2D9D78, #1a7a5a);
   color: #fff;
   border-bottom-right-radius: 6rpx;
-  box-shadow: 0 2rpx 8rpx rgba(15, 175, 142, 0.2);
+  box-shadow: 0 2rpx 12rpx rgba(45, 157, 120, 0.25);
 }
 .msg.assistant .bubble {
   background: #fff;
   color: #333;
   border-bottom-left-radius: 6rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
 }
 
 /* B 建议卡片 */
@@ -95,24 +95,24 @@
   display: flex;
   align-items: center;
   background: #fff;
-  border-left: 6rpx solid #0FAF8E;
+  border-left: 6rpx solid #2D9D78;
   border-radius: 12rpx;
   padding: 16rpx 20rpx;
   margin-bottom: 8rpx;
-  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.05);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
 }
 .sug-card.sug-addGoal { border-left-color: #ff9800; }
 .sug-card.sug-adoptPlan { border-left-color: #2196f3; }
 .sug-icon { font-size: 28rpx; margin-right: 12rpx; }
 .sug-label { flex: 1; font-size: 26rpx; color: #333; }
-.sug-arrow { color: #0FAF8E; font-size: 28rpx; }
+.sug-arrow { color: #2D9D78; font-size: 28rpx; }
 
 .regen-row { display: flex; justify-content: center; padding: 4rpx 0 24rpx; }
 .regen-row view {
   font-size: 24rpx;
-  color: #0FAF8E;
-  padding: 8rpx 24rpx;
-  border: 1rpx solid #0FAF8E;
+  color: #2D9D78;
+  padding: 10rpx 28rpx;
+  border: 1rpx solid #2D9D78;
   border-radius: 24rpx;
 }
 
@@ -122,15 +122,16 @@
   flex-wrap: wrap;
   gap: 12rpx;
   padding: 16rpx 24rpx;
-  background: #fff;
+  background: #f5f6f8;
   border-top: 1rpx solid #eee;
 }
 .quick-chip {
   font-size: 24rpx;
-  color: #0FAF8E;
-  background: #f0faf7;
-  padding: 12rpx 22rpx;
+  color: #2D9D78;
+  background: #fff;
+  padding: 14rpx 24rpx;
   border-radius: 24rpx;
+  box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.04);
 }
 
 /* 输入栏 */
@@ -140,14 +141,15 @@
   padding: 16rpx 24rpx;
   background: #fff;
   border-top: 1rpx solid #eee;
+  gap: 12rpx;
 }
 .voice-btn {
-  width: 64rpx;
-  height: 64rpx;
-  line-height: 64rpx;
+  padding: 12rpx 16rpx;
   text-align: center;
-  font-size: 32rpx;
-  margin-right: 12rpx;
+  font-size: 24rpx;
+  color: #2D9D78;
+  background: #f0f7f4;
+  border-radius: 24rpx;
 }
 .input {
   flex: 1;
