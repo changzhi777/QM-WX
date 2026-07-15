@@ -47,6 +47,7 @@
     "ioredis": "~5.10.0",
     "mqtt": "^5.15.2",
     "pino-pretty": "^11.0.0",
+    "tencentcloud-sdk-nodejs-ocr": "^4.1.267",
     "unzipper": "^0.12.5",
     "zod": "^3.22.0"
   },

@@ -9,7 +9,8 @@
  */
 import { deviceService } from '../device/device.service.js';
 import { sportService } from '../sport/sport.service.js';
-import { generalOcr, parseSportScore } from '../../infra/ocr.js';
+import { parseSportScore } from '../../infra/ocr.js';
+import { ocrService } from '../ocr/ocr.service.js'; // V0.2.1 OCR 调用迁移到官方 SDK module
 import { XMLParser } from 'fast-xml-parser';
 
 export type DataUploadType =
@@ -85,7 +86,7 @@ export const PARSERS: Record<DataUploadType, Parser> = {
   },
   // Phase 3：截图 OCR（腾讯云通用 OCR + 成绩正则 + 自动建 Checkin，Q2=A 全自动）
   sport_screenshot: async (userId, buffer) => {
-    const lines = await generalOcr(buffer);
+    const lines = await ocrService.generalBasic(buffer);
     const score = parseSportScore(lines);
     let checkinCreated = false;
     let checkinError: string | undefined;

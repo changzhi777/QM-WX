@@ -1,19 +1,13 @@
 /**
- * infra/ocr 单测（V0.1.151）
+ * infra/ocr 单测 — V0.2.1（parseSportScore 纯函数）
  *
- * 覆盖：
- * - parseSportScore：距离/时长/配速正则（km/公里/mi · h:mm:ss/mm:ss/小时 · 5'30" 等格式）
- * - generalOcr：mock fetch 验证调用 + Response.TextDetections 提取 / Error 抛错
+ * V0.2.1 变更：OCR 调用迁移到 modules/ocr（官方 SDK），本文件只测 parseSportScore 正则。
+ * generalOcr / TC3 签名测试已随迁移移除（SDK 由 modules/ocr/ocr.service.test 覆盖）。
  */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { parseSportScore } from 'src/infra/ocr.js';
 
-vi.mock('src/config/env.js', () => ({
-  env: { COS_SECRET_ID: 'AKIDxxxx', COS_SECRET_KEY: 'skey32', COS_REGION: 'ap-guangzhou' },
-}));
-
-import { parseSportScore, generalOcr } from 'src/infra/ocr.js';
-
-describe('parseSportScore (V0.1.151)', () => {
+describe('parseSportScore', () => {
   it('距离 km', () => {
     expect(parseSportScore(['10.5 km'])).toMatchObject({ distanceKm: 10.5 });
   });
@@ -35,7 +29,7 @@ describe('parseSportScore (V0.1.151)', () => {
   it('配速 5′30″', () => {
     expect(parseSportScore(['配速 5′30″'])).toMatchObject({ paceSecPerKm: 330 });
   });
-  it('配速 5\'30"（无分号秒号变体）', () => {
+  it("配速 5'30\"（无分号秒号变体）", () => {
     expect(parseSportScore(["均配 5'30\""])).toMatchObject({ paceSecPerKm: 330 });
   });
   it('无相关文本 → 全 null', () => {
@@ -48,31 +42,5 @@ describe('parseSportScore (V0.1.151)', () => {
   it('组合（距离+时长+配速）', () => {
     const r = parseSportScore(['10.0 km', '用时 55:30', "配速 5'33\""]);
     expect(r).toMatchObject({ distanceKm: 10.0, durationSec: 3330, paceSecPerKm: 333 });
-  });
-});
-
-describe('generalOcr (V0.1.151)', () => {
-  const origFetch = global.fetch;
-  beforeEach(() => {
-    global.fetch = vi.fn() as unknown as typeof fetch;
-  });
-  afterEach(() => {
-    global.fetch = origFetch;
-  });
-
-  it('调腾讯云 OCR → 返 TextDetections 文本行', async () => {
-    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-      json: async () => ({ Response: { TextDetections: [{ DetectedText: '10.5 km' }, { DetectedText: "5'30\"" }] } }),
-    });
-    const lines = await generalOcr(Buffer.from('fake-img'));
-    expect(lines).toEqual(['10.5 km', "5'30\""]);
-    expect(global.fetch).toHaveBeenCalled();
-  });
-
-  it('Response.Error → throw', async () => {
-    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-      json: async () => ({ Response: { Error: { Message: 'InvalidParameter' } } }),
-    });
-    await expect(generalOcr(Buffer.from('x'))).rejects.toThrow('InvalidParameter');
   });
 });
