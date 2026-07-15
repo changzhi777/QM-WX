@@ -92,3 +92,4 @@ apps/miniprogram/.cloudbase/
 # zcf 任务计划（current 进行中 + history 归档含密码/部署细节，V0.1.100 起全排除）
 .zcf/plan/current/
 .zcf/plan/history/
+docs/_assets/
