@@ -16,6 +16,29 @@ vi.mock('src/infra/prisma.js', () => ({
 }));
 vi.mock('src/common/errors.js', () => ({ Errors: mockErrors }));
 
+// V0.2.3 Cache.wrap 120s：mock Redis（同 stats.service.test.ts 范式）
+const _redisMockState = vi.hoisted(() => ({
+  cacheStore: new Map<string, string>(),
+  redis: { get: vi.fn(), set: vi.fn(), del: vi.fn(), scan: vi.fn() },
+}));
+
+vi.mock('src/infra/redis.js', () => ({ redis: _redisMockState.redis }));
+
+function setupMockRedis() {
+  const { cacheStore, redis } = _redisMockState;
+  redis.get.mockImplementation(async (k: string) => cacheStore.get(k) ?? null);
+  redis.set.mockImplementation(async (k: string, v: string) => {
+    cacheStore.set(k, v);
+    return 'OK';
+  });
+  redis.del.mockImplementation(async (k: string) => {
+    const had = cacheStore.has(k);
+    cacheStore.delete(k);
+    return had ? 1 : 0;
+  });
+  redis.scan.mockImplementation(async () => ['0', []] as [string, string[]]);
+}
+
 import { prisma } from 'src/infra/prisma.js';
 import { goalService } from 'src/modules/goal/goal.service.js';
 
@@ -23,6 +46,8 @@ const mockedPrisma = vi.mocked(prisma);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  _redisMockState.cacheStore.clear();
+  setupMockRedis();
 });
 
 describe('goalService.list (V0.1.28)', () => {
@@ -300,5 +325,38 @@ describe('goalService.checkMilestoneAchievement (V0.1.135)', () => {
     const r = await goalService.checkMilestoneAchievement('u1', 100);
     expect(r.achieved).toBe(false);
     expect(r.achievedAt).toBeNull();
+  });
+});
+
+// ============================================================
+// V0.2.3 缓存命中（Cache.wrap 120s）
+// ============================================================
+
+describe('goalService 缓存（V0.2.3）', () => {
+  it('list 第二次同 user → 命中缓存（不再调 prisma.goal.findMany）', async () => {
+    mockedPrisma.goal.findMany.mockResolvedValue([] as never);
+    mockedPrisma.checkin.aggregate.mockResolvedValue({ _sum: { distance: 0 } } as never);
+
+    const r1 = await goalService.list('u1');
+    expect(r1.goals).toEqual([]);
+    expect(mockedPrisma.goal.findMany).toHaveBeenCalledTimes(1);
+
+    // 第二次：缓存命中
+    await goalService.list('u1');
+    expect(mockedPrisma.goal.findMany).toHaveBeenCalledTimes(1);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:goal:list:u1')).toBe(true);
+  });
+
+  it('myProgress 第二次同 user → 命中缓存', async () => {
+    mockedPrisma.goal.findMany.mockResolvedValue([] as never);
+    mockedPrisma.checkin.aggregate.mockResolvedValue({ _sum: { distance: 0 } } as never);
+
+    await goalService.myProgress('u1');
+    expect(mockedPrisma.goal.findMany).toHaveBeenCalledTimes(1);
+
+    // 第二次：缓存命中
+    await goalService.myProgress('u1');
+    expect(mockedPrisma.goal.findMany).toHaveBeenCalledTimes(1);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:goal:myProgress:u1')).toBe(true);
   });
 });

@@ -13,6 +13,7 @@
  * V0.1.34：calcGoalProgress 扩 userIds（个人=[me]，家庭=成员列表）
  */
 import { prisma } from '../../infra/prisma.js';
+import { Cache } from '../../infra/cache.js';
 import { Errors } from '../../common/errors.js';
 import type {
   AddGoalInput,
@@ -95,6 +96,10 @@ async function calcGoalProgress(
 export const goalService = {
   /** 我的个人目标列表（含进度，active 在前；仅 familyId=null 的个人目标） */
   async list(userId: string) {
+    const cacheKey = `goal:list:${userId}`;
+    return Cache.wrap(cacheKey, 120, async () => this.computeList(userId));
+  },
+  async computeList(userId: string) {
     const goals = await prisma.goal.findMany({
       where: { userId, familyId: null },
       orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
@@ -129,6 +134,10 @@ export const goalService = {
 
   /** 当前 active 个人目标进度（首页/mine 红点用；仅 familyId=null） */
   async myProgress(userId: string) {
+    const cacheKey = `goal:myProgress:${userId}`;
+    return Cache.wrap(cacheKey, 120, async () => this.computeMyProgress(userId));
+  },
+  async computeMyProgress(userId: string) {
     const goals = await prisma.goal.findMany({
       where: { userId, status: 'active', familyId: null },
       orderBy: { createdAt: 'desc' },
