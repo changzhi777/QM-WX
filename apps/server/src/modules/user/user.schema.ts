@@ -40,10 +40,32 @@ export const BindAppsInputSchema = z.object({
 });
 export type BindAppsInput = z.infer<typeof BindAppsInputSchema>;
 
+/** V0.2.6 邀请裂变：绑定邀请人（注册时调，双方奖励）*/
+export const BindInviterInputSchema = z.object({
+  inviterCode: z.string().min(4).max(16),
+});
+export type BindInviterInput = z.infer<typeof BindInviterInputSchema>;
+
+/** V0.2.7 积分兑换会员时长（传 days=7/30，后端按套餐校验 pointsCost）*/
+export const RedeemMemberInputSchema = z.object({
+  days: z.union([z.literal(7), z.literal(30)]),
+});
+export type RedeemMemberInput = z.infer<typeof RedeemMemberInputSchema>;
+
 // ===== 路由 body =====
 
 export const ActionBodySchema = z.object({
-  action: z.enum(['login', 'updateProfile', 'bindApps', 'me', 'completeOnboarding', 'resetOnboarding']),
+  action: z.enum([
+    'login',
+    'updateProfile',
+    'bindApps',
+    'me',
+    'completeOnboarding',
+    'resetOnboarding',
+    'bindInviter', // V0.2.6 邀请裂变
+    'checkReportQuota', // V0.2.6 report 免费周限频
+    'redeemMember', // V0.2.7 积分兑换会员时长
+  ]),
   payload: z.unknown().optional(),
 });
 export type ActionBody = z.infer<typeof ActionBodySchema>;

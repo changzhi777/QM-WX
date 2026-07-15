@@ -6,10 +6,15 @@
  * 参考：pic/2763 积分详情
  */
 import { prisma } from '../../infra/prisma.js';
+import { redis } from '../../infra/redis.js';
+import { userRepo } from '../user/user.repository.js';
 import { Errors } from '../../common/errors.js';
 
 const BASE_SIGNIN_POINTS = 10;
 const CONTINUOUS_7D_BONUS = 50;
+/** V0.2.6 分享得积分：每次 +5，日限 3 次（=15 分，防刷）*/
+const SHARE_POINTS = 5;
+const SHARE_DAILY_LIMIT = 3;
 
 /** 东八区今日 YYYY-MM-DD */
 function todayCN(): string {
@@ -124,5 +129,19 @@ export const pointsService = {
         return { ...t, done };
       }),
     };
+  },
+
+  /** V0.2.6 分享得积分（日限 3 次=15 分，Redis 计数防刷；前端 onShareAppMessage success 调）*/
+  async awardShare(userId: string) {
+    const key = `share:pt:${userId}:${todayCN()}`;
+    const cnt = await redis.incr(key);
+    if (cnt === 1) await redis.expire(key, 86_400);
+    if (cnt > SHARE_DAILY_LIMIT) {
+      return { awarded: false, todayCount: cnt, quota: SHARE_DAILY_LIMIT };
+    }
+    await prisma.$transaction(async (tx) => {
+      await userRepo.addPoints(tx, userId, SHARE_POINTS, 'share');
+    });
+    return { awarded: true, todayCount: cnt, quota: SHARE_DAILY_LIMIT };
   },
 };

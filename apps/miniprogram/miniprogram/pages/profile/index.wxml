@@ -55,7 +55,7 @@
       </view>
 
       <view class="p-4">
-        <van-button type="primary" block bindtap="onSave" disabled="{{saving}}" loading="{{saving}}">
+        <van-button type="primary" block bind:click="onSave" disabled="{{saving}}" loading="{{saving}}">
           {{saving ? '保存中...' : '保存资料'}}
         </van-button>
       </view>

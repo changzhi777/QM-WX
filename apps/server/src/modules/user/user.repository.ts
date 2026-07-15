@@ -49,7 +49,7 @@ export const userRepo = {
     client: PrismaClient | Prisma.TransactionClient,
     userId: string,
     change: number,
-    type: 'signup_bonus' | 'checkin' | 'order_deduct' | 'member_gift',
+    type: 'signup_bonus' | 'checkin' | 'order_deduct' | 'member_gift' | 'share' | 'invite' | 'invited' | 'admin_adjust' | 'redeem_member',
     refId?: string,
   ) {
     // 单事务：inc points（原子）+ 写流水
@@ -66,9 +66,14 @@ export const userRepo = {
       });
       if (res.count === 0) throw Errors.badRequest('积分不足');
     } else {
+      // V0.2.7 仅"赚取"类 type（signup/checkin/share/invite/invited）累计 totalPointsEarned；
+      // order_deduct 退分 / 兑换 / admin 调整不累计（避免订单流转刷成长值）
+      const ACCUMULATE_TYPES = new Set(['signup_bonus', 'checkin', 'share', 'invite', 'invited']);
+      const acc =
+        change > 0 && ACCUMULATE_TYPES.has(type) ? { totalPointsEarned: { increment: change } } : {};
       await client.user.update({
         where: { id: userId },
-        data: { points: { increment: change } },
+        data: { points: { increment: change }, ...acc },
       });
     }
     // 读取更新后的权威余额，写入流水快照
@@ -76,6 +81,42 @@ export const userRepo = {
     await client.pointsRecord.create({
       data: { userId, change, type, refId, balance: user.points },
     });
+  },
+
+  /** 续期会员时长（V0.2.6 邀请裂变）：memberExpireAt = max(now, expire) + days。
+   *  memberLevel 仅 free→member（不覆盖已付费的 monthly/quarterly/yearly）。
+   *  capDays（V0.2.7 邀请封顶）：仅邀请场景传值，校验 invitedBonusDays+days ≤ capDays 并累加；
+   *  被邀人体验/兑换/admin 赠送不传 capDays（不占邀请配额）。 */
+  async extendMember(
+    client: PrismaClient | Prisma.TransactionClient,
+    userId: string,
+    days: number,
+    capDays?: number,
+  ) {
+    const now = new Date();
+    const u = await client.user.findUnique({
+      where: { id: userId },
+      select: { memberLevel: true, memberExpireAt: true, invitedBonusDays: true },
+    });
+    const base = u?.memberExpireAt && u.memberExpireAt > now ? u.memberExpireAt : now;
+    const expire = new Date(base.getTime() + days * 86_400_000);
+    const data: { memberLevel?: 'member'; memberExpireAt: Date } =
+      u?.memberLevel === 'free'
+        ? { memberLevel: 'member', memberExpireAt: expire }
+        : { memberExpireAt: expire };
+    if (capDays) {
+      const cur = u?.invitedBonusDays ?? 0;
+      if (cur + days > capDays) {
+        throw Errors.badRequest(`邀请奖励时长已达上限（${capDays} 天）`);
+      }
+      await client.user.update({
+        where: { id: userId },
+        data: { ...data, invitedBonusDays: { increment: days } },
+      });
+    } else {
+      await client.user.update({ where: { id: userId }, data });
+    }
+    return expire;
   },
 };
 

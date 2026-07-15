@@ -412,9 +412,13 @@ Page({
   onShareAppMessage() {
     const last = this.data.messages[this.data.messages.length - 1];
     const text = last?.role === 'assistant' && last.content ? last.content.replace(/📋建议：[^\n]+/g, '').trim() : '';
+    const code = (getApp().globalData as { inviteCode?: string }).inviteCode;
     return {
       title: text ? `AI 私教：${text.slice(0, 40)}…` : '青沐 AI 私教 — 你的私人跑步教练 🏃',
-      path: '/pages/ai-coach/index',
+      path: '/pages/ai-coach/index' + (code ? `?inviterCode=${code}` : ''),
+      success: () => {
+        api.call('points', 'awardShare').catch(() => {});
+      },
     };
   },
 

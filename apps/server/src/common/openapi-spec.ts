@@ -407,7 +407,10 @@ export const openapiSpec: Document = {
                 type: 'object',
                 required: ['action'],
                 properties: {
-                  action: { type: 'string', enum: ['login', 'me', 'updateProfile'] },
+                  action: {
+                    type: 'string',
+                    enum: ['login', 'me', 'updateProfile', 'bindInviter', 'checkReportQuota', 'redeemMember'],
+                  },
                   payload: { type: 'object' },
                 },
               },
@@ -415,6 +418,8 @@ export const openapiSpec: Document = {
                 login: { value: { action: 'login', payload: { code: 'wx-login-code' } } },
                 me: { value: { action: 'me' } },
                 updateProfile: { value: { action: 'updateProfile', payload: { nickname: '智' } } },
+                bindInviter: { value: { action: 'bindInviter', payload: { inviterCode: 'ABC123' } } },
+                checkReportQuota: { value: { action: 'checkReportQuota' } },
               },
             },
           },
@@ -541,7 +546,18 @@ export const openapiSpec: Document = {
                 properties: {
                   action: {
                     type: 'string',
-                    enum: ['listOrders', 'updateOrderStatus', 'refundOrder', 'upsertProduct', 'upsertContent', 'setConfig', 'listAdmins'],
+                    enum: [
+                      'listOrders',
+                      'updateOrderStatus',
+                      'refundOrder',
+                      'upsertProduct',
+                      'upsertContent',
+                      'setConfig',
+                      'listAdmins',
+                      'adjustPoints',
+                      'grantMember',
+                      'listInviteStats',
+                    ],
                   },
                   payload: { type: 'object' },
                 },

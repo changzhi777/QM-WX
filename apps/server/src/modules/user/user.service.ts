@@ -10,6 +10,7 @@
 import type { FastifyInstance } from 'fastify';
 import bcrypt from 'bcrypt';
 import { prisma } from '../../infra/prisma.js';
+import { redis } from '../../infra/redis.js';
 import { signTokens } from '../../common/helpers/sign-tokens.js';
 import { userRepo } from './user.repository.js';
 import { ludongService } from '../ludong/ludong.service.js';
@@ -26,6 +27,45 @@ const SIGNUP_BONUS = POINTS_RULES_DEFAULT.signupBonus;
 /** me 缓存 TTL：30s（user 信息变更频繁：积分/会员/打卡/订单，30s 平衡） */
 const ME_CACHE_TTL_SEC = 30;
 const meCacheKey = (userId: string) => `user:me:${userId}`;
+
+/** ISO 自然周 key（周一~周日），用于 report 免费周限频 */
+function isoWeekKey(date = new Date()): string {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${week}`;
+}
+
+/**
+ * V0.2.7 成长等级门槛（按累计积分 totalPointsEarned 派生，从高到低首个命中）。
+ * growthLevel 不存库（派生），避免 addPoints 后还要回写等级字段。
+ */
+const GROWTH_THRESHOLDS = [
+  { level: 'diamond', minPoints: 5000 },
+  { level: 'gold', minPoints: 2000 },
+  { level: 'silver', minPoints: 500 },
+  { level: 'bronze', minPoints: 100 },
+] as const;
+type GrowthLevel = 'free' | 'bronze' | 'silver' | 'gold' | 'diamond';
+
+/** 按累计积分派生成长等级 */
+export function deriveGrowthLevel(totalPointsEarned: number): GrowthLevel {
+  for (const t of GROWTH_THRESHOLDS) {
+    if (totalPointsEarned >= t.minPoints) return t.level;
+  }
+  return 'free';
+}
+
+/**
+ * V0.2.7 积分兑换会员时长套餐（前后端单一数据源）。
+ * 前端展示套餐，后端校验防任意兑换（只认白名单内的 days）。
+ */
+export const REDEEM_PACKAGES = [
+  { days: 7, pointsCost: 100 },
+  { days: 30, pointsCost: 300 },
+] as const;
 
 export const userService = {
   /**
@@ -195,6 +235,53 @@ export const userService = {
     await Cache.del(meCacheKey(userId));
     return { ok: true };
   },
+
+  /** V0.2.6 邀请裂变：绑定邀请人（新用户注册时调），双方奖励（邀请人+7天+50分，被邀+3天+20分）*/
+  async bindInviter(userId: string, inviterCode: string) {
+    const inviter = await prisma.user.findUnique({ where: { inviteCode: inviterCode } });
+    if (!inviter) throw Errors.badRequest('邀请码无效');
+    if (inviter.id === userId) throw Errors.badRequest('不能邀请自己');
+    // 防重：Team.inviteeId @unique（一人仅一个上线）
+    const exist = await prisma.team.findUnique({ where: { inviteeId: userId } });
+    if (exist) throw Errors.badRequest('已绑定邀请人');
+    await prisma.$transaction(async (tx) => {
+      await tx.team.create({ data: { inviterId: inviter.id, inviteeId: userId, level: 1 } });
+      await userRepo.extendMember(tx, inviter.id, 7, 90); // 邀请人 +7 天（V0.2.7 封顶 90 天）
+      await userRepo.addPoints(tx, inviter.id, 50, 'invite', userId);
+      await userRepo.extendMember(tx, userId, 3); // 被邀人 +3 天体验
+      await userRepo.addPoints(tx, userId, 20, 'invited', inviter.id);
+    });
+    await Cache.del(meCacheKey(userId));
+    await Cache.del(meCacheKey(inviter.id));
+    return { ok: true, inviterId: inviter.id };
+  },
+
+  /** V0.2.6 report 免费周限频：会员不限，免费每周 1 次全文（ISO 自然周）*/
+  async checkReportQuota(userId: string) {
+    const u = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { memberExpireAt: true },
+    });
+    const isMember = !!u?.memberExpireAt && u.memberExpireAt > new Date();
+    if (isMember) return { canView: true, weeklyUsed: 0, quota: -1 }; // 会员不限
+    const key = `report:vw:${userId}:${isoWeekKey()}`;
+    const used = await redis.incr(key);
+    if (used === 1) await redis.expire(key, 7 * 86_400);
+    return { canView: used <= 1, weeklyUsed: used, quota: 1 };
+  },
+
+  /** V0.2.7 积分兑换会员时长（飞轮消费出口：扣积分 + 续期，套餐校验防任意兑换）*/
+  async redeemMember(userId: string, days: number) {
+    const pkg = REDEEM_PACKAGES.find((p) => p.days === days);
+    if (!pkg) throw Errors.badRequest('兑换套餐无效');
+    await prisma.$transaction(async (tx) => {
+      // 扣积分（addPoints 负数走 updateMany 条件防双花，余额不足抛"积分不足"）
+      await userRepo.addPoints(tx, userId, -pkg.pointsCost, 'redeem_member');
+      await userRepo.extendMember(tx, userId, pkg.days);
+    });
+    await Cache.del(meCacheKey(userId));
+    return { ok: true, days: pkg.days, pointsCost: pkg.pointsCost };
+  },
 };
 
 /** Prisma row → API output（含 ISO 时间） */
@@ -210,6 +297,7 @@ export function toUserOutput(u: {
   memberLevel: string;
   memberExpireAt: Date | null;
   points: number;
+  totalPointsEarned: number;
   certified: boolean;
   gender: string | null;
   birthday: string | null;
@@ -239,6 +327,8 @@ export function toUserOutput(u: {
     memberLevel: u.memberLevel as 'free' | 'monthly' | 'quarterly' | 'yearly',
     memberExpireAt: u.memberExpireAt?.toISOString() ?? null,
     points: u.points,
+    totalPointsEarned: u.totalPointsEarned,
+    growthLevel: deriveGrowthLevel(u.totalPointsEarned), // V0.2.7 派生（free/bronze/silver/gold/diamond）
     certified: u.certified,
     gender: u.gender,
     birthday: u.birthday,

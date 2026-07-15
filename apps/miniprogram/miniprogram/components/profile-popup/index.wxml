@@ -34,7 +34,7 @@
       <button class="btn-cancel" bindtap="onClose">取消</button>
       <button
         class="btn-primary {{saving ? 'btn-disabled' : ''}}"
-        bindtap="onSave"
+        catchtap="onSave"
         disabled="{{saving}}"
       >
         {{saving ? '保存中...' : '保存'}}

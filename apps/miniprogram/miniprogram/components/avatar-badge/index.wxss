@@ -1,0 +1,29 @@
+/* V0.2.7 头像双标识：皇冠（付费）右上 + 等级徽章右下 */
+.avatar-badge { position: relative; display: inline-block; }
+.badge-crown {
+  position: absolute;
+  top: -6rpx;
+  right: -6rpx;
+  font-size: 28rpx;
+  z-index: 2;
+  filter: drop-shadow(0 2rpx 4rpx rgba(0, 0, 0, 0.25));
+}
+.badge-level {
+  position: absolute;
+  bottom: -4rpx;
+  right: -4rpx;
+  width: 36rpx;
+  height: 36rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22rpx;
+  background: #fff;
+  box-shadow: 0 2rpx 6rpx rgba(0, 0, 0, 0.15);
+  z-index: 2;
+}
+.lv-diamond { background: linear-gradient(135deg, #b9f2ff, #7fdbff); }
+.lv-gold { background: linear-gradient(135deg, #ffd700, #ffb300); }
+.lv-silver { background: linear-gradient(135deg, #e8e8e8, #c0c0c0); }
+.lv-bronze { background: linear-gradient(135deg, #cd7f32, #a0522d); }

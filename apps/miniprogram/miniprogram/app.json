@@ -20,7 +20,8 @@
     "pages/ai-coach/index",
     "pages/diet/index",
     "pages/insight/index",
-    "pages/report-detail/index"
+    "pages/report-detail/index",
+    "pages/membership/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",

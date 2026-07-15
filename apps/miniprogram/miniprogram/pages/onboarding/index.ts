@@ -142,8 +142,17 @@ Page({
   /** 调 completeOnboarding → 跳首页 */
   async finish() {
     try {
-      await api.call('user', 'completeOnboarding', {});
+      // V0.2.6 邀请裂变：绑定邀请人（新用户带 pendingInviter；后端 Team @unique 防重，防自邀/已绑/无效码均忽略不阻塞）
       const app = getApp();
+      const pendingInviter = (app.globalData as { pendingInviter?: string }).pendingInviter;
+      if (pendingInviter) {
+        try {
+          await api.call('user', 'bindInviter', { inviterCode: pendingInviter });
+        } catch {
+          // 防自邀/已绑/无效码：忽略，不阻塞 onboarding
+        }
+      }
+      await api.call('user', 'completeOnboarding', {});
       const u = app.globalData.user as ({ onboardingDone?: boolean } | null);
       if (u) u.onboardingDone = true;
       wx.switchTab({ url: '/pages/index/index' });

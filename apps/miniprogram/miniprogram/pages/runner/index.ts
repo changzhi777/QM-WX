@@ -311,15 +311,25 @@ Page({
     this.loadReport();
   },
 
-  onShareAppMessage(): WechatMiniprogram.Page.ICustomShareContent {
+  onShareAppMessage() {
+    const code = (getApp().globalData as { inviteCode?: string }).inviteCode;
+    const suffix = code ? `?inviterCode=${code}` : '';
+    const onSuccess = () => {
+      api.call('points', 'awardShare').catch(() => {});
+    };
     if (this.data.tab === 'annual' && this.data.report) {
       const r = this.data.report;
       return {
         title: `我 ${r.year} 年跑了 ${r.yearDistance} km，打卡 ${r.yearCheckins} 次！`,
-        path: '/pages/runner/index',
+        path: '/pages/runner/index' + suffix,
+        success: onSuccess,
       };
     }
-    return { title: '青沐跑者数据中心 🏃', path: '/pages/runner/index' };
+    return {
+      title: '青沐跑者数据中心 🏃',
+      path: '/pages/runner/index' + suffix,
+      success: onSuccess,
+    };
   },
 
   // ===== 周报 tab =====

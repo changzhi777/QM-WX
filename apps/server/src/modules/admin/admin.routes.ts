@@ -38,6 +38,9 @@ import {
   UpsertTrainingPlanSchema,
   ListTrainingPlansSchema,
   ListUploadsSchema,
+  AdjustPointsSchema,
+  GrantMemberSchema,
+  ListInviteStatsSchema,
   RetryParseSchema,
   ListWithdrawalsSchema,
   WithdrawalIdSchema,
@@ -202,6 +205,22 @@ export async function adminRoutes(app: FastifyInstance) {
           data: await adminService.listEnrollmentsByContent(actorOpenid, input.contentId),
         };
       }
+      // ===== V0.2.6 邀请裂变 admin（手动调积分 / 送会员 / 邀请榜）=====
+      case 'adjustPoints':
+        return {
+          code: 0,
+          data: await adminService.adjustPoints(AdjustPointsSchema.parse(payload), actorOpenid, ip),
+        };
+      case 'grantMember':
+        return {
+          code: 0,
+          data: await adminService.grantMember(GrantMemberSchema.parse(payload), actorOpenid, ip),
+        };
+      case 'listInviteStats':
+        return {
+          code: 0,
+          data: await adminService.listInviteStats(ListInviteStatsSchema.parse(payload ?? {})),
+        };
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
     }

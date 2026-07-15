@@ -50,9 +50,13 @@ Page({
 
   /** V0.1.36 转发微信群（button open-type="share" 触发）*/
   onShareAppMessage() {
+    const code = (getApp().globalData as { inviteCode?: string }).inviteCode;
     return {
       title: '来青沐运动，一起奔跑！🏃',
-      path: '/pages/feed/index',
+      path: '/pages/feed/index' + (code ? `?inviterCode=${code}` : ''),
+      success: () => {
+        api.call('points', 'awardShare').catch(() => {});
+      },
     };
   },
 

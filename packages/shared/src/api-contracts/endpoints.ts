@@ -23,6 +23,9 @@ export const ENDPOINTS = {
     bindApps: '/api/user',
     completeOnboarding: '/api/user', // V0.1.43 完成激活向导
     resetOnboarding: '/api/user', // V0.1.44 重新激活（重走向导）
+    bindInviter: '/api/user', // V0.2.6 邀请裂变：绑定邀请人（双方奖励）
+    checkReportQuota: '/api/user', // V0.2.6 report 免费周限频（会员不限，免费每周 1 次全文）
+    redeemMember: '/api/user', // V0.2.7 积分兑换会员时长（套餐 100分7天 / 300分30天）
   },
   auth: {
     login: '/api/auth/login', // V0.1.129 统一登录入口（method + payload dispatch）
@@ -86,6 +89,9 @@ export const ENDPOINTS = {
     listEnrollmentsByContent: '/api/admin',
     listUploads: '/api/admin', // V0.1.150 上传记录管理（COS 中转解析后台）
     retryParse: '/api/admin', // V0.1.150 重新解析（重置 pending + 入队）
+    adjustPoints: '/api/admin', // V0.2.6 手动调积分（走 addPoints 带流水 + 审计）
+    grantMember: '/api/admin', // V0.2.6 手动送会员时长（extendMember 续期）
+    listInviteStats: '/api/admin', // V0.2.6 邀请统计榜（Team.inviterId groupBy）
   },
   upload: {
     upload: '/api/upload', // multipart 文件上传（wx.uploadFile，?type=xxx）
@@ -164,6 +170,7 @@ export const ENDPOINTS = {
     myBalance: '/api/points',
     signin: '/api/points',
     myTasks: '/api/points',
+    awardShare: '/api/points', // V0.2.6 分享得积分（日限 3=15 分，Redis 计数防刷）
   },
   address: {
     list: '/api/address',

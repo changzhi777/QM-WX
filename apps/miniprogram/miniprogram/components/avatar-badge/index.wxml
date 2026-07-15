@@ -1,0 +1,5 @@
+<view class="avatar-badge">
+  <slot></slot>
+  <view class="badge-crown" wx:if="{{isMember}}">👑</view>
+  <view class="badge-level {{levelClass}}" wx:if="{{levelIcon}}">{{levelIcon}}</view>
+</view>

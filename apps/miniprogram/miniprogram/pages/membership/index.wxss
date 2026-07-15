@@ -1,0 +1,46 @@
+/* V0.2.6 会员中心（邀请裂变入口）*/
+.page { min-height: 100vh; background: #f5f6f8; padding: 24rpx; box-sizing: border-box; }
+.card { background: #fff; border-radius: 20rpx; padding: 32rpx; margin-bottom: 24rpx; box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.04); }
+
+/* 会员状态卡 */
+.status-card { background: linear-gradient(135deg, #2D9D78, #1a7a5a); color: #fff; }
+.status-card.is-member { background: linear-gradient(135deg, #fa8c16, #d46b08); }
+.status-row { display: flex; align-items: center; justify-content: space-between; }
+.status-title { font-size: 36rpx; font-weight: 700; }
+.status-tag { font-size: 40rpx; }
+.status-desc { font-size: 26rpx; opacity: 0.9; margin-top: 12rpx; }
+.points-box { display: inline-block; margin-top: 20rpx; padding: 8rpx 24rpx; background: rgba(255,255,255,0.2); border-radius: 24rpx; font-size: 28rpx; font-weight: 600; }
+
+/* 邀请卡 */
+.card-title { font-size: 32rpx; font-weight: 700; color: #222; margin-bottom: 24rpx; }
+.reward-row { display: flex; justify-content: space-around; margin-bottom: 28rpx; }
+.reward-item { text-align: center; }
+.reward-num { font-size: 36rpx; font-weight: 700; color: #2D9D78; }
+.reward-label { font-size: 22rpx; color: #888; margin-top: 6rpx; }
+.code-row { display: flex; align-items: center; justify-content: space-between; padding: 20rpx 24rpx; background: #f5f6f8; border-radius: 16rpx; margin-bottom: 24rpx; }
+.code-label { font-size: 26rpx; color: #888; }
+.code-val { font-size: 32rpx; font-weight: 700; color: #2D9D78; letter-spacing: 2rpx; }
+.copy-tip { font-size: 22rpx; color: #999; font-weight: 400; margin-left: 12rpx; }
+.share-btn { background: #2D9D78; color: #fff; border-radius: 48rpx; font-size: 30rpx; font-weight: 600; }
+
+/* 权益卡 */
+.benefit-item { font-size: 28rpx; color: #333; line-height: 1.8; padding: 8rpx 0; }
+.benefit-hint { font-size: 24rpx; color: #999; margin-top: 16rpx; padding-top: 16rpx; border-top: 1rpx solid #f0f0f0; }
+
+/* V0.2.7 成长等级卡 */
+.growth-card { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; }
+.growth-head { display: flex; align-items: center; gap: 20rpx; }
+.growth-icon { font-size: 56rpx; }
+.growth-info { flex: 1; }
+.growth-name { font-size: 34rpx; font-weight: 700; }
+.growth-total { font-size: 24rpx; opacity: 0.85; margin-top: 6rpx; }
+.growth-bar { height: 14rpx; background: rgba(255,255,255,0.25); border-radius: 7rpx; overflow: hidden; margin-top: 24rpx; }
+.growth-fill { height: 100%; background: #fff; border-radius: 7rpx; transition: width 0.3s; }
+.growth-hint { font-size: 24rpx; opacity: 0.9; margin-top: 14rpx; }
+
+/* V0.2.7 积分兑换卡 */
+.redeem-row { display: flex; gap: 20rpx; }
+.redeem-item { flex: 1; text-align: center; padding: 24rpx 0; background: linear-gradient(135deg, #fff8e1, #ffe082); border-radius: 16rpx; }
+.redeem-days { font-size: 30rpx; font-weight: 700; color: #d46b08; }
+.redeem-cost { font-size: 24rpx; color: #8a6d3b; margin-top: 8rpx; }
+.redeem-btn { display: inline-block; margin-top: 16rpx; padding: 8rpx 32rpx; background: #fa8c16; color: #fff; border-radius: 24rpx; font-size: 26rpx; font-weight: 600; }

@@ -5,7 +5,9 @@
   <!-- A 用户卡 -->
   <view class="card user-card">
     <view class="user-row" bindtap="goProfile">
-      <view class="avatar">🏃</view>
+      <avatar-badge member-level="{{memberLevel}}" growth-level="{{growthLevel}}">
+        <view class="avatar">🏃</view>
+      </avatar-badge>
       <view class="user-info">
         <view class="name">{{user.nickname || '跑者'}}</view>
         <view class="status">{{memberLabel}} · 已绑定微信运动</view>

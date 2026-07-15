@@ -32,6 +32,11 @@ Page({
       await ensureLogin();
       const u = getApp().globalData.user as ({ memberLevel?: string } | null);
       const isMember = !!u && !!u.memberLevel && u.memberLevel !== 'free';
+      // V0.2.6 report 免费周限频：会员不限，免费每周 1 次全文（checkReportQuota 返回 canView）
+      const quota = await api.call<{ canView: boolean; weeklyUsed: number; quota: number }>(
+        'user',
+        'checkReportQuota',
+      );
       let report: DailyReport | null;
       let score: HealthScoreRes | null;
       if (query.date) {
@@ -57,8 +62,8 @@ Page({
         report,
         score,
         isMember,
-        locked: !isMember,
-        previewText: isMember ? text : text.slice(0, FREE_PREVIEW_LEN),
+        locked: !quota.canView,
+        previewText: quota.canView ? text : text.slice(0, FREE_PREVIEW_LEN),
         loading: false,
       });
     } catch (e) {
@@ -68,24 +73,18 @@ Page({
   },
 
   goMembership() {
-    wx.navigateTo({
-      url: '/pages/membership/index',
-      fail: () => {
-        wx.showModal({
-          title: '会员功能',
-          content: '会员服务正在开发中，敬请期待！',
-          showCancel: false,
-          confirmText: '知道了',
-        });
-      },
-    });
+    wx.navigateTo({ url: '/pages/membership/index' });
   },
 
   onShareAppMessage() {
     const score = this.data.score?.score ?? '--';
+    const code = (getApp().globalData as { inviteCode?: string }).inviteCode;
     return {
       title: `我的健康分数 ${score} 分，来看看今日身体简报`,
-      path: '/pages/index/index',
+      path: '/pages/index/index' + (code ? `?inviterCode=${code}` : ''),
+      success: () => {
+        api.call('points', 'awardShare').catch(() => {});
+      },
     };
   },
 });

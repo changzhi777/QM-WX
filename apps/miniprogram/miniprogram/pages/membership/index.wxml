@@ -1,0 +1,64 @@
+<view class="page">
+  <!-- 会员状态卡 -->
+  <view class="card status-card {{isMember ? 'is-member' : ''}}">
+    <view class="status-row">
+      <view class="status-title">{{isMember ? '会员有效' : '免费用户'}}</view>
+      <view class="status-tag" wx:if="{{isMember}}">👑</view>
+    </view>
+    <view class="status-desc" wx:if="{{isMember && memberExpireAt}}">有效期至 {{memberExpireAt}}</view>
+    <view class="status-desc" wx:else>邀请好友 / 积分兑换解锁完整功能</view>
+    <view class="points-box">积分 {{points}}</view>
+  </view>
+
+  <!-- V0.2.7 成长等级卡 -->
+  <view class="card growth-card" wx:if="{{growth}}">
+    <view class="growth-head">
+      <text class="growth-icon">{{growth.icon}}</text>
+      <view class="growth-info">
+        <view class="growth-name">{{growth.name}} 等级</view>
+        <view class="growth-total">累计积分 {{totalPointsEarned}}</view>
+      </view>
+    </view>
+    <view class="growth-bar">
+      <view class="growth-fill" style="width:{{growth.progress}}%"></view>
+    </view>
+    <view class="growth-hint" wx:if="{{growth.toNext > 0}}">再得 {{growth.toNext}} 积分升至「{{growth.nextName}}」</view>
+    <view class="growth-hint" wx:else>已达最高等级 🎉 分享越多积分越高</view>
+  </view>
+
+  <!-- 邀请码卡 -->
+  <view class="card invite-card">
+    <view class="card-title">邀请好友，双方得奖励</view>
+    <view class="reward-row">
+      <view class="reward-item"><view class="reward-num">+7天</view><view class="reward-label">邀请人会员</view></view>
+      <view class="reward-item"><view class="reward-num">+50</view><view class="reward-label">邀请人积分</view></view>
+      <view class="reward-item"><view class="reward-num">+3天</view><view class="reward-label">好友体验</view></view>
+    </view>
+    <view class="code-row">
+      <view class="code-label">我的邀请码</view>
+      <view class="code-val" bindtap="onCopyCode">{{inviteCode || '加载中...'}} <text class="copy-tip">复制</text></view>
+    </view>
+    <button class="share-btn" open-type="share">邀请好友</button>
+  </view>
+
+  <!-- V0.2.7 积分兑换会员时长 -->
+  <view class="card redeem-card">
+    <view class="card-title">积分兑换会员</view>
+    <view class="redeem-row">
+      <view class="redeem-item" wx:for="{{packages}}" wx:key="days" data-days="{{item.days}}" bindtap="onRedeem">
+        <view class="redeem-days">{{item.days}} 天会员</view>
+        <view class="redeem-cost">{{item.pointsCost}} 积分</view>
+        <view class="redeem-btn">兑换</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 权益说明 -->
+  <view class="card benefit-card">
+    <view class="card-title">会员权益</view>
+    <view class="benefit-item">✅ 完整 AI 健康解读（非每周 1 次限制）</view>
+    <view class="benefit-item">✅ AI 健康助手无限问答</view>
+    <view class="benefit-item">✅ 每日健康简报全文</view>
+    <view class="benefit-hint">免费用户每周可看 1 次完整解读，邀请好友解锁更多</view>
+  </view>
+</view>

@@ -10,6 +10,8 @@ import {
   LoginInputSchema,
   UpdateProfileInputSchema,
   BindAppsInputSchema,
+  BindInviterInputSchema,
+  RedeemMemberInputSchema,
   ActionBodySchema,
 } from './user.schema.js';
 
@@ -64,6 +66,29 @@ export async function userRoutes(app: FastifyInstance) {
           // V0.1.44 重新激活：onboardingDone=false，前端跳向导重新填资料/授权
           const authUser = await requireLogin(req);
           const data = await userService.resetOnboarding(authUser.id);
+          return { code: 0, data };
+        }
+
+        case 'bindInviter': {
+          // V0.2.6 邀请裂变：新用户注册绑定邀请人（双方奖励）
+          const authUser = await requireLogin(req);
+          const input = BindInviterInputSchema.parse(payload);
+          const data = await userService.bindInviter(authUser.id, input.inviterCode);
+          return { code: 0, data };
+        }
+
+        case 'checkReportQuota': {
+          // V0.2.6 report 免费周限频（会员不限，免费每周 1 次全文）
+          const authUser = await requireLogin(req);
+          const data = await userService.checkReportQuota(authUser.id);
+          return { code: 0, data };
+        }
+
+        case 'redeemMember': {
+          // V0.2.7 积分兑换会员时长（飞轮消费出口）
+          const authUser = await requireLogin(req);
+          const input = RedeemMemberInputSchema.parse(payload);
+          const data = await userService.redeemMember(authUser.id, input.days);
           return { code: 0, data };
         }
 

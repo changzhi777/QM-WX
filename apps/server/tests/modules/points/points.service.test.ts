@@ -5,6 +5,13 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+// V0.2.6 mock Redis（awardShare 限频 incr/expire）
+const _redisMockState = vi.hoisted(() => ({
+  cacheStore: new Map<string, string>(),
+  redis: { incr: vi.fn(), expire: vi.fn() },
+}));
+vi.mock('src/infra/redis.js', () => ({ redis: _redisMockState.redis }));
+
 vi.mock('src/infra/prisma.js', () => ({
   prisma: {
     user: { findUnique: vi.fn(), update: vi.fn() },
@@ -20,7 +27,17 @@ import { pointsService } from 'src/modules/points/points.service.js';
 
 const mockedPrisma = vi.mocked(prisma);
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => {
+  vi.clearAllMocks();
+  _redisMockState.cacheStore.clear();
+  // V0.2.6 incr/expire（限频计数，用 cacheStore 存数字字符串）
+  _redisMockState.redis.incr.mockImplementation(async (k: string) => {
+    const n = Number(_redisMockState.cacheStore.get(k) ?? '0') + 1;
+    _redisMockState.cacheStore.set(k, String(n));
+    return n;
+  });
+  _redisMockState.redis.expire.mockImplementation(async () => 1);
+});
 
 describe('pointsService.signin', () => {
   it('今日已签抛错', async () => {
@@ -85,5 +102,37 @@ describe('pointsService.myTasks', () => {
     const r = await pointsService.myTasks('u1');
     const signinTask = r.tasks.find((t) => t.key === 'signin');
     expect(signinTask?.done).toBe(false);
+  });
+});
+
+/** 今日 CN YYYY-MM-DD（与 points.service todayCN 一致算法）*/
+function todayCN(): string {
+  return new Date(Date.now() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+describe('pointsService.awardShare（V0.2.6 分享得积分日限3）', () => {
+  it('当日首次 → awarded true，走 addPoints 事务', async () => {
+    mockedPrisma.$transaction.mockImplementation(async (fn: (tx: unknown) => unknown) =>
+      fn({
+        user: { update: vi.fn(), findUniqueOrThrow: vi.fn().mockResolvedValue({ points: 5 }) },
+        pointsRecord: { create: vi.fn() },
+      }),
+    );
+
+    const r = await pointsService.awardShare('u1');
+    expect(r.awarded).toBe(true);
+    expect(r.todayCount).toBe(1);
+    expect(r.quota).toBe(3);
+    expect(mockedPrisma.$transaction).toHaveBeenCalled();
+  });
+
+  it('当日第4次 → awarded false（超日限3，不发积分）', async () => {
+    // 预置已分享 3 次（awardShare 直接 redis.incr，key 无 qmwx:cache 前缀）
+    _redisMockState.cacheStore.set(`share:pt:u1:${todayCN()}`, '3');
+
+    const r = await pointsService.awardShare('u1');
+    expect(r.awarded).toBe(false);
+    expect(r.todayCount).toBe(4);
+    expect(mockedPrisma.$transaction).not.toHaveBeenCalled();
   });
 });

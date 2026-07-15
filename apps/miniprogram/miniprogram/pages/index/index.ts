@@ -195,24 +195,18 @@ Page({
 
   /** 解锁完整版 → 会员引导（membership 页未建，fail 兜底提示）*/
   goMembership() {
-    wx.navigateTo({
-      url: '/pages/membership/index',
-      fail: () => {
-        wx.showModal({
-          title: '会员功能',
-          content: '会员服务正在开发中，敬请期待！',
-          showCancel: false,
-          confirmText: '知道了',
-        });
-      },
-    });
+    wx.navigateTo({ url: '/pages/membership/index' });
   },
 
   onShareAppMessage() {
     const score = this.data.score?.score ?? '--';
+    const code = (getApp().globalData as { inviteCode?: string }).inviteCode;
     return {
       title: `我的健康分数 ${score} 分，来看看你的今日身体简报`,
-      path: '/pages/index/index',
+      path: '/pages/index/index' + (code ? `?inviterCode=${code}` : ''),
+      success: () => {
+        api.call('points', 'awardShare').catch(() => {});
+      },
     };
   },
 

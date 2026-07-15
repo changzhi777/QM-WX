@@ -111,6 +111,8 @@ Page({
       user,
       memberLabel: MEMBER_LEVEL_LABEL[user.memberLevel] ?? '免费用户',
       isMember: !!user.memberLevel && user.memberLevel !== 'free',
+      memberLevel: user.memberLevel,
+      growthLevel: (user as { growthLevel?: string }).growthLevel ?? 'free',
     });
   },
 
@@ -145,17 +147,7 @@ Page({
   goSportTab() { wx.switchTab({ url: '/pages/sport/index' }); },
   goProfile() { wx.navigateTo({ url: '/pages/profile/index' }); },
   goMembership() {
-    wx.navigateTo({
-      url: '/pages/membership/index',
-      fail: () => {
-        wx.showModal({
-          title: '会员功能',
-          content: '会员服务正在开发中，敬请期待！',
-          showCancel: false,
-          confirmText: '知道了',
-        });
-      },
-    });
+    wx.navigateTo({ url: '/pages/membership/index' });
   },
 
   /** V0.1.143 消息弹层（合并 notification，不跳页）*/

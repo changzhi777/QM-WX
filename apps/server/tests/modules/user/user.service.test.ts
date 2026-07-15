@@ -13,16 +13,20 @@ vi.mock('src/infra/prisma.js', () => {
     findUniqueOrThrow: vi.fn(),
     upsert: vi.fn(),
     update: vi.fn(),
+    updateMany: vi.fn(),
   };
   const pointsRecordMethods = { create: vi.fn() };
+  const teamMethods = { findUnique: vi.fn(), create: vi.fn() };
   const txMock = {
     user: userMethods,
     pointsRecord: pointsRecordMethods,
+    team: teamMethods,
   };
   return {
     prisma: {
       user: userMethods,
       pointsRecord: pointsRecordMethods,
+      team: teamMethods,
       appConfig: { findMany: vi.fn(), findUnique: vi.fn() },
       $transaction: vi.fn((fn) => fn(txMock)),
       _tx: txMock,
@@ -35,7 +39,7 @@ vi.mock('src/common/integrations/wx/code2session.js', () => ({ code2Session: vi.
 // V0.1.8: Mock Redis — Cache.wrap / Cache.del 需要
 const _redisMockState = vi.hoisted(() => ({
   cacheStore: new Map<string, string>(),
-  redis: { get: vi.fn(), set: vi.fn(), del: vi.fn(), scan: vi.fn() },
+  redis: { get: vi.fn(), set: vi.fn(), del: vi.fn(), scan: vi.fn(), incr: vi.fn(), expire: vi.fn() },
 }));
 
 vi.mock('src/infra/redis.js', () => ({ redis: _redisMockState.redis }));
@@ -53,6 +57,13 @@ function setupMockRedis() {
     return had ? 1 : 0;
   });
   redis.scan.mockImplementation(async () => ['0', []] as [string, string[]]);
+  // V0.2.6 incr/expire（限频计数，用 cacheStore 存数字字符串）
+  redis.incr.mockImplementation(async (k: string) => {
+    const n = Number(cacheStore.get(k) ?? '0') + 1;
+    cacheStore.set(k, String(n));
+    return n;
+  });
+  redis.expire.mockImplementation(async () => 1);
 }
 
 import { prisma } from 'src/infra/prisma.js';
@@ -334,5 +345,121 @@ describe('userService.resetOnboarding（V0.1.43 onboardingDone=false 重走）',
       data: { onboardingDone: false },
     });
     expect(_redisMockState.cacheStore.has('qmwx:cache:user:me:u1')).toBe(false);
+  });
+});
+
+// ===== V0.2.6 邀请裂变 =====
+describe('userService.bindInviter（V0.2.6 邀请绑定）', () => {
+  it('正常绑定：落 Team + 双方奖励 + 失效双方 me 缓存', async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue({
+      id: 'inv1',
+      inviteCode: 'CODE1',
+      memberLevel: 'free',
+      memberExpireAt: null,
+    } as never);
+    mockedPrisma.team.findUnique.mockResolvedValue(null as never); // 未绑
+    mockedPrisma.user.findUniqueOrThrow.mockResolvedValue({ points: 50 } as never);
+
+    const result = await userService.bindInviter('u1', 'CODE1');
+
+    expect(result).toEqual({ ok: true, inviterId: 'inv1' });
+    expect(mockedPrisma.team.create).toHaveBeenCalledWith({
+      data: { inviterId: 'inv1', inviteeId: 'u1', level: 1 },
+    });
+    // 双方 me 缓存失效
+    expect(_redisMockState.cacheStore.has('qmwx:cache:user:me:u1')).toBe(false);
+  });
+
+  it('防自邀：inviterCode 是自己 → badRequest', async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue({ id: 'u1', inviteCode: 'CODE1' } as never);
+
+    await expect(userService.bindInviter('u1', 'CODE1')).rejects.toThrow('不能邀请自己');
+    expect(mockedPrisma.team.create).not.toHaveBeenCalled();
+  });
+
+  it('已绑定：Team 存在 → badRequest', async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue({ id: 'inv1', inviteCode: 'CODE1' } as never);
+    mockedPrisma.team.findUnique.mockResolvedValue({ id: 't1', inviteeId: 'u1' } as never);
+
+    await expect(userService.bindInviter('u1', 'CODE1')).rejects.toThrow('已绑定邀请人');
+  });
+
+  it('邀请码无效：inviter 不存在 → badRequest', async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue(null as never);
+
+    await expect(userService.bindInviter('u1', 'NOPE')).rejects.toThrow('邀请码无效');
+  });
+});
+
+describe('userService.checkReportQuota（V0.2.6 report 免费周限频）', () => {
+  it('会员：memberExpireAt 有效 → canView true，不调 incr', async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue({
+      memberExpireAt: new Date(Date.now() + 86400_000),
+    } as never);
+
+    const result = await userService.checkReportQuota('u1');
+
+    expect(result.canView).toBe(true);
+    expect(result.quota).toBe(-1); // 会员不限
+    expect(_redisMockState.redis.incr).not.toHaveBeenCalled();
+  });
+
+  it('免费首次：incr=1 → canView true', async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue({ memberExpireAt: null } as never);
+
+    const result = await userService.checkReportQuota('u1');
+
+    expect(result.canView).toBe(true);
+    expect(result.weeklyUsed).toBe(1);
+    expect(result.quota).toBe(1);
+  });
+
+  it('免费二次：incr=2 → canView false（本周已用完）', async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue({ memberExpireAt: null } as never);
+    // 预置本周已用 1 次（checkReportQuota 直接 redis.incr，key 无 qmwx:cache 前缀）
+    _redisMockState.cacheStore.set(`report:vw:u1:${isoWeekKeyForTest()}`, '1');
+
+    const result = await userService.checkReportQuota('u1');
+
+    expect(result.canView).toBe(false);
+    expect(result.weeklyUsed).toBe(2);
+  });
+});
+
+/** 测试用 ISO 周 key（与 service 内 isoWeekKey 一致算法）*/
+function isoWeekKeyForTest(date = new Date()): string {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86_400_000 + 1) / 7);
+  return `${d.getUTCFullYear()}-W${week}`;
+}
+
+describe('userService.redeemMember（V0.2.7 积分兑换会员时长）', () => {
+  it('套餐无效（days=15）→ badRequest', async () => {
+    await expect(userService.redeemMember('u1', 15)).rejects.toThrow('兑换套餐无效');
+  });
+
+  it('正常兑换 7 天：扣 100 分（updateMany 条件防双花）+ 续期', async () => {
+    mockedPrisma.user.updateMany.mockResolvedValue({ count: 1 } as never);
+    mockedPrisma.user.findUnique.mockResolvedValue({
+      memberLevel: 'free',
+      memberExpireAt: null,
+    } as never);
+    mockedPrisma.user.findUniqueOrThrow.mockResolvedValue({ points: 0 } as never);
+
+    const result = await userService.redeemMember('u1', 7);
+
+    expect(result).toEqual({ ok: true, days: 7, pointsCost: 100 });
+    expect(mockedPrisma.user.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { points: { increment: -100 } } }),
+    );
+  });
+
+  it('积分不足：updateMany count=0 → 抛"积分不足"', async () => {
+    mockedPrisma.user.updateMany.mockResolvedValue({ count: 0 } as never);
+
+    await expect(userService.redeemMember('u1', 30)).rejects.toThrow('积分不足');
   });
 });

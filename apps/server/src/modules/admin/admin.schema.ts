@@ -248,3 +248,23 @@ export const AdminListEnrollmentsByContentSchema = z.object({
   contentId: z.string().min(1),
 });
 export type AdminListEnrollmentsByContentInput = z.infer<typeof AdminListEnrollmentsByContentSchema>;
+
+// ===== V0.2.6 邀请裂变 admin（手动调积分 / 送会员 / 邀请榜）=====
+export const AdjustPointsSchema = z.object({
+  userId: z.string().min(1),
+  change: z.number().int(), // ± 正加负扣（负数扣到 0 为止，addPoints 防双花）
+  reason: z.string().max(100).optional(),
+});
+export type AdjustPointsInput = z.infer<typeof AdjustPointsSchema>;
+
+export const GrantMemberSchema = z.object({
+  userId: z.string().min(1),
+  days: z.number().int().min(1).max(3650),
+});
+export type GrantMemberInput = z.infer<typeof GrantMemberSchema>;
+
+export const ListInviteStatsSchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+export type ListInviteStatsInput = z.infer<typeof ListInviteStatsSchema>;

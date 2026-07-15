@@ -1,6 +1,7 @@
 // app.ts
 import { API_BASE } from '@qm-wx/shared/api-contracts';
 import { silentLogin } from './utils/auth';
+import { api } from './services/api';
 
 App({
   globalData: {
@@ -17,9 +18,11 @@ App({
       pointsRules: Record<string, number>;
     },
     needPrivacyAgree: false,
+    inviteCode: '' as string, // V0.2.6 我的邀请码（登录后预加载，分享带码用）
+    pendingInviter: '' as string, // V0.2.6 新用户带 inviterCode 进入暂存（onboarding 时绑定上线）
   },
 
-  async onLaunch() {
+  async onLaunch(options: WechatMiniprogram.App.LaunchShowOption) {
     // 1. 注入 baseUrl（V0.1.44：恢复 envVersion 分支）
     //    - develop（开发者工具 / 预览扫码）→ 本地后端，测最新代码
     //    - trial / release（体验版 / 正式版）→ 生产 qingmulife.cn
@@ -39,8 +42,22 @@ App({
       this.globalData.needPrivacyAgree = true;
     }
 
+    // V0.2.6 邀请裂变：新用户经分享卡片带 inviterCode 进入（path query），暂存待 onboarding 绑定
+    const inviterCode = options?.query?.inviterCode as string | undefined;
+    if (inviterCode) this.globalData.pendingInviter = inviterCode;
+
     // 3. 静默登录（恢复 cached token + 拉 user/config；首次启动无 token 则等业务页 ensureLogin 兜底）
     //    V0.1.39：恢复真登录（删 hardcoded 张晨，GAP-5 关闭）
-    silentLogin().catch(() => {});
+    silentLogin()
+      .then(async () => {
+        // V0.2.6 登录后预加载我的邀请码（onShareAppMessage 同步 return，不能 await，故提前缓存）
+        try {
+          const { inviteCode } = await api.call<{ inviteCode: string }>('distribution', 'inviteInfo');
+          this.globalData.inviteCode = inviteCode ?? '';
+        } catch {
+          // 未登录或接口异常：分享不带码降级，不阻塞
+        }
+      })
+      .catch(() => {});
   },
 });

@@ -12,6 +12,8 @@ import { invalidateContentsCache, invalidateContentDetail } from '../content/con
 import { invalidateFeatureFlagsCache } from '../../common/middleware/feature-gate.js';
 import { Errors } from '../../common/errors.js';
 import { walletRepo } from '../wallet/wallet.repo.js';
+import { userRepo } from '../user/user.repository.js';
+import { Cache } from '../../infra/cache.js';
 import { toCsvHeader, toCsvRow, UTF8_BOM } from '../../common/csv.js';
 import { assertTransition, type OrderStatus } from '../../domain/order-state.js';
 import { enqueueUploadParse } from '../../jobs/queue.js';
@@ -1072,4 +1074,77 @@ export async function retryParse(input: { id: string }) {
   });
   await enqueueUploadParse(input.id);
   return { ok: true };
+}
+
+/** V0.2.6 手动调整积分（运营发福利/扣作弊，走 addPoints 带流水 + 审计 + 失效 me 缓存）*/
+export async function adjustPoints(
+  input: { userId: string; change: number; reason?: string },
+  actorOpenid: string,
+  ip?: string,
+) {
+  await prisma.$transaction(async (tx) => {
+    await userRepo.addPoints(tx, input.userId, input.change, 'admin_adjust');
+  });
+  await recordAudit(
+    'admin.adjustPoints',
+    input.userId,
+    { change: input.change, reason: input.reason },
+    actorOpenid,
+    ip,
+  );
+  const u = await prisma.user.findUnique({ where: { id: input.userId }, select: { points: true } });
+  await Cache.del(`user:me:${input.userId}`);
+  return { ok: true, userId: input.userId, points: u?.points ?? 0 };
+}
+
+/** V0.2.6 手动赠送会员时长（活动奖励/补偿，extendMember 续期 + 审计）*/
+export async function grantMember(
+  input: { userId: string; days: number },
+  actorOpenid: string,
+  ip?: string,
+) {
+  await prisma.$transaction(async (tx) => {
+    await userRepo.extendMember(tx, input.userId, input.days);
+  });
+  await recordAudit('admin.grantMember', input.userId, { days: input.days }, actorOpenid, ip);
+  const u = await prisma.user.findUnique({
+    where: { id: input.userId },
+    select: { memberExpireAt: true },
+  });
+  await Cache.del(`user:me:${input.userId}`);
+  return { ok: true, userId: input.userId, memberExpireAt: u?.memberExpireAt?.toISOString() ?? null };
+}
+
+/** V0.2.6 邀请统计榜（按 Team.inviterId groupBy 邀请数，关联用户信息）*/
+export async function listInviteStats(input: { page: number; pageSize: number }) {
+  const [rows, groups] = await Promise.all([
+    prisma.team.groupBy({
+      by: ['inviterId'],
+      _count: { _all: true },
+      orderBy: { _count: { inviterId: 'desc' } },
+      skip: (input.page - 1) * input.pageSize,
+      take: input.pageSize,
+    }),
+    prisma.team.groupBy({ by: ['inviterId'] }),
+  ]);
+  const users = await prisma.user.findMany({
+    where: { id: { in: rows.map((r) => r.inviterId) } },
+    select: { id: true, nickname: true, avatarUrl: true, inviteCode: true, distributorLevel: true },
+  });
+  const userMap = new Map(users.map((u) => [u.id, u]));
+  return {
+    list: rows.map((r) => ({
+      ...(userMap.get(r.inviterId) ?? {
+        id: r.inviterId,
+        nickname: null,
+        avatarUrl: null,
+        inviteCode: null,
+        distributorLevel: 'V0',
+      }),
+      inviteCount: r._count._all,
+    })),
+    total: groups.length,
+    page: input.page,
+    pageSize: input.pageSize,
+  };
 }
