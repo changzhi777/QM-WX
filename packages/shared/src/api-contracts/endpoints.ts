@@ -131,7 +131,8 @@ export const ENDPOINTS = {
     healthScore: '/api/stats', // V0.1.144 健康分数（0-100）+ 趋势对比
     dailyReport: '/api/stats', // V0.1.144 每日 AI 简报（生成+存+MQTT 推）
     dailyReportList: '/api/stats', // V0.1.144 历史 AI 报告列表
-    weather: '/api/stats', // V0.1.144 天气（stub，TODO 接和风天气 API）
+    weather: '/api/stats', // V0.1.144 天气（和风 API）
+    weatherAnalysis: '/api/stats', // V0.2.0 关联分析（温度×配速/湿度×心率）
   },
   ranking: {
     groupRankingMulti: '/api/ranking',
