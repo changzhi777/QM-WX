@@ -1,4 +1,4 @@
-/* AI 私教（V0.1.140 UI/UX 优化）*/
+/* 健康助手（V0.2.4 改版：原 AI 私教）*/
 .coach-page {
   display: flex;
   flex-direction: column;
@@ -32,10 +32,9 @@
 .persona-label { font-size: 22rpx; color: #666; margin-top: 4rpx; }
 .persona-chip.active .persona-label { color: #fff; }
 
-/* 操作栏 */
+/* 操作栏（4 按钮均分全宽，V0.2.4）*/
 .top-bar {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   padding: 20rpx 24rpx;
   background: linear-gradient(135deg, #2D9D78 0%, #1a7a5a 100%);
@@ -43,10 +42,10 @@
   top: 0;
   z-index: 11;
 }
-.top-bar .title { font-size: 32rpx; font-weight: 600; color: #fff; }
-.top-actions { display: flex; gap: 12rpx; }
+.top-actions { display: flex; gap: 12rpx; flex: 1; }
 .op-btn {
-  padding: 12rpx 20rpx;
+  flex: 1;
+  padding: 14rpx 0;
   text-align: center;
   font-size: 24rpx;
   color: #fff;
@@ -57,9 +56,9 @@
 .op-btn:active { background: rgba(255,255,255,0.35); }
 .op-btn.disabled { opacity: 0.4; }
 .share-btn {
-  padding: 0;
+  padding: 14rpx 0;
   margin: 0;
-  border: none;
+  border: 1rpx solid rgba(255,255,255,0.3);
 }
 .share-btn::after { border: none; }
 
@@ -116,23 +115,21 @@
   border-radius: 24rpx;
 }
 
-/* 快捷问题 */
-.quick-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12rpx;
-  padding: 16rpx 24rpx;
-  background: #f5f6f8;
-  border-top: 1rpx solid #eee;
-}
+/* 快速提问（批 1：横滚胶囊，纠 V0.2.4 网格改错）*/
+.quick-section { padding: 16rpx 24rpx; background: #f5f6f8; border-top: 1rpx solid #eee; }
+.quick-title { font-size: 26rpx; font-weight: 600; color: #333; margin-bottom: 12rpx; }
+.quick-scroll { white-space: nowrap; }
 .quick-chip {
-  font-size: 24rpx;
+  display: inline-block;
+  font-size: 26rpx;
   color: #2D9D78;
   background: #fff;
-  padding: 14rpx 24rpx;
-  border-radius: 24rpx;
+  padding: 14rpx 28rpx;
+  border-radius: 32rpx;
+  margin-right: 12rpx;
   box-shadow: 0 1rpx 4rpx rgba(0, 0, 0, 0.04);
 }
+.quick-chip:active { background: #f0faf7; }
 
 /* 输入栏 */
 .input-bar {
@@ -227,13 +224,10 @@
 .conv-del { font-size: 32rpx; color: #ff6b6b; padding: 8rpx 16rpx; flex-shrink: 0; }
 .conv-empty { text-align: center; padding: 60rpx 0; color: #999; font-size: 26rpx; }
 
-/* V0.1.144 头部今日数据条 + AI 主动提醒（原型图）*/
+/* V0.1.144 头部：健康助手 + 健康提醒 + AI 主动提醒 */
 .ai-header { background: linear-gradient(135deg, #2D9D78 0%, #1a7a5a 100%); color: #fff; padding: 24rpx 32rpx 28rpx; }
-.ai-page-title { font-size: 32rpx; font-weight: 600; margin-bottom: 16rpx; }
-.today-data-strip { display: flex; gap: 16rpx; background: rgba(255,255,255,0.15); border-radius: 16rpx; padding: 16rpx 20rpx; }
-.td-item { flex: 1; text-align: center; }
-.td-item .td-v { display: block; font-size: 28rpx; font-weight: 700; }
-.td-item .td-l { font-size: 20rpx; opacity: 0.8; }
+.ai-page-title { font-size: 36rpx; font-weight: 600; }
+.ai-page-sub { font-size: 24rpx; opacity: 0.9; margin: 6rpx 0 16rpx; }
 
 .ai-alert-card { margin: 16rpx; background: linear-gradient(135deg, #fff8e1, #fff3cd); border-radius: 16rpx; padding: 20rpx; display: flex; gap: 12rpx; align-items: flex-start; border: 1rpx solid #ffe082; }
 .ai-alert-icon { font-size: 32rpx; flex-shrink: 0; }

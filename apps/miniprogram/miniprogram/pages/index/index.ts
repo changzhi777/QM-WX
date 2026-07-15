@@ -1,5 +1,5 @@
-// pages/index/index.ts — 今日 tab（V0.1.144 按原型图重设计）
-// 健康分数环 + AI 解读卡 + 3 数据卡（步数/心率/睡眠）+ 本周趋势 + 历史 AI 报告
+// pages/index/index.ts — 今日 tab（V0.1.144 原型图 + V0.2.4 健康中心改版 + 批 1 趋势带日期）
+// 健康分数环 + AI 摘要卡（查看完整报告/解锁/深聊）+ 3 数据卡 + 本周趋势（数值+日期）+ 历史 AI 报告（7日+更多）
 import { api } from '../../services/api';
 import { ensureLogin } from '../../utils/auth';
 import { syncWeRunIfFirstToday } from '../../utils/werun';
@@ -32,17 +32,29 @@ interface HistoryItem {
   reportText: string;
 }
 
+interface WeekTrendItem {
+  date: string;  // MM-DD
+  score: number;
+}
+
+// 免费用户 reportText 摘要句数
+const SUMMARY_SENTENCES = 2;
+
 Page({
   data: {
     loading: true,
     showPrivacy: false,
     report: null as DailyReport | null,
     score: null as HealthScoreRes | null,
-    history: [] as HistoryItem[],
-    weekScores: [] as number[],
+    history: [] as HistoryItem[],          // 默认显示（最近 7 日）
+    historyAll: [] as HistoryItem[],       // 全部（点"更多"懒加载）
+    showAllHistory: false,
+    weekTrend: [] as WeekTrendItem[],      // 本周趋势：分数 + 日期（批 1）
     greeting: '',
     dateStr: '',
     weekday: '',
+    isMember: false,
+    reportSummary: '',                     // AI 建议：reportText 前 2 句摘要
     weather: null as { city: string; text: string; temperature: number; feelsLike: number; icon: string } | null,
     altitude: null as number | null,
     locationText: '' as string,
@@ -105,25 +117,40 @@ Page({
     return '晚上好';
   },
 
+  /** reportText 摘要：取前 N 句作为 AI 建议展示 */
+  summarizeReport(text: string): string {
+    if (!text) return '';
+    const sentences = text.split(/[。！？\n]/).map((s) => s.trim()).filter(Boolean);
+    if (sentences.length === 0) return text.slice(0, 60);
+    return sentences.slice(0, SUMMARY_SENTENCES).join('。') + '。';
+  },
+
   async loadData() {
     try {
       await ensureLogin();
       // V0.1.144 MQTT 订阅每日简报推送（ensureLogin 后 user 有 id；收到推送自动更新）
-      const u = getApp().globalData.user;
+      const u = getApp().globalData.user as ({ id?: string; memberLevel?: string } | null);
       if (u?.id) subscribeDailyReport(u.id, (r) => this.onMqttMessage(r));
+      const isMember = !!u && !!u.memberLevel && u.memberLevel !== 'free';
       const [reportRes, scoreRes, historyRes, weatherRes] = await Promise.all([
         api.call<DailyReport>('stats', 'dailyReport', {}),
         api.call<HealthScoreRes>('stats', 'healthScore', {}),
         api.call<{ list: HistoryItem[]; total: number }>('stats', 'dailyReportList', { page: 1, pageSize: 7 }),
         api.call<{ city: string; text: string; temperature: number; feelsLike: number; icon: string }>('stats', 'weather', this.data.latitude != null ? { lat: this.data.latitude, lon: this.data.longitude } : {}),
       ]);
-      const weekScores = historyRes.list.slice(0, 7).reverse().map((h) => h.healthScore);
+      // 批 1：本周趋势带日期（history 日期 'YYYY-MM-DD' → 'MM-DD'）
+      const weekTrend = historyRes.list.slice(0, 7).reverse().map((h) => ({
+        date: (h.date || '').slice(5),
+        score: h.healthScore,
+      }));
       this.setData({
         report: reportRes,
         score: scoreRes,
         history: historyRes.list,
-        weekScores,
+        weekTrend,
         weather: weatherRes,
+        isMember,
+        reportSummary: this.summarizeReport(reportRes.reportText),
         loading: false,
       });
     } catch (e) {
@@ -132,8 +159,53 @@ Page({
     }
   },
 
-  goAskAi() {
+  /** 历史 AI 报告：点"更多"懒加载全部，再点"收起" */
+  async onToggleHistory() {
+    if (this.data.showAllHistory) {
+      this.setData({ showAllHistory: false });
+      return;
+    }
+    if (this.data.historyAll.length === 0) {
+      try {
+        const res = await api.call<{ list: HistoryItem[]; total: number }>('stats', 'dailyReportList', { page: 1, pageSize: 100 });
+        this.setData({ historyAll: res.list });
+      } catch {
+        wx.showToast({ title: '加载失败', icon: 'none' });
+        return;
+      }
+    }
+    this.setData({ showAllHistory: true });
+  },
+
+  /** 查看完整报告 → report-detail 详情页（今日）*/
+  goReportDetail() {
+    wx.navigateTo({ url: '/pages/report-detail/index' });
+  },
+
+  /** ②历史报告项点击 → report-detail 看当日详情（带 date 参数）*/
+  onTapHistory(e: WechatMiniprogram.TouchEvent) {
+    const date = (e.currentTarget.dataset as { date?: string }).date;
+    wx.navigateTo({ url: `/pages/report-detail/index${date ? '?date=' + date : ''}` });
+  },
+
+  /** 问 AI 深聊 → 健康助手 tab */
+  goDeepChat() {
     wx.switchTab({ url: '/pages/ai-coach/index' });
+  },
+
+  /** 解锁完整版 → 会员引导（membership 页未建，fail 兜底提示）*/
+  goMembership() {
+    wx.navigateTo({
+      url: '/pages/membership/index',
+      fail: () => {
+        wx.showModal({
+          title: '会员功能',
+          content: '会员服务正在开发中，敬请期待！',
+          showCancel: false,
+          confirmText: '知道了',
+        });
+      },
+    });
   },
 
   onShareAppMessage() {
@@ -144,9 +216,10 @@ Page({
     };
   },
 
-  /** V0.1.144 MQTT 收到推送 → 更新今日简报 */
+  /** V0.1.144 MQTT 收到推送 → 更新今日简报 + 摘要 */
   onMqttMessage(report: unknown) {
-    this.setData({ report: report as DailyReport });
+    const r = report as DailyReport;
+    this.setData({ report: r, reportSummary: this.summarizeReport(r.reportText) });
   },
 
   onUnload() {

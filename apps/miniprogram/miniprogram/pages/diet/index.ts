@@ -9,6 +9,7 @@ interface MealItem {
   fat?: number;
   carb?: number;
   qty?: string;
+  foodId?: string;
 }
 interface Meal {
   id: string;
@@ -113,6 +114,44 @@ Page({
       showAdd: true,
       addForm: { name: '', calorie: '', protein: '', fat: '', carb: '', qty: '', foodId: '' },
     });
+  },
+
+  /** ⑦拍照识别：选图 → 选模式（菜品/包装）→ uploadFile COS → food.recognize → 填 addForm */
+  async onTakePhoto() {
+    try {
+      const r = await wx.chooseMedia({ count: 1, mediaType: ['image'], sourceType: ['album', 'camera'] });
+      const temp = r.tempFiles[0]?.tempFilePath;
+      if (!temp) return;
+      wx.showActionSheet({
+        itemList: ['菜品（AI 视觉识别）', '包装食品（OCR 文字匹配）'],
+        success: async (s) => {
+          const mode = s.tapIndex === 1 ? 'ocr' : 'vision';
+          wx.showLoading({ title: '识别中...', mask: true });
+          try {
+            const imageUrl = await api.uploadFile(temp, 'image');
+            const { item } = await api.call<{ item: MealItem }>('food', 'recognize', { imageUrl, mode });
+            this.setData({
+              showAdd: true,
+              addForm: {
+                name: item.name,
+                calorie: String(item.calorie ?? ''),
+                protein: item.protein != null ? String(item.protein) : '',
+                fat: item.fat != null ? String(item.fat) : '',
+                carb: item.carb != null ? String(item.carb) : '',
+                qty: '',
+                foodId: item.foodId ?? '',
+              },
+            });
+          } catch (e) {
+            wx.showToast({ title: (e as Error).message ?? '识别失败', icon: 'none' });
+          } finally {
+            wx.hideLoading();
+          }
+        },
+      });
+    } catch {
+      // 用户取消选图，静默
+    }
   },
 
   onMealTypeChange(e: WechatMiniprogram.CustomEvent) {

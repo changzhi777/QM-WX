@@ -1,0 +1,8 @@
+<!-- data-strip 4 项健康数据概览条 -->
+<view class="ds ds-{{mode}}">
+  <view class="ds-item" wx:for="{{items}}" wx:key="label">
+    <text class="ds-icon">{{item.icon}}</text>
+    <text class="ds-v">{{item.value}}</text>
+    <text class="ds-l">{{item.label}}</text>
+  </view>
+</view>

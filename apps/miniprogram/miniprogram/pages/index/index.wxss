@@ -1,4 +1,4 @@
-/* pages/index/index.wxss — 今日 tab（V0.1.144 按原型图重设计）*/
+/* pages/index/index.wxss — 今日 tab（V0.1.144 原型图 + V0.2.4 健康中心改版）*/
 .page { min-height: 100vh; background: #f5f6f8; padding-bottom: 40rpx; }
 
 /* 头部：渐变绿 + 健康分数环 */
@@ -8,7 +8,7 @@
   padding: 40rpx 32rpx 60rpx;
   text-align: center;
 }
-.greeting { font-size: 28rpx; opacity: 0.9; margin-bottom: 16rpx; }
+.greeting { font-size: 32rpx; font-weight: 600; opacity: 0.95; margin-bottom: 16rpx; }
 .date-weather { display: flex; justify-content: center; gap: 24rpx; margin-bottom: 24rpx; font-size: 24rpx; opacity: 0.85; }
 .date-weather .weather { color: rgba(255,255,255,0.9); }
 .date-weather .altitude { color: rgba(255,255,255,0.85); }
@@ -53,7 +53,8 @@
   border-radius: 12rpx;
   font-weight: 600;
 }
-.ai-title { font-size: 28rpx; font-weight: 600; color: #333; }
+.ai-title { font-size: 28rpx; font-weight: 600; color: #333; flex: 1; }
+.free-tag { font-size: 18rpx; color: #b8860b; background: #fff8e1; padding: 2rpx 12rpx; border-radius: 10rpx; }
 .ai-body { font-size: 26rpx; color: #555; line-height: 1.7; }
 .ai-alert {
   margin-top: 16rpx;
@@ -64,15 +65,31 @@
   color: #795548;
   line-height: 1.5;
 }
-.ai-footer { margin-top: 20rpx; }
-.ai-btn {
-  background: #f0f7f4;
-  color: #2D9D78;
-  padding: 16rpx 32rpx;
-  border-radius: 24rpx;
+.ai-footer { margin-top: 20rpx; display: flex; gap: 16rpx; }
+.ai-action-btn {
+  flex: 1;
+  text-align: center;
   font-size: 26rpx;
   font-weight: 600;
-  display: inline-block;
+  padding: 18rpx 0;
+  border-radius: 24rpx;
+}
+.ai-action-btn.primary {
+  background: linear-gradient(135deg, #2D9D78, #1a7a5a);
+  color: #fff;
+  box-shadow: 0 4rpx 12rpx rgba(45,157,120,0.25);
+}
+.ai-action-btn.unlock {
+  background: #fff8e1;
+  color: #b8860b;
+  border: 1rpx solid #ffe082;
+}
+.ai-deep-chat {
+  margin-top: 16rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #2D9D78;
+  padding: 12rpx 0;
 }
 
 /* 3 数据卡 */
@@ -89,7 +106,7 @@
 .data-card .value { font-size: 40rpx; font-weight: 700; color: #333; margin: 8rpx 0; }
 .data-card .label { font-size: 22rpx; color: #999; }
 
-/* 本周趋势 */
+/* 本周趋势（柱顶数值）*/
 .section-title {
   font-size: 28rpx;
   font-weight: 600;
@@ -99,36 +116,18 @@
   justify-content: space-between;
   align-items: center;
 }
-.section-title .more { font-size: 22rpx; color: #999; font-weight: 400; }
+.section-title .more { font-size: 24rpx; color: #2D9D78; font-weight: 400; }
 .week-chart { background: #fff; margin: 0 24rpx 24rpx; border-radius: 16rpx; padding: 24rpx; }
-.bars { display: flex; align-items: flex-end; height: 200rpx; gap: 12rpx; }
-.bar-item { flex: 1; display: flex; align-items: flex-end; height: 100%; }
-.bar { width: 100%; background: #2D9D78; border-radius: 8rpx 8rpx 0 0; min-height: 8rpx; opacity: 0.8; }
+.bars { display: flex; align-items: stretch; height: 240rpx; gap: 12rpx; }
+.bar-item { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; }
+.bar-wrap { flex: 1; width: 100%; display: flex; align-items: flex-end; }
+.bar-col { width: 100%; display: flex; flex-direction: column; align-items: center; }
+.bar-val { font-size: 20rpx; color: #2D9D78; font-weight: 600; margin-bottom: 4rpx; }
+.bar { width: 100%; flex: 1; background: linear-gradient(180deg, #2D9D78, #1a7a5a); border-radius: 8rpx 8rpx 0 0; min-height: 8rpx; }
+.bar-date { font-size: 18rpx; color: #999; height: 32rpx; line-height: 32rpx; }
 
 /* 历史 AI 报告 */
 .history-list { padding: 0 24rpx; }
-.history-item {
-  background: #fff;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 16rpx;
-  display: flex;
-  align-items: center;
-  gap: 16rpx;
-}
-.history-item .left { flex: 1; overflow: hidden; }
-.history-item .date { font-size: 22rpx; color: #999; }
-.history-item .summary {
-  font-size: 24rpx;
-  color: #555;
-  margin-top: 6rpx;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-.his-score { font-size: 44rpx; font-weight: 700; color: #2D9D78; }
 
 /* 空态 */
 .empty { text-align: center; padding: 120rpx 40rpx; color: #999; font-size: 28rpx; }

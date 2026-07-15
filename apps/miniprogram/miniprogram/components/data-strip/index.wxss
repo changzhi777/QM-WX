@@ -1,0 +1,17 @@
+/* components/data-strip — 4 项数据条（light 白底 / dark 渐变绿头）*/
+.ds { display: flex; border-radius: 16rpx; padding: 20rpx 8rpx; }
+.ds-item { flex: 1; text-align: center; }
+.ds-icon { font-size: 28rpx; display: block; }
+.ds-v { font-size: 34rpx; font-weight: 700; display: block; margin-top: 6rpx; line-height: 1.1; }
+.ds-l { font-size: 20rpx; display: block; margin-top: 6rpx; }
+
+/* light：白底深字（我的页卡片内）*/
+.ds-light { background: #fff; }
+.ds-light .ds-v { color: #2D9D78; }
+.ds-light .ds-l { color: #999; }
+
+/* dark：半透明白底白字（健康助手页渐变绿头部）*/
+.ds-dark { background: rgba(255, 255, 255, 0.15); }
+.ds-dark .ds-v { color: #fff; }
+.ds-dark .ds-l { color: rgba(255, 255, 255, 0.8); }
+.ds-dark .ds-icon { opacity: 0.95; }

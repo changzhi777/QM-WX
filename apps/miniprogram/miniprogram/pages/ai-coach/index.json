@@ -1,7 +1,8 @@
 {
-  "navigationBarTitleText": "AI 私教",
+  "navigationBarTitleText": "健康助手",
   "usingComponents": {
     "plan-card": "/components/plan-card/index",
+    "data-strip": "/components/data-strip/index",
     "van-button": "@vant/weapp/button/index",
     "van-loading": "@vant/weapp/loading/index"
   }

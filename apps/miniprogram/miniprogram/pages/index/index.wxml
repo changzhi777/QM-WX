@@ -1,7 +1,7 @@
 <view class="page">
   <!-- 头部：渐变绿 + 问候 + 健康分数环 -->
   <view class="today-header">
-    <view class="greeting">{{greeting}}，跑者 🏃</view>
+    <view class="greeting">{{greeting}}</view>
     <view class="date-weather" wx:if="{{dateStr}}">
       <text class="date">{{dateStr}} {{weekday}}</text>
       <text wx:if="{{weather}}" class="weather">{{weather.icon}} {{weather.city}} · {{weather.text}} {{weather.temperature}}°C</text>
@@ -24,17 +24,20 @@
   <view class="loading" wx:if="{{loading}}">加载中...</view>
 
   <block wx:elif="{{report}}">
-    <!-- AI 解读卡 -->
+    <!-- AI 解读卡：摘要 + 查看完整报告 + 解锁 + 问AI深聊 -->
     <view class="ai-card">
       <view class="ai-header">
         <text class="ai-badge">✨ AI解读</text>
         <text class="ai-title">今日身体简报</text>
+        <text class="free-tag" wx:if="{{!isMember}}">免费用户</text>
       </view>
-      <view class="ai-body">{{report.reportText}}</view>
+      <view class="ai-body">{{reportSummary}}</view>
       <view class="ai-alert" wx:if="{{report.alertText}}">⚠️ {{report.alertText}}</view>
       <view class="ai-footer">
-        <van-button type="primary" size="small" round bindtap="goAskAi">问 AI 详情 →</van-button>
+        <view class="ai-action-btn primary" bindtap="goReportDetail">查看完整报告 →</view>
+        <view class="ai-action-btn unlock" wx:if="{{!isMember}}" bindtap="goMembership">解锁完整版 👑</view>
       </view>
+      <view class="ai-deep-chat" bindtap="goDeepChat">💬 问 AI 深聊更多建议</view>
     </view>
 
     <!-- 3 数据卡 -->
@@ -56,26 +59,38 @@
       </view>
     </view>
 
-    <!-- 本周趋势 -->
-    <view class="section-title" wx:if="{{weekScores.length}}">本周趋势 <text class="more">健康分数 7 日</text></view>
-    <view class="week-chart" wx:if="{{weekScores.length}}">
+    <!-- 本周趋势（柱顶数值 + 柱底日期）-->
+    <view class="section-title" wx:if="{{weekTrend.length}}">本周趋势 <text class="more">健康分数 7 日</text></view>
+    <view class="week-chart" wx:if="{{weekTrend.length}}">
       <view class="bars">
-        <view class="bar-item" wx:for="{{weekScores}}" wx:key="index">
-          <view class="bar" style="height:{{item}}%"></view>
+        <view class="bar-item" wx:for="{{weekTrend}}" wx:key="index">
+          <view class="bar-wrap">
+            <view class="bar-col" style="height:{{item.score}}%">
+              <text class="bar-val">{{item.score}}</text>
+              <view class="bar"></view>
+            </view>
+          </view>
+          <text class="bar-date">{{item.date}}</text>
         </view>
       </view>
     </view>
 
-    <!-- 历史 AI 报告 -->
-    <view class="section-title" wx:if="{{history.length}}">历史 AI 报告</view>
+    <!-- 历史 AI 报告（默认 7 日 + 更多展开全部）-->
+    <view class="section-title" wx:if="{{history.length}}">
+      历史 AI 报告
+      <text class="more" wx:if="{{history.length >= 7}}" bindtap="onToggleHistory">{{showAllHistory ? '收起' : '更多'}}</text>
+    </view>
     <view class="history-list" wx:if="{{history.length}}">
       <van-cell-group>
         <van-cell
-          wx:for="{{history}}"
+          wx:for="{{showAllHistory ? historyAll : history}}"
           wx:key="id"
           title="{{item.date}}"
           label="{{item.reportText}}"
           value="{{item.healthScore}} 分"
+          data-date="{{item.date}}"
+          bindtap="onTapHistory"
+          is-link
         />
       </van-cell-group>
     </view>

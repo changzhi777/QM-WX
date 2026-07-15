@@ -19,7 +19,8 @@
     "pages/onboarding/index",
     "pages/ai-coach/index",
     "pages/diet/index",
-    "pages/insight/index"
+    "pages/insight/index",
+    "pages/report-detail/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",
@@ -42,7 +43,7 @@
       },
       {
         "pagePath": "pages/ai-coach/index",
-        "text": "问AI",
+        "text": "健康助手",
         "iconPath": "images/tabbar/mall.png",
         "selectedIconPath": "images/tabbar/mall-active.png"
       },

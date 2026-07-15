@@ -46,6 +46,9 @@
   <!-- 手动添加 -->
   <button class="manual-btn" bindtap="onManualAdd">＋ 手动添加食物</button>
 
+  <!-- ⑦拍照识别（菜品 AI 视觉 / 包装 OCR）-->
+  <button class="manual-btn" bindtap="onTakePhoto">📷 拍照识别食物</button>
+
   <!-- 今日饮食列表 -->
   <view class="meals">
     <view class="section-title">今日饮食</view>

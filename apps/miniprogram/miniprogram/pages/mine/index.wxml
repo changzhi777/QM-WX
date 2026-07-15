@@ -2,7 +2,7 @@
   <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="refresh" />
 
   <block wx:if="{{!error}}">
-  <!-- A 用户卡（V0.1.152 卡片化）-->
+  <!-- A 用户卡 -->
   <view class="card user-card">
     <view class="user-row" bindtap="goProfile">
       <view class="avatar">🏃</view>
@@ -11,13 +11,24 @@
         <view class="status">{{memberLabel}} · 已绑定微信运动</view>
       </view>
     </view>
-    <button class="upgrade-btn" bindtap="goMembership">
-      <text>升级季度会员 ¥99 — 解锁深度解读+无限问答</text>
+    <button class="upgrade-btn" bindtap="goMembership" wx:if="{{!isMember}}">
+      <text>升级会员 — 解锁完整解读 + 无限问答</text>
       <text class="arrow">›</text>
     </button>
   </view>
 
-  <!-- B 运动入口卡（4 列网格，V0.1.152 隐藏功能上线 + 上传数据包新）-->
+  <!-- B 数据概览条 -->
+  <view class="card strip-card">
+    <data-strip
+      mode="light"
+      steps="{{todayHealth.steps}}"
+      restingHr="{{todayHealth.restingHr}}"
+      sleepHours="{{todayHealth.sleepHours}}"
+      healthScore="{{todayHealth.healthScore}}"
+    />
+  </view>
+
+  <!-- C 运动 -->
   <view class="card">
     <view class="card-title">运动</view>
     <view class="entry-grid">
@@ -25,23 +36,32 @@
       <view class="entry-item" bindtap="goShoes"><view class="entry-icon">👟</view><view class="entry-label">跑鞋</view></view>
       <view class="entry-item" bindtap="goTraining"><view class="entry-icon">📋</view><view class="entry-label">训练</view></view>
       <view class="entry-item" bindtap="goRanking"><view class="entry-icon">🏆</view><view class="entry-label">榜单</view></view>
-      <view class="entry-item" bindtap="goDeviceBind"><view class="entry-icon">📤</view><view class="entry-label">上传数据</view></view>
-      <view class="entry-item" bindtap="goContent"><view class="entry-icon">🎯</view><view class="entry-label">赛事</view></view>
-      <view class="entry-item" bindtap="goFeed"><view class="entry-icon">📰</view><view class="entry-label">动态</view></view>
-      <view class="entry-item" bindtap="goHealth"><view class="entry-icon">❤️</view><view class="entry-label">健康</view></view>
     </view>
   </view>
 
-  <!-- C AI 服务卡 -->
+  <!-- D 数据 -->
   <view class="card">
-    <view class="card-title">AI 服务</view>
-    <view class="cell" bindtap="goAiCoach"><text class="cell-label">AI 私教</text><text class="cell-new">NEW</text><text class="cell-arrow">›</text></view>
-    <view class="cell" bindtap="goInsight"><text class="cell-label">AI 运动洞察</text><text class="cell-new">NEW</text><text class="cell-arrow">›</text></view>
-    <view class="cell" bindtap="goDiet"><text class="cell-label">饮食日记</text><text class="cell-new">NEW</text><text class="cell-arrow">›</text></view>
-    <view class="cell" bindtap="goRunner"><text class="cell-label">我的解读报告</text><text class="cell-arrow">›</text></view>
+    <view class="card-title">数据</view>
+    <view class="entry-grid">
+      <view class="entry-item" bindtap="goDeviceBind"><view class="entry-icon">📤</view><view class="entry-label">上传数据</view></view>
+      <view class="entry-item" bindtap="goHealth"><view class="entry-icon">❤️</view><view class="entry-label">健康</view></view>
+      <view class="entry-item" bindtap="goInsight"><view class="entry-icon">🔍</view><view class="entry-label">AI 洞察</view></view>
+      <view class="entry-item" bindtap="goDiet"><view class="entry-icon">🥗</view><view class="entry-label">饮食日记</view></view>
+    </view>
   </view>
 
-  <!-- D 设置卡 -->
+  <!-- E 服务 -->
+  <view class="card">
+    <view class="card-title">服务</view>
+    <view class="entry-grid">
+      <view class="entry-item" bindtap="goAiCoach"><view class="entry-icon">🤖</view><view class="entry-label">健康助手</view></view>
+      <view class="entry-item" bindtap="goRunner"><view class="entry-icon">📊</view><view class="entry-label">解读报告</view></view>
+      <view class="entry-item" bindtap="goFeed"><view class="entry-icon">📰</view><view class="entry-label">动态</view></view>
+      <view class="entry-item" bindtap="goContent"><view class="entry-icon">🎯</view><view class="entry-label">赛事</view></view>
+    </view>
+  </view>
+
+  <!-- F 设置卡 -->
   <view class="card">
     <view class="cell" bindtap="onShowNotif">
       <text class="cell-label">消息中心</text>

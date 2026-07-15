@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "完整报告",
+  "usingComponents": {
+    "data-strip": "/components/data-strip/index"
+  }
+}

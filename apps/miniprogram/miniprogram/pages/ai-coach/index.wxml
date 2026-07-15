@@ -1,14 +1,16 @@
-<!-- AI 私教（V0.1.140 UI/UX 优化 — 人设切换 + 建议卡片 + 图标操作 + voice）-->
+<!-- 健康助手（原 AI 私教，V0.2.4 改版：健康助手 + 健康提醒 + 快速提问 + 4 按钮均分）-->
 <view class="coach-page">
-  <!-- 头部：今日数据条（V0.1.144 原型图）-->
+  <!-- 头部：健康助手 + 健康提醒 + 数据概览条 -->
   <view class="ai-header" wx:if="{{todayData}}">
-    <view class="ai-page-title">🤖 青沐AI运动健康助手</view>
-    <view class="today-data-strip">
-      <view class="td-item"><text class="td-v">{{todayData.steps}}</text><text class="td-l">今日步数</text></view>
-      <view class="td-item"><text class="td-v">{{todayData.restingHr || '--'}}</text><text class="td-l">静息心率</text></view>
-      <view class="td-item"><text class="td-v">{{todayData.sleepHours || '--'}}</text><text class="td-l">昨晚睡眠</text></view>
-      <view class="td-item"><text class="td-v">{{todayData.healthScore}}</text><text class="td-l">健康分</text></view>
-    </view>
+    <view class="ai-page-title">健康助手</view>
+    <view class="ai-page-sub">💡 健康提醒</view>
+    <data-strip
+      mode="dark"
+      steps="{{todayData.steps}}"
+      restingHr="{{todayData.restingHr}}"
+      sleepHours="{{todayData.sleepHours}}"
+      healthScore="{{todayData.healthScore}}"
+    />
   </view>
 
   <!-- AI 主动提醒（V0.1.144 原型图）-->
@@ -34,14 +36,13 @@
     </view>
   </view>
 
-  <!-- 操作栏 -->
+  <!-- 操作栏（4 按钮均分全宽）-->
   <view class="top-bar">
-    <view class="title">AI 私教</view>
     <view class="top-actions">
-      <view class="op-btn {{sending ? 'disabled' : ''}}" bindtap="onTapGeneratePlan">计划</view>
-      <view class="op-btn {{sending ? 'disabled' : ''}}" bindtap="onNewChat">新聊</view>
-      <view class="op-btn {{sending ? 'disabled' : ''}}" bindtap="onShowConversations">历史</view>
-      <button class="op-btn share-btn" open-type="share">分享</button>
+      <view class="op-btn {{sending ? 'disabled' : ''}}" bindtap="onTapGeneratePlan">📋 计划</view>
+      <view class="op-btn {{sending ? 'disabled' : ''}}" bindtap="onNewChat">✨ 新聊</view>
+      <view class="op-btn {{sending ? 'disabled' : ''}}" bindtap="onShowConversations">🕘 历史</view>
+      <button class="op-btn share-btn" open-type="share">📤 分享</button>
     </view>
   </view>
 
@@ -85,9 +86,18 @@
     </view>
   </scroll-view>
 
-  <!-- 快捷问题 -->
-  <view class="quick-chips" wx:if="{{!hasHistory && !sending}}">
-    <view wx:for="{{quickQuestions}}" wx:key="*this" class="quick-chip" data-q="{{item}}" bindtap="onTapQuick">{{item}}</view>
+  <!-- 快速提问（横滚胶囊）-->
+  <view class="quick-section" wx:if="{{!hasHistory && !sending}}">
+    <view class="quick-title">💡 快速提问</view>
+    <scroll-view class="quick-scroll" scroll-x show-scrollbar="{{false}}">
+      <view
+        wx:for="{{quickQuestions}}"
+        wx:key="*this"
+        class="quick-chip"
+        data-q="{{item}}"
+        bindtap="onTapQuick"
+      >{{item}}</view>
+    </scroll-view>
   </view>
 
   <!-- 输入栏（含 🎤 voice）-->

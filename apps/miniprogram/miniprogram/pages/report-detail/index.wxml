@@ -1,0 +1,59 @@
+<view class="page">
+  <view class="loading" wx:if="{{loading}}">加载中...</view>
+
+  <block wx:elif="{{report}}">
+    <!-- 头部：渐变绿 + 日期 + 健康分环 -->
+    <view class="rd-header">
+      <view class="rd-date">{{report.date}} 完整健康报告</view>
+      <view class="score-ring">
+        <view class="score-inner">
+          <view class="score-num">{{score.score || '--'}}</view>
+          <view class="score-label">健康分数</view>
+        </view>
+      </view>
+      <view class="rd-trend" wx:if="{{score.trend}}">
+        <block wx:if="{{score.trend.diff > 0}}"><text class="up">↑ 较昨日 +{{score.trend.diff}}</text></block>
+        <block wx:elif="{{score.trend.diff < 0}}"><text class="down">↓ 较昨日 {{score.trend.diff}}</text></block>
+        <block wx:else><text>较昨日持平</text></block>
+      </view>
+    </view>
+
+    <!-- 数据概览条 -->
+    <data-strip
+      steps="{{score.steps}}"
+      restingHr="{{score.restingHr}}"
+      sleepHours="{{score.sleepHours}}"
+      healthScore="{{score.score}}"
+      mode="light"
+      class="rd-strip"
+    />
+
+    <!-- AI 完整解读卡 -->
+    <view class="rd-card">
+      <view class="rd-card-head">
+        <text class="rd-badge">✨ AI 完整解读</text>
+        <text class="rd-lock-tag" wx:if="{{locked}}">🔒 会员专享</text>
+      </view>
+      <view class="rd-body {{locked ? 'blurred' : ''}}">{{locked ? previewText : report.reportText}}</view>
+      <view class="rd-alert" wx:if="{{report.alertText}}">⚠️ {{report.alertText}}</view>
+      <!-- 锁定遮罩 + 升级入口 -->
+      <view class="rd-lock-mask" wx:if="{{locked}}">
+        <view class="rd-lock-icon">🔒</view>
+        <view class="rd-lock-text">完整 AI 解读为会员专享内容</view>
+        <view class="rd-upgrade" bindtap="goMembership">升级会员解锁完整版 ›</view>
+      </view>
+    </view>
+
+    <!-- 底部操作 -->
+    <view class="rd-actions">
+      <button class="rd-btn rd-share" open-type="share">分享给好友</button>
+      <button class="rd-btn rd-upgrade-btn" wx:if="{{locked}}" bindtap="goMembership">升级解锁</button>
+    </view>
+  </block>
+
+  <view class="empty" wx:else>
+    <view class="empty-icon">📊</view>
+    <view>暂无健康报告</view>
+    <view class="empty-tip">绑定设备后生成今日简报</view>
+  </view>
+</view>

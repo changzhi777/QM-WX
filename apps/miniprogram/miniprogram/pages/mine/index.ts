@@ -1,8 +1,7 @@
-// pages/mine/index.ts（V0.1.35 精简：运动/商城入口分散到对应 tab，mine 仅留个人/设置）
+// pages/mine/index.ts（V0.1.35 精简 + V0.1.152 卡片化 + V0.2.4 健康中心改版：数据概览条 + 3 组宫格）
 import { api } from '../../services/api';
 import { ensureLogin } from '../../utils/auth';
 import type { User, FeatureFlagsConfig } from '@qm-wx/shared';
-void api;
 
 const app = getApp();
 
@@ -52,6 +51,7 @@ Page({
   data: {
     user: null as User | null,
     memberLabel: '免费用户',
+    isMember: false,
     flags: {
       wallet: false,
       payment: false,
@@ -62,24 +62,12 @@ Page({
     isLogin: false,
     error: false,
     errorMsg: '',
-    // 佳明运动数据（头部展示）
-    garminActivities: [] as Array<{
-      id: string;
-      name: string | null;
-      type: string;
-      startTime: string;
-      distanceKm: string;
-      durationMin: string;
-    }>,
-    garminLoading: false,
-    // 跑者数据汇总（参考图 2768，stats.myRunnerStats）
-    runnerStats: {
-      yearDistance: 0,
-      yearCheckins: 0,
-      totalDistance: 0,
-      totalCheckins: 0,
-      monthDistance: 0,
-      avgPace: null as string | null,
+    // V0.2.4 数据概览条（步数/心率/睡眠/健康分，复用 stats.healthScore）
+    todayHealth: {
+      steps: 0,
+      restingHr: null as number | null,
+      sleepHours: null as number | null,
+      healthScore: 0,
     },
     // 消息未读数（V0.1.31 红点）
     notifUnread: 0,
@@ -104,9 +92,8 @@ Page({
       await ensureLogin();
       this.applyUser(app.globalData.user!);
 
-      // 头部数据（跑量 + 佳明 + 未读）
-      this.loadGarmin();
-      this.loadRunnerStats();
+      // 头部数据（今日健康 + 未读）
+      this.loadTodayHealth();
       this.loadNotifUnread();
 
       this.setData({
@@ -123,63 +110,24 @@ Page({
     this.setData({
       user,
       memberLabel: MEMBER_LEVEL_LABEL[user.memberLevel] ?? '免费用户',
+      isMember: !!user.memberLevel && user.memberLevel !== 'free',
     });
   },
 
-  /** 佳明运动数据（头部展示） */
-  async loadGarmin() {
-    this.setData({ garminLoading: true });
+  /** V0.2.4 数据概览条（步数/心率/睡眠/健康分，复用 stats.healthScore）*/
+  async loadTodayHealth() {
     try {
-      const res = await api.call<{
-        list: Array<{
-          id: string;
-          name: string | null;
-          type: string;
-          startTime: string;
-          distanceMeters: number | null;
-          durationSec: number | null;
-        }>;
-        total: number;
-      }>('device', 'myActivities', { page: 1, pageSize: 3 });
+      const res = await api.call<{ score: number; steps: number; restingHr: number | null; sleepHours: number | null }>('stats', 'healthScore', {});
       this.setData({
-        garminActivities: res.list.map((a) => ({
-          id: a.id,
-          name: a.name,
-          type: a.type,
-          startTime: a.startTime,
-          distanceKm: a.distanceMeters != null ? (a.distanceMeters / 1000).toFixed(1) : '-',
-          durationMin: a.durationSec != null ? Math.round(a.durationSec / 60).toString() : '-',
-        })),
-        garminLoading: false,
-      });
-    } catch {
-      this.setData({ garminLoading: false });
-    }
-  },
-
-  /** 跑者数据汇总（stats.myRunnerStats） */
-  async loadRunnerStats() {
-    try {
-      const res = await api.call<{
-        yearDistance: number;
-        yearCheckins: number;
-        totalDistance: number;
-        totalCheckins: number;
-        monthDistance: number;
-        avgPace: string | null;
-      }>('stats', 'myRunnerStats', {});
-      this.setData({
-        runnerStats: {
-          yearDistance: Math.round(res.yearDistance ?? 0),
-          yearCheckins: res.yearCheckins ?? 0,
-          totalDistance: Math.round(res.totalDistance ?? 0),
-          totalCheckins: res.totalCheckins ?? 0,
-          monthDistance: Math.round(res.monthDistance ?? 0),
-          avgPace: res.avgPace,
+        todayHealth: {
+          steps: res.steps ?? 0,
+          restingHr: res.restingHr ?? null,
+          sleepHours: res.sleepHours ?? null,
+          healthScore: res.score ?? 0,
         },
       });
     } catch {
-      // 汇总加载失败不阻塞主页
+      // 今日健康加载失败不阻塞主页
     }
   },
 
@@ -193,22 +141,21 @@ Page({
     }
   },
 
-  // ===== V0.1.35 入口分散引导（切到运动/商城 tab）=====
-  goSportTab() {
-    wx.switchTab({ url: '/pages/sport/index' });
-  },
-
-  // ===== 精简入口（个人/设置）=====
-  goProfile() {
-    wx.navigateTo({ url: '/pages/profile/index' });
-  },
-
-  goBindApps() {
-    wx.navigateTo({ url: '/pages/profile/index?tab=bind' });
-  },
-
+  // ===== 入口 =====
+  goSportTab() { wx.switchTab({ url: '/pages/sport/index' }); },
+  goProfile() { wx.navigateTo({ url: '/pages/profile/index' }); },
   goMembership() {
-    wx.navigateTo({ url: '/pages/membership/index' });
+    wx.navigateTo({
+      url: '/pages/membership/index',
+      fail: () => {
+        wx.showModal({
+          title: '会员功能',
+          content: '会员服务正在开发中，敬请期待！',
+          showCancel: false,
+          confirmText: '知道了',
+        });
+      },
+    });
   },
 
   /** V0.1.143 消息弹层（合并 notification，不跳页）*/
@@ -254,11 +201,7 @@ Page({
     }
   },
 
-  goDeviceBind() {
-    wx.navigateTo({ url: '/pages/device/index' });
-  },
-
-  // V0.1.143 入口精简 8 项（跑者数据/跑鞋/健康/设备/训练/赛事/跑群/消息）
+  goDeviceBind() { wx.navigateTo({ url: '/pages/device/index' }); },
   goRunner() { wx.navigateTo({ url: '/pages/runner/index' }); },
   goInsight() { wx.navigateTo({ url: '/pages/insight/index' }); },
   goDiet() { wx.navigateTo({ url: '/pages/diet/index' }); },
@@ -268,28 +211,11 @@ Page({
   goContent() { wx.navigateTo({ url: '/pages/content-list/index' }); },
   goRanking() { wx.navigateTo({ url: '/pages/ranking/index' }); },
   goFeed() { wx.navigateTo({ url: '/pages/feed/index' }); },
-  goGroup() { wx.switchTab({ url: '/pages/sport/index' }); },
 
-  /** V0.1.139 AI 私教（smartAgent flag 守卫，wxml feature-gate 包裹）*/
-  goAiCoach() {
-    wx.switchTab({ url: '/pages/ai-coach/index' });
-  },
+  /** 健康助手（原 AI 私教，V0.2.4 改名）*/
+  goAiCoach() { wx.switchTab({ url: '/pages/ai-coach/index' }); },
 
-  goWeRun() {
-    wx.navigateTo({ url: '/pages/health/index?tab=werun' });
-  },
-
-  goOnboarding() {
-    wx.navigateTo({ url: '/pages/onboarding/index' });
-  },
-
-  goEnrollments() {
-    wx.navigateTo({ url: '/pages/content-list/index?tab=enrollments' });
-  },
-
-  goAgreement() {
-    wx.navigateTo({ url: '/pages/agreement/index' });
-  },
+  goAgreement() { wx.navigateTo({ url: '/pages/agreement/index' }); },
 
   onTapLogin() {
     ensureLogin().then(() => this.refresh());
@@ -304,7 +230,6 @@ Page({
         if (!res.confirm) return;
         try {
           await api.call('user', 'resetOnboarding', {});
-          const app = getApp();
           const u = app.globalData.user as ({ onboardingDone?: boolean } | null);
           if (u) u.onboardingDone = false;
           wx.navigateTo({ url: '/pages/onboarding/index' });

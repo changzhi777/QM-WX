@@ -98,6 +98,7 @@ export const ENDPOINTS = {
     record: '/api/food', // 记录一餐（mealType + items + date?）
     myMeals: '/api/food', // 某日饮食列表 + 宏量汇总（默认今日）
     removeMeal: '/api/food', // 删除一餐（鉴权仅本人）
+    recognize: '/api/food', // ⑦拍照识别（vision=GLM-4V 识菜品 / ocr=OCR+FatSecret 匹配）
   },
   ocr: {
     // V0.2.1 腾讯云 OCR SDK（官方精简包，复用 COS key）

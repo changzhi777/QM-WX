@@ -12,6 +12,7 @@
 import { prisma } from '../../infra/prisma.js';
 import { Errors } from '../../common/errors.js';
 import { searchFood, getFoodNutrition, type FoodItem } from './client.js';
+import { ocrService } from '../ocr/ocr.service.js';
 
 /** 单条饮食项（V0.2.0 宏量字段）*/
 export interface MealItem {
@@ -142,5 +143,71 @@ export const foodService = {
     if (!meal || meal.userId !== userId) throw Errors.notFound('meal');
     await prisma.meal.delete({ where: { id: mealId } });
     return { ok: true };
+  },
+
+  /** ⑦拍照识别食物（vision=GLM-4V 识菜品 / ocr=腾讯 OCR 提文字→FatSecret 匹配）*/
+  async recognize(input: { imageUrl: string; mode: 'vision' | 'ocr' }): Promise<MealItem> {
+    if (!input.imageUrl) throw Errors.badRequest('imageUrl 必填');
+
+    if (input.mode === 'ocr') {
+      // 包装食品：下载图 → OCR 提文字 → FatSecret 搜索 → 营养详情
+      const imgRes = await fetch(input.imageUrl);
+      const buf = Buffer.from(await imgRes.arrayBuffer());
+      const lines = await ocrService.generalBasic(buf);
+      const text = lines.join(' ').slice(0, 30).trim();
+      if (!text) throw Errors.badRequest('未识别到文字');
+      const list = await this.search(text);
+      if (list.length === 0) throw Errors.badRequest('食物库未匹配，换视觉模式试试');
+      const item = await this.nutrition(list[0].id);
+      return {
+        name: item.name,
+        calorie: item.calorie ?? 0,
+        protein: item.protein,
+        fat: item.fat,
+        carb: item.carb,
+        foodId: item.id,
+      };
+    }
+
+    // vision：GLM-4V 多模态识菜品 → 直返 {name, calorie, 3 宏量}
+    const base = process.env.LLM_BASE_URL || 'https://open.bigmodel.cn/api/paas/v4';
+    const key = process.env.LLM_API_KEY || '';
+    const visionModel = process.env.LLM_VISION_MODEL || 'glm-4.6v';
+    if (!key) throw Errors.badRequest('AI 视觉未配置（LLM_API_KEY 缺失）');
+    const res = await fetch(`${base}/chat/completions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify({
+        model: visionModel,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: '识别图中的食物并估算一份的营养。只返回 JSON：{"name":"食物名","calorie":number总卡路里,"protein":number蛋白质克,"fat":number脂肪克,"carb":number碳水克}' },
+            { type: 'image_url', image_url: { url: input.imageUrl } },
+          ],
+        }],
+        response_format: { type: 'json_object' },
+      }),
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => '');
+      throw new Error(`GLM-4V 识别失败 ${res.status}: ${detail.slice(0, 120)}`);
+    }
+    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+    const content = data.choices?.[0]?.message?.content ?? '{}';
+    let parsed: { name?: string; calorie?: number; protein?: number; fat?: number; carb?: number };
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      throw Errors.badRequest('AI 识别结果解析失败，请重试');
+    }
+    if (!parsed.name) throw Errors.badRequest('AI 未识别到食物，换张图试试');
+    return {
+      name: String(parsed.name),
+      calorie: Math.round(Number(parsed.calorie) || 0),
+      protein: parsed.protein != null ? Math.round(Number(parsed.protein)) : undefined,
+      fat: parsed.fat != null ? Math.round(Number(parsed.fat)) : undefined,
+      carb: parsed.carb != null ? Math.round(Number(parsed.carb)) : undefined,
+    };
   },
 };

@@ -157,12 +157,17 @@ Page({
       return;
     }
     this.setData({ publishing: true });
+    wx.showLoading({ title: '发布中...', mask: true });
     try {
       const topic = this.data.publishTopic.trim() || undefined;
       const videoUrl = this.data.publishVideo.trim() || undefined;
       const shoeId = this.data.publishShoeId || undefined;
-      const images = this.data.publishImages || [];
-      // V0.1.136 上传图片到 OSS（MVP：直接传临时路径，V0.1.13X 待替换 uploadFile）
+      // 批 2：图片逐张上传 COS（已是 http url 的直用；tempFilePath 走 api.uploadFile 拿 COS 公开 url）
+      const tempImages = this.data.publishImages || [];
+      const images: string[] = [];
+      for (const img of tempImages) {
+        images.push(img.startsWith('http') ? img : await api.uploadFile(img, 'image'));
+      }
       await api.call('feed', 'publish', { content, images, topic, videoUrl, shoeId });
       this.setData({
         publishing: false,
@@ -178,6 +183,8 @@ Page({
     } catch {
       this.setData({ publishing: false });
       wx.showToast({ title: '发布失败', icon: 'none' });
+    } finally {
+      wx.hideLoading();
     }
   },
   closePublish() {

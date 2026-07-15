@@ -8,7 +8,7 @@
  * 前端按 category 分组渲染。
  */
 
-export type DeviceCategory = 'bracelet' | 'watch' | 'strap' | 'app';
+export type DeviceCategory = 'bracelet' | 'watch' | 'strap' | 'app' | 'scale';
 export type DeviceConnectionType = 'ble' | 'oauth' | 'werun';
 
 export interface DeviceBrand {
@@ -90,6 +90,15 @@ export const DEVICE_BRANDS: DeviceBrand[] = [
     available: false,
     desc: '荣耀手环系列',
   },
+  // ===== 体脂秤 =====
+  {
+    key: 'mi_scale',
+    name: '小米体脂秤',
+    category: 'scale',
+    connectionType: 'ble',
+    available: true,
+    desc: 'MI_SCALE / MIBCS 系列（体重 + 体成分：体脂/肌肉/水分/内脏脂肪）',
+  },
   // ===== 健康 App =====
   {
     key: 'werun',
@@ -148,6 +157,7 @@ export const DEVICE_CATEGORY_LABEL: Record<DeviceCategory, string> = {
   watch: '手表',
   strap: '心率带',
   app: '健康 App',
+  scale: '体脂秤',
 };
 
 /**

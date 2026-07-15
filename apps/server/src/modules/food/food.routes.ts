@@ -47,6 +47,13 @@ export async function foodRoutes(app: FastifyInstance) {
         const result = await foodService.removeMeal(req.user.id, String(payload?.mealId ?? ''));
         return { code: 0, data: result };
       }
+      case 'recognize': {
+        const imageUrl = String(payload?.imageUrl ?? '').trim();
+        const mode = payload?.mode === 'ocr' ? 'ocr' : 'vision';
+        if (!imageUrl) throw Errors.badRequest('imageUrl 必填');
+        const item = await foodService.recognize({ imageUrl, mode });
+        return { code: 0, data: { item } };
+      }
       default:
         throw Errors.badRequest(`unknown action: ${action}`);
     }
