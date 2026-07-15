@@ -59,6 +59,9 @@ export async function statsRoutes(app: FastifyInstance) {
       case 'weatherAnalysis': {
         return { code: 0, data: await statsService.weatherAnalysis(userId) };
       }
+      case 'userProfile': {
+        return { code: 0, data: await statsService.userProfile(userId) };
+      }
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
     }

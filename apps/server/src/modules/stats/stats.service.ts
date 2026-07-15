@@ -355,6 +355,38 @@ export const statsService = {
       scatter: { tempPace: tempPace.slice(0, 50), humidityHr: humidityHr.slice(0, 50) },
     };
   },
+
+  // V0.2.0 用户画像（聚合基础/运动/健康 → tags + summary，供 AI 千人千面策略）
+  async userProfile(userId: string) {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { gender: true, birthday: true, height: true, weight: true, region: true, memberLevel: true },
+    });
+    const checkinAgg = await prisma.checkin.aggregate({
+      where: { userId },
+      _sum: { distance: true },
+      _count: true,
+      _avg: { heartRate: true },
+    });
+    const latestBody = await prisma.bodyCompositionRecord.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+    const age = user?.birthday ? Math.floor((Date.now() - new Date(user.birthday).getTime()) / (365.25 * 86400000)) : null;
+    const heightM = user?.height ? user.height / 100 : null;
+    const bmi = heightM && user?.weight ? user.weight / heightM ** 2 : latestBody?.bmi ?? null;
+    const total = checkinAgg._sum.distance ?? 0;
+    const tags: string[] = [];
+    if (bmi != null) tags.push(bmi < 18.5 ? '偏瘦' : bmi < 24 ? '正常体型' : bmi < 28 ? '偏胖' : '肥胖');
+    tags.push(total > 1000 ? '资深跑者' : total > 200 ? '进阶跑者' : total > 0 ? '入门跑者' : '运动新手');
+    return {
+      basic: { gender: user?.gender, age, height: user?.height, weight: user?.weight, bmi: bmi ? Number(bmi.toFixed(1)) : null, region: user?.region, memberLevel: user?.memberLevel },
+      sport: { totalDistance: Number(total.toFixed(1)), checkinCount: checkinAgg._count, avgHeartRate: checkinAgg._avg.heartRate ? Math.round(checkinAgg._avg.heartRate) : null },
+      body: latestBody ? { bodyFat: latestBody.bodyFat, muscle: latestBody.muscle, visceralFat: latestBody.visceralFat } : null,
+      tags,
+      summary: `${age ?? '?'}岁${user?.gender === 'male' ? '男' : user?.gender === 'female' ? '女' : ''}，BMI ${bmi?.toFixed(1) ?? '?'}（${tags[0] ?? ''}），累计跑量 ${total.toFixed(0)}km（${tags[1] ?? ''}）`,
+    };
+  },
 };
 
 // V0.2.0 关联分析 helpers（模块级）

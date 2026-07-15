@@ -133,6 +133,7 @@ export const ENDPOINTS = {
     dailyReportList: '/api/stats', // V0.1.144 历史 AI 报告列表
     weather: '/api/stats', // V0.1.144 天气（和风 API）
     weatherAnalysis: '/api/stats', // V0.2.0 关联分析（温度×配速/湿度×心率）
+    userProfile: '/api/stats', // V0.2.0 用户画像（千人千面）
   },
   ranking: {
     groupRankingMulti: '/api/ranking',
