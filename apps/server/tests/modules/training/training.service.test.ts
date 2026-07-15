@@ -195,3 +195,34 @@ describe('trainingService.mySportRecords (V0.1.25)', () => {
     expect(mockedPrisma.checkin.findMany).toHaveBeenCalledTimes(1);
   });
 });
+
+// ============================================================
+// V0.2.3 缓存命中（Cache.wrap 120s）
+// ============================================================
+
+describe('trainingService 缓存（V0.2.3）', () => {
+  it('myPlans 第二次 → 命中缓存（不再调 prisma.trainingPlan.findMany）', async () => {
+    mockedPrisma.trainingPlan.findMany.mockResolvedValue([] as never);
+
+    await trainingService.myPlans();
+    expect(mockedPrisma.trainingPlan.findMany).toHaveBeenCalledTimes(1);
+
+    // 第二次：缓存命中
+    await trainingService.myPlans();
+    expect(mockedPrisma.trainingPlan.findMany).toHaveBeenCalledTimes(1);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:training:myPlans')).toBe(true);
+  });
+
+  it('myActivePlan 第二次同 user → 命中缓存', async () => {
+    // 无加入记录返 plan: null
+    mockedPrisma.userPlanEnrollment.findUnique.mockResolvedValue(null);
+
+    await trainingService.myActivePlan('u1');
+    expect(mockedPrisma.userPlanEnrollment.findUnique).toHaveBeenCalledTimes(1);
+
+    // 第二次：缓存命中
+    await trainingService.myActivePlan('u1');
+    expect(mockedPrisma.userPlanEnrollment.findUnique).toHaveBeenCalledTimes(1);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:training:myActivePlan:u1')).toBe(true);
+  });
+});

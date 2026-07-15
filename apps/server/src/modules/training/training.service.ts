@@ -26,6 +26,10 @@ export const trainingService = {
    * admin 通过 upsertTrainingPlan 维护；status=archived 不返
    */
   async myPlans() {
+    const cacheKey = 'training:myPlans';
+    return Cache.wrap(cacheKey, 120, async () => this.computeMyPlans());
+  },
+  async computeMyPlans() {
     const plans = await prisma.trainingPlan.findMany({
       where: { status: 'active' },
       orderBy: [{ weeks: 'asc' }, { createdAt: 'desc' }],
@@ -76,6 +80,10 @@ export const trainingService = {
    * 无加入记录返 { plan: null }，前端隐藏进度卡
    */
   async myActivePlan(userId: string) {
+    const cacheKey = `training:myActivePlan:${userId}`;
+    return Cache.wrap(cacheKey, 120, async () => this.computeMyActivePlan(userId));
+  },
+  async computeMyActivePlan(userId: string) {
     const enrollment = await prisma.userPlanEnrollment.findUnique({
       where: { userId },
       include: { plan: true },
