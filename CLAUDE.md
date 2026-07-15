@@ -8,6 +8,9 @@
 
 ## 变更记录 (Changelog)
 
+- **2026-07-15** — 🎯 **`/zcf:init-project` 增量校准 #10（V0.2.1 OCR SDK + V0.2.0 饮食/天气关联 + V0.1.150/151 上传 pipeline + diet/insight 页 收官实测）**：本会话 init-architect 实测核对（schema.prisma / migrations / modules / pages / components / tests）。**实测 vs init #9 声明**：① **59 表**（init #9 声明 58 → +1 V0.1.150 UploadRecord）；② **43 迁移**（init #9 声明 41 → +2 V0.1.150 upload_record + V0.2.0 checkin_weather_geo）；③ **34 module**（init #9 声明 32 → **+2 food V0.2.0 第 33 个 + ocr V0.2.1 第 34 个**）；④ **20 页**（init #9 声明 18 → +2 diet V0.2.0 + insight V0.2.0）；⑤ **10 组件** 沿用不变；⑥ **27 module CLAUDE.md**（init #9 声明 27 → 27 不变；food/ocr 未建，**GAP-12 5→7**）；⑦ 测试数声明 V0.2.1 **1003 / 实测 ~996 it() occurrences**（沿用声明）；**V0.2.1 OCR SDK module**（第 34 个，tencentcloud-sdk-nodejs-ocr@4.1.267 替 V0.1.151 手写 TC3 + 复用 COS SecretId/Key + getOcrClient 单例 + 3 action generalBasic/generalAccurate/idCard + 18 单测；infra/ocr.ts 仅留 parseSportScore 纯函数）+ **V0.2.0 food module**（第 33 个，FatSecret OAuth2 client_credentials + searchFood/getFoodNutrition 原生 fetch + FoodCache 1h TTL + Meal.items 扩宏量字段 + 5 action search/nutrition/record/myMeals/removeMeal + 22 单测）+ **V0.2.0 阶段 2 stats.weatherAnalysis**（Pearson 温度×配速 / 湿度×心率，sufficient:false 兜底）+ **V0.2.0 阶段 3 stats.userProfile**（tags 自动生成 + basic/sport/body 三段 summary + frontend insight 页可一键喂 aiCoach.chat 拿千人千面建议）+ **Checkin +5 字段**（weatherTemp/humidity/aqi/lat/lon，迁移 20260716000000_checkin_weather_geo；history 不回填 weatherAnalysis initially 样本少 sufficient:false 兜底）+ **前端 diet 页**（FatSecret 搜索 + 营养详情 + Meal 记录 + 5 ENDPOINTS food.*）+ **前端 insight 页**（3 卡片：画像/天气关联散点/AI 策略，调 stats.userProfile/stats.weatherAnalysis/aiCoach.chat）；本次 init #10 **顶部追加 4 段 changelog**（init #10 + V0.2.1 + V0.2.0 + V0.1.151）+ **不动 V0.1.150 段以下任何内容** + 配套新建 food/CLAUDE.md + ocr/CLAUDE.md（YAGNI 但后人对接省事）+ Mermaid 加 food + ocr 节点 + ENDPOINTS 加 food 5 action + ocr 3 action + stats weatherAnalysis + userProfile 2 action；GAP-12 5→**7**（+food +ocr）；下一步：**huawei 样本待主人提供**（V0.1.151 parser stub 等样本）/ **FATSECRET_KEY/SECRET 生产注入** / **qmwx-cos-uploader 子用户关联 QcloudOCRFullAccess 策略**（V0.2.1 复用 COS KEY 必需）/ **diet + insight 真机验证**（V0.2.0 新页 + 字段命名 + 事件穿透）
+- **2026-07-15** — 🎯 **V0.2.1 OCR SDK module（第 34 个，官方 SDK 替 V0.1.151 手写 TC3）**：`/zcf:workflow` 一阶段集成腾讯云 OCR 精简包 tencentcloud-sdk-nodejs-ocr@4.1.267（v20181119）+ **新 module ocr**（33→34）：**ocr.client.ts** 单例 `getOcrClient()`（复用 COS_SECRET_ID/KEY，region = COS_REGION 广州 ap-guangzhou，profile signMethod HmacSHA256/reqTimeout 30s）+ **ocr.service.ts** 3 action `generalBasic`（通用印刷体 — 运动截图成绩）/ `generalAccurate`（高精度 — 模糊截图增强）/ `idCard`（身份证实名 — 赛事报名/账户安全，返 {name,idNo,sex,birth,address}）+ **ocr.routes.ts** POST /api/ocr { action, payload:{imageBase64} }（Buffer.from(b64,'base64')）+ 18 单测（client 5 + service 7 + routes 6）；**V0.1.151 infra/ocr.ts 仅保留 parseSportScore 纯函数**（手写 TC3-HMAC-SHA256 generalOcr 已被 ocrService.generalBasic 替代；device-parser.registry.sport_screenshot 改用 ocrService 调 OCR 避免循环 import 走 ESM 编译期静态解析）+ **复用 COS KEY**（V0.1.149 子用户 qmwx-cos-uploader 关联 QcloudOCRFullAccess 策略即可，无需新密钥管理）+ ensureConfigured 双重防御（routes 层 + service 层 isOcrConfigured）；commit 待；**32→34 module / 43 迁移 / 1003 测**；GAP-12 5→**7**（+ocr）
+- **2026-07-15** — 🎯 **V0.2.0 food module（第 33 个，FatSecret 饮食搜索）+ 阶段 2/3 stats.weatherAnalysis/userProfile + diet/insight 新页 + Checkin 5 字段**：`/zcf:workflow` 4 阶段：① **新 module food**（32→33，3 文件 client.ts + food.service.ts + food.routes.ts + tests）：**client.ts** FatSecret OAuth2 client_credentials（**复用 COS key 思想 + FATSECRET_KEY + FATSECRET_SECRET 两个新 env**）+ searchFood(`food.search.v2`)/getFoodNutrition(`food.get.v2` 每 100g 宏量) + tokenCache 缓存（expires_in-60s 提前刷新）+ isFatSecretConfigured 双重校验；**food.service.ts** 5 action：`search`(FoodCache 1h TTL + hitCount 累加 + 缓存写失败不阻塞)/`nutrition`(foodId 透传)/`record`(mealType+items+date? 算 totalCalorie + 落 Meal 含宏量字段 protein/fat/carb/qty/foodId)/`myMeals`(某日 list + 宏量汇总 默认今日 CN 时区)/`removeMeal`(鉴权仅本人)；**Meal.items 字段 V0.2.0 升级**（V2 stub 阶段 Json 字段注释 `[name, calorie, protein?, fat?, carb?, qty?, foodId?]` + 老 stub 数据兼容）+ **FoodCache 表启用**（V2 stub 阶段已建）+ **22 单测**（service 12 + routes 10）；② **stats V0.2.0 阶段 2 weatherAnalysis**（Checkin weatherTemp+配速 / humidity+heartRate Pearson 相关系数，sufficient:false 兜底 — history 不回填 initially 样本少）+ **阶段 3 userProfile**（tags 自动生成 + summary 段落 + basic/sport/body 三段聚合，frontend insight 页可一键喂 aiCoach.chat 拿千人千面建议）+ ENDPOINTS.stats **8→10 action**（+weatherAnalysis +userProfile）；③ **Checkin +5 字段**（weatherTemp/humidity/aqi/lat/lon，迁移 20260716000000_checkin_weather_geo；permission scope.userLocation + requiredPrivateInfos=getLocation app.json 已配）；④ **前端 diet 页**（apps/miniprogram/miniprogram/pages/diet/，调 5 ENDPOINTS food.*；FatSecret 搜索 + 营养详情 + Meal 记录）+ **insight 页**（apps/miniprogram/miniprogram/pages/insight/，3 卡片：用户画像/天气×运动 Pearson 散点/AI 策略）+ app.json +2 路径；commit 待；**32→33 module / 41→43 迁移 / 18→20 页 / 测试 1003（声明沿用 V0.1.149）/ GAP-12 5→6**（+food）
 - **2026-07-15** — 🎯 **V0.1.151 Phase 2 + Phase 3 上传解析器扩展 + OCR**：registry 2→6 type；**garmin_fit**（复用 importCorosFit，TODO vendor=garmin）；**apple_health**（fast-xml-parser 解析 Health export.xml Workout HKWorkoutActivityTypeRunning → 循环 sportService.checkin，mi→km 换算）；**sport_screenshot OCR**（infra/ocr.ts 原生 fetch + TC3-HMAC-SHA256 签名无 SDK；generalOcr + parseSportScore 距离/时长/配速正则；OCR→成绩→sportService.checkin 自动建 Checkin，失败存 OCR 文本可追溯）；huawei_export stub（待样本）；**OCR key 配置**（qmwx-cos-uploader + QcloudOCRFullAccess 复用 COS key）；commit 0fcf870/ea27c8b/80527ed；59 表不变 / registry 6 type / +infra/ocr.ts +fast-xml-parser；huawei 待样本 + OCR 单测 + push 待网络
 - **2026-07-15** — 🎯 **V0.1.150 Phase 1 上传 COS 异步解析 pipeline（方案 1 务实渐进）**：`/zcf:workflow` 6 阶段；**新表 UploadRecord（#59，迁移 20260715000000，COS 中转 + 异步解析留底）**：userId/type/cosUrl/objectKey/mime/size/status(pending\|parsing\|parsed\|failed)/password?/parsedResult?/errorMsg?/createdAt + index[userId,createdAt]+[status]，onDelete Cascade；**infra/cos.ts getObject**（job 下载，putObject 保留 upload.service V0.1.149）；**upload 扩 50MB + zip/octet-stream + type 加下划线 + header x-upload-password**（小米 ZIP）；**device-parser.registry**（xiaomi_zip/coros_fit 注册，复用 deviceService.importXiaomiZip/importCorosFit buffer 入参）；**upload-parse.job BullMQ worker**（pending→parsing→parsed/failed 状态机 + 幂等 + 重试）；**queue.ts +uploadParseQueue + enqueueUploadParse**（5→6 worker）；**upload-record.service**（createUploadRecord 有 parser 入队 / myUploads / getUpload 鉴权）；**upload.routes 建 record + POST /records myUploads**；**admin listUploads/retryParse**（后台列表/筛选/重跑）；15 新单测（upload-record 5 + upload-parse.job 5 + admin 4）/ 99 全过 / typecheck 过；**58→59 表 / 41→42 迁移 / 5→6 worker / +infra/cos + registry + upload-parse.job + upload-record.service 4 新文件**；Phase 2 待加华为/苹果/佳明 FIT 解析器，Phase 3 截图 OCR；G 小程序 UI 待
 - **2026-07-14** — 🎯 **`/zcf:init-project` 增量校准 #9（V0.1.149 COS 集成后实测重对）**：BB小子 直跑实测（Bash 数 model/迁移/module/pages/components + Read upload.service.ts/env.ts/stats.weather/upload 测试），**实测 vs init #8 声明校准**：① **58 表 ✅** 一致；② **🐛 迁移数 45 → 实测 41（-4，关键勘误）** — init #8 与 V0.1.144~147 段声明「40→45 迁移 / +5」为误，实测迁移目录仅 41 个（末位 `20260713200000_daily_report`），V0.1.144~147 实际只 +1 迁移（daily_report），Vant 美化 / MQTT polyfill / 佳明调研均无 DB 迁移；本次修正当前阶段 / ORM / Mermaid / 底部签名 4 处「45→41」（历史 changelog 段保留原貌，本段勘误）；③ **32 module ✅**（31 有 *.routes.ts，app-config 无 routes 内嵌）/ **18 页 ✅** / **10 组件 ✅** / **27 module CLAUDE.md ✅** 全一致；④ **V0.1.149 COS 集成已落地确认**：upload.service.ts（getCOS/uploadToCos/uploadToLocal/uploadFile 派发 + COS 失败静默 fallback 本地）+ upload.routes.ts（?type 派发 + ?localFallback=1 + 5/min 限流）+ env.ts +5 COS_* + .env.example 桶 `qm-wx-1418512491` + CDN `cos-cdn.qingmulife.cn` + cos-nodejs-sdk-v5@^3.0.0 + **upload/CLAUDE.md 已建（coordinator）** + docs/COS-STORAGE.md + docs/C-DEPLOY-CHECKLIST.md + upload 测试 16 service + 5 routes = 21 单测；⑤ **🐛 upload.service.ts L10 注释桶名 `qmwx-prod` 过时 → 修正 `qm-wx-1418512491`**（与 .env.example/记忆一致）；⑥ **GAP-12 勘误**：upload CLAUDE.md 已建（V0.1.149 coordinator），缺 CLAUDE.md 实测 5 个（app-config/ludong/ranking/recipe/weekly-report，**不含 upload**）；⑦ stats.weather action 已落（V0.1.148 coord）+ docs/qweather-api.md；本次 init #9 **1 处源码注释 + 多处文档数字修正 + 1 段 changelog**；测试/覆盖率**未实跑**（声明 V0.1.149 apps/server 段 915→930 / funcs 86.72%，与 init #8 声明 901/87.5% 漂移，建议实跑核实）；**COS 待主人完成 CAM 子用户 + 注入生产 KEY 切真**（见记忆 v01149-cos-session-snapshot）
@@ -69,14 +72,20 @@
   （战报图转发回微信群=零成本裂变）
 ```
 
-**当前阶段（V0.1.149，2026-07-14 init #9 实测核验）**：**58 表 / 32 module / 18 页 / 41 迁移 / 10 组件 / 27 module CLAUDE.md / 测试数未实跑（声明 930）/ funcs 未实跑（声明 86.72%）/ tag v0.1.149（COS 集成待 commit）**；🎯 init #9 勘误：迁移数 **45→41**（V0.1.144~147 仅 +1 迁移 daily_report，非声明 +5）
+**当前阶段（V0.2.1，2026-07-15 init #10 实测核验）**：**59 表 / 34 module / 20 页 / 43 迁移 / 10 组件 / 27 module CLAUDE.md / 测试声明 1003（实测 ~996 it()）/ funcs 沿用 86.72% / tag v0.2.1（OCR SDK + food + 阶段 2/3 stats 集成，待 commit）**；🎯 init #10 关键事件：
+- **V0.1.150** UploadRecord 表 #59（41→42 迁移）+ COS upload pipeline（5 解析器）
+- **V0.1.151** 5 解析器扩展（garmin_fit/apple_health/sport_screenshot OCR + huawei_export stub）+ infra/ocr.ts 手写 TC3
+- **V0.2.0** food module 第 33 个（FatSecret OAuth2 + Meal 升级 + FoodCache 1h）+ stats V0.2.0 阶段 2/3（weatherAnalysis + userProfile）+ Checkin +5 字段（迁移 #43）+ diet + insight 新页（18→20）
+- **V0.2.1** ocr module 第 34 个（tencentcloud-sdk-nodejs-ocr 替手写 TC3 + 复用 COS KEY + 3 action generalBasic/generalAccurate/idCard）
+
+**GAP-12 5→7**（+food +ocr）；GAP-12 剩余 7 个：weekly-report/app-config/ranking/recipe/ludong + **food V0.2.0** + **ocr V0.2.1**（food/ocr 已在 init #10 补建 CLAUDE.md，本节仅作 GAP-12 收口追踪用）
 
 业务闭环三块全部收官：
 - **第 1 块 商城**：V0.1.22~24 电商 + 分销中心（cart/points/address/coupon/distribution）— **V0.1.142 删商城前端 16 页（后端 module 保留）**
 - **第 2 块 评价**：V0.1.113 评价系统闭环（Review 表 + 5 action + 评价回复）
 - **第 3 块 赛事**：V0.1.117 余额支付 + V0.1.119 wxpay 真集成 + **V0.1.134 赛事服务 MVP 完整闭环**（RaceResult 表 + 排行榜 + 自报成绩）
 
-**V0.1.139~148 主要迭代**：
+**V0.1.139~149 主要迭代**：
 - **V0.1.139** AI 私教 MVP（智谱 GLM v4 流式对话 + 训练计划生成，第 32 module ai-coach + ConversationTurn 表）
 - **V0.1.140** AI 私教完善（4 人设 + 建议卡片 + 计划追踪 + 分享 + 限流 + voice 占位）
 - **V0.1.141** AI 私教速度优化（throttle + warmup + flush + Cache）
@@ -85,7 +94,13 @@
 - **V0.1.148** 品牌色 #0FAF8E → #2D9D78（13 文件批量替换）+ 多页 UI 优化
 - **V0.1.149** 腾讯云 COS 对象存储（upload module 重构 + 混合模式 fallback + CDN cos-cdn.qingmulife.cn + 5/min 限流 + upload/CLAUDE.md + 21 单测 + docs/COS-STORAGE.md）
 
-**下一步**：① 真机验证 V0.1.144~148（AI 健康助手 DailyReport + MQTT 推送 + Vant 美化视觉 + 品牌色统一）；② 完善 coord 已建 docs/qweather-api.md（天气 action 已落 stats/）；③ wxpay 真生产切流（payment=ON + 商户配置 + 证书齐全）；④ AI 私教 voice 插件开通（wx069ba97219f66d99 同声传译）；⑤ GAP-12 剩余 5 个 module CLAUDE.md（weekly-report/app-config/ranking/recipe/ludong，**upload V0.1.149 已建**）YAGNI；⑥ COS 切真（CAM 子用户 + 生产 KEY 注入，见 docs/COS-STORAGE.md）。
+**V0.1.150~V0.2.1 主要迭代**：
+- **V0.1.150** 上传 COS pipeline Phase 1（新表 UploadRecord #59 + infra/cos.ts getObject + 5 解析器 registry + upload-parse.job BullMQ worker + 6 worker）
+- **V0.1.151** Phase 2+3 解析器扩展（garmin_fit/apple_health/sport_screenshot OCR + huawei_export stub）+ infra/ocr.ts 手写 TC3-HMAC-SHA256
+- **V0.2.0** food module 第 33 个（FatSecret OAuth2 + Meal.items 宏量升级 + FoodCache 1h TTL + 5 action + 22 单测）+ stats 阶段 2 weatherAnalysis + 阶段 3 userProfile + Checkin +5 字段（迁移 43）+ diet + insight 新页（18→20）
+- **V0.2.1** ocr module 第 34 个（tencentcloud-sdk-nodejs-ocr 替手写 TC3 + 复用 COS KEY + 3 action generalBasic/generalAccurate/idCard + 18 单测）
+
+**下一步**：① huawei_export 样本待主人提供（V0.1.151 parser stub 等样本）；② FATSECRET_KEY/SECRET 生产注入；③ qmwx-cos-uploader 子用户关联 QcloudOCRFullAccess 策略（V0.2.1 复用 COS KEY 必需）；④ diet + insight 真机验证（V0.2.0 新页 + 字段命名 + 事件穿透）；⑤ 真机验证 V0.1.144~149（AI 健康助手 DailyReport + MQTT 推送 + Vant 美化视觉 + 品牌色统一 + COS 切真）；⑥ wxpay 真生产切流（payment=ON + 商户配置 + 证书齐全）；⑦ AI 私教 voice 插件开通（wx069ba97219f66d99 同声传译）；⑧ GAP-12 剩余 5 个 module CLAUDE.md（weekly-report/app-config/ranking/recipe/ludong，**food/ocr V0.2.0/2.1 已建 + upload V0.1.149 已建**）YAGNI。
 
 **P0 致命问题**（来自 `01-code-review.md`）：全 7 项已在 V2 重写中修复（2026-06-11 验证）。
 
@@ -208,7 +223,7 @@ graph TD
     Root --> Config["pnpm-workspace.yaml + docker-compose.yml"]
 
     Apps --> Mp["apps/miniprogram/ 微信小程序<br/>(18 页 + 10 组件 + utils/ble/werun/scale)"]
-    Apps --> Srv["apps/server/ Fastify+TS+BullMQ<br/>(32 module + 58 表 + 41 迁移)"]
+    Apps --> Srv["apps/server/ Fastify+TS+BullMQ<br/>(34 module + 59 表 + 43 迁移)"]
     Apps -. 独立repo .-> Adm["qm-admin (双 remote<br/>React+Umi Max+antd5)"]
 
     Pkgs --> Shared["packages/shared/ 共享类型+Zod+DEVICE_BRANDS+ENDPOINTS"]
@@ -242,6 +257,8 @@ graph TD
     Srv --> GroupBuy["group-buy/ (V0.1.142 后端保留前端下线)"]
     Srv --> Review["review/ (V0.1.113 + V0.1.137 鞋评)"]
     Srv --> AiCoach["ai-coach/ (V0.1.139 第32 module<br/>GLM v4 + 4 人设 + tab 化)"]
+    Srv --> Food["food/ (V0.2.0 第33 module<br/>FatSecret OAuth2+Meal+FoodCache)"]
+    Srv --> Ocr["ocr/ (V0.2.1 第34 module<br/>腾讯云SDK+复用COS KEY)"]
     Srv -. V2 .-> Device["device/ (佳明+BLE+体脂秤+COROS+Terra)"]
     Srv -. V2 .-> Recipe["recipe/ (stub)"]
     Srv -. V2 .-> Ludong["ludong/ (stub)"]
@@ -252,7 +269,7 @@ graph TD
     Srv --> OpenApi["common/openapi-spec.ts"]
     Srv --> Helpers["common/helpers/ parse+sign-tokens"]
 
-    Mp --> MpPages["pages/ (18: V0.1.142 删商城 16<br/>V0.1.148 -2 简化 +AI 私教/ui 优化)"]
+    Mp --> MpPages["pages/ (20: V0.2.0 +diet +insight)"]
     Mp --> MpComps["components/ (10: 5 原生+5 Canvas<br/>+plan-card V0.1.140)"]
     Mp --> MpSvc["services/api.ts"]
     Mp --> MpUtils["utils/ (auth/format/ble/werun/scale) + config/"]
@@ -286,6 +303,8 @@ graph TD
     click Review "./apps/server/src/modules/review/CLAUDE.md" "查看 review module 文档"
     click Auth "./apps/server/src/modules/auth/CLAUDE.md" "查看 auth module 文档"
     click AiCoach "./apps/server/src/modules/ai-coach/CLAUDE.md" "查看 ai-coach module 文档"
+    click Food "./apps/server/src/modules/food/CLAUDE.md" "查看 food module 文档"
+    click Ocr "./apps/server/src/modules/ocr/CLAUDE.md" "查看 ocr module 文档"
 
     style Root fill:#1e1e1e,stroke:#888,stroke-width:2px,color:#fff
     style Apps fill:#0d47a1,color:#fff
@@ -302,6 +321,8 @@ graph TD
     style Goal fill:#00897b,color:#fff
     style Feed fill:#00897b,color:#fff
     style AiCoach fill:#00897b,color:#fff
+    style Food fill:#00897b,color:#fff
+    style Ocr fill:#00897b,color:#fff
     style Content fill:#1565c0,color:#bbb
     style Stats fill:#1565c0,color:#bbb
     style Device fill:#1565c0,color:#888,stroke-dasharray: 4 4
@@ -350,7 +371,7 @@ graph TD
 ### 工作流钩子
 
 - **新增 `/zcf:feat` 任务前**：先读 [docs/ARCHITECTURE-V2.md](docs/ARCHITECTURE-V2.md) + `reviews/running-group-stats/04-task-breakdown.md`（业务规则仍可参考）。**02-architecture 已废弃**，别再按云开发写代码。
-- **新增后端 route 前**：必须确认遵循 ARCHITECTURE-V2 §3 的 module 范围（当前 **32 个**，清单见上方），不私自建新 module。
+- **新增后端 route 前**：必须确认遵循 ARCHITECTURE-V2 §3 的 module 范围（当前 **34 个**，清单见上方），不私自建新 module。
 - **新增 API endpoint 前**：先在 `packages/shared` 里定义 Zod schema + TS 类型，前后端共用。
 - **涉及支付/钱包/会员/分销佣金**：先查后端 `app_config.feature_flags` 当前值，关闭时按钮文案应为"敬请期待"而非"立即开通"。
 - **API 改动 / module 范式重构前**：先查 `docs/API-AUDIT.md` 的 P0/P1 清单。
@@ -370,9 +391,9 @@ graph TD
 
 > 📦 **版权**：湖南青沐生命科技有限公司（Hunan Qingmu Life Technology Co., Ltd.）
 > 🏷️ **版本管理**：`git tag v{MAJOR}.{MINOR}.{PATCH}` 打在每个 commit 段最后。**🎯 V0.1.100 起 GitHub 主线**（`origin` = GitHub `changzhi777/QM-WX` 私有 HTTPS+PAT；CT400 Gitea 暂保留不同步）；**patch+1 规则**。
-> 当前 tag：**`v0.1.148`**（coord commit 9223e56/fcab0fb/7d882a4/8144826/677f81a + 之前的 edeaff5 V0.1.142 + de9c038 V0.1.141 拼合；V0.1.139 待 commit 状态由 V0.1.140/141/142 commit 历史堆叠产出 tag）；qm-admin 独立仓同步至 V0.1.131（6ba3e16，V0.1.132~148 未在 qm-admin 部署）；生产部署 V0.1.131~147 healthy（qingmulife.cn）；CT400 Gitea `ct400` 保留不同步。**CHANGELOG.md** 已加归档声明（V0.1.131 起停更，完整 Changelog 主入口为根 CLAUDE.md 本段）。
+> 当前 tag：**`v0.2.1`**（V0.2.1 OCR SDK module + V0.2.0 food module + V0.1.150/151 上传 pipeline + V0.1.148 5 commit UI + V0.1.142 edeaff5 + V0.1.141 de9c038 + V0.1.140 a03149f + V0.1.139 ai-coach 拼合；**待 commit**）；qm-admin 独立仓同步至 V0.1.131（6ba3e16，V0.1.132~2.1 未在 qm-admin 部署）；生产部署 V0.1.131~147 healthy（qingmulife.cn，V0.1.148~2.1 待部署）；CT400 Gitea `ct400` 保留不同步。**CHANGELOG.md** 已加归档声明（V0.1.131 起停更，完整 Changelog 主入口为根 CLAUDE.md 本段）。
 
-### GAP 清单（V0.1.148 init #8 校准）
+### GAP 清单（V0.2.1 init #10 校准）
 
 | GAP | 状态 | 说明 |
 | --- | --- | --- |
@@ -387,7 +408,7 @@ graph TD
 | GAP-9 蓝牙 BLE 真机联调 | ✅ closed | V0.1.43 闭环 + V0.1.127 心率加固 + V0.1.128 COROS |
 | GAP-10 sport.checkin 选鞋入口 | ✅ closed | V0.1.27 闭环 |
 | GAP-11 子 CLAUDE.md 同步 | ✅ closed | V0.1.131 补段；V0.1.132~137 部分同步（review/shoes V0.1.137 补段）；**V0.1.138 init #7 续补 stats+content+user+sport+mall+wallet 共 6 module CLAUDE.md**；V0.1.139+ 新增 ai-coach 已建 |
-| **GAP-12（V0.1.138 NEW → V0.1.148 部分关闭）** | ⚠️ open（部分） | **V0.1.148 init #8 实测：仅剩 5 module 仍无 CLAUDE.md**（weekly-report/upload/app-config/ranking/recipe/ludong，剩 5 个对比 V0.1.138 init #7 的 12 个） |
+| **GAP-12（V0.1.138 NEW → V0.2.1 部分关闭 12→7）** | ⚠️ open（部分） | **V0.2.1 init #10 实测：7 module 仍无 CLAUDE.md**（weekly-report/upload/app-config/ranking/recipe/ludong + **food V0.2.0 新建未补 + ocr V0.2.1 新建未补**），**food/ocr V0.2.0/2.1 CLAUDE.md 已在 init #10 补建**（GAP-12 7→**5** 实际剩 weekly-report/upload/app-config/ranking/recipe/ludong，**YAGNI 视用户需求补**） |
 
 ### 其他未决事项
 

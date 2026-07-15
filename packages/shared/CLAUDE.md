@@ -4,6 +4,8 @@
 >
 > ## 📋 变更记录 (Changelog)
 >
+> - **2026-07-15** — 🎯 **`/zcf:init-project` 增量校准 #10（V0.2.1 OCR SDK + V0.2.0 饮食/天气关联 + V0.1.150/151 上传 pipeline + diet/insight 页 收官实测）**：本会话 init-architect 实测核对（**ENDPOINTS 34 module 含 food V0.2.0 5 action + ocr V0.2.1 3 action + stats V0.2.0 +weatherAnalysis +userProfile**）；**V0.2.0/V0.2.1 2 段增量 changelog 全部补到本文件顶部**；最大改动：**V0.2.0 ENDPOINTS 加 food 模块**（**5 action**：search/nutrition/record/myMeals/removeMeal；FatSecret OAuth2 + Meal.items 宏量升级 + FoodCache 1h TTL）+ **V0.2.0 ENDPOINTS.stats 加 weatherAnalysis +userProfile 2 action**（阶段 2 关联 Pearson + 阶段 3 千人千面画像；stats action 数 8→**10**）+ **V0.2.1 ENDPOINTS 加 ocr 模块**（**3 action**：generalBasic/generalAccurate/idCard；腾讯云官方 SDK + 复用 COS KEY）；本次 init #10 **0 代码改动**，纯文档增量 + 32→34 module
+> - **2026-07-15** — 🎯 **V0.2.1 ENDPOINTS.ocr 3 action + V0.2.0 ENDPOINTS.food 5 action + V0.2.0 ENDPOINTS.stats +weatherAnalysis +userProfile 2 action**：① **ENDPOINTS.ocr** 新增（3 action）：`generalBasic`（通用印刷体 — 运动截图成绩）/ `generalAccurate`（高精度 — 模糊截图增强）/ `idCard`（身份证实名 — 赛事报名/账户安全，返 `{name, idNo, sex, birth, address}`）；腾讯云 OCR SDK（tencentcloud-sdk-nodejs-ocr@4.1.267 v20181119）替 V0.1.151 手写 TC3-HMAC-SHA256；复用 `COS_SECRET_ID` / `COS_SECRET_KEY`（V0.1.149 子用户 `qmwx-cos-uploader` 关联 `QcloudOCRFullAccess` 策略即可，无需新密钥）；② **ENDPOINTS.food** 新增（5 action）：`search`（FatSecret food.search.v2 + FoodCache 1h 缓存）/ `nutrition`（food.get.v2 每 100g 宏量）/ `record`（Meal 落库 + 算 totalCalorie）/ `myMeals`（某日列表 + 宏量汇总，默认今日 CN 时区）/ `removeMeal`（鉴权仅本人）；FatSecret OAuth2 client_credentials（无需用户授权，env `FATSECRET_KEY` + `FATSECRET_SECRET`）；Meal.items V0.2.0 宏量升级 `[{name, calorie, protein?, fat?, carb?, qty?, foodId?}]`；③ **ENDPOINTS.stats** 新增 2 action：`weatherAnalysis`（V0.2.0 阶段 2 — Checkin 天气快照+配速/心率 Pearson 相关系数，sufficient:false 兜底 — history 不回填 initially 样本少）/ `userProfile`（V0.2.0 阶段 3 — 用户画像 tags 自动生成 + basic/sport/body 三段 summary，frontend insight 页可一键喂 aiCoach.chat 拿千人千面建议）；stats action 数 8→**10**；commit 待；**32→34 module / 43 迁移 / 1003 测**；GAP-12 5→7
 > - **2026-07-14** — 🎯 **`/zcf:init-project` 增量校准 #8（V0.1.148 init #8，post-v0.1.139~148 全量实测重对）**：本会话 init-architect 实测核对（**ENDPOINTS 32 module 含 aiCoach 9 action + V0.1.148 stats.weather 4 action**）；**V0.1.139~148 7 段增量 changelog 全部补到本文件顶部**；最大改动：**V0.1.139 ENDPOINTS 加 aiCoach**（**9 action**：chat/chatStream/generatePlan/regenerate/setPersona/history/conversations/deleteConversation/warmup + V0.1.140 完善 4 人设 + V0.1.141 warmup 性能优化 + V0.1.142 tab 化 + V0.1.144~147 完善 + V0.1.148 UI 优化）/ **V0.1.148 ENDPOINTS.stats 加 weather 4 action**（realtime/forecast/air/sunrise — coord 已落 stats.4 action + 5 测试；和风天气 QWEATHER_API_KEY 环境变量；详见 docs/qweather-api.md）；本次 init #8 **0 代码改动**，纯文档增量
 > - **2026-07-14** — 🎯 **V0.1.148 ENDPOINTS.stats +weather 4 action**（coord 补）：**ENDPOINTS.stats 新加 4 action** — `weather(实时天气)` / `weatherForecast(未来 3 天预报)` / `weatherAir(空气质量 AQI + PM2.5/PM10/NO2/SO2/O3/CO)` / `weatherSun(日出日落时间)`；和风天气 API（`https://devapi.qweather.com/v7/` + `https://devapi.qweather.com/air/v1/`），`QWEATHER_API_KEY` + `QWEATHER_API_HOST` 从 .env 读；详见 docs/qweather-api.md（含完整架构/凭据/安全事件说明）；接龙：docs/CLAUDE.md 加 docs/qweather-api.md 登记行；stats/CLAUDE.md 加 weather action；.env.example 加 QWEATHER_API_KEY / QWEATHER_API_HOST；stats 5 测试；**前置清理**：stats.service 杭州→长沙（默认 location changsha CN）
 > - **2026-07-13~14** — 🎯 **V0.1.144~147 ENDPOINTS 加 ai-coach.myDailyReport 等**（V0.1.144~147 健康助手化）：**ENDPOINTS.aiCoach 加 myDailyReport / generateDailyReport 2 action**（调 DailyReport 表 #58，AI 解读文本 / 健康分数 0-100 / alertText / steps / restingHr / sleepHours）；ENDPOINTS.aiCoach 共 11 action（含 V0.1.139 ~141 历史版本）
@@ -81,7 +83,9 @@ import {} from '@qm-wx/shared/constants/device-brands';   // V0.1.25 / V0.1.33
 import {} from '@qm-wx/shared/api-contracts';
 ```
 
-### ENDPOINTS 模块清单（截至 2026-07-14 V0.1.148 init #8 实测 32 module）
+### ENDPOINTS 模块清单（截至 2026-07-15 V0.2.1 init #10 实测 34 module）
+
+> 🎯 init #10 新增：**food V0.2.0 第 33 个**（5 action）+ **ocr V0.2.1 第 34 个**（3 action）+ stats +2 action（weatherAnalysis + userProfile）
 
 | 模块 | action 数 | 说明 |
 | --- | ---: | --- |
@@ -96,7 +100,7 @@ import {} from '@qm-wx/shared/api-contracts';
 | upload | 1 | upload |
 | wxpay | 4 | createOrder / notify / queryOrder / refund |
 | device | 18（V0.1.43 +3 / V0.1.127 +2 = 18） | +syncWeRun/myWeRun/myHealthHistory（V0.1.43）+submitBodyComp/myScaleBind（V0.1.127）+ 佳明 + BLE + 心率/血氧/睡眠 |
-| **stats** | **8**（V0.1.144~147 +2 myDailyReport/generateDailyReport + **V0.1.148 +4 weather coord 补**） | myRunnerStats + myAnnualReport V0.1.27 + myCertificates V0.1.28（V0.1.135 5 段 + V0.1.137 3 段鞋成就）+ myDailyReport V0.1.144~147（DailyReport #58 + 健康分数 0-100 + AI 解读）+ generateDailyReport V0.1.144~147（AI 重新生成）+ **weather V0.1.148（实时天气）/ weatherForecast V0.1.148（未来 3 天预报）/ weatherAir V0.1.148（AQI + 6 项污染物）/ weatherSun V0.1.148（日出日落）** — 和风天气，QWEATHER_API_KEY 从 .env 读（详见 docs/qweather-api.md） |
+| **stats** | **10**（V0.1.144~147 +2 myDailyReport/generateDailyReport + V0.1.148 +4 weather coord 补 + **V0.2.0 +2 weatherAnalysis +userProfile 阶段 2/3**） | myRunnerStats + myAnnualReport V0.1.27 + myCertificates V0.1.28（V0.1.135 5 段 + V0.1.137 3 段鞋成就）+ myDailyReport V0.1.144~147（DailyReport #58 + 健康分数 0-100 + AI 解读）+ generateDailyReport V0.1.144~147（AI 重新生成）+ weather V0.1.148 + weatherForecast + weatherAir + weatherSun（和风天气）+ **weatherAnalysis V0.2.0**（Checkin 天气快照+配速/心率 Pearson 相关系数，sufficient:false 兜底 — history 不回填）+ **userProfile V0.2.0**（千人千面画像 tags + summary，可喂 aiCoach.chat 拿建议） |
 | ranking | 1 | groupRankingMulti |
 | cart | 5 | add/remove/list/updateQty/clear（**V0.1.142 前端下线后端保留**） |
 | points | 3 | myBalance/signin/myTasks（**V0.1.142 前端下线后端保留**） |
@@ -115,6 +119,8 @@ import {} from '@qm-wx/shared/api-contracts';
 | review（V0.1.113 + V0.1.118 + V0.1.137） | **7** | create/listByProduct/productStats/myReviews/remove + addReply（admin）/listByTarget（鞋评）/targetStats |
 | **ai-coach**（**V0.1.139 +V0.1.140 完善 + V0.1.141 + V0.1.144~147 + V0.1.148 UI**） | **11** | chat / chatStream / generatePlan / regenerate / **setPersona**（V0.1.140 第 9 个，4 人设 scientist/coach/buddy/strict）/ history / conversations / deleteConversation / **warmup**（V0.1.141 第 10 个，预 Cache system prompt）/ adoptPlan / **myDailyReport / generateDailyReport**（V0.1.144~147 健康简报） |
 | recipe / ludong | — | V2 stub |
+| **food（V0.2.0 第 33 个）** | **5** | search / nutrition / record / myMeals / removeMeal — FatSecret OAuth2 + FoodCache 1h TTL + Meal.items 宏量升级 |
+| **ocr（V0.2.1 第 34 个）** | **3** | generalBasic / generalAccurate / idCard — 腾讯云官方 SDK 替 V0.1.151 手写 TC3 + 复用 COS KEY |
 
 ### DEVICE_BRANDS（V0.1.25 新增常量；V0.1.33 增强）
 
@@ -166,4 +172,4 @@ pnpm build             # tsc -p tsconfig.build.json → dist/
 
 ---
 
-🤙 **V0.1.148 init #8 完成**：ENDPOINTS 共 **32 module**（含 V0.1.139 ai-coach 第 32 个） + ENDPOINTS.aiCoach **11 action**（V0.1.139 4 + 完善 2 + V0.1.140 4 人设 setPersona + V0.1.141 warmup + V0.1.144~147 健康简报 2）+ ENDPOINTS.stats **8 action**（V0.1.148 +weather 4 action coord 补，docs/qweather-api.md）+ V0.1.142 后端保留端点（cart/points/address/coupon/distribution/group-buy/backend review endpoint 持续可用）。下一步：真机验证 V0.1.144~148 + wxpay 真生产切流 + AI 私教 voice 插件 + GAP-12 module CLAUDE.md 收尾。
+🤙 **V0.2.1 init #10 完成**：ENDPOINTS 共 **34 module**（含 V0.2.0 food 第 33 个 + V0.2.1 ocr 第 34 个） + ENDPOINTS.food **5 action**（V0.2.0 FatSecret OAuth2 + Meal.items 宏量 + FoodCache 1h）+ ENDPOINTS.ocr **3 action**（V0.2.1 腾讯云 SDK 替手写 TC3 + 复用 COS KEY）+ ENDPOINTS.stats **10 action**（V0.2.0 +weatherAnalysis +userProfile 阶段 2/3）+ ENDPOINTS.aiCoach 11 action 沿用 + V0.1.142 后端保留端点。下一步：huawei 样本 + FATSECRET_KEY 生产注入 + qmwx-cos-uploader 关联 QcloudOCRFullAccess + diet/insight 真机验证 + wxpay 真生产切流 + AI 私教 voice 插件。
