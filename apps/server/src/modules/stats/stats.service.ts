@@ -323,7 +323,55 @@ export const statsService = {
       return { city: '未知', text: '获取失败', temperature: 0, feelsLike: 0, humidity: 0, icon: '999', updatedAt: new Date().toISOString() };
     }
   },
+
+  // V0.2.0 关联分析：温度×配速 / 湿度×心率（Pearson + 最小样本阈值）
+  async weatherAnalysis(userId: string) {
+    const checkins = await prisma.checkin.findMany({
+      where: { userId, weatherTemp: { not: null } },
+      select: { weatherTemp: true, humidity: true, pace: true, heartRate: true },
+      take: 200,
+      orderBy: { createdAt: 'desc' },
+    });
+    if (checkins.length < 10) {
+      return { sufficient: false, message: `数据积累中（${checkins.length}/10 条带天气打卡）`, count: checkins.length };
+    }
+    const tempPace = checkins.filter((c) => c.pace).map((c) => ({ x: c.weatherTemp!, y: parsePaceSec(c.pace!) }));
+    const humidityHr = checkins.filter((c) => c.humidity != null && c.heartRate != null).map((c) => ({ x: c.humidity!, y: c.heartRate! }));
+    const tempPaceR = pearson(tempPace);
+    const humidityHrR = humidityHr.length >= 10 ? pearson(humidityHr) : null;
+    const insights: string[] = [];
+    if (tempPaceR != null && Math.abs(tempPaceR) >= 0.3) {
+      insights.push(tempPaceR > 0 ? `温度升高配速变慢（相关 ${tempPaceR.toFixed(2)}），高温天建议改晨跑` : `温度升高配速反而快（相关 ${tempPaceR.toFixed(2)}），你更耐热`);
+    }
+    if (humidityHrR != null && humidityHrR >= 0.3) {
+      insights.push(`湿度升高运动心率偏高（相关 ${humidityHrR.toFixed(2)}），湿热天注意补水降强`);
+    }
+    if (insights.length === 0) insights.push('暂未发现显著天气-表现关联（样本波动大）');
+    return {
+      sufficient: true,
+      count: checkins.length,
+      insights,
+      correlations: { tempPace: tempPaceR, humidityHr: humidityHrR },
+      scatter: { tempPace: tempPace.slice(0, 50), humidityHr: humidityHr.slice(0, 50) },
+    };
+  },
 };
+
+// V0.2.0 关联分析 helpers（模块级）
+function parsePaceSec(pace: string): number {
+  const [m, s] = pace.split(':').map(Number);
+  return (m || 0) * 60 + (s || 0);
+}
+function pearson(pairs: { x: number; y: number }[]): number | null {
+  const n = pairs.length;
+  if (n < 2) return null;
+  const mx = pairs.reduce((a, p) => a + p.x, 0) / n;
+  const my = pairs.reduce((a, p) => a + p.y, 0) / n;
+  let num = 0, dx = 0, dy = 0;
+  for (const p of pairs) { num += (p.x - mx) * (p.y - my); dx += (p.x - mx) ** 2; dy += (p.y - my) ** 2; }
+  const den = Math.sqrt(dx * dy);
+  return den === 0 ? null : num / den;
+}
 
 // ============================================================
 // V0.1.144 健康分数 + AI 简报 helper

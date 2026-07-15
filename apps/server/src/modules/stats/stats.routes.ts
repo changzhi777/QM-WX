@@ -56,6 +56,9 @@ export async function statsRoutes(app: FastifyInstance) {
         const input = (payload ?? {}) as { lat?: number; lon?: number };
         return { code: 0, data: await statsService.weather(userId, input) };
       }
+      case 'weatherAnalysis': {
+        return { code: 0, data: await statsService.weatherAnalysis(userId) };
+      }
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
     }
