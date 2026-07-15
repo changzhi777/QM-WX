@@ -87,6 +87,10 @@ const EnvSchema = z.object({
   COS_REGION: z.string().default('ap-guangzhou'),
   COS_BUCKET: z.string().optional(),
   COS_CDN_DOMAIN: z.string().optional(),
+
+  // V0.2.0 FatSecret 饮食 API（OAuth2 client credentials，食物搜索 + 营养）
+  FATSECRET_KEY: z.string().optional(),
+  FATSECRET_SECRET: z.string().optional(),
 });
 
 const parsed = EnvSchema.safeParse(process.env);
