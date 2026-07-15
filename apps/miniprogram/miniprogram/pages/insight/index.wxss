@@ -1,0 +1,136 @@
+/* pages/insight/index.wxss — V0.2.0 AI 洞察 */
+.insight {
+  padding: 24rpx;
+  min-height: 100vh;
+  background: #f5f6f8;
+  box-sizing: border-box;
+}
+
+.card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 32rpx 28rpx;
+  margin-bottom: 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.05);
+}
+.card-title {
+  font-size: 32rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20rpx;
+  padding-left: 16rpx;
+  border-left: 6rpx solid #2d9d78;
+}
+
+/* 画像 */
+.summary-text {
+  font-size: 28rpx;
+  color: #555;
+  line-height: 1.6;
+  margin-bottom: 20rpx;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+.tag {
+  background: rgba(45, 157, 120, 0.12);
+  color: #2d9d78;
+  font-size: 24rpx;
+  padding: 6rpx 20rpx;
+  border-radius: 20rpx;
+}
+.basic-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx 0;
+}
+.kv {
+  width: 50%;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 8rpx;
+  box-sizing: border-box;
+}
+.k {
+  font-size: 26rpx;
+  color: #999;
+}
+.v {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+/* 关联分析 */
+.analysis-msg {
+  font-size: 28rpx;
+  color: #999;
+  text-align: center;
+  padding: 40rpx 0;
+}
+.scatter-wrap {
+  margin: 16rpx 0;
+}
+.scatter-canvas {
+  width: 100%;
+  height: 360rpx;
+}
+.scatter-caption {
+  text-align: center;
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 8rpx;
+}
+.insights {
+  margin: 20rpx 0;
+}
+.insight-text {
+  font-size: 27rpx;
+  color: #555;
+  line-height: 1.7;
+  padding: 6rpx 0;
+}
+.corr-row {
+  font-size: 25rpx;
+  color: #888;
+  padding: 4rpx 0;
+}
+.corr-val {
+  color: #2d9d78;
+  font-weight: 600;
+}
+
+/* AI 策略 */
+.strategy-text {
+  font-size: 28rpx;
+  color: #444;
+  line-height: 1.8;
+  background: #f9fbfa;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  white-space: pre-wrap;
+}
+.strategy-empty {
+  font-size: 27rpx;
+  color: #999;
+  line-height: 1.6;
+  padding: 16rpx 0 24rpx;
+}
+.strategy-btn {
+  background: #2d9d78 !important;
+  color: #fff !important;
+  border-radius: 12rpx !important;
+  font-size: 30rpx !important;
+}
+
+.loading,
+.error-tip {
+  text-align: center;
+  color: #999;
+  font-size: 26rpx;
+  padding: 40rpx 0;
+}

@@ -1,0 +1,88 @@
+<!-- pages/diet/index.wxml — V0.2.0 饮食日记 -->
+<view class="diet">
+  <!-- 今日营养汇总 -->
+  <view class="summary-card">
+    <view class="calorie-main">
+      <text class="num">{{summary.calorie}}</text><text class="unit">千卡 今日摄入</text>
+    </view>
+    <view class="macro-row">
+      <view class="macro">
+        <text class="macro-val">{{summary.protein}}g</text>
+        <text class="macro-label">蛋白质</text>
+      </view>
+      <view class="macro">
+        <text class="macro-val">{{summary.fat}}g</text>
+        <text class="macro-label">脂肪</text>
+      </view>
+      <view class="macro">
+        <text class="macro-val">{{summary.carb}}g</text>
+        <text class="macro-label">碳水</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 搜索（FatSecret） -->
+  <view class="search-box">
+    <input
+      class="search-input"
+      value="{{searchKey}}"
+      bindinput="onSearchInput"
+      bindconfirm="onSearch"
+      placeholder="搜索食物（如：鸡蛋、牛奶）"
+      confirm-type="search"
+    />
+    <button class="search-btn" size="mini" bindtap="onSearch" loading="{{searching}}">搜索</button>
+  </view>
+
+  <!-- 搜索结果 -->
+  <view class="results" wx:if="{{results.length}}">
+    <view class="results-title">搜索结果（点击添加）</view>
+    <view class="result-item" wx:for="{{results}}" wx:key="id" bindtap="onPickFood" data-item="{{item}}">
+      <text class="result-name">{{item.name}}</text>
+      <text class="result-brand" wx:if="{{item.brand}}">{{item.brand}}</text>
+    </view>
+  </view>
+
+  <!-- 手动添加 -->
+  <button class="manual-btn" bindtap="onManualAdd">＋ 手动添加食物</button>
+
+  <!-- 今日饮食列表 -->
+  <view class="meals">
+    <view class="section-title">今日饮食</view>
+    <view class="empty" wx:if="{{!meals.length}}">还没有记录，去添加第一餐吧</view>
+    <view class="meal-card" wx:for="{{meals}}" wx:key="id">
+      <view class="meal-head">
+        <text class="meal-type-tag">{{item.mealTypeLabel}}</text>
+        <text class="meal-calorie">{{item.totalCalorie}} 千卡</text>
+        <text class="meal-del" bindtap="onRemoveMeal" data-id="{{item.id}}">删除</text>
+      </view>
+      <view class="meal-items">
+        <text class="meal-item-text" wx:for="{{item.items}}" wx:for-item="it" wx:key="*this">
+          {{it.name}}{{it.qty ? '·' + it.qty : ''}} {{it.calorie}}卡
+        </text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 添加食物弹层 -->
+  <view class="add-mask" wx:if="{{showAdd}}" catchtap="onCancelAdd">
+    <view class="add-sheet" catchtap="">
+      <view class="sheet-title">添加食物</view>
+      <picker class="sheet-row" bindchange="onMealTypeChange" value="{{mealTypeIndex}}" range="{{mealTypes}}" range-key="label">
+        <view class="picker-val">餐次：{{mealTypes[mealTypeIndex].label}} ▾</view>
+      </picker>
+      <input class="sheet-input" value="{{addForm.name}}" bindinput="onInputName" placeholder="食物名称" />
+      <input class="sheet-input" value="{{addForm.calorie}}" type="digit" bindinput="onInputCalorie" placeholder="卡路里（千卡）" />
+      <input class="sheet-input" value="{{addForm.qty}}" bindinput="onInputQty" placeholder="份量（如 1 碗，选填）" />
+      <view class="macro-inputs">
+        <input class="sheet-input mini" value="{{addForm.protein}}" type="digit" bindinput="onInputProtein" placeholder="蛋白g" />
+        <input class="sheet-input mini" value="{{addForm.fat}}" type="digit" bindinput="onInputFat" placeholder="脂肪g" />
+        <input class="sheet-input mini" value="{{addForm.carb}}" type="digit" bindinput="onInputCarb" placeholder="碳水g" />
+      </view>
+      <view class="sheet-actions">
+        <button class="sheet-btn cancel" bindtap="onCancelAdd">取消</button>
+        <button class="sheet-btn confirm" bindtap="onConfirmAdd">添加</button>
+      </view>
+    </view>
+  </view>
+</view>

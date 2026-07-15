@@ -16,6 +16,8 @@ vi.mock('src/infra/prisma.js', () => ({
     groupMember: { findMany: vi.fn() }, // V0.1.135 group contribution
     group: { findUnique: vi.fn() },
     shoe: { aggregate: vi.fn(), findFirst: vi.fn() }, // V0.1.137 跑鞋成就
+    user: { findUnique: vi.fn() }, // V0.2.0 userProfile
+    bodyCompositionRecord: { findFirst: vi.fn() }, // V0.2.0 userProfile
   },
 }));
 
@@ -402,5 +404,117 @@ describe('statsService.weather (V0.1.148)', () => {
     expect(r.text).toBe('获取失败');
     expect(r.temperature).toBe(0);
     expect(r.icon).toBe('999');
+  });
+});
+
+// ============================================================
+// V0.2.0 关联分析 weatherAnalysis（Pearson 温度×配速 / 湿度×心率）
+// ============================================================
+
+describe('statsService.weatherAnalysis (V0.2.0)', () => {
+  it('样本 < 10 → sufficient:false + 提示积累中', async () => {
+    mockedPrisma.checkin.findMany.mockResolvedValueOnce([
+      { weatherTemp: 20, humidity: 50, pace: '5:30', heartRate: 150 },
+    ] as never);
+
+    const r = await statsService.weatherAnalysis('u1');
+
+    expect(r.sufficient).toBe(false);
+    expect(r.count).toBe(1);
+    expect(r.message).toContain('积累中');
+  });
+
+  it('样本 ≥ 10 + 温度/湿度双正相关 → insights + correlation + scatter', async () => {
+    // 12 条：温度递增(18-29) + 配速秒递增(正相关) + 湿度递增 + 心率递增(正相关)
+    const data = Array.from({ length: 12 }, (_, i) => ({
+      weatherTemp: 18 + i,
+      humidity: 40 + i * 2,
+      pace: `5:${String(30 + i).padStart(2, '0')}`, // 5:30..5:41
+      heartRate: 145 + i,
+    }));
+    mockedPrisma.checkin.findMany.mockResolvedValueOnce(data as never);
+
+    const r = await statsService.weatherAnalysis('u1');
+
+    expect(r.sufficient).toBe(true);
+    expect(r.count).toBe(12);
+    // 温度×配速正相关（温度高配速慢）
+    expect(r.correlations.tempPace).not.toBeNull();
+    expect(r.correlations.tempPace!).toBeGreaterThan(0.3);
+    // 湿度×心率正相关
+    expect(r.correlations.humidityHr).not.toBeNull();
+    expect(r.correlations.humidityHr!).toBeGreaterThan(0.3);
+    // 洞察文本
+    expect(r.insights.length).toBeGreaterThan(0);
+    expect(r.insights.some((t) => t.includes('高温'))).toBe(true);
+    // 散点数据（≤50）
+    expect(r.scatter.tempPace.length).toBeLessThanOrEqual(50);
+    expect(r.scatter.tempPace[0]).toEqual({ x: 18, y: 330 });
+  });
+});
+
+// ============================================================
+// V0.2.0 用户画像 userProfile（聚合基础/运动/健康 → tags + summary）
+// ============================================================
+
+describe('statsService.userProfile (V0.2.0)', () => {
+  it('正常聚合 → tags（体型+跑者级）+ summary + basic + sport + body', async () => {
+    mockedPrisma.user.findUnique.mockResolvedValueOnce({
+      gender: 'male',
+      birthday: '1990-01-01',
+      height: 175,
+      weight: 70,
+      region: '长沙',
+      memberLevel: 'free',
+    } as never);
+    mockedPrisma.checkin.aggregate.mockResolvedValueOnce({
+      _sum: { distance: 500 },
+      _count: 100,
+      _avg: { heartRate: 150 },
+    } as never);
+    mockedPrisma.bodyCompositionRecord.findFirst.mockResolvedValueOnce({
+      bmi: 22.5,
+      bodyFat: 18,
+      muscle: 35,
+      visceralFat: 8,
+    } as never);
+
+    const r = await statsService.userProfile('u1');
+
+    // BMI 22.5 → 正常体型（< 24）
+    expect(r.tags).toContain('正常体型');
+    // 总跑量 500 → 进阶跑者（> 200）
+    expect(r.tags).toContain('进阶跑者');
+    // basic
+    expect(r.basic.gender).toBe('male');
+    expect(r.basic.age).toBeGreaterThan(30);
+    expect(r.basic.height).toBe(175);
+    expect(r.basic.bmi).toBe(22.9); // 70 / 1.75² ≈ 22.86 → toFixed(1)
+    // sport
+    expect(r.sport.totalDistance).toBe(500);
+    expect(r.sport.checkinCount).toBe(100);
+    expect(r.sport.avgHeartRate).toBe(150);
+    // body
+    expect(r.body?.bodyFat).toBe(18);
+    // summary 含"男"
+    expect(r.summary).toContain('男');
+    expect(r.summary).toContain('500');
+  });
+
+  it('无 user 数据 → tags 仍按默认推算（运动新手）', async () => {
+    mockedPrisma.user.findUnique.mockResolvedValueOnce(null);
+    mockedPrisma.checkin.aggregate.mockResolvedValueOnce({
+      _sum: { distance: 0 },
+      _count: 0,
+      _avg: { heartRate: null },
+    } as never);
+    mockedPrisma.bodyCompositionRecord.findFirst.mockResolvedValueOnce(null);
+
+    const r = await statsService.userProfile('u1');
+
+    expect(r.tags).toContain('运动新手');
+    expect(r.sport.totalDistance).toBe(0);
+    expect(r.body).toBeNull();
+    expect(r.basic.bmi).toBeNull();
   });
 });

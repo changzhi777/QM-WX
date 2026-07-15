@@ -1,0 +1,63 @@
+<!-- pages/insight/index.wxml — V0.2.0 AI 洞察 -->
+<view class="insight">
+  <!-- 用户画像 -->
+  <view class="card" wx:if="{{profile}}">
+    <view class="card-title">我的画像</view>
+    <view class="summary-text">{{profile.summary}}</view>
+    <view class="tags">
+      <text class="tag" wx:for="{{profile.tags}}" wx:key="*this">{{item}}</text>
+    </view>
+    <view class="basic-grid">
+      <view class="kv">
+        <text class="k">累计跑量</text>
+        <text class="v">{{profile.sport.totalDistance}}km</text>
+      </view>
+      <view class="kv">
+        <text class="k">打卡次数</text>
+        <text class="v">{{profile.sport.checkinCount}}</text>
+      </view>
+      <view class="kv" wx:if="{{profile.basic.bmi}}">
+        <text class="k">BMI</text>
+        <text class="v">{{profile.basic.bmi}}</text>
+      </view>
+      <view class="kv" wx:if="{{profile.body.bodyFat}}">
+        <text class="k">体脂率</text>
+        <text class="v">{{profile.body.bodyFat}}%</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 天气 × 运动关联分析 -->
+  <view class="card" wx:if="{{analysis}}">
+    <view class="card-title">天气 × 运动关联</view>
+    <view class="analysis-msg" wx:if="{{!analysis.sufficient}}">{{analysis.message}}</view>
+    <block wx:else>
+      <view class="scatter-wrap">
+        <canvas wx:if="{{analysis.scatter.tempPace.length}}" type="2d" id="scatter" class="scatter-canvas"></canvas>
+        <view class="scatter-caption">温度 × 配速散点（{{analysis.count}} 条打卡样本）</view>
+      </view>
+      <view class="insights">
+        <view class="insight-text" wx:for="{{analysis.insights}}" wx:key="*this">· {{item}}</view>
+      </view>
+      <view class="corr-row" wx:if="{{analysis.correlations.tempPace != null}}">
+        温度-配速相关系数：<text class="corr-val">{{analysis.correlations.tempPace}}</text>
+      </view>
+      <view class="corr-row" wx:if="{{analysis.correlations.humidityHr != null}}">
+        湿度-心率相关系数：<text class="corr-val">{{analysis.correlations.humidityHr}}</text>
+      </view>
+    </block>
+  </view>
+
+  <!-- AI 千人千面策略 -->
+  <view class="card">
+    <view class="card-title">AI 个性化建议</view>
+    <view class="strategy-text" wx:if="{{strategy}}">{{strategy}}</view>
+    <view class="strategy-empty" wx:else>基于你的画像与运动-天气关联，AI 生成专属运动建议</view>
+    <button class="strategy-btn" bindtap="onTapStrategy" loading="{{loadingStrategy}}">
+      {{strategy ? '重新生成' : '生成我的策略'}}
+    </button>
+  </view>
+
+  <view class="loading" wx:if="{{loading}}">加载中...</view>
+  <view class="error-tip" wx:if="{{error}}" bindtap="onRetry">{{error}}（点击重试）</view>
+</view>

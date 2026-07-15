@@ -19,7 +19,8 @@ const mockParseScore = vi.hoisted(() => vi.fn());
 
 vi.mock('src/modules/device/device.service.js', () => ({ deviceService: mockDeviceService }));
 vi.mock('src/modules/sport/sport.service.js', () => ({ sportService: mockSportService }));
-vi.mock('src/infra/ocr.js', () => ({ generalOcr: mockGeneralOcr, parseSportScore: mockParseScore }));
+vi.mock('src/infra/ocr.js', () => ({ parseSportScore: mockParseScore }));
+vi.mock('src/modules/ocr/ocr.service.js', () => ({ ocrService: { generalBasic: mockGeneralOcr } }));
 
 import { PARSERS } from 'src/modules/device/device-parser.registry.js';
 

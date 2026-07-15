@@ -36,6 +36,8 @@
   <view class="card">
     <view class="card-title">AI 服务</view>
     <view class="cell" bindtap="goAiCoach"><text class="cell-label">AI 私教</text><text class="cell-new">NEW</text><text class="cell-arrow">›</text></view>
+    <view class="cell" bindtap="goInsight"><text class="cell-label">AI 运动洞察</text><text class="cell-new">NEW</text><text class="cell-arrow">›</text></view>
+    <view class="cell" bindtap="goDiet"><text class="cell-label">饮食日记</text><text class="cell-new">NEW</text><text class="cell-arrow">›</text></view>
     <view class="cell" bindtap="goRunner"><text class="cell-label">我的解读报告</text><text class="cell-arrow">›</text></view>
   </view>
 

@@ -186,6 +186,19 @@ Page({
 
     this.setData({ submitting: true });
     try {
+      // V0.2.0 采定位（授权失败/拒绝不阻塞打卡，后端天气快照留 null）
+      let lat: number | undefined;
+      let lon: number | undefined;
+      try {
+        const loc = await new Promise<WechatMiniprogram.GetLocationSuccessCallbackResult>((resolve, reject) => {
+          wx.getLocation({ type: 'gcj02', success: resolve, fail: reject });
+        });
+        lat = loc.latitude;
+        lon = loc.longitude;
+      } catch {
+        // 用户拒绝定位或无权限，跳过天气快照（关联分析样本减少，可接受）
+      }
+
       const payload: Record<string, unknown> = { distance };
       if (durationMin > 0) payload.durationSec = Math.round(durationMin * 60);
       if (this.data.form.pace) payload.pace = this.data.form.pace;
@@ -193,6 +206,10 @@ Page({
       if (this.data.form.cadence) payload.cadence = Number(this.data.form.cadence);
       if (this.data.form.groupId) payload.groupId = this.data.form.groupId;
       if (this.data.form.shoeId) payload.shoeId = this.data.form.shoeId;
+      if (lat != null && lon != null) {
+        payload.lat = lat;
+        payload.lon = lon;
+      }
 
       const result = await api.call<{ points: number }>('sport', 'checkin', payload);
 

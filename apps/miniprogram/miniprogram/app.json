@@ -17,7 +17,9 @@
     "pages/feed/index",
     "pages/user/index",
     "pages/onboarding/index",
-    "pages/ai-coach/index"
+    "pages/ai-coach/index",
+    "pages/diet/index",
+    "pages/insight/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",

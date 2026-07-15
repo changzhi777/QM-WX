@@ -260,6 +260,8 @@ Page({
 
   // V0.1.143 入口精简 8 项（跑者数据/跑鞋/健康/设备/训练/赛事/跑群/消息）
   goRunner() { wx.navigateTo({ url: '/pages/runner/index' }); },
+  goInsight() { wx.navigateTo({ url: '/pages/insight/index' }); },
+  goDiet() { wx.navigateTo({ url: '/pages/diet/index' }); },
   goShoes() { wx.navigateTo({ url: '/pages/shoes/index' }); },
   goHealth() { wx.navigateTo({ url: '/pages/health/index' }); },
   goTraining() { wx.navigateTo({ url: '/pages/training/index' }); },

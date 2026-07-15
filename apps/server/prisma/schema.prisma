@@ -841,7 +841,7 @@ model Meal {
   id           String   @id @default(cuid())
   userId       String
   mealType     String // breakfast | lunch | dinner | snack
-  items        Json // [{name, calorie, qty}]
+  items        Json // V0.2.0 宏量升级：[{name, calorie, protein?, fat?, carb?, qty?, foodId?}]
   totalCalorie Int
   date         String // YYYY-MM-DD
   createdAt    DateTime @default(now())

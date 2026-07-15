@@ -91,6 +91,20 @@ export const ENDPOINTS = {
     upload: '/api/upload', // multipart 文件上传（wx.uploadFile，?type=xxx）
     records: '/api/upload/records', // V0.1.150 myUploads（用户查自己的上传记录 + 解析状态）
   },
+  food: {
+    // V0.2.0 饮食日记（FatSecret 搜索 + 营养详情 + Meal 记录）
+    search: '/api/food', // FatSecret food.search.v2（FoodCache 1h 缓存）
+    nutrition: '/api/food', // FatSecret food.get.v2（每 100g 宏量）
+    record: '/api/food', // 记录一餐（mealType + items + date?）
+    myMeals: '/api/food', // 某日饮食列表 + 宏量汇总（默认今日）
+    removeMeal: '/api/food', // 删除一餐（鉴权仅本人）
+  },
+  ocr: {
+    // V0.2.1 腾讯云 OCR SDK（官方精简包，复用 COS key）
+    generalBasic: '/api/ocr', // 通用印刷体（运动截图成绩）
+    generalAccurate: '/api/ocr', // 通用高精度（模糊截图增强）
+    idCard: '/api/ocr', // 身份证实名（赛事报名/账户安全）
+  },
   device: {
     listBindings: '/api/device',
     startOAuth: '/api/device',
