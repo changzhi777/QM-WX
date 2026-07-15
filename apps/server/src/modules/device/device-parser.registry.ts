@@ -1,17 +1,19 @@
 /**
- * 数据包解析器注册表（V0.1.150 / V0.1.151 扩展）
+ * 数据包解析器注册表（V0.1.150 / V0.1.151 扩展 / V0.2.2 huawei_export 落地）
  *
  * UploadRecord.type → 解析器（userId, buffer, password?）→ ParsedResult
  * 后台 job 从 COS 下载 buffer 后按 type 分发。
  *
- * 已实现：xiaomi_zip / coros_fit / garmin_fit（V0.1.150 + V0.1.151 garmin 复用）
- * Stub（待实现）：apple_health（需 fast-xml-parser）/ huawei_export（需样本）/ sport_screenshot（需 OCR，Phase 3）
+ * 已实现：xiaomi_zip / coros_fit / garmin_fit（V0.1.150 + V0.1.151 garmin 复用）/
+ *         apple_health（V0.1.151）/**huawei_export**（V0.2.2 init #11 落地，Hitrava schema）/
+ *         sport_screenshot（V0.1.151 → V0.2.1 OCR SDK 迁移）
  */
 import { deviceService } from '../device/device.service.js';
 import { sportService } from '../sport/sport.service.js';
 import { parseSportScore } from '../../infra/ocr.js';
 import { ocrService } from '../ocr/ocr.service.js'; // V0.2.1 OCR 调用迁移到官方 SDK module
 import { XMLParser } from 'fast-xml-parser';
+import { parseHuaweiExport } from './parsers/huawei-export.parser.js'; // V0.2.2 init #11
 
 export type DataUploadType =
   | 'xiaomi_zip'
@@ -80,9 +82,36 @@ export const PARSERS: Record<DataUploadType, Parser> = {
     }
     return { summary: `苹果 Health 导入 ${imported} 条跑步（共 ${list.length} Workout）`, detail: { imported, total: list.length } };
   },
-  // Stub：待主人提供华为运动健康导出样本
-  huawei_export: async () => {
-    throw new Error('huawei_export 解析待样本（华为运动健康导出格式 proprietary）');
+  // V0.2.2 init #11：华为运动健康导出（Hitrava v6.3.0 逆向 schema + AES ZIP + 降级兼容）
+  huawei_export: async (userId, buffer, password) => {
+    const result = await parseHuaweiExport(buffer, password);
+    let imported = 0;
+    const errors: string[] = [];
+    for (const act of result.activities) {
+      if (act.distanceKm <= 0) continue; // 无距离跳过（瑜伽等）
+      try {
+        await sportService.checkin(userId, {
+          distance: act.distanceKm,
+          durationSec: act.durationSec || undefined,
+          date: act.startedAt.toISOString().slice(0, 10),
+          dataSource: 'huawei_export',
+          sportType: act.sport === 'run' ? 'run' : (act.sport as never),
+        } as never);
+        imported++;
+      } catch (e) {
+        errors.push((e as Error).message);
+      }
+    }
+    return {
+      summary: `华为运动健康导入 ${imported}/${result.filteredCount} 条有效运动（共 ${result.rawCount} 条原始）`,
+      detail: {
+        imported,
+        rawCount: result.rawCount,
+        filteredCount: result.filteredCount,
+        errorCount: errors.length,
+        errors: errors.slice(0, 3), // 截前 3 个错误
+      },
+    };
   },
   // Phase 3：截图 OCR（腾讯云通用 OCR + 成绩正则 + 自动建 Checkin，Q2=A 全自动）
   sport_screenshot: async (userId, buffer) => {
