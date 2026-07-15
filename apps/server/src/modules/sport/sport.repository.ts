@@ -69,6 +69,11 @@ export const sportRepo = {
       points: number;
       date: string;
       shoeId: string | null; // V0.1.26 关联跑鞋
+      // V0.2.0 天气快照 + 地点（打卡时采和风，关联分析用）
+      weatherTemp: number | null;
+      humidity: number | null;
+      lat: number | null;
+      lon: number | null;
     },
   ) {
     return tx.checkin.create({ data });

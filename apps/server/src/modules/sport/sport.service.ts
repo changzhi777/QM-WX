@@ -29,6 +29,7 @@ import type {
   AnnounceGroupInput,
 } from './sport.schema.js';
 import { CheckinInputSchema } from './sport.schema.js';
+import { statsService } from '../stats/stats.service.js';
 import { incrementShoeKm } from '../shoes/shoes.service.js';
 
 /** sport.today 缓存 TTL：60s（打卡后 60s 内可能仍看到旧态，可接受） */
@@ -125,6 +126,21 @@ export const sportService = {
     const perKm = pointsRules.perKm ?? POINTS_RULES_DEFAULT.perKm;
     const points = Math.floor(clean.distance * perKm);
 
+    // V0.2.0 采天气快照（lat/lon 授权定位时调和风；失败不阻塞打卡）
+    let weatherTemp: number | null = null;
+    let humidity: number | null = null;
+    const lat = clean.lat ?? null;
+    const lon = clean.lon ?? null;
+    if (lat != null && lon != null) {
+      try {
+        const w = await statsService.weather(userId, { lat, lon });
+        weatherTemp = w.temperature ?? null;
+        humidity = w.humidity ?? null;
+      } catch {
+        // 天气查询失败不阻塞打卡（Checkin 天气字段留 null）
+      }
+    }
+
     // 4. 事务：写 checkin + 写流水 + 加积分 + 加 stats + 跑鞋累计里程（V0.1.26）
     await prisma.$transaction(async (tx) => {
       await sportRepo.checkinInTx(tx, {
@@ -138,6 +154,10 @@ export const sportService = {
         points,
         date,
         shoeId: clean.shoeId ?? null,
+        weatherTemp,
+        humidity,
+        lat,
+        lon,
       });
       await userRepo.addPoints(tx, userId, points, 'checkin');
       // 跑鞋里程累计（V0.1.26；shoeId 为空则跳过）

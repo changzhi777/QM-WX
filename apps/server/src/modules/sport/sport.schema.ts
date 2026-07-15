@@ -20,6 +20,9 @@ export const CheckinInputSchema = z
     groupId: z.string().optional(),
     /** 关联跑鞋（V0.1.26，打卡时选 → 跑鞋自动累计里程） */
     shoeId: z.string().optional(),
+    /** V0.2.0 打卡地点（授权定位，采天气快照用）*/
+    lat: z.number().min(-90).max(90).optional(),
+    lon: z.number().min(-180).max(180).optional(),
     /** ⚠️ 前端可以传，但服务端忽略；防作弊 */
     points: z.number().int().optional(),
   })

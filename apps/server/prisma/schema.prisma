@@ -112,6 +112,12 @@ model Checkin {
   garminActivityId String?  @unique // 佳明去重键（null = 手动打卡）
   sportType        String? // run | hike | ride | other
   shoeId           String? // 关联跑鞋（打卡时选 → 跑鞋自动累计里程，V0.1.26）
+  // V0.2.0 天气快照 + 地点（打卡时采和风，关联分析用）
+  weatherTemp      Float? // 气温 °C
+  humidity         Float? // 湿度 %
+  aqi              Int? // 空气质量指数（PM2.5 换算或和风 air）
+  lat              Float? // 打卡纬度（授权定位）
+  lon              Float? // 打卡经度
   createdAt        DateTime @default(now())
 
   user  User   @relation(fields: [userId], references: [id])
