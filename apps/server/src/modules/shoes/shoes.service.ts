@@ -14,6 +14,7 @@
  * 里程累计：sport.checkin 事务内调用 incrementShoeKm（导出供 sport 复用，不在此 module 写）
  */
 import { prisma } from '../../infra/prisma.js';
+import { Cache } from '../../infra/cache.js';
 import { Errors } from '../../common/errors.js';
 import type {
   AddShoeInput,
@@ -25,8 +26,13 @@ import type {
 export const shoesService = {
   /**
    * 列出我的跑鞋（active 在前，retired 在后；含健康度百分比）
+   * 缓存 120s（与 stats/goal 一致 — 跑鞋列表低频变化）
    */
   async list(userId: string) {
+    const cacheKey = `shoes:list:${userId}`;
+    return Cache.wrap(cacheKey, 120, async () => this.computeList(userId));
+  },
+  async computeList(userId: string) {
     const shoes = await prisma.shoe.findMany({
       where: { userId },
       orderBy: [{ status: 'asc' }, { createdAt: 'desc' }], // 'active' < 'retired' 字典序
@@ -96,6 +102,10 @@ export const shoesService = {
 
   /** 跑鞋统计（mine 入口红点用 retiringSoonCount） */
   async myStats(userId: string) {
+    const cacheKey = `shoes:myStats:${userId}`;
+    return Cache.wrap(cacheKey, 120, async () => this.computeMyStats(userId));
+  },
+  async computeMyStats(userId: string) {
     const shoes = await prisma.shoe.findMany({
       where: { userId },
       select: { currentKm: true, thresholdKm: true, status: true },

@@ -15,6 +15,21 @@ vi.mock('src/infra/prisma.js', () => ({
 }));
 vi.mock('src/common/errors.js', () => ({ Errors: mockErrors }));
 
+// V0.2.3 Cache.wrap 120s：mock Redis（同 stats/goal 范式）
+const _redisMockState = vi.hoisted(() => ({
+  cacheStore: new Map<string, string>(),
+  redis: { get: vi.fn(), set: vi.fn(), del: vi.fn(), scan: vi.fn() },
+}));
+vi.mock('src/infra/redis.js', () => ({ redis: _redisMockState.redis }));
+
+function setupMockRedis() {
+  const { cacheStore, redis } = _redisMockState;
+  redis.get.mockImplementation(async (k: string) => cacheStore.get(k) ?? null);
+  redis.set.mockImplementation(async (k: string, v: string) => { cacheStore.set(k, v); return 'OK'; });
+  redis.del.mockImplementation(async (k: string) => { const had = cacheStore.has(k); cacheStore.delete(k); return had ? 1 : 0; });
+  redis.scan.mockImplementation(async () => ['0', []] as [string, string[]]);
+}
+
 import { prisma } from 'src/infra/prisma.js';
 import { shoesService } from 'src/modules/shoes/shoes.service.js';
 
@@ -22,6 +37,8 @@ const mockedPrisma = vi.mocked(prisma);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  _redisMockState.cacheStore.clear();
+  setupMockRedis();
 });
 
 describe('shoesService.list (V0.1.26)', () => {
@@ -281,5 +298,34 @@ describe('shoesService.compareShoes (V0.1.137)', () => {
   it('鞋不属 user → notFound', async () => {
     mockedPrisma.shoe.findMany.mockResolvedValue([{ id: 's1' }] as never);
     await expect(shoesService.compareShoes('u1', ['s1', 's99'])).rejects.toThrow();
+  });
+});
+
+// ============================================================
+// V0.2.3 缓存命中（Cache.wrap 120s）
+// ============================================================
+
+describe('shoesService 缓存（V0.2.3）', () => {
+  it('list 第二次同 user → 命中缓存（不再调 prisma.shoe.findMany）', async () => {
+    mockedPrisma.shoe.findMany.mockResolvedValue([] as never);
+
+    await shoesService.list('u1');
+    expect(mockedPrisma.shoe.findMany).toHaveBeenCalledTimes(1);
+
+    // 第二次：缓存命中
+    await shoesService.list('u1');
+    expect(mockedPrisma.shoe.findMany).toHaveBeenCalledTimes(1);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:shoes:list:u1')).toBe(true);
+  });
+
+  it('myStats 第二次同 user → 命中缓存', async () => {
+    mockedPrisma.shoe.findMany.mockResolvedValue([] as never);
+
+    await shoesService.myStats('u1');
+    expect(mockedPrisma.shoe.findMany).toHaveBeenCalledTimes(1);
+
+    await shoesService.myStats('u1');
+    expect(mockedPrisma.shoe.findMany).toHaveBeenCalledTimes(1);
+    expect(_redisMockState.cacheStore.has('qmwx:cache:shoes:myStats:u1')).toBe(true);
   });
 });
