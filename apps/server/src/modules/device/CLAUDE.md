@@ -224,6 +224,7 @@ src/modules/stats/stats.service.ts    # myTodayHealth 聚合查询
 
 ## 📝 变更记录 (Changelog)
 
+- **2026-07-15** — 🎯 **V0.2.2 huawei_export parser 落地（init #11）**：基于 `CTHRU/Hitrava v6.3.0` 逆向 schema（421 stars / 完整 JSON 字段映射表）实现华为运动健康隐私中心 ZIP 导出解析器，**无需主人提供样本**（用合成 JSON 单测 20 例 + 等真实样本回归）。新增 `apps/server/src/modules/device/parsers/huawei-export.parser.ts`（HuaweiActivity 接口 + parseMotionJson/parseAttribute/toCheckin 3 工具 + parseHuaweiExport 主入口 AES 加密 ZIP + unzipper 复用 V0.1.150 importXiaomiZip 范式）；sportType 枚举映射 13 个（4=run / 5=walk / 3=cycle / 101=indoor_run / 102=pool_swim / 103=indoor_cycle / 104=open_water_swim / 111=cross_trainer / 118=cross_country_run / 145=crossfit / 282=hike / 2=mountain_hike / 117=other → QM-WX sport enum）；单位转换（ms/毫卡/m/dm/s 全部正确）；格式兼容降级 2020-07/2021-04/2025-01 三次变更；attribute 优先 > 顶层字段；`device-parser.registry.huawei_export` 替换 stub → 循环 `sportService.checkin(dataSource='huawei_export')`；生产 V0.2.2 healthy 20s + 20 单测全过；调研:init #11 search 完整报告见 memory `huawei-export-search-v0202.md`；commit b7c7327
 - **2026-06-29** — V0.1.0 device V2 stub
 - **2026-07-01** — V0.1.15 佳明 4 查询 + 数据处理 4 action + 15723 条真数据灌入
 - **2026-07-03** — V0.1.25 pic 3 页 + device 扩 5 action（myTodayHealth/myBindings/bindBleDevice/unbind/submitHeartRate）+ utils/ble.ts

@@ -180,3 +180,73 @@ describe('food.service.removeMeal', () => {
     });
   });
 });
+
+describe('food.service.recordMeal 默认日期 + 0 卡路里', () => {
+  it('date 缺省 → 走 todayCN() 默认今日', async () => {
+    mocks.prisma.meal.create.mockResolvedValue({
+      id: 'm1',
+      mealType: 'lunch',
+      totalCalorie: 0,
+      date: '2026-07-15',
+    } as never);
+    const res = await foodService.recordMeal(USER, {
+      mealType: 'lunch',
+      items: [{ name: '黑咖啡', calorie: 0 }],
+    });
+    // 不传 date 也能落库(默认 todayCN)
+    expect(res.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(res.totalCalorie).toBe(0);
+  });
+
+  it('item calorie NaN/字符串 → 0 卡路里（容错）', async () => {
+    mocks.prisma.meal.create.mockResolvedValue({
+      id: 'm2',
+      mealType: 'snack',
+      totalCalorie: 0,
+      date: '2026-07-15',
+    } as never);
+    const res = await foodService.recordMeal(USER, {
+      mealType: 'snack',
+      items: [{ name: '水', calorie: NaN }, { name: '茶', calorie: 'abc' as never }],
+    });
+    expect(res.totalCalorie).toBe(0);
+  });
+});
+
+describe('food.service.myMeals 边界', () => {
+  it('无日期参数 → 走 todayCN() 默认', async () => {
+    mocks.prisma.meal.findMany.mockResolvedValue([]);
+    await foodService.myMeals(USER); // 不传 date
+    expect(mocks.prisma.meal.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: USER, date: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) } }),
+    );
+  });
+
+  it('item.protein/fat/carb NaN → 0（不阻塞汇总）', async () => {
+    mocks.prisma.meal.findMany.mockResolvedValue([
+      {
+        id: 'm3',
+        mealType: 'breakfast',
+        totalCalorie: 100,
+        createdAt: new Date(),
+        items: [{ name: 'x', calorie: 100, protein: NaN, fat: NaN, carb: NaN }],
+      },
+    ] as never);
+    const res = await foodService.myMeals(USER, '2026-07-15');
+    expect(res.summary).toEqual({ calorie: 100, protein: 0, fat: 0, carb: 0 });
+  });
+});
+
+describe('food.service.search 缓存 hitCount 失败降级', () => {
+  it('hitCount update 失败 → 仍返缓存（不阻塞）', async () => {
+    const list = [{ id: 'f1', name: '鸡蛋' }];
+    mocks.prisma.foodCache.findFirst.mockResolvedValue({
+      id: 'c1',
+      payload: { list },
+    });
+    mocks.prisma.foodCache.update.mockRejectedValue(new Error('db down'));
+    const res = await foodService.search('鸡蛋');
+    expect(res).toEqual(list);
+    // update 失败被 catch 吞掉,主流程返 list
+  });
+});

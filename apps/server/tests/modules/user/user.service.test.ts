@@ -297,3 +297,42 @@ describe('userService.updateProfile（V0.1.8 增 me 缓存失效）', () => {
     expect(_redisMockState.cacheStore.has('qmwx:cache:user:me:u1')).toBe(true);
   });
 });
+
+// ===== V0.1.43 onboarding 状态管理 =====
+describe('userService.completeOnboarding（V0.1.43 onboardingDone=true）', () => {
+  it('标记完成 → update + me 缓存失效', async () => {
+    // 预热 me 缓存
+    _redisMockState.cacheStore.set(
+      'qmwx:cache:user:me:u1',
+      JSON.stringify({ id: 'u1', onboardingDone: false }),
+    );
+    mockedPrisma.user.update.mockResolvedValue({} as never);
+
+    const result = await userService.completeOnboarding('u1');
+    expect(result).toEqual({ ok: true });
+    expect(mockedPrisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { onboardingDone: true },
+    });
+    // 缓存被精准失效
+    expect(_redisMockState.cacheStore.has('qmwx:cache:user:me:u1')).toBe(false);
+  });
+});
+
+describe('userService.resetOnboarding（V0.1.43 onboardingDone=false 重走）', () => {
+  it('重置 → update + me 缓存失效', async () => {
+    _redisMockState.cacheStore.set(
+      'qmwx:cache:user:me:u1',
+      JSON.stringify({ id: 'u1', onboardingDone: true }),
+    );
+    mockedPrisma.user.update.mockResolvedValue({} as never);
+
+    const result = await userService.resetOnboarding('u1');
+    expect(result).toEqual({ ok: true });
+    expect(mockedPrisma.user.update).toHaveBeenCalledWith({
+      where: { id: 'u1' },
+      data: { onboardingDone: false },
+    });
+    expect(_redisMockState.cacheStore.has('qmwx:cache:user:me:u1')).toBe(false);
+  });
+});

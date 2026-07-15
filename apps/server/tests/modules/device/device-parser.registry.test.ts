@@ -1,11 +1,11 @@
 /**
- * device-parser.registry 单测（V0.1.151）
+ * device-parser.registry 单测（V0.1.151 + V0.2.2 huawei_export 集成）
  *
  * 覆盖各 type parser 分发：
  * - garmin_fit 复用 importCorosFit
  * - sport_screenshot OCR（mock generalOcr + parseSportScore）→ 自动 Checkin / 无距离不建
  * - apple_health（真 XMLParser + mock sportService.checkin）→ Workout 跑步建 Checkin
- * - huawei_export stub throw
+ * - huawei_export（V0.2.2 — 无效 buffer 抛错，集成见 huawei-export.parser.test.ts）
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -78,8 +78,12 @@ describe('apple_health (V0.1.151)', () => {
   });
 });
 
-describe('huawei_export stub (V0.1.151)', () => {
-  it('throw 待样本', async () => {
-    await expect(PARSERS.huawei_export('u1', Buffer.from('csv'))).rejects.toThrow('待样本');
+describe('huawei_export (V0.2.2)', () => {
+  it('无效 buffer（非 ZIP）→ 抛错（fail-fast）', async () => {
+    // V0.2.2 init #11 落地：unzipper.Open.buffer 解析失败 → 抛错
+    // 详细单测见 huawei-export.parser.test.ts（20 用例）
+    await expect(PARSERS.huawei_export('u1', Buffer.from('not-a-zip'))).rejects.toThrow();
+    // sportService.checkin 不被调（fail-fast）
+    expect(mockSportService.checkin).not.toHaveBeenCalled();
   });
 });

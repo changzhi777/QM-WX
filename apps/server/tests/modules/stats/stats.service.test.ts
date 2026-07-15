@@ -451,6 +451,40 @@ describe('statsService.weatherAnalysis (V0.2.0)', () => {
     expect(r.scatter.tempPace.length).toBeLessThanOrEqual(50);
     expect(r.scatter.tempPace[0]).toEqual({ x: 18, y: 330 });
   });
+
+  it('温度×配速负相关 → 你更耐热 洞察', async () => {
+    // 12 条：温度递增 + 配速秒递减（更耐热）
+    const data = Array.from({ length: 12 }, (_, i) => ({
+      weatherTemp: 18 + i,
+      humidity: 50, // 固定湿度(湿度样本 < 10 → humidityHrR=null)
+      pace: `5:${String(45 - i).padStart(2, '0')}`, // 5:45..5:34
+      heartRate: null, // 湿度样本<10 时 humidityHr 不参与
+    }));
+    mockedPrisma.checkin.findMany.mockResolvedValueOnce(data as never);
+
+    const r = await statsService.weatherAnalysis('u1');
+    expect(r.sufficient).toBe(true);
+    expect(r.correlations.tempPace!).toBeLessThan(-0.3); // 负相关
+    expect(r.insights.some((t) => t.includes('更耐热'))).toBe(true);
+    // 湿度样本 < 10 → humidityHrR null
+    expect(r.correlations.humidityHr).toBeNull();
+  });
+
+  it('样本充足但无显著相关 → 兜底 insights', async () => {
+    // 12 条数据：温度全相同 + 配速全相同（完全无相关）
+    const data = Array.from({ length: 12 }, (_, i) => ({
+      weatherTemp: 25, // 全相同 → tempPaceR=null(pearson < 2 返 null)
+      humidity: 50,
+      pace: '5:30', // 全相同
+      heartRate: null, // humidityHrR=null
+    }));
+    mockedPrisma.checkin.findMany.mockResolvedValueOnce(data as never);
+
+    const r = await statsService.weatherAnalysis('u1');
+    expect(r.sufficient).toBe(true);
+    // tempPaceR=null(因全相同)+ humidityHrR=null → insights 兜底
+    expect(r.insights.some((t) => t.includes('未发现显著'))).toBe(true);
+  });
 });
 
 // ============================================================
@@ -516,5 +550,60 @@ describe('statsService.userProfile (V0.2.0)', () => {
     expect(r.sport.totalDistance).toBe(0);
     expect(r.body).toBeNull();
     expect(r.basic.bmi).toBeNull();
+  });
+
+  it('BMI 分支：偏瘦(<18.5) / 偏胖(24-28) / 肥胖(≥28) + 资深跑者(>1000km) + female 性别', async () => {
+    // BMI = 17（偏瘦）+ 累计 1500km（资深跑者）+ female + 无 birthday（age=null）
+    mockedPrisma.user.findUnique.mockResolvedValueOnce({
+      gender: 'female',
+      birthday: null, // 无 birthday → age=null
+      height: 165,
+      weight: 46, // 46/1.65² ≈ 16.9 → 偏瘦
+      region: '深圳',
+      memberLevel: 'yearly',
+    } as never);
+    mockedPrisma.checkin.aggregate.mockResolvedValueOnce({
+      _sum: { distance: 1500 }, // 资深跑者
+      _count: 500,
+      _avg: { heartRate: 155 },
+    } as never);
+    mockedPrisma.bodyCompositionRecord.findFirst.mockResolvedValueOnce(null);
+
+    const r = await statsService.userProfile('u1');
+    expect(r.tags).toContain('偏瘦');
+    expect(r.tags).toContain('资深跑者');
+    expect(r.basic.gender).toBe('female');
+    expect(r.basic.age).toBeNull(); // 无 birthday
+    expect(r.basic.bmi).toBe(16.9);
+    expect(r.summary).toContain('女'); // female 性别
+    expect(r.summary).toContain('?岁'); // age 占位
+  });
+
+  it('BMI 用 BodyCompositionRecord 兜底（user 无 height/weight 但有 body comp）', async () => {
+    // V0.2.0 兜底逻辑：user.height/weight 缺 → 用 bodyCompositionRecord.bmi
+    mockedPrisma.user.findUnique.mockResolvedValueOnce({
+      gender: 'male',
+      birthday: '1990-01-01',
+      height: null, // 缺
+      weight: null, // 缺
+      region: '北京',
+      memberLevel: 'monthly',
+    } as never);
+    mockedPrisma.checkin.aggregate.mockResolvedValueOnce({
+      _sum: { distance: 50 },
+      _count: 10,
+      _avg: { heartRate: 145 },
+    } as never);
+    mockedPrisma.bodyCompositionRecord.findFirst.mockResolvedValueOnce({
+      bmi: 26.5, // 偏胖
+      bodyFat: 28,
+      muscle: 30,
+      visceralFat: 12,
+    } as never);
+
+    const r = await statsService.userProfile('u1');
+    expect(r.basic.bmi).toBe(26.5); // 用 body comp 兜底
+    expect(r.tags).toContain('偏胖'); // BMI 24-28
+    expect(r.tags).toContain('入门跑者'); // total 50km(0<total≤200)
   });
 });
