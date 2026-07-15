@@ -2,6 +2,21 @@
 
 > 📍 面包屑：[根目录](../../../../CLAUDE.md) > [apps/server](../../../CLAUDE.md) > modules > **stats**
 
+## 📋 变更记录 (Changelog)
+
+- **2026-07-15** — 🎯 **V0.2.0 阶段 2 + 阶段 3 收官(init #11 补 changelog)**：**+2 action** `weatherAnalysis`(关联分析 — Checkin 天气快照+配速/心率 Pearson 相关系数,样本<10 返 sufficient:false 兜底)/ `userProfile`(用户画像 — tags 自动生成 + basic/sport/body 三段聚合 + summary 段落,frontend insight 页可一键喂 aiCoach.chat 拿千人千面建议);**Checkin +5 字段** weatherTemp/humidity/aqi/lat/lon(迁移 20260716000000_checkin_weather_geo,history 不回填 initially 样本少 weatherAnalysis 兜底);**+10 单测**(V0.2.2.1 coverage 修复 5 例:负相关/湿度<10/全相同兜底/BMI 分支/BodyComp 兜底);前端 **pages/insight/ 新页**(3 卡片:画像/天气关联/AI 策略,调 stats.userProfile + stats.weatherAnalysis + aiCoach.chat);ENDPOINTS.stats 8→**10 action**
+- **2026-07-12** — V0.1.137 跑鞋成就 3 段:累计 100/500/1000/3000km / 持有 30/100/365 天 / 打卡 50/100/500 次
+- **2026-07-12** — V0.1.135 5 段证书:milestones / marathons / paceProgressCert(最近 10 次 5+5 比较提速 10%) / consecutiveCheckinCert(7/30/100 天 streak) / groupContributionCert(本月群内前 3)
+- **2026-07-11** — V0.1.134 RaceResult race leaderboard + myRaceResult
+- **2026-07-03** — V0.1.28 证书里程碑 100/500/1000/3000km
+- **2026-07-03** — V0.1.27 年度报告(myAnnualReport)
+
+## 🎯 职责
+
+跑者数据汇总读模型。聚合 Checkin(手动+佳明)/Enrollment/GroupMember/Shoe 数据,生成年/月/总跑量、打卡次数、平均配速、年度报告、证书成就、用户画像、天气关联分析。数据来源单一(Checkin),缓存 120s,无写操作。
+
+## 入口
+
 ## 职责
 
 跑者数据汇总读模型。聚合 Checkin（手动+佳明）/Enrollment/GroupMember/Shoe 数据，生成年/月/总跑量、打卡次数、平均配速、年度报告、证书成就。数据来源单一（Checkin），缓存 120s，无写操作。
