@@ -607,3 +607,70 @@ describe('statsService.userProfile (V0.2.0)', () => {
     expect(r.tags).toContain('入门跑者'); // total 50km(0<total≤200)
   });
 });
+
+// ============================================================
+// V0.2.2 缓存命中（Cache.wrap 120s）
+// ============================================================
+
+describe('statsService.weatherAnalysis 缓存（V0.2.2）', () => {
+  it('第二次同 user → 命中缓存（不再调 prisma）', async () => {
+    const _redisMock = _redisMockState; // 复用 setupMockRedis 已建
+    _redisMock.cacheStore.clear();
+
+    // 第一次：mock 数据
+    mockedPrisma.checkin.findMany.mockResolvedValueOnce([
+      ...Array.from({ length: 12 }, (_, i) => ({
+        weatherTemp: 20 + i,
+        humidity: 50,
+        pace: '5:30',
+        heartRate: null,
+      })),
+    ] as never);
+
+    const r1 = await statsService.weatherAnalysis('u1');
+    expect(r1.sufficient).toBe(true);
+    expect(mockedPrisma.checkin.findMany).toHaveBeenCalledTimes(1);
+
+    // 第二次：缓存命中（findMany 不再调）
+    const r2 = await statsService.weatherAnalysis('u1');
+    expect(r2.sufficient).toBe(true);
+    // 缓存命中 → prisma 不再查
+    expect(mockedPrisma.checkin.findMany).toHaveBeenCalledTimes(1);
+    // 缓存 key 存在
+    expect(_redisMock.cacheStore.has('qmwx:cache:stats:weatherAnalysis:u1')).toBe(true);
+  });
+});
+
+describe('statsService.userProfile 缓存（V0.2.2）', () => {
+  it('第二次同 user → 命中缓存（不再调 prisma aggregate）', async () => {
+    const _redisMock = _redisMockState;
+    _redisMock.cacheStore.clear();
+
+    mockedPrisma.user.findUnique.mockResolvedValueOnce({
+      gender: 'male',
+      birthday: '1990-01-01',
+      height: 175,
+      weight: 70,
+      region: '北京',
+      memberLevel: 'free',
+    } as never);
+    mockedPrisma.checkin.aggregate.mockResolvedValueOnce({
+      _sum: { distance: 100 },
+      _count: 20,
+      _avg: { heartRate: 150 },
+    } as never);
+    mockedPrisma.bodyCompositionRecord.findFirst.mockResolvedValueOnce(null);
+
+    const r1 = await statsService.userProfile('u1');
+    expect(r1.tags).toContain('入门跑者');
+    expect(mockedPrisma.user.findUnique).toHaveBeenCalledTimes(1);
+    expect(mockedPrisma.checkin.aggregate).toHaveBeenCalledTimes(1);
+
+    // 第二次：缓存命中（不调 prisma）
+    await statsService.userProfile('u1');
+    expect(mockedPrisma.user.findUnique).toHaveBeenCalledTimes(1);
+    expect(mockedPrisma.checkin.aggregate).toHaveBeenCalledTimes(1);
+    // 缓存 key 存在
+    expect(_redisMock.cacheStore.has('qmwx:cache:stats:userProfile:u1')).toBe(true);
+  });
+});

@@ -325,7 +325,14 @@ export const statsService = {
   },
 
   // V0.2.0 关联分析：温度×配速 / 湿度×心率（Pearson + 最小样本阈值）
+  // 缓存 120s（与 myRunnerStats/myAnnualReport 一致 — 检查 weatherAnalysis 即可；打卡/天气数据变化后 2 分钟生效）
   async weatherAnalysis(userId: string) {
+    const cacheKey = `stats:weatherAnalysis:${userId}`;
+    return Cache.wrap(cacheKey, RUNNER_STATS_CACHE_TTL_SEC, async () => {
+      return this.computeWeatherAnalysis(userId);
+    });
+  },
+  async computeWeatherAnalysis(userId: string) {
     const checkins = await prisma.checkin.findMany({
       where: { userId, weatherTemp: { not: null } },
       select: { weatherTemp: true, humidity: true, pace: true, heartRate: true },
@@ -357,7 +364,14 @@ export const statsService = {
   },
 
   // V0.2.0 用户画像（聚合基础/运动/健康 → tags + summary，供 AI 千人千面策略）
+  // 缓存 120s（基础信息变化频次低，2 分钟内重读同一 user 返缓存）
   async userProfile(userId: string) {
+    const cacheKey = `stats:userProfile:${userId}`;
+    return Cache.wrap(cacheKey, RUNNER_STATS_CACHE_TTL_SEC, async () => {
+      return this.computeUserProfile(userId);
+    });
+  },
+  async computeUserProfile(userId: string) {
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { gender: true, birthday: true, height: true, weight: true, region: true, memberLevel: true },
