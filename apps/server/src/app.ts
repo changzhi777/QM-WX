@@ -23,6 +23,7 @@ import { walletRoutes } from './modules/wallet/wallet.routes.js';
 import { adminRoutes } from './modules/admin/admin.routes.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { uploadRoutes } from './modules/upload/upload.routes.js';
+import { foodRoutes } from './modules/food/food.routes.js';
 import { wxpayRoutes } from './modules/wxpay/wxpay.routes.js';
 import { weeklyReportRoutes } from './modules/weekly-report/weekly-report.routes.js';
 import { deviceRoutes } from './modules/device/device.routes.js';
@@ -133,6 +134,7 @@ export async function buildApp() {
   // ===== 业务路由 =====
   await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(uploadRoutes, { prefix: '/api/upload' });
+  await app.register(foodRoutes, { prefix: '/api/food' }); // V0.2.0 FatSecret 饮食搜索
   await app.register(userRoutes, { prefix: '/api/user' });
   await app.register(sportRoutes, { prefix: '/api/sport' });
   await app.register(mallRoutes, { prefix: '/api/mall' });
