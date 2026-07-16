@@ -30,7 +30,7 @@ const PERSONAS = [
   { key: 'strict', label: '铁血', emoji: '💪' },
 ] as const;
 
-// 快速提问（批 1：横滚胶囊 5 条，纠 V0.2.4 网格改错）
+// 快速提问（批 1：横滚胶囊 → V0.2.9 改造为 5 色分类卡 ai-quick-cards）
 const QUICK_QUESTIONS = ['今天该怎么练？', '跑步后膝盖酸怎么办？', '在家放松/恢复建议', '最近睡不好怎么调？', '减脂期吃什么？'];
 
 const WELCOME =
@@ -145,6 +145,14 @@ Page({
 
   onTapQuick(e: WechatMiniprogram.Touch) {
     const q = (e.currentTarget.dataset as { q: string }).q;
+    if (this.data.sending || !q) return;
+    this.setData({ inputText: q });
+    this.onSend();
+  },
+
+  /** V0.2.9 prototype 借鉴：5 色分类卡点击 → 把预设问题塞进输入框（与 onTapQuick 同语义） */
+  onQuickCardTap(e: WechatMiniprogram.CustomEvent<{ q: string; tag: string }>) {
+    const q = e.detail?.q;
     if (this.data.sending || !q) return;
     this.setData({ inputText: q });
     this.onSend();

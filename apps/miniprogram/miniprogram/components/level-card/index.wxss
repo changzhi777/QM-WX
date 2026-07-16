@@ -1,0 +1,88 @@
+.level-card {
+  background: linear-gradient(135deg, #8a5cf0 0%, #5d6cd8 100%);
+  border-radius: 20rpx;
+  padding: 28rpx 32rpx;
+  margin: 16rpx 24rpx;
+  color: #fff;
+  box-shadow: 0 6rpx 20rpx rgba(138, 92, 240, 0.18);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.level-icon {
+  font-size: 64rpx;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.level-meta {
+  flex: 1;
+  min-width: 0;
+}
+
+.level-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 6rpx;
+}
+
+.level-points {
+  font-size: 24rpx;
+  opacity: 0.92;
+}
+.level-points .num {
+  font-weight: 700;
+  margin: 0 4rpx;
+  font-size: 28rpx;
+}
+
+.level-tier {
+  font-size: 22rpx;
+  padding: 4rpx 14rpx;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 20rpx;
+  font-weight: 600;
+  letter-spacing: 1rpx;
+  flex-shrink: 0;
+}
+
+.progress {
+  height: 12rpx;
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 6rpx;
+  margin: 16rpx 0 10rpx;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ffd54f, #ff8a80);
+  border-radius: 6rpx;
+  transition: width 0.4s ease;
+}
+
+.progress-text {
+  font-size: 22rpx;
+  opacity: 0.88;
+}
+.progress-text .next {
+  font-weight: 700;
+  margin: 0 4rpx;
+}
+.progress-text .num {
+  font-weight: 700;
+  color: #ffd54f;
+  margin: 0 4rpx;
+}
+
+.max-tip {
+  font-size: 24rpx;
+  text-align: center;
+  opacity: 0.85;
+  margin-top: 8rpx;
+}

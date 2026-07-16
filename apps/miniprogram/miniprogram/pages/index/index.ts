@@ -60,6 +60,8 @@ Page({
     locationText: '' as string,
     latitude: null as number | null,
     longitude: null as number | null,
+    uv: 0,                          // V0.2.9 UV 指数（来自 stats.weatherAir）
+    uvShow: true,                   // V0.2.9 UV 提示条显示开关
   },
 
   onLoad() {
@@ -132,12 +134,18 @@ Page({
       const u = getApp().globalData.user as ({ id?: string; memberLevel?: string } | null);
       if (u?.id) subscribeDailyReport(u.id, (r) => this.onMqttMessage(r));
       const isMember = !!u && !!u.memberLevel && u.memberLevel !== 'free';
-      const [reportRes, scoreRes, historyRes, weatherRes] = await Promise.all([
+      const lat = this.data.latitude;
+      const lon = this.data.longitude;
+      const coord = lat != null ? { lat, lon } : {};
+      const [reportRes, scoreRes, historyRes, weatherRes, airRes] = await Promise.all([
         api.call<DailyReport>('stats', 'dailyReport', {}),
         api.call<HealthScoreRes>('stats', 'healthScore', {}),
         api.call<{ list: HistoryItem[]; total: number }>('stats', 'dailyReportList', { page: 1, pageSize: 7 }),
-        api.call<{ city: string; text: string; temperature: number; feelsLike: number; icon: string }>('stats', 'weather', this.data.latitude != null ? { lat: this.data.latitude, lon: this.data.longitude } : {}),
+        api.call<{ city: string; text: string; temperature: number; feelsLike: number; icon: string }>('stats', 'weather', coord),
+        api.call<{ uv?: number }>('stats', 'weatherAir', coord).catch(() => null),  // V0.2.9 UV 提示：失败静默（不阻塞首页）
       ]);
+      // V0.2.9 短期 banner 持久化：单日关了就关，不存盘
+      const uv = (airRes && typeof airRes.uv === 'number') ? airRes.uv : 0;
       // 批 1：本周趋势带日期（history 日期 'YYYY-MM-DD' → 'MM-DD'）
       const weekTrend = historyRes.list.slice(0, 7).reverse().map((h) => ({
         date: (h.date || '').slice(5),
@@ -149,6 +157,7 @@ Page({
         history: historyRes.list,
         weekTrend,
         weather: weatherRes,
+        uv,
         isMember,
         reportSummary: this.summarizeReport(reportRes.reportText),
         loading: false,
@@ -214,6 +223,11 @@ Page({
   onMqttMessage(report: unknown) {
     const r = report as DailyReport;
     this.setData({ report: r, reportSummary: this.summarizeReport(r.reportText) });
+  },
+
+  /** V0.2.9 UV 提示关闭（本次会话内不再显示） */
+  onCloseUv() {
+    this.setData({ uvShow: false });
   },
 
   onUnload() {

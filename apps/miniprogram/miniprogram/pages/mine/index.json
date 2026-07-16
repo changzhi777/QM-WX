@@ -7,6 +7,8 @@
     "van-cell": "@vant/weapp/cell/index",
     "van-cell-group": "@vant/weapp/cell-group/index",
     "van-button": "@vant/weapp/button/index",
-    "avatar-badge": "/components/avatar-badge/index"
+    "avatar-badge": "/components/avatar-badge/index",
+    "level-card": "/components/level-card/index",
+    "invite-bonus-card": "/components/invite-bonus-card/index"
   }
 }

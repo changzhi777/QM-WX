@@ -1,0 +1,8 @@
+<view class="uv-alert" wx:if="{{show}}">
+  <view class="uv-icon">{{icon}}</view>
+  <view class="uv-body">
+    <view class="uv-title">UV 指数 <text class="uv-level uv-{{level}}">{{uv}}</text> · {{levelText}}</view>
+    <view class="uv-advice">{{advice}}</view>
+  </view>
+  <view class="uv-close" bindtap="onClose">×</view>
+</view>

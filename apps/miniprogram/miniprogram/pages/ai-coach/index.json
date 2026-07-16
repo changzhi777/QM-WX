@@ -3,6 +3,7 @@
   "usingComponents": {
     "plan-card": "/components/plan-card/index",
     "data-strip": "/components/data-strip/index",
+    "ai-quick-cards": "/components/ai-quick-cards/index",
     "van-button": "@vant/weapp/button/index",
     "van-loading": "@vant/weapp/loading/index"
   }

@@ -19,8 +19,18 @@
     </button>
   </view>
 
+  <!-- V0.2.9 prototype 借鉴：3 列邀请奖励卡（跳 membership） -->
+  <invite-bonus-card bind:tap="onTapInviteBonus" />
+
   <!-- B 数据概览条 -->
   <view class="card strip-card">
+    <!-- V0.2.9 prototype 借鉴：紫色等级卡 + 进度条 -->
+    <level-card
+      wx:if="{{growthLevel}}"
+      growth-level="{{growthLevel}}"
+      total-points-earned="{{totalPointsEarned}}"
+      nickname="{{user.nickname || '跑者'}}"
+    />
     <data-strip
       mode="light"
       steps="{{todayHealth.steps}}"

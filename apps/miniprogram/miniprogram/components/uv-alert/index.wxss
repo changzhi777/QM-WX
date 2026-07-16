@@ -1,0 +1,55 @@
+.uv-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+  padding: 18rpx 24rpx;
+  background: #fdecc0;
+  border-radius: 16rpx;
+  margin: 16rpx 24rpx 8rpx;
+  box-shadow: 0 2rpx 8rpx rgba(232, 131, 12, 0.08);
+}
+
+.uv-icon {
+  font-size: 32rpx;
+  flex-shrink: 0;
+  margin-top: 2rpx;
+}
+
+.uv-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.uv-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #8a5a06;
+  margin-bottom: 4rpx;
+}
+
+.uv-level {
+  font-weight: 700;
+  margin: 0 4rpx;
+}
+.uv-low { color: #1a8f5a; }
+.uv-mid { color: #e8830c; }
+.uv-high { color: #d2691e; }
+.uv-extreme { color: #c0392b; }
+
+.uv-advice {
+  font-size: 24rpx;
+  color: #6b3fa0;
+  line-height: 1.5;
+}
+
+.uv-close {
+  font-size: 36rpx;
+  color: #8a5a06;
+  line-height: 1;
+  padding: 4rpx 8rpx;
+  cursor: pointer;
+  opacity: 0.7;
+}
+.uv-close:active {
+  opacity: 1;
+}

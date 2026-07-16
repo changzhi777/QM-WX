@@ -1,4 +1,7 @@
 <view class="page">
+  <!-- V0.2.9 UV 强提示黄条（prototype 借鉴） -->
+  <uv-alert wx:if="{{uv && uvShow}}" uv="{{uv}}" bind:close="onCloseUv" />
+
   <!-- 头部：渐变绿 + 问候 + 健康分数环 -->
   <view class="today-header">
     <view class="greeting">{{greeting}}</view>

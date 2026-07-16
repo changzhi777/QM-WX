@@ -1,0 +1,14 @@
+<view class="quick-cards">
+  <view
+    wx:for="{{cards}}"
+    wx:key="tag"
+    class="quick-card card-{{item.color}}"
+    data-q="{{item.q}}"
+    data-tag="{{item.tag}}"
+    bindtap="onTap"
+  >
+    <view class="card-icon">{{item.icon}}</view>
+    <view class="card-tag">{{item.tag}}</view>
+    <view class="card-q">{{item.q}}</view>
+  </view>
+</view>

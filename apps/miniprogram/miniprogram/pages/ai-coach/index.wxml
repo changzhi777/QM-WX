@@ -46,6 +46,9 @@
     </view>
   </view>
 
+  <!-- V0.2.9 prototype 借鉴：5 色分类卡（绿/紫/黄/白/橙）替横滚胶囊 -->
+  <ai-quick-cards wx:if="{{!hasHistory && !sending}}" bind:tap="onQuickCardTap" />
+
   <!-- 消息列表 -->
   <scroll-view class="msg-list" scroll-y scroll-top="{{scrollTop}}" scroll-with-animation enhanced show-scrollbar="{{false}}">
     <view wx:for="{{messages}}" wx:key="index" class="msg {{item.role}}">

@@ -1,0 +1,17 @@
+<view class="level-card">
+  <view class="row">
+    <view class="level-icon">{{icon}}</view>
+    <view class="level-meta">
+      <view class="level-title">{{nickname}} · {{label}}</view>
+      <view class="level-points">累计积分 <text class="num">{{totalPointsEarned}}</text></view>
+    </view>
+    <view class="level-tier">{{growthLevel === 'diamond' ? 'MAX' : (nextLevelLabel || '—')}}</view>
+  </view>
+  <view class="progress" wx:if="{{nextLevel}}">
+    <view class="progress-fill" style="width: {{progress}}%"></view>
+  </view>
+  <view class="progress-text" wx:if="{{nextLevel}}">
+    距离 <text class="next">{{nextLevelLabel}}</text> 还差 <text class="num">{{pointsToNext}}</text> 积分
+  </view>
+  <view class="max-tip" wx:else>已达成最高等级，继续保持 ✨</view>
+</view>

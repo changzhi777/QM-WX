@@ -113,6 +113,8 @@ Page({
       isMember: !!user.memberLevel && user.memberLevel !== 'free',
       memberLevel: user.memberLevel,
       growthLevel: (user as { growthLevel?: string }).growthLevel ?? 'free',
+      // V0.2.9 紫色等级卡：累计积分（V0.2.7 User.totalPointsEarned 字段）
+      totalPointsEarned: (user as { totalPointsEarned?: number }).totalPointsEarned ?? 0,
     });
   },
 
@@ -206,6 +208,9 @@ Page({
 
   /** 健康助手（原 AI 私教，V0.2.4 改名）*/
   goAiCoach() { wx.switchTab({ url: '/pages/ai-coach/index' }); },
+
+  /** V0.2.9 prototype 借鉴：3 列邀请奖励卡点击 → membership 页 */
+  onTapInviteBonus() { wx.navigateTo({ url: '/pages/membership/index' }); },
 
   goAgreement() { wx.navigateTo({ url: '/pages/agreement/index' }); },
 

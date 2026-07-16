@@ -1,0 +1,18 @@
+<view class="invite-bonus" bindtap="onTap">
+  <view class="title">🎁 邀请好友，双方得奖励</view>
+  <view class="row">
+    <view class="col">
+      <view class="num green">+{{inviterDays}}<text class="unit">天</text></view>
+      <view class="label">邀请人会员</view>
+    </view>
+    <view class="col">
+      <view class="num yellow">+{{inviterPoints}}</view>
+      <view class="label">邀请人积分</view>
+    </view>
+    <view class="col">
+      <view class="num orange">+{{inviteeDays}}<text class="unit">天</text></view>
+      <view class="label">好友体验</view>
+    </view>
+  </view>
+  <view class="footer">立即邀请 ›</view>
+</view>

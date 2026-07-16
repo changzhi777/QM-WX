@@ -1,0 +1,61 @@
+.invite-bonus {
+  background: linear-gradient(160deg, #fff8e1, #fdecc0);
+  border-radius: 20rpx;
+  padding: 24rpx;
+  margin: 16rpx 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(232, 131, 12, 0.08);
+}
+
+.title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #8a5a06;
+  margin-bottom: 18rpx;
+  text-align: center;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.col {
+  flex: 1;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 14rpx;
+  padding: 16rpx 8rpx;
+}
+
+.num {
+  font-size: 40rpx;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -1rpx;
+  margin-bottom: 6rpx;
+}
+.num.green { color: #0e7a52; }
+.num.yellow { color: #e8830c; }
+.num.orange { color: #d2691e; }
+.num .unit {
+  font-size: 22rpx;
+  font-weight: 600;
+  margin-left: 2rpx;
+}
+
+.label {
+  font-size: 22rpx;
+  color: #6b3fa0;
+  opacity: 0.8;
+}
+
+.footer {
+  margin-top: 16rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #8a5a06;
+  font-weight: 600;
+  opacity: 0.85;
+}
