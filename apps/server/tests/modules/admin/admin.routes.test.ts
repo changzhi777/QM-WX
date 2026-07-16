@@ -18,6 +18,14 @@ const mockPrisma = vi.hoisted(() => ({
   order: { findMany: vi.fn(), count: vi.fn(), findUnique: vi.fn(), update: vi.fn(), aggregate: vi.fn() },
   user: { findMany: vi.fn(), count: vi.fn() },
   checkin: { count: vi.fn() },
+  // V0.2.8 admin RBAC：Admin 表 + 账号体系 — 替代 V0.1.18 白名单 openid 鉴权
+  admin: { findUnique: vi.fn(), findMany: vi.fn() },
+  adminLoginLog: { create: vi.fn() }, // V0.2.8 adminLogin 审计落库（可选）
+  // V0.2.6 邀请裂变 admin 调试接口可能用到
+  wallet: { findUnique: vi.fn() },
+  memberSubscription: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
+  userPoints: { create: vi.fn() },
+  auditLog: { create: vi.fn() },
 }));
 
 const mockInvalidate = vi.fn();
@@ -40,13 +48,20 @@ import { adminRoutes } from '../../../src/modules/admin/admin.routes.js';
 import { invalidateAdminCache } from '../../../src/modules/admin/admin.service.js';
 import { BusinessError } from '../../../src/common/errors.js';
 
-async function buildApp(opts: { openid?: string } = {}) {
+async function buildApp(opts: { openid?: string; admin?: boolean | { role: 'super-admin' | 'admin' | 'operator'; disabled?: boolean } } = {}) {
   const app = Fastify();
   app.decorateRequest('user', undefined);
   app.addHook('onRequest', async (req) => {
-    (req as { user?: { id: string; openid: string } }).user = {
+    // V0.2.8 admin RBAC：所有 buildApp() 默认注入 super-admin 登录态（替 V0.1.18 白名单 openid）
+    // opts.admin === false → 不注入（未鉴权测 401 / 403）
+    // opts.admin === { role, disabled } → 定制角色（测 checkPermission）
+    if (opts.admin === false) return; // 显式未鉴权
+    const override = typeof opts.admin === 'object' ? opts.admin : { role: 'super-admin', disabled: false };
+    (req as { user?: { id: string; kind: 'admin'; sub: string; role: string } }).user = {
       id: 'admin-1',
-      openid: opts.openid ?? 'o-admin-1',
+      kind: 'admin',
+      sub: 'admin-1',
+      role: override.role,
     };
   });
   app.setErrorHandler((err, _req, reply) => {
@@ -64,27 +79,29 @@ describe('POST /api/admin', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
-    invalidateAdminCache(); // 避免测试间复用 admin 白名单缓存
-    // 默认白名单包含 o-admin-1
-    mockPrisma.appConfig.findUnique.mockResolvedValue({
-      value: { openids: ['o-admin-1', 'o-admin-2'] },
+    invalidateAdminCache(); // 兼容 V0.1.18 白名单缓存（V0.2.8 RBAC 后实际不读 openid 但保留调用安全）
+    // V0.2.8 RBAC 默认 mock Admin 表：super-admin 登录 + not disabled
+    mockPrisma.admin.findUnique.mockResolvedValue({
+      id: 'admin-1',
+      username: 'admin-1',
+      role: 'super-admin',
+      disabled: false,
     });
   });
 
-  it('非白名单 openid → 403', async () => {
-    app = await buildApp({ openid: 'o-user' });
+  it('未鉴权（无 RBAC user）→ 401', async () => {
+    app = await buildApp({ admin: false });
     await app.ready();
     const res = await app.inject({
       method: 'POST',
       url: '/api/admin',
       payload: { action: 'listAdmins' },
     });
-    expect(res.statusCode).toBe(403);
-    expect(res.json().msg).toBe('admin only');
+    expect(res.statusCode).toBe(401);
   });
 
-  it('白名单空 → 403', async () => {
-    mockPrisma.appConfig.findUnique.mockResolvedValue({ value: { openids: [] } });
+  it('Admin record 不存在（kind=admin 但 sub 查不到）→ 401', async () => {
+    mockPrisma.admin.findUnique.mockResolvedValue(null); // 模拟 DB 无此 admin
     app = await buildApp();
     await app.ready();
     const res = await app.inject({
@@ -92,11 +109,31 @@ describe('POST /api/admin', () => {
       url: '/api/admin',
       payload: { action: 'listAdmins' },
     });
-    expect(res.statusCode).toBe(403);
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('Admin 已停用（disabled=true）→ 401', async () => {
+    mockPrisma.admin.findUnique.mockResolvedValue({
+      id: 'admin-1', username: 'admin-1', role: 'super-admin', disabled: true,
+    });
+    app = await buildApp();
+    await app.ready();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin',
+      payload: { action: 'listAdmins' },
+    });
+    expect(res.statusCode).toBe(401);
   });
 
   describe('listAdmins', () => {
-    it('返回白名单 openids', async () => {
+    // V0.2.8 RBAC 替换白名单 openid：listAdmins 返 Admin 表记录，而非 openids 列表
+    it('super-admin 调 listAdmins → 200 返 Admin 记录数组', async () => {
+      mockPrisma.admin.findUnique.mockResolvedValue({
+        id: 'admin-1', username: 'admin-1', role: 'super-admin', disabled: false,
+      });
+      // V0.2.8 listAdmins 内部调 prisma.admin.findMany — mock 返空数组
+      mockPrisma.admin.findMany.mockResolvedValue([]);
       app = await buildApp();
       await app.ready();
       const res = await app.inject({
@@ -105,15 +142,15 @@ describe('POST /api/admin', () => {
         payload: { action: 'listAdmins' },
       });
       expect(res.statusCode).toBe(200);
-      expect(res.json().data.openids).toEqual(['o-admin-1', 'o-admin-2']);
+      expect(res.json().code).toBe(0);
     });
 
-    it('白名单 value 为空对象（无 openids 字段）→ 403（isAdmin 必拒，逻辑上无法测 listAdmins）', async () => {
-      // 注释：value={} 意味着 openids 缺省，isAdmin 返回 false，所以无法进入 listAdmins 分支。
-      // 真正"空数组"的情况是 value={openids:[]}，但此时 isAdmin 也返回 false 拒。
-      // → listAdmins 的"空"分支事实上永远到不了（要进 listAdmins 必须先过 isAdmin）
-      mockPrisma.appConfig.findUnique.mockResolvedValue({ value: {} });
-      app = await buildApp();
+    it('operator 调 listAdmins → 403（checkPermission 拦截）', async () => {
+      // operator 是 V0.2.8 新增最弱角色，仅只读 + 轻操作；listAdmins 是 SUPER_ONLY_ACTIONS
+      mockPrisma.admin.findUnique.mockResolvedValue({
+        id: 'admin-2', username: 'admin-2', role: 'operator', disabled: false,
+      });
+      app = await buildApp({ admin: { role: 'operator' } });
       await app.ready();
       const res = await app.inject({
         method: 'POST',
@@ -121,6 +158,7 @@ describe('POST /api/admin', () => {
         payload: { action: 'listAdmins' },
       });
       expect(res.statusCode).toBe(403);
+      expect(res.json().msg).toMatch(/权限/);
     });
   });
 
