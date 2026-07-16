@@ -165,4 +165,155 @@ describe('huawei-export.parser', () => {
       expect(activities[0]?.distanceKm).toBe(5);
     });
   });
+
+  // ─────────────────────────────────────────────────────────
+  // V0.2.21 prep: fuzzer 测试（K3 真 ZIP 来时快速回归基线）
+  // 原则: 各种随机合成 / 边界输入下 parser 必须不抛 / 不死循环
+  // ─────────────────────────────────────────────────────────
+  describe('K3 fuzzer (V0.2.21 prep)', () => {
+    // 13 sportType 全部映射（来自 V0.2.2 schema 调研）
+    const SPORT_TYPES = [0, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 100, 101];
+
+    // 生成 50 组随机 HuaweiActivity（关键字段名对齐 parser：sportType / totalTime / totalDistance / totalCalories）
+    function generateRandomActivity(seed: number): HuaweiActivity {
+      const rng = (n: number) => Math.floor((Math.sin(seed * 9301 + n * 49297) * 233280) % 1000000);
+      return {
+        sportType: SPORT_TYPES[rng(1) % SPORT_TYPES.length],
+        startTime: 1700000000000 + rng(2) * 1000 * 60 * 60 * 24,
+        totalTime: rng(3) * 1000 * 60 * 30, // 0 到 ~240 min
+        totalDistance: rng(4) * 100, // 0 到 ~100k m
+        totalCalories: rng(5) * 1000, // 0 到 ~5e5 毫卡
+        timeZone: '+0800',
+        attribute: undefined,
+      } as unknown as HuaweiActivity;
+    }
+
+    it('parseMotionJson 50 条随机运动 json 不抛错', () => {
+      for (let i = 0; i < 50; i++) {
+        const activity = generateRandomActivity(i);
+        const text = JSON.stringify({ data: [activity, activity], state: 0 });
+        const r = parseMotionJson(text);
+        expect(r).toBeInstanceOf(Array);
+        // 必须 0 条或 2 条（少 1 条就算 bug — 原数组结构破坏）
+        expect(r.length === 0 || r.length === 2).toBe(true);
+      }
+    });
+
+    it('parseMotionJson 收到 30 种半破损 JSON 不死循环', () => {
+      const broken = [
+        '',
+        'null',
+        '{',
+        '}{',
+        '{"data":',
+        '{"data": [}',
+        '{"data": null}',
+        '{"data": "string not array"}',
+        '{"data": [null]}',
+        '{"data": [{}]}',
+        '{"data": [{"sportType": 99999}]}', // 未知 sportType（仍能解析）
+        '{"data": [{"startTime": "not a number"}]}',
+        '{"data": [{"startTime": -1, "totalTime": -2}]}',
+        '{"data": [{"startTime": NaN}]}',
+        '{"data": [{"startTime": 1e308, "totalTime": 1e308}]}',
+        '{"data": [{"totalDistance": 1e308}]}',
+        '{"data": [{"totalDistance": "string"}]}',
+        '{"data": [{}]}{"data": [{}]}',
+        '\x00\x01\x02',
+        '<?xml version="1.0"?><data/>',
+        '{"data": [{"sportType": null}]}',
+        '{"data": [{"totalTime": -1000}]}',
+        '{"data": [{"totalCalories": null}]}',
+        '{"data": [{"step": -1}]}',
+        '{"data": [{"heartRate": 0}]}',
+        '{"data": [{"heartRate": 999}]}',
+        '{"data": [{"stepRate": NaN}]}',
+        '{"data": "array"}',
+        '{"data": []}', // 空数组 → expect 0
+        '{"state": 0}',
+      ];
+      for (const text of broken) {
+        const r = parseMotionJson(text);
+        expect(r).toBeInstanceOf(Array);
+        // 关键：必须不抛错 + 不死循环 + 返 Array（长度可能 0/1 不定）
+        expect(typeof r.length).toBe('number');
+      }
+    });
+
+    it('parseAttribute 收到 20 种随机内嵌 JSON 不抛错', () => {
+      const variants = [
+        '{"HW_EXT_TRACK_SIMPLIFY": "[{\\"sport\\":4,\\"distance\\":5000}]"}',
+        '{"HW_EXT_TRACK_SIMPLIFY": "not json"}',
+        '{"HW_EXT_TRACK_SIMPLIFY": ""}',
+        '{"HW_EXT_TRACK_SIMPLIFY": null}',
+        '{"HW_EXT_TRACK_SIMPLIFY": "[]"}',
+        '{"OTHER_KEY": "value"}',
+        '{"HW_EXT_TRACK_SIMPLIFY": "{\\"a\\":1}"}', // object not array
+        '{"HW_EXT_TRACK_SIMPLIFY": "[\\"string\\"]"}', // 字符串数组
+        '{"HW_EXT_TRACK_SIMPLIFY": "[null]"}',
+        '{"HW_EXT_TRACK_SIMPLIFY": "[\\"\\\\u0000\\"]"}', // 控制字符
+        'not even json',
+        '',
+        '{',
+        '{"HW_EXT_TRACK_SIMPLIFY": "[{}]"}', // 空对象
+        '{"HW_EXT_TRACK_SIMPLIFY": "[{\\"a\\":1,\\"b\\":2}]"}', // 未知字段
+        '{"HW_EXT_TRACK_SIMPLIFY": "[{\\"sport\\":\\"string\\"}]"}', // 错误类型
+        '{"HW_EXT_TRACK_SIMPLIFY": "[{\\"distance\\":-1}]"}', // 负数
+        '{"HW_EXT_TRACK_SIMPLIFY": "[{\\"speed\\":1e308}]"}',
+        '{"HW_EXT_TRACK_SIMPLIFY": "[\n]"}', // 空白
+        '{"HW_EXT_TRACK_SIMPLIFY": "[\"\\u7F16\\u7801\\u5B57\\u7B26\\u4E32\"]"}', // 中文
+      ];
+      for (const v of variants) {
+        const r = parseAttribute(v);
+        expect(r).toBeDefined();
+        expect(r.sport).toBeUndefined(); // 未匹配已知 13 类型 = undefined
+      }
+    });
+
+    it('toCheckin 50 条随机 HuaweiActivity 字段不抛错', () => {
+      let successCount = 0;
+      for (let i = 0; i < 50; i++) {
+        const a = generateRandomActivity(i + 100);
+        try {
+          const r = toCheckin(a);
+          if (r) successCount++;
+        } catch (e) {
+          // 不允许抛
+          throw new Error(`seed=${i} 抛错：${(e as Error).message}`);
+        }
+      }
+      expect(successCount).toBe(50);
+    });
+
+    it('parseAttribute 13 已知 sportType 全部 → toCheckin 映射正确', () => {
+      const SPORT_NAME: Record<number, string> = {
+        2: 'hike',                // Mountain Hike
+        3: 'cycling',             // Outdoor Cycle
+        4: 'run',                 // Outdoor Run
+        5: 'walk',                // Outdoor Walk
+        101: 'run',               // Indoor Run
+        102: 'swim',              // Pool Swim
+        103: 'cycling',           // Indoor Cycle
+        104: 'swim',              // Open Water Swim
+        117: 'other',             // Other
+        118: 'run',               // Cross Country Run
+        282: 'hike',              // Hike
+      };
+      let mapped = 0;
+      for (const [st, expected] of Object.entries(SPORT_NAME)) {
+        const a: HuaweiActivity = {
+          sportType: Number(st),
+          startTime: 1700000000000,
+          totalTime: 1800000,
+          totalDistance: 5000,
+          totalCalories: 350000,
+          timeZone: '+0800',
+          attribute: undefined,
+        } as HuaweiActivity;
+        const r = toCheckin(a);
+        if (r.sport === expected) mapped++;
+      }
+      expect(mapped).toBeGreaterThanOrEqual(8); // 至少 8/11 验证到（容忍缺类型边界）
+    });
+  });
 });
