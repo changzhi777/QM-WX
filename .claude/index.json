@@ -1,435 +1,314 @@
 {
   "project": "QM-WX",
-  "projectType": "wechat-miniprogram-monorepo",
-  "businessDirection": "青沐生命科技·大健康生活方式平台（运动社群 + 健康/运动商城 + 赛事与本地服务）",
-  "lastUpdated": "2026-07-15T18:09:26+08:00",
+  "projectType": "wechat-miniprogram-node-typescript-monorepo",
+  "version": "v0.2.11",
+  "lastUpdated": "2026-07-16T21:48:38+08:00",
   "agent": "init-architect",
-  "runMode": "incremental-refresh-v0.2.3-init-12-post-v0.2.3-cache-access-stats-goal-shoes-training",
-  "previousRunTag": "v0.2.2.1 (init #11 2026-07-15 V0.2.2 huawei_export + V0.2.2.1 coverage fix baseline)",
-  "truncated": false,
-  "stats": {
-    "estimatedTotalFiles": 750,
-    "scannedFiles": 635,
-    "coveragePercent": 93,
-    "tsFiles": {
-      "server_src": 154,
-      "server_tests": 165,
-      "miniprogram_pages": 20,
-      "miniprogram_components": 10,
-      "miniprogram_utils": 6,
-      "shared_src": 9
+  "runMode": "incremental-refresh-v0.2.11-init-14-cli-toolchain-audit",
+  "previousRun": "init #13 / v0.2.8",
+  "truncated": true,
+  "truncationReason": "当前子代理仅有文件 Read/Glob/Grep/Write 能力，无进程执行工具；静态清点完成，但无法实际执行 cd apps/server && pnpm test:coverage。现存 coverage HTML 已确认是 V0.2.3 前后的旧产物，不能作为 V0.2.11 新鲜覆盖率。",
+  "sourceControl": {
+    "branch": "main",
+    "latestVersionCommits": [
+      "037f15e feat(v0.2.9): prototype 借鉴 4 组件 + 4 页集成",
+      "4b3f53b feat(v0.2.10): 微信开发者工具 CLI 打通 + 11 单测",
+      "e5bb59b ci(v0.2.11): wx-deploy.yml 三任务矩阵",
+      "428421c chore: 文档同步 V0.2.4~V0.2.10 + GAP-13 + prototype 归档"
+    ],
+    "tags": ["v0.2.9", "v0.2.10", "v0.2.11"],
+    "remoteStatus": "用户提供：origin GitHub 推送成功"
+  },
+  "ignorePolicy": {
+    "source": ".gitignore 与默认忽略规则合并",
+    "defaultPatterns": [
+      "node_modules/**", ".git/**", ".github/**", "dist/**", "build/**", ".next/**",
+      "__pycache__/**", "*.lock", "*.log", "*.bin", "*.pdf", "*.png", "*.jpg",
+      "*.jpeg", "*.gif", "*.mp4", "*.zip", "*.tar", "*.gz"
+    ],
+    "projectPatterns": [
+      ".pnpm-store/**", "coverage/**", "miniprogram_npm/**", ".cache/**", ".turbo/**",
+      "apps/server/uploads/**", "docs/_assets/**", "pic/**", ".playwright-mcp/**",
+      ".zcf/plan/current/**", ".zcf/plan/history/**", "*MiFitness*data_copy*", "*-backup-*.sql"
+    ],
+    "explicitExceptionsRead": [
+      ".github/workflows/wx-deploy.yml（用户本轮明确要求核对 V0.2.11 CI）",
+      "apps/server/coverage/index.html（仅用于判断旧产物是否新鲜）"
+    ],
+    "topSkipped": [
+      {"path": "node_modules/", "reason": "依赖目录与默认/.gitignore 规则", "count": "未展开"},
+      {"path": ".git/", "reason": "版本库内部数据", "count": "未展开"},
+      {"path": "apps/server/coverage/", "reason": "忽略的生成产物；只抽读总览与 admin 证据", "count": "388 个 HTML/JSON 类匹配项的 Glob 输出被截断"},
+      {"path": "apps/miniprogram/miniprogram/miniprogram_npm/", "reason": "微信预编译构建产物", "count": "未展开"},
+      {"path": "docs/_assets/ 与截图文件", "reason": "图片/归档二进制，仅记录路径", "count": "未展开"},
+      {"path": "*.zip / *.pdf / 数据备份", "reason": "大文件、二进制或敏感数据", "count": "未读取内容"}
+    ]
+  },
+  "scanCoverage": {
+    "estimatedTotalFiles": 800,
+    "scannedFiles": 690,
+    "coveragePercent": 86.25,
+    "method": "沿用 init #12 的全仓清点基线并增量扫描 V0.2.4~V0.2.11 高信号文件；排除依赖、构建产物、图片、压缩包和备份",
+    "byModule": [
+      {"path": "apps/server", "estimated": 430, "scanned": 395, "percent": 91.86, "gaps": ["V0.2.11 新鲜 coverage 未执行", "admin 新增管理函数的分支覆盖待报告"]},
+      {"path": "apps/miniprogram", "estimated": 185, "scanned": 160, "percent": 86.49, "gaps": ["V0.2.9 四组件真机视觉/交互回归"]},
+      {"path": "packages/shared", "estimated": 20, "scanned": 20, "percent": 100, "gaps": []},
+      {"path": "scripts/dev-cli", "estimated": 8, "scanned": 8, "percent": 100, "gaps": ["11 个测试未由当前代理动态执行", "未纳入 pnpm workspace/CI 根测试"]},
+      {"path": "docs", "estimated": 20, "scanned": 18, "percent": 90, "gaps": ["根 CLAUDE.md 仍需追加 init #14 结果"]},
+      {"path": ".github/workflows", "estimated": 3, "scanned": 3, "percent": 100, "gaps": ["wx-deploy lint-typecheck 的测试接线需修正"]}
+    ]
+  },
+  "measured": {
+    "prismaModels": {
+      "count": 61,
+      "method": "Grep ^model\\s+ apps/server/prisma/schema.prisma",
+      "deltaFromInit13": 0
     },
-    "modulesFound": 34,
-    "modulesWithService": 33,
-    "modulesWithClaudeMd": 34,
-    "modulesWithClaudeMdList": [
-      "distribution (V0.1.24)",
-      "cart (V0.1.103)",
-      "points (V0.1.103)",
-      "address (V0.1.103)",
-      "coupon (V0.1.103)",
-      "training (V0.1.103; V0.2.3 +Cache.wrap 段)",
-      "goal (V0.1.103; V0.2.3 +Cache.wrap 段)",
-      "favorite (V0.1.103)",
-      "feed (V0.1.103)",
-      "notification (V0.1.103)",
-      "follow (V0.1.103)",
-      "family (V0.1.103)",
-      "shoes (V0.1.103; V0.1.133 + V0.1.137 补段; V0.2.3 +Cache.wrap 段)",
-      "review (V0.1.131; V0.1.137 鞋评双分发段)",
-      "auth (V0.1.131)",
-      "admin (post-V0.1.131)",
-      "wxpay (post-V0.1.131)",
-      "device (post-V0.1.131; V0.2.2 init #11 加 huawei_export 解析器段)",
-      "group-buy (post-V0.1.131)",
-      "stats (V0.1.138 init #7 续任务补; V0.2.0 init #11 补阶段 2/3 段; V0.2.3 +Cache.wrap 段)",
-      "content (V0.1.138 init #7 续任务补)",
-      "user (V0.1.138 init #7 再续任务补)",
-      "sport (V0.1.138 init #7 再续任务补)",
-      "mall (V0.1.138 init #7 再续任务补)",
-      "wallet (V0.1.138 init #7 再续任务补)",
-      "ai-coach (V0.1.139 新建)",
-      "upload (V0.1.149 coordinator)",
-      "food (V0.2.0 init #10 新建)",
-      "ocr (V0.2.1 init #10 新建)",
-      "weekly-report (V0.2.2 init #11 GAP-12 收口补建)",
-      "app-config (V0.2.2 init #11 GAP-12 收口补建)",
-      "ranking (V0.2.2 init #11 GAP-12 收口补建)",
-      "recipe (V0.2.2 init #11 GAP-12 收口补建, V2 stub)",
-      "ludong (V0.2.2 init #11 GAP-12 收口补建, V2 stub)"
-    ],
-    "modulesWithoutClaudeMd": [],
-    "v2Stubs": ["recipe", "ludong"],
-    "v2Partial": ["device (佳明 4 查询 + 4 数据处理 + 28 action: BLE 心率/血氧/睡眠/微信运动/小米OAuth/COROS 三轨/BLE 品牌识别/V0.1.127 scale 体脂秤/V0.1.43 健康扩展/V0.2.2 huawei_export parser)"],
-    "prismaTables": 59,
-    "prismaMigrations": 43,
-    "prismaTablesNote": "V0.2.3 init #12 实测 schema.prisma 数 model = **59 总计**（V0.1.150 +UploadRecord #59 为最后一张，V0.2.0~V0.2.3 不增表）；与 V0.2.2.1 init #11 一致",
-    "prismaMigrationsNote": "V0.2.3 init #12 实测 prisma/migrations/* 目录数（去 migration_lock.toml）= **43**（与 V0.2.2.1 init #11 一致；V0.2.3 0 新迁移）。最后两个：20260715000000_upload_record (V0.1.150) + 20260716000000_checkin_weather_geo (V0.2.0)",
-    "prismaMigrationsList": [
-      "20260611083609_init", "20260614090000_wallet_tx_out_refund_no", "20260618135224_qmwx",
-      "20260629144948_auditlog_blacklist",
-      "20260701034725_garmin_tables", "20260701123150_garmin_metric_sport", "20260701150000_garmin_import_ranking",
-      "20260702060000_cart_signin", "20260702130000_address_coupon",
-      "20260703120000_distribution", "20260703140000_shoe", "20260703150000_goal", "20260703160000_favorite",
-      "20260703170000_feed", "20260703180000_notification", "20260703190000_follow", "20260704000000_family",
-      "20260707000000_feed_topic_video", "20260707020000_group_buy", "20260707030000_order_groupbuy",
-      "20260707040000_user_profile_fields",
-      "20260707160000_training_plan", "20260707170000_group_announce",
-      "20260708090000_werun_record", "20260708210000_hr_spo2_record", "20260709020000_sleep_record", "20260709150000_onboarding",
-      "20260710030000_withdrawal_request", "20260710040000_order_pickup",
-      "20260710050000_review", "20260710060000_review_reply",
-      "20260710070000_order_content_enroll",
-      "20260712060000_body_composition", "20260712080000_coros_raw_event", "20260712090000_user_auth_fields",
-      "20260712100000_race_result (V0.1.134)",
-      "20260713000000_user_custom_milestones (V0.1.135)",
-      "20260713100000_feed_shoe_id (V0.1.136)",
-      "20260713110000_ai_coach (V0.1.139)",
-      "20260713120000_ai_coach_persona (V0.1.140)",
-      "20260713200000_daily_report (V0.1.144~147)",
-      "20260715000000_upload_record (V0.1.150)",
-      "20260716000000_checkin_weather_geo (V0.2.0)"
-    ],
-    "miniprogramPages": 20,
-    "miniprogramPagesNote": "V0.2.3 init #12 实测 app.json 注册 20 页（与 V0.2.2.1 一致，V0.2.3 0 新页）：V0.1.142 删商城前端 16 页 + V0.1.144~147 简化到 18 + V0.2.0 +diet +insight（18→20）",
-    "miniprogramComponents": 10,
-    "miniprogramComponentsList": [
-      "feature-gate (V1 功能开关守卫)",
-      "error-state (方案 B 通用错误态)",
-      "privacy-popup (V1 隐私协议弹窗)",
-      "profile-popup (V1 用户资料弹窗)",
-      "entry-grid (V0.1.35 mine 重构引入)",
-      "mileage-chart (V0.1.133 跑鞋历史里程曲线 Canvas 2d)",
-      "certificate-poster (V0.1.135 证书分享海报 Canvas 2d)",
-      "goal-share-card (V0.1.135 目标达成分享卡 Canvas 2d)",
-      "collection-poster (V0.1.136 收藏合集海报 Canvas 2d)",
-      "plan-card (V0.1.140 AI 私教周计划卡)"
-    ],
-    "miniprogramUtils": [
-      "auth.ts (ensureLogin/logout)",
-      "format.ts (配速/距离/日期格式化)",
-      "ble.ts (V0.1.25 蓝牙 BLE + V0.1.33 readBattery/readDeviceInfo + V0.1.43 retry3+hasHr+去 services 过滤)",
-      "werun.ts (V0.1.43 微信运动 AES-128-CBC 解密 + 节流)",
-      "scale.ts (V0.1.127 体脂秤 GATT 解析)",
-      "api services/api.ts (actionUrl + refresh + V0.1.130 api.call vs wx.request 判断)"
-    ],
-    "unitTests": 1042,
-    "unitTestsOccurrences": 1035,
-    "testCountNote": "V0.2.3 init #12 Grep 实测 it() occurrences = **1035**（基线 V0.2.2.1 init #11 = 1034，+1 基本一致）；声明 1042（V0.2.3 沿用：shoes 1040 + training 1042）；V0.2.3 未新增功能测试，仅 cache 隔离调整（测试数小幅波动 acceptable）",
-    "e2eFiles": 11,
-    "e2eTests": 54,
-    "totalTests": 1096,
-    "totalCoverage": "86.39% functions (V0.2.3 声明沿用，未实跑)",
-    "totalCoverageDetail": "V0.2.3 init #12 沿用 V0.2.3 记忆声明：shoes Cache 接入后 funcs 86.34%（commit b0cecfd）→ training Cache 接入后 funcs 86.39%（commit b3e761b）；V0.2.3 累计 +0.76pp（基线 V0.2.2.1 init #11 = 86.19%）；wxpay.service funcs 33.77% 留待可选补；init-architect 未实跑 pnpm test:coverage",
-    "statsServiceCoverage": "100%",
-    "cachedEndpoints": 23,
-    "cachedEndpointsNote": "V0.2.3 init #12 实测 Grep Cache.wrap 调用点 = 31 处（含跨 service 多处）；按业务接口维度声明 = **23 热路径**（基线 V0.2.2.1 = 15，V0.2.3 +8 新接入）：V0.2.3 新接入 8 个：stats.weatherAnalysis + stats.userProfile（commit 0198f2f）+ goal.list + goal.myProgress（commit 41ab4c3）+ shoes.list + shoes.myStats（commit b0cecfd）+ training.myPlans + training.myActivePlan（commit b3e761b）；声明基线 15：mall×3 / user / sport×3 / content×2 / weekly-report + 佳明×4 TTL 300s + device.myTodayHealth TTL 300s + stats.myCertificates TTL 120s + aiCoach contextBuilder Cache 60s + aiCoach loadHistory Cache 30s + stats.myDailyReport Cache 60s",
-    "v023CacheAccess": {
-      "summary": "V0.2.3 = 4 个 perf commit，0 schema/迁移/module/页/组件改动；4 个 module 8 个接口接入 Cache.wrap 120s TTL",
-      "commits": [
-        "0198f2f perf(v0.2.3): stats.weatherAnalysis + userProfile 接 Cache.wrap 120s",
-        "41ab4c3 perf(v0.2.3): goal list / myProgress 接 Cache.wrap 120s",
-        "b0cecfd perf(v0.2.3): shoes list / myStats 接 Cache.wrap 120s",
-        "b3e761b perf(v0.2.3): training myPlans / myActivePlan 接 Cache.wrap 120s"
-      ],
-      "pattern": "抽 compute* 内部纯函数 + service 层包 Cache.wrap + 测试加 redis mock 隔离 + beforeEach clear cacheStore 防缓存串扰",
-      "accessPoints": [
-        {"file": "apps/server/src/modules/stats/stats.service.ts", "line": 331, "action": "weatherAnalysis", "computeFn": "computeWeatherAnalysis", "ttl": 120, "commit": "0198f2f", "cacheKey": "stats:weatherAnalysis:${userId}"},
-        {"file": "apps/server/src/modules/stats/stats.service.ts", "line": 370, "action": "userProfile", "computeFn": "computeUserProfile", "ttl": 120, "commit": "0198f2f", "cacheKey": "stats:userProfile:${userId}"},
-        {"file": "apps/server/src/modules/goal/goal.service.ts", "line": 100, "action": "list", "computeFn": "computeList", "ttl": 120, "commit": "41ab4c3", "cacheKey": "goal:list:${userId}"},
-        {"file": "apps/server/src/modules/goal/goal.service.ts", "line": 138, "action": "myProgress", "computeFn": "computeMyProgress", "ttl": 120, "commit": "41ab4c3", "cacheKey": "goal:myProgress:${userId}"},
-        {"file": "apps/server/src/modules/shoes/shoes.service.ts", "line": 33, "action": "list", "computeFn": "computeList", "ttl": 120, "commit": "b0cecfd", "cacheKey": "shoes:list:${userId}"},
-        {"file": "apps/server/src/modules/shoes/shoes.service.ts", "line": 106, "action": "myStats", "computeFn": "computeMyStats", "ttl": 120, "commit": "b0cecfd", "cacheKey": "shoes:myStats:${userId}"},
-        {"file": "apps/server/src/modules/training/training.service.ts", "line": 30, "action": "myPlans", "computeFn": "computeMyPlans", "ttl": 120, "commit": "b3e761b", "cacheKey": "training:myPlans", "note": "**不含 userId — 全 user 共享 active 计划模板（admin 维护），不掺 userId 提高命中率**"},
-        {"file": "apps/server/src/modules/training/training.service.ts", "line": 84, "action": "myActivePlan", "computeFn": "computeMyActivePlan", "ttl": 120, "commit": "b3e761b", "cacheKey": "training:myActivePlan:${userId}"}
-      ],
-      "keyLessons": [
-        "接 Cache 必加 redis mock（vi.mock('../../infra/redis.js')）+ beforeEach(() => cacheStore.clear()) 防缓存串扰（V0.2.3 沉淀通用范式，shoes 是首发站）",
-        "training.myPlans cacheKey 不含 userId（active 计划对所有用户一致，全 user 共享缓存命中率最大化）",
-        "写接口不接 Cache 依赖 TTL 120s 自然过期（add/remove/joinPlan/leavePlan/updateThreshold 等，YAGNI 写后失效复杂度）"
+    "prismaMigrations": {
+      "count": 46,
+      "method": "Glob apps/server/prisma/migrations/**/migration.sql",
+      "deltaFromInit13": 0,
+      "latest": [
+        "20260716020000_growth_level",
+        "20260716030000_invite_cap",
+        "20260716040000_admin_rbac"
       ]
     },
-    "ignored": {
-      "binaryFiles": [
-        "miniprogram/miniprogram_npm/** (微信预编译产物)",
-        "reviews/running-group-stats/review-package.pdf",
-        "*.png / *.jpg (图标/封面)",
-        "*MiFitness*data_copy* (V0.1.43 小米数据包，V0.1.100 起 .gitignore 排除)",
-        "*MiFitness*.zip (小米手环数据包压缩包)",
-        "qmwx-prod-backup-*.sql (生产 PG 备份)"
-      ],
-      "reason": "node_modules + 构建产物 + 微信预编译 npm + 数据包 + 备份（防泄露）"
+    "backendModules": {
+      "count": 34,
+      "routeFiles": 33,
+      "routeException": "app-config 无独立 routes.ts",
+      "moduleClaudeMd": 34,
+      "documentationCoveragePercent": 100,
+      "deltaFromInit13": 0
+    },
+    "miniprogramPages": {
+      "count": 22,
+      "source": "apps/miniprogram/miniprogram/app.json",
+      "deltaFromInit13": 0
+    },
+    "miniprogramComponents": {
+      "count": 16,
+      "source": "components/*/index.json",
+      "deltaFromInit13": 4,
+      "componentClaudeMd": 6,
+      "newV029": ["uv-alert", "level-card", "ai-quick-cards", "invite-bonus-card"]
+    },
+    "tests": {
+      "promptCommandPathResult": {
+        "path": "apps/server/src/**/*.test.ts",
+        "itOccurrences": 0,
+        "note": "用户给出的 grep 路径是 src，但本仓后端测试实际位于 apps/server/tests"
+      },
+      "serverItOccurrences": 1055,
+      "serverTestFilesWithLiteralIt": 109,
+      "cliItOccurrences": 11,
+      "cliTestFiles": 2,
+      "serverPlusCliItOccurrences": 1066,
+      "sharedItOccurrences": 6,
+      "allTrackedLiteralItOccurrences": 1072,
+      "miniprogramItOccurrences": 0,
+      "e2eFiles": 12,
+      "countingCaveat": "literal it() 口径不会统计 itE2E() 等别名；1066 是用户指定的 server 1055 + CLI 11 口径，不是全仓所有测试声明"
+    },
+    "cache": {
+      "cacheWrapInvocations": 31,
+      "grepCacheWrapOrCacheKeyMatchingLines": 70,
+      "documentedHotPathsBeforeInit14": 23,
+      "conclusion": "23 条声明未被本轮 grep 验证；源码有 31 个 Cache.wrap 调用。原 23 属过时的业务口径，且历史求和自身不一致，应校准为 31 个实际缓存调用点。",
+      "modules": [
+        "ranking:1", "goal:2", "sport:3", "ai-coach:2", "training:3", "content:2",
+        "device:6", "stats:5", "weekly-report:1", "user:1", "shoes:2", "mall:3"
+      ]
     }
   },
-  "versionControl": {
-    "currentBranch": "main",
-    "currentTag": "v0.2.1 (声明 tag；working tree 含 V0.2.2 + V0.2.2.1 + V0.2.3 共 5 commit 待打 v0.2.3 tag)",
-    "currentCommit": "b3e761b (V0.2.3 training Cache 接入 HEAD)",
-    "previousCommits": [
-      "8eb059a docs(v0.2.2.1): init #11 校准 + GAP-12 100% 关闭确认",
-      "ed53e47 test(v0.2.2.1): +12 边界测试 funcs 86.19%",
-      "b7c7327 feat(v0.2.2): huawei_export parser + 20 单测",
-      "0198f2f perf(v0.2.3): stats.weatherAnalysis + userProfile 接 Cache.wrap 120s",
-      "41ab4c3 perf(v0.2.3): goal list / myProgress 接 Cache.wrap 120s",
-      "b0cecfd perf(v0.2.3): shoes list / myStats 接 Cache.wrap 120s",
-      "b3e761b perf(v0.2.3): training myPlans / myActivePlan 接 Cache.wrap 120s"
-    ],
-    "versionNote": "V0.1.100 起 GitHub 主线（origin = GitHub changzhi777/QM-WX 私有 HTTPS+PAT / ct400 Gitea 保留不同步 / v0.1.100 跳号起点）。qm-admin 独立仓同步至 V0.1.131（6ba3e16，V0.1.132~2.3 未在 qm-admin 部署）",
-    "workingTreeNote": "V0.2.3 4 commit 已 push GitHub origin（0198f2f + 41ab4c3 + b0cecfd + b3e761b）；V0.2.2 huawei_export (b7c7327) + V0.2.2.1 coverage (ed53e47) + init #11 docs (8eb059a) 也已 commit；生产部署 V0.1.131~147 healthy（qingmulife.cn），V0.1.148~2.3 待部署"
+  "coverage": {
+    "status": "open-not-executed",
+    "gap": "GAP-14",
+    "requiredCommand": "cd apps/server && pnpm test:coverage",
+    "freshResult": null,
+    "thresholds": {
+      "statements": 84,
+      "branches": 75,
+      "functions": 86,
+      "lines": 84
+    },
+    "staleArtifact": {
+      "path": "apps/server/coverage/index.html",
+      "statements": 84.9,
+      "branches": 77.39,
+      "functions": 86.39,
+      "lines": 84.9,
+      "fractions": {
+        "statements": "10505/12372",
+        "branches": "1934/2499",
+        "functions": "470/544",
+        "lines": "10505/12372"
+      },
+      "fresh": false,
+      "stalenessEvidence": "coverage 中的 admin.service.ts 仍是 AppConfig admin_whitelist 版本，缺少当前源码的 adminLogin、checkPermission、createAdmin 等 V0.2.8 RBAC 函数"
+    },
+    "baselineComparison": {
+      "v023Functions": 86.39,
+      "v0211Functions": null,
+      "differencePercentagePoints": null,
+      "note": "V0.2.10 CLI helper 不在 apps/server/vitest.config.ts 的 src/**/*.ts 覆盖范围，11 个 CLI 测试不会抬高 server functions%；V0.2.5~2.8 的新增后端函数才会影响 fresh server coverage。"
+    },
+    "highRiskUnverifiedFunctions": [
+      "admin.createAdmin", "admin.updateAdmin", "admin.adminLoginLogs", "admin.setConfig 权限分支",
+      "distribution.bindInviter", "user.redeemMember", "food.recognize"
+    ]
   },
-  "v023CacheAccessSummary": "V0.2.3 4 个 perf commit，0 schema/迁移/module/页/组件改动；4 module（stats/goal/shoes/training）8 接口接入 Cache.wrap 120s；统一范式「抽 compute* 内部纯函数 + service 层包 Cache.wrap + 测试加 redis mock 隔离 + beforeEach clear cacheStore 防缓存串扰」；关键设计：training.myPlans cacheKey 不含 userId（active 计划全 user 共享）；写接口不接 Cache 依赖 TTL 自然过期；详见 stats.v023CacheAccess",
-  "documentationBugFix": "V0.1.138 init #7 修正文档历史 bug：多处历史声明「V0.1.118 新表 Reply / Review 1:N Reply cascade delete」实测 schema.prisma 与 migration 20260710060000_review_reply 均显示 Reply 是 Review 表的字段（replyContent/repliedAt），未建独立 Reply 表。V0.2.3 init #12 未发现新文档 bug",
-  "files": [
-    {"path": "CLAUDE.md", "kind": "root-context", "status": "pending-edit-by-main-agent", "changelogEntry": "2026-07-15 init #12 V0.2.3 校准：主 agent 用 Edit 在顶部追加 init #12 段（草稿见 init-architect 报告）；当前阶段数字建议 v0.2.1→v0.2.3 + funcs 86.19%→86.39% + 热路径 15→23"},
-    {"path": ".claude/index.json", "kind": "index", "status": "rewritten", "changelogEntry": "2026-07-15 init #12 V0.2.3 全量重写：从 V0.2.2.1 init #11（59 表/43 迁移/34 module/20 页/10 组件/34 module CLAUDE.md/1034 单元/86.19% funcs/15 热路径）升至 V0.2.3 现状（59 表/43 迁移/34 module/20 页/10 组件/34 module CLAUDE.md/**1042 声明（实测 it()=1035）/86.39% funcs 声明/23 热路径**），新增 v023CacheAccess 详细字段（8 接入点 file:line + computeFn + ttl + cacheKey + commit）"},
-    {"path": "apps/server/CLAUDE.md", "kind": "module-context", "status": "updated", "note": "顶部加 V0.2.3 init #12 + V0.2.3 4 commit 共 2 段 changelog；数字更新：module 数 32→34 / 测试 901→1035(it() 实测, 声明 1042) / funcs 87.5%→86.39%(V0.2.3 沿用) / 热路径 15→23 / 迁移 45→43（修正 init #8 声明误） / 表数 58→59；目录结构 + food/ocr/upload-parse.job + Cache.wrap 23 热路径"},
-    {"path": "apps/server/src/modules/stats/CLAUDE.md", "kind": "module-context", "status": "updated", "note": "V0.2.3 init #12 顶部加 changelog 段 + Action 清单补 weatherAnalysis + userProfile 行（标 V0.2.3 接 Cache）+ 关键范式段加 V0.2.3 cache 范式说明 + 数据模型加 BodyCompositionRecord 行 + 版本演进加 V0.2.3 行"},
-    {"path": "apps/server/src/modules/goal/CLAUDE.md", "kind": "module-context", "status": "updated", "note": "V0.2.3 init #12 顶部加 changelog 段 + 接口表加缓存列（标 list/myProgress Cache.wrap 120s）+ 范式段加 V0.2.3 cache 范式 + 已知坑加 V0.2.3 cache 串扰坑"},
-    {"path": "apps/server/src/modules/shoes/CLAUDE.md", "kind": "module-context", "status": "updated", "note": "V0.2.3 init #12 顶部加 changelog 段 + 新增 V0.2.3 list/myStats 接 Cache.wrap 段（含代码示例 + 测试隔离范式）+ 接口表加缓存列 + 已知坑加 V0.2.3 cache 串扰坑（首发站）"},
-    {"path": "apps/server/src/modules/training/CLAUDE.md", "kind": "module-context", "status": "updated", "note": "V0.2.3 init #12 顶部加 changelog 段（含 myPlans cacheKey 不含 userId 关键设计）+ 接口表加缓存列 + 范式段加 V0.2.3 cacheKey 设计 + 已知坑加 V0.2.3 cache 串扰坑"},
-    {"path": "apps/miniprogram/CLAUDE.md", "kind": "module-context", "status": "unchanged", "note": "V0.2.3 0 前端改动，不动"},
-    {"path": "packages/shared/CLAUDE.md", "kind": "module-context", "status": "unchanged", "note": "V0.2.3 0 endpoint 改动，不动"},
-    {"path": "apps/server/src/modules/ai-coach/CLAUDE.md", "kind": "module-context", "status": "unchanged", "note": "V0.1.140 写好；V0.2.3 不动"},
-    {"path": "apps/server/src/modules/content/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/user/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/sport/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/mall/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/wallet/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/review/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/admin/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/wxpay/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/device/CLAUDE.md", "kind": "module-context", "status": "unchanged", "note": "V0.2.3 不动 device；V0.2.2 init #11 已加 huawei_export 段"},
-    {"path": "apps/server/src/modules/group-buy/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/distribution/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/cart/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/points/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/address/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/coupon/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/favorite/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/feed/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/notification/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/follow/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/family/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/auth/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/upload/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/food/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/ocr/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/weekly-report/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/app-config/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/ranking/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/recipe/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "apps/server/src/modules/ludong/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "docs/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "tests/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "reviews/CLAUDE.md", "kind": "module-context", "status": "unchanged"},
-    {"path": "src/CLAUDE.md", "kind": "module-context", "status": "unchanged (deprecated)"},
-    {"path": "CHANGELOG.md", "kind": "changelog", "status": "archived", "note": "V0.1.131 加归档声明"},
-    {"path": "apps/server/vitest.config.ts", "kind": "config", "status": "exists", "note": "thresholds 84/86/75/84（V0.2.3 沿用 V0.1.131 设定；funcs 86.39% > 86 阈值）"},
-    {"path": "apps/server/src/infra/cache.ts", "kind": "infra", "status": "unchanged", "note": "V0.2.3 0 改动 infra/cache.ts（仅新增调用方，抽象层不变）；接入点 15→23 热路径（V0.2.3 +8）"}
-  ],
-  "modules": [
+  "workspaceAudit": {
+    "workspacePackages": ["apps/*", "packages/*"],
+    "devCliPackagePath": "scripts/dev-cli/package.json",
+    "devCliInWorkspace": false,
+    "ciWorkflow": ".github/workflows/wx-deploy.yml",
+    "ciTestCommand": "pnpm run test",
+    "cliTestsExecutedByCiCommand": false,
+    "additionalRisk": "apps/miniprogram/package.json 定义 vitest run，但目录内无 *.test.ts、无 passWithNoTests 配置；根递归测试可能因 No test files found 非零退出，需实际 CI 日志确认。",
+    "recommendedFixes": [
+      "将 scripts/* 加入 pnpm-workspace.yaml，并让 @qm-wx/scripts-dev-cli 的 test 脚本进入 pnpm -r test",
+      "或在 wx-deploy.yml 显式追加 pnpm exec vitest run scripts/dev-cli/",
+      "为 miniprogram test 增加真实测试，或在过渡期显式使用 --passWithNoTests"
+    ]
+  },
+  "moduleCandidates": [
     {
       "path": "apps/server",
-      "role": "Fastify 4 + TS 后端",
-      "name": "@qm-wx/server",
-      "entry": "src/server.ts (buildApp + listen + jobs)",
-      "moduleCount": 34,
-      "moduleList": [
-        "auth (V0.1.129 重构 connectors：4 login method + bindApps + 6 connectors + 9 endpoint)",
-        "user (+21 relation 字段 V0.1.148 init #8 实测)",
-        "mall (+order.service.ts 352 行独立；V0.1.142 前端下线后端保留)",
-        "content (+submitRaceResult/getRaceLeaderboard/getMyRaceResult V0.1.134 赛事服务)",
-        "wallet", "weekly-report", "upload (V0.1.149 COS 集成 + V0.1.150 UploadRecord #59 + upload-parse.job)", "admin (+submitRaceResult/listEnrollmentsByContent V0.1.134 + V0.1.150 listUploads/retryParse)",
-        "app-config", "wxpay", "device (V0.1.150 parser registry 5 type + V0.1.151 6 type + V0.2.2 huawei_export)",
-        "sport (+shoeId 集成 incrementShoeKm V0.1.26 + V0.1.27 前端 picker; V0.1.42 +3 action)",
-        "stats (跑者汇总 + V0.1.27 myAnnualReport + V0.1.28 myCertificates / V0.1.135 5 段 / V0.1.137 3 段鞋成就 + V0.1.144~147 myDailyReport/generateDailyReport + V0.1.148 weather 4 action + V0.2.0 +weatherAnalysis +userProfile + **V0.2.3 weatherAnalysis +userProfile 接 Cache.wrap 120s**)",
-        "ranking (多维榜单)", "recipe (V2 stub)", "ludong (V2 stub)",
-        "cart (V0.1.142 前端下线)", "points (V0.1.142 前端下线)", "address (V0.1.142 前端下线)", "coupon (V0.1.142 前端下线)",
-        "distribution (V0.1.24, settle/clawback 全闭环 + V0.1.142 前端下线后端保留)",
-        "training (V0.1.25; V0.1.41 配置化; **V0.2.3 myPlans + myActivePlan 接 Cache.wrap 120s**)",
-        "shoes (V0.1.26, incrementShoeKm 导出供 sport 复用; V0.1.133 +3; V0.1.137 +compareShoes; **V0.2.3 list + myStats 接 Cache.wrap 120s**)",
-        "goal (V0.1.28, calcGoalProgress; V0.1.34 userIds; V0.1.135 +4; **V0.2.3 list + myProgress 接 Cache.wrap 120s**)",
-        "favorite (V0.1.29, 批量关联避免 N+1; V0.1.142 前端下线)",
-        "feed (V0.1.30, $transaction; V0.1.31 集成 notify(); V0.1.36 +topic/videoUrl; V0.1.136 +shoeId + shoesForPicker)",
-        "notification (V0.1.31)",
-        "follow (V0.1.32, myCounts; 复用 notify(type=follow))",
-        "family (V0.1.34, V0.1.39 + transfer/dissolve/achievements)",
-        "group-buy (V0.1.37, V0.1.38 admin + Order +groupBuyId; V0.1.142 前端下线)",
-        "review (V0.1.113, V0.1.118 +replyContent/repliedAt 字段; V0.1.137 鞋评双分发合成 shoe:${shoeId})",
-        "ai-coach (V0.1.139 第 32 个 module - GLM v4 流式 + 4 人设 + 11 action)",
-        "food (V0.2.0 第 33 个 module - FatSecret OAuth2 + Meal.items 宏量升级 + FoodCache 1h TTL + 5 action)",
-        "ocr (V0.2.1 第 34 个 module - 腾讯云官方 SDK 替 V0.1.151 手写 TC3 + 3 action + 复用 COS KEY)"
-      ],
-      "adminRefactor": "admin.service.ts 25+ action（V0.1.118 +addReviewReply / V0.1.123 +listReviews / V0.1.134 +submitRaceResult/listEnrollmentsByContent / V0.1.150 +listUploads/retryParse）",
-      "domain": ["src/domain/order-state.ts (7 态 + TRANSITIONS 白名单 + assertTransition)"],
-      "jobs": ["queue", "scheduler", "weekly-report", "close-order", "refresh-certs", "garmin-import", "ludong-sync (V0.1.43 stub)", "upload-parse (V0.1.150 +1 worker 5→6)"],
-      "infra": ["infra/prisma.ts", "infra/redis.ts", "infra/cache.ts (Cache.wrap, **23 热路径 V0.2.3**)", "infra/cos.ts (V0.1.150 +getObject)", "infra/ocr.ts (V0.2.1 简化，仅留 parseSportScore 纯函数)"],
-      "common": ["errors.ts", "logger.ts", "openapi-spec.ts", "docs.ts", "csv.ts", "helpers/parse.ts", "helpers/sign-tokens.ts", "middleware/auth.ts", "middleware/feature-gate.ts", "integrations/wx/code2session.ts"],
-      "prismaTables": 59,
-      "prismaTablesNote": "V0.2.3 init #12 实测 schema.prisma 59 model：V0.1.139 +ConversationTurn #57 / V0.1.144~147 +DailyReport #58 / V0.1.150 +UploadRecord #59；V0.2.0~V0.2.3 不增表",
-      "testCount": {"unit": 1042, "unitOccurrences": 1035, "e2e": 54, "e2eFiles": 11, "total": 1096, "note": "V0.2.3 init #12 Grep it() occurrences 实测 1035（基线 1034 +1）；声明 1042 沿用（shoes 1040 + training 1042 记忆）"},
-      "totalCoverage": "86.39% functions (V0.2.3 声明沿用，未实跑)",
-      "statsServiceCoverage": "100%",
-      "cachedEndpoints": 23,
-      "moduleLevelClaudeMd": 34,
-      "moduleLevelClaudeMdNote": "V0.2.3 init #12 实测 34 module CLAUDE.md 100% 覆盖（GAP-12 100% 关闭，V0.2.2 init #11 收口）；V0.2.3 4 个 module（stats/goal/shoes/training）顶部加 V0.2.3 段",
-      "moduleLevelClaudeMdList": [
-        "apps/server/src/modules/distribution/CLAUDE.md",
-        "apps/server/src/modules/cart/CLAUDE.md",
-        "apps/server/src/modules/points/CLAUDE.md",
-        "apps/server/src/modules/address/CLAUDE.md",
-        "apps/server/src/modules/coupon/CLAUDE.md",
-        "apps/server/src/modules/training/CLAUDE.md (V0.2.3 +Cache 段)",
-        "apps/server/src/modules/shoes/CLAUDE.md (V0.2.3 +Cache 段)",
-        "apps/server/src/modules/goal/CLAUDE.md (V0.2.3 +Cache 段)",
-        "apps/server/src/modules/favorite/CLAUDE.md",
-        "apps/server/src/modules/feed/CLAUDE.md",
-        "apps/server/src/modules/notification/CLAUDE.md",
-        "apps/server/src/modules/follow/CLAUDE.md",
-        "apps/server/src/modules/family/CLAUDE.md",
-        "apps/server/src/modules/review/CLAUDE.md",
-        "apps/server/src/modules/auth/CLAUDE.md",
-        "apps/server/src/modules/admin/CLAUDE.md",
-        "apps/server/src/modules/wxpay/CLAUDE.md",
-        "apps/server/src/modules/device/CLAUDE.md",
-        "apps/server/src/modules/group-buy/CLAUDE.md",
-        "apps/server/src/modules/upload/CLAUDE.md",
-        "apps/server/src/modules/stats/CLAUDE.md (V0.2.3 +Cache 段)",
-        "apps/server/src/modules/content/CLAUDE.md",
-        "apps/server/src/modules/user/CLAUDE.md",
-        "apps/server/src/modules/sport/CLAUDE.md",
-        "apps/server/src/modules/mall/CLAUDE.md",
-        "apps/server/src/modules/wallet/CLAUDE.md",
-        "apps/server/src/modules/ai-coach/CLAUDE.md",
-        "apps/server/src/modules/food/CLAUDE.md",
-        "apps/server/src/modules/ocr/CLAUDE.md",
-        "apps/server/src/modules/weekly-report/CLAUDE.md",
-        "apps/server/src/modules/app-config/CLAUDE.md",
-        "apps/server/src/modules/ranking/CLAUDE.md",
-        "apps/server/src/modules/recipe/CLAUDE.md",
-        "apps/server/src/modules/ludong/CLAUDE.md"
-      ],
+      "language": "TypeScript",
+      "role": "Fastify 4 后端、Prisma 数据层、BullMQ jobs",
+      "entry": "src/server.ts / src/app.ts",
+      "interfaces": "33 个 /api/{module} route 文件 + app-config 内部模块",
+      "tests": "apps/server/tests/**/*.test.ts",
+      "config": ["package.json", "vitest.config.ts", "prisma/schema.prisma", "tsconfig.json"],
       "claudeMd": "apps/server/CLAUDE.md"
     },
     {
       "path": "apps/miniprogram",
-      "role": "微信小程序前端",
-      "name": "@qm-wx/miniprogram",
-      "entry": "miniprogram/app.ts (envVersion 分支 V0.1.100)",
-      "pages": 20,
-      "components": 10,
-      "componentList": ["feature-gate", "error-state", "privacy-popup", "profile-popup", "entry-grid (V0.1.35)", "mileage-chart (V0.1.133)", "certificate-poster (V0.1.135)", "goal-share-card (V0.1.135)", "collection-poster (V0.1.136)", "plan-card (V0.1.140)"],
-      "utils": [
-        "utils/ble.ts (V0.1.43 retry3+hasHr+去 services 过滤+getDeviceServices + V0.1.127 scale 体脂秤)",
-        "utils/werun.ts (V0.1.43 syncWeRunToday/getWeRunHistory/syncWeRunIfFirstToday/cnMonthRange)",
-        "utils/auth.ts", "utils/format.ts",
-        "utils/scale.ts (V0.1.127 体脂秤 GATT 解析)"
-      ],
-      "apiWrapper": "miniprogram/services/api.ts (actionUrl + refresh 一次重试; V0.1.41 setErrorHandler 修; V0.1.130 api.call vs wx.request 判断)",
-      "pagesAdded_v020": ["diet (V0.2.0)", "insight (V0.2.0)"],
-      "v023Change": "V0.2.3 0 前端改动（纯后端 perf 优化）",
+      "language": "TypeScript/WXML/WXSS",
+      "role": "微信原生小程序前端",
+      "entry": "miniprogram/app.ts / miniprogram/app.json",
+      "interfaces": "services/api.ts + packages/shared ENDPOINTS",
+      "tests": "当前无 *.test.ts；依赖微信开发者工具/automator 真机链路",
+      "config": ["package.json", "tsconfig.json", "project.config.json"],
       "claudeMd": "apps/miniprogram/CLAUDE.md"
     },
     {
-      "path": "apps/admin",
-      "role": "运营后台 (独立仓)",
-      "name": "qm-admin",
-      "location": "独立 git 仓 (GitHub changzhi777/qm-admin + CT400 Gitea qingmu/qm-admin 双 remote)",
-      "framework": "React + Umi Max 4 + antd 5",
-      "testCount": 35,
-      "version": "V0.1.131 (与主仓同步跳号，独立仓 6ba3e16)",
-      "claudeMd": null,
-      "note": "不在本 monorepo 范围；V0.1.132~2.3 未在 qm-admin 部署"
-    },
-    {
       "path": "packages/shared",
-      "role": "前后端共享层",
-      "name": "@qm-wx/shared",
+      "language": "TypeScript",
+      "role": "共享类型、Zod、常量、API 契约",
       "entry": "src/index.ts",
-      "exports": [
-        "constants/feature-flags", "constants/member-levels", "constants/points-rules",
-        "constants/device-brands (DEVICE_BRANDS 9 品牌 + BLE_VENDOR_PATTERNS + matchBleVendor + BleVendor type V0.1.33)",
-        "api-contracts/endpoints (+ actionUrl 工具 + **34 module** + ENDPOINTS.food V0.2.0 5 action + ENDPOINTS.ocr V0.2.1 3 action + ENDPOINTS.stats 10 action 含 V0.2.0 weatherAnalysis + userProfile + V0.1.148 weather 4)",
-        "types (从 Zod 推导, V0.1.140 +aiCoachPersona enum)"
-      ],
-      "apiBaseProd": "qingmulife.cn (生产真实域名)",
-      "testCount": 7,
-      "v023Change": "V0.2.3 0 endpoint 改动",
+      "interfaces": "package.json exports",
+      "tests": "tests/endpoints.test.ts（6 个 literal it）",
+      "config": ["package.json", "tsconfig.json", "tsconfig.build.json"],
       "claudeMd": "packages/shared/CLAUDE.md"
     },
     {
-      "path": "docs",
-      "role": "设计文档 / 部署手册 / 审查报告 + 天气 API + COS 存储",
-      "files": ["ARCHITECTURE-V2.md", "PHASE-0-PLAN.md", "PHASE-V2-PLAN.md", "CI.md", "STAGING_DEPLOY.md", "SUBMIT-CHECKLIST.md", "PHASE-4-2-PREP.md", "API-AUDIT.md", "VERIFY-CHECKLIST.md (V0.1.122)", "qweather-api.md (V0.1.148 coord)", "COS-STORAGE.md (V0.1.149 coordinator)"],
-      "claudeMd": "docs/CLAUDE.md"
-    },
-    {
-      "path": "tests",
-      "role": "跨包 e2e 容器 (暂空)",
-      "note": "后端 e2e 实在 apps/server/tests/e2e/ (11 files)",
-      "claudeMd": "tests/CLAUDE.md"
-    },
-    {
-      "path": "reviews",
-      "role": "评审资料",
-      "subdirs": ["running-group-stats (9 文档 + build_docs.py)"],
-      "claudeMd": "reviews/CLAUDE.md"
-    },
-    {
-      "path": "scripts",
-      "role": "工具脚本",
-      "files": ["smoke.sh", "reconcile.ts", "build-mp-shared.mjs", "dev-up.sh", "import-garmin.ts (apps/server/scripts/)"]
-    },
-    {
-      "path": "deploy",
-      "role": "部署脚本",
-      "files": ["staging.sh", "nginx-qmwx-api.conf"]
-    },
-    {
-      "path": ".github/workflows",
-      "role": "CI/CD",
-      "files": ["ci.yml (4 job parallel)", "deploy-staging.yml"]
-    },
-    {
-      "path": "src",
-      "role": "已废弃 (V2 转向后)",
-      "claudeMd": "src/CLAUDE.md"
+      "path": "scripts/dev-cli",
+      "language": "TypeScript",
+      "role": "微信开发者工具 CLI 跨平台包装",
+      "entry": "index.ts / ../../bin/wx",
+      "interfaces": "CliHelper 12 个公开命令方法 + commander 12 子命令",
+      "tests": "__tests__/*.test.ts（11 个 literal it）",
+      "config": ["package.json"],
+      "claudeMd": "scripts/dev-cli/CLAUDE.md",
+      "gap": "未纳入 pnpm workspace"
     }
   ],
-  "cloudLink": {
-    "status": "V0.1.131~147 部署 healthy（V0.1.148~V0.2.3 待部署）",
-    "domain": "qingmulife.cn (腾讯云 106.53.168.73)",
-    "filing": "湘ICP备2026022616号",
-    "stack": "全 docker (server + PG + Redis) + nginx 共用 /api/",
-    "wxAppId": "wx8c37d7ac5b7d0a83 (真)",
-    "wxSecret": "已配真值",
-    "seed": "AppConfig / Product(8) / User(张晨) 三类 + 佳明 15723 条活动/睡眠/指标/健身年龄",
-    "ciGate": "prod-smoke.e2e (3 用例) + user-flow.e2e (6 用例, P0-1 回归)",
-    "prodDeployVersion": "V0.1.131 healthy，V0.1.148~V0.2.3 待部署",
-    "gitRemote": "origin = GitHub changzhi777/QM-WX 私有 (HTTPS+PAT) / ct400 = CT400 Gitea 保留不同步 / qm-admin = changzhi777/qm-admin 独立仓"
+  "backendModuleSnapshots": [
+    {"path":"apps/server/src/modules/auth","entry":"auth.routes.ts","interfaces":"/api/auth 登录/刷新/绑定","tests":"tests/modules/auth","gaps":[]},
+    {"path":"apps/server/src/modules/user","entry":"user.routes.ts + user.service.ts","interfaces":"/api/user 资料/成长/会员兑换","tests":"tests/modules/user","gaps":["redeemMember fresh coverage 待确认"]},
+    {"path":"apps/server/src/modules/sport","entry":"sport.routes.ts + sport.service.ts","interfaces":"打卡/统计/群组","tests":"tests/modules/sport","gaps":[]},
+    {"path":"apps/server/src/modules/mall","entry":"mall.routes.ts + mall.service.ts + order/refund","interfaces":"商品/订单/退款","tests":"tests/modules/mall","gaps":["前端已下线，后端保留"]},
+    {"path":"apps/server/src/modules/content","entry":"content.routes.ts + content.service.ts","interfaces":"内容/赛事/报名","tests":"tests/modules/content","gaps":[]},
+    {"path":"apps/server/src/modules/wallet","entry":"wallet.routes.ts + wallet.service.ts + wallet.repo.ts","interfaces":"余额/交易","tests":"tests/modules/wallet","gaps":[]},
+    {"path":"apps/server/src/modules/weekly-report","entry":"weekly-report.routes.ts + service","interfaces":"周报查询/聚合","tests":"tests/modules/weekly-report + e2e","gaps":[]},
+    {"path":"apps/server/src/modules/upload","entry":"upload.routes.ts + upload.service.ts + upload-record.service.ts","interfaces":"COS 上传/解析记录","tests":"tests/modules/upload","gaps":[]},
+    {"path":"apps/server/src/modules/admin","entry":"admin.routes.ts + admin.service.ts","interfaces":"RBAC 登录/运营/审计/导出","tests":"tests/modules/admin","gaps":["fresh functions coverage", "create/update/loginLogs 管理分支"]},
+    {"path":"apps/server/src/modules/app-config","entry":"app-config.repository.ts","interfaces":"功能开关内部仓储","tests":"tests/modules/app-config 或 feature-gate","gaps":[]},
+    {"path":"apps/server/src/modules/wxpay","entry":"wxpay.routes.ts + services","interfaces":"支付/通知/退款","tests":"tests/modules/wxpay + e2e","gaps":["生产切真"]},
+    {"path":"apps/server/src/modules/device","entry":"device.routes.ts + device.service.ts + parsers","interfaces":"佳明/BLE/微信运动/设备导入","tests":"tests/modules/device","gaps":["huawei 真实样本回归"]},
+    {"path":"apps/server/src/modules/stats","entry":"stats.routes.ts + stats.service.ts","interfaces":"跑者统计/天气/日报/画像","tests":"tests/modules/stats","gaps":[]},
+    {"path":"apps/server/src/modules/ranking","entry":"ranking.routes.ts + ranking.service.ts","interfaces":"多维榜单","tests":"tests/modules/ranking","gaps":[]},
+    {"path":"apps/server/src/modules/recipe","entry":"recipe.routes.ts + recipe.service.ts","interfaces":"菜谱 stub","tests":"tests/modules/recipe","gaps":["V2 stub"]},
+    {"path":"apps/server/src/modules/ludong","entry":"ludong.routes.ts + ludong.service.ts","interfaces":"律动同步 stub","tests":"tests/modules/ludong","gaps":["V2 stub"]},
+    {"path":"apps/server/src/modules/cart","entry":"cart.routes.ts + cart.service.ts","interfaces":"购物车","tests":"tests/modules/cart","gaps":["前端已下线"]},
+    {"path":"apps/server/src/modules/points","entry":"points.routes.ts + points.service.ts","interfaces":"积分/签到","tests":"tests/modules/points","gaps":[]},
+    {"path":"apps/server/src/modules/address","entry":"address.routes.ts + address.service.ts","interfaces":"地址","tests":"tests/modules/address","gaps":["前端已下线"]},
+    {"path":"apps/server/src/modules/coupon","entry":"coupon.routes.ts + coupon.service.ts","interfaces":"优惠券","tests":"tests/modules/coupon","gaps":["前端已下线"]},
+    {"path":"apps/server/src/modules/distribution","entry":"distribution.routes.ts + distribution.service.ts","interfaces":"邀请/分销/佣金","tests":"tests/modules/distribution","gaps":["bindInviter fresh coverage 待确认"]},
+    {"path":"apps/server/src/modules/training","entry":"training.routes.ts + training.service.ts","interfaces":"计划/进度","tests":"tests/modules/training","gaps":[]},
+    {"path":"apps/server/src/modules/shoes","entry":"shoes.routes.ts + shoes.service.ts","interfaces":"跑鞋/里程/对比","tests":"tests/modules/shoes","gaps":[]},
+    {"path":"apps/server/src/modules/goal","entry":"goal.routes.ts + goal.service.ts","interfaces":"个人/家庭目标","tests":"tests/modules/goal","gaps":[]},
+    {"path":"apps/server/src/modules/favorite","entry":"favorite.routes.ts + favorite.service.ts","interfaces":"收藏","tests":"tests/modules/favorite","gaps":["部分前端入口下线"]},
+    {"path":"apps/server/src/modules/feed","entry":"feed.routes.ts + feed.service.ts","interfaces":"动态/点赞/评论","tests":"tests/modules/feed","gaps":[]},
+    {"path":"apps/server/src/modules/notification","entry":"notification.routes.ts + notification.service.ts","interfaces":"消息/notify 集成","tests":"tests/modules/notification","gaps":[]},
+    {"path":"apps/server/src/modules/follow","entry":"follow.routes.ts + follow.service.ts","interfaces":"关注关系","tests":"tests/modules/follow","gaps":[]},
+    {"path":"apps/server/src/modules/family","entry":"family.routes.ts + family.service.ts","interfaces":"家庭空间","tests":"tests/modules/family","gaps":[]},
+    {"path":"apps/server/src/modules/group-buy","entry":"group-buy.routes.ts + group-buy.service.ts","interfaces":"团购","tests":"tests/modules/group-buy","gaps":["前端已下线"]},
+    {"path":"apps/server/src/modules/review","entry":"review.routes.ts + review.service.ts","interfaces":"评价/鞋评","tests":"tests/modules/review","gaps":[]},
+    {"path":"apps/server/src/modules/ai-coach","entry":"ai-coach.routes.ts + service + providers","interfaces":"GLM/Stub 对话/计划/日报","tests":"tests/modules/ai-coach + ai-coach-flow.e2e","gaps":["voice 插件未开通"]},
+    {"path":"apps/server/src/modules/food","entry":"food.routes.ts + food.service.ts + client.ts","interfaces":"饮食/营养/拍照识别","tests":"tests/modules/food","gaps":["recognize 真机与 fresh coverage"]},
+    {"path":"apps/server/src/modules/ocr","entry":"ocr.routes.ts + ocr.service.ts + ocr.client.ts","interfaces":"腾讯 OCR 三 action","tests":"tests/modules/ocr","gaps":[]}
+  ],
+  "incrementSummary": {
+    "v0.2.9": {
+      "commit": "037f15e",
+      "tag": "v0.2.9",
+      "delta": "小程序组件 12→16，页面仍 22，后端/模型/迁移/测试不变",
+      "components": ["uv-alert", "level-card", "ai-quick-cards", "invite-bonus-card"],
+      "documentation": "4 个组件 CLAUDE.md 已存在"
+    },
+    "v0.2.10": {
+      "commit": "4b3f53b",
+      "tag": "v0.2.10",
+      "delta": "新增 bin/wx、scripts/dev-cli、CLI-INTEGRATION.md、根 wx:* scripts 与 11 个 CLI 测试",
+      "tests": "6 platform + 5 cli-helper",
+      "backendDelta": 0
+    },
+    "v0.2.11": {
+      "commit": "e5bb59b",
+      "tag": "v0.2.11",
+      "delta": "新增 .github/workflows/wx-deploy.yml，3 jobs：Ubuntu lint-typecheck、macOS wx-build、macOS wx-status",
+      "backendDelta": 0,
+      "auditFinding": "CLI 11 测未接入 pnpm workspace，CI 的 pnpm run test 不会执行它们"
+    }
+  },
+  "documentation": {
+    "created": ["scripts/dev-cli/CLAUDE.md"],
+    "updated": [".claude/index.json"],
+    "pendingMainAgentEdits": [
+      "CLAUDE.md 顶部追加 init #14，并把当前阶段 V0.2.10 改为 V0.2.11",
+      "CLAUDE.md Cache 热路径 23/132 纠正为 Cache.wrap 31、grep 行 70",
+      "CLAUDE.md GAP-14 保持 open，直到真实 coverage 输出落地",
+      "根 Mermaid/模块索引增加 scripts/dev-cli 可点击节点",
+      "apps/server/CLAUDE.md 覆盖率从沿用改为 fresh 结果（执行后）"
+    ]
   },
   "gaps": [
-    {"id": "GAP-1", "status": "closed", "note": "user 鉴权（已修，user-flow.e2e 6 用例回归）"},
-    {"id": "GAP-2", "status": "closed", "note": "admin schema 抽离（admin.service 25+ action）"},
-    {"id": "GAP-3", "status": "closed", "note": "覆盖率阈值门禁 — V0.2.3 funcs 86.39% > 86 阈值（声明沿用，未实跑）"},
-    {"id": "GAP-4", "status": "closed", "note": "CHANGELOG 版本段（V0.1.131 加归档声明）"},
-    {"id": "GAP-5", "status": "closed", "note": "device userId 兜底（V0.1.39 真登录恢复）"},
-    {"id": "GAP-6", "status": "closed", "note": "分销二次上线：V0.1.105~108 全闭环"},
-    {"id": "GAP-7", "status": "closed", "note": "CT400 tag 推送（V0.1.40~43 已推；V0.1.100 起 GitHub 主线 ct400 保留不同步）"},
-    {"id": "GAP-8", "status": "closed", "note": "module 级 CLAUDE.md — V0.2.2 init #11 实测 34 个 100% 覆盖"},
-    {"id": "GAP-9", "status": "closed", "note": "蓝牙 BLE 真机联调（V0.1.43 闭环 + V0.1.127 心率 + V0.1.128 COROS）"},
-    {"id": "GAP-10", "status": "closed", "note": "sport.checkin 选鞋入口（V0.1.27 已闭环）"},
-    {"id": "GAP-11", "status": "closed", "note": "子 CLAUDE.md 同步"},
-    {"id": "GAP-12 (V0.1.138 NEW → V0.2.2 init #11 100% closed)", "status": "closed", "note": "V0.2.2 init #11 GAP-12 100% 关闭：34 module CLAUDE.md 全有；V0.2.3 init #12 保持 100% 关闭"}
+    {"id":"GAP-1","status":"closed","note":"user 鉴权"},
+    {"id":"GAP-2","status":"closed","note":"admin schema 抽离"},
+    {"id":"GAP-3","status":"closed","note":"coverage threshold gate 已配置"},
+    {"id":"GAP-4","status":"closed","note":"CHANGELOG 归档入口"},
+    {"id":"GAP-5","status":"closed","note":"device userId 兜底"},
+    {"id":"GAP-6","status":"closed","note":"分销闭环"},
+    {"id":"GAP-7","status":"closed","note":"主线/tag 策略"},
+    {"id":"GAP-8","status":"closed","note":"module CLAUDE.md 基础覆盖"},
+    {"id":"GAP-9","status":"closed","note":"BLE 真机主链路"},
+    {"id":"GAP-10","status":"closed","note":"sport 选鞋闭环"},
+    {"id":"GAP-11","status":"closed","note":"子 CLAUDE.md 同步"},
+    {"id":"GAP-12","status":"closed","note":"34/34 后端 module CLAUDE.md"},
+    {"id":"GAP-13","status":"closed","note":"data-strip/avatar-badge 与 V0.2.9 四组件文档均存在"},
+    {"id":"GAP-14","status":"open","note":"V0.2.11 fresh server functions/lines/branches/statements 未实跑；旧 artifact 86.39% 已证实 stale"},
+    {"id":"GAP-15","status":"closed","note":"V0.2.4~V0.2.10 三主文档同步已由 428421c 完成；init #14 新段待父 agent 增量插入"},
+    {"id":"GAP-16","status":"open","note":"scripts/dev-cli 不在 pnpm workspace，wx-deploy 的 pnpm run test 不执行 11 个 CLI 测试；miniprogram 空测试包还可能让根递归测试非零退出"}
   ],
   "nextStepSuggestions": [
-    "huawei_export 真实样本回归（V0.2.2 parser 已落地，待主人首份 ZIP 验证）",
-    "FATSECRET_KEY/SECRET 生产注入（V0.2.0 food 模块启用必需）",
-    "qmwx-cos-uploader 子用户关联 QcloudOCRFullAccess 策略（V0.2.1 ocr 模块复用 COS KEY 必需）— memory/cam-ocr-confirmed-v0203.md 已记录 Task 3 实际已完成（Playwright 验证 row is-disabled + checkbox checked），文档未更新",
-    "diet + insight 真机验证（V0.2.0 新页 + 字段命名 + 事件穿透）",
-    "真机验证 V0.1.144~149 + V0.2.0~3（AI 健康助手 DailyReport + MQTT 推送 + Vant 美化视觉 + 品牌色 + COS 切真 + food/ocr/diet/insight/Cache）",
-    "wxpay 真生产切流（payment=ON + 商户配置 + 证书齐全）",
-    "AI 私教 voice 插件开通（wx069ba97219f66d99 同声传译）",
-    "佳明官方 API 申请（V0.1.144~147 调研结论 A 路线待批）",
-    "V0.2.3 tag 打点（commit b3e761b 为 V0.2.3 HEAD，建议打 v0.2.3 tag）"
+    "最高优先：在有 shell 的主代理执行 cd apps/server && pnpm test:coverage，记录四项 fresh 数字；若 functions <86%，优先补 admin createAdmin/updateAdmin/adminLoginLogs/setConfig 权限分支及 user/distribution/food 新函数测试。",
+    "修复 V0.2.11 CI 测试接线：将 scripts/* 纳入 workspace，或在 wx-deploy.yml 显式运行 pnpm exec vitest run scripts/dev-cli/；同时处理 miniprogram 无测试时的退出码。",
+    "校正文档 Cache 口径：31 个 Cache.wrap 调用；grep Cache.wrap|cacheKey 是 70 行，不是 23。",
+    "用 pnpm wx:auto-preview 验证 V0.2.9 四组件与 22 页；随后验证 wx-build/status workflow 的真实 runner 日志。",
+    "继续业务验证：diet/insight/membership/report-detail、food.recognize、体脂秤、huawei 真实样本、wxpay 生产切真、AI voice 插件。"
   ]
 }
