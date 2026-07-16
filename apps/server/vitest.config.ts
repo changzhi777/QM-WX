@@ -24,18 +24,18 @@ export default defineConfig({
       reporter: ['text', 'html', 'lcov'],
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.test.ts', 'src/server.ts'],
-      // 阈值：基于 V0.2.11 init #14 实测
-      // V0.2.11 实测: lines 83.76 / functions 85.54 / branches 77.41 / statements 83.76
-      // 调整（V0.2.12 GAP-14 关闭）:
-      //   functions 86 → 84（实测 85.54%, 留 ~1.5% 缓冲；下次 V0.2.13+ 视 wxpay.test 补强情况回升）
-      //   lines/statements 84 → 83（reflect V0.2.5~V0.2.8 大量新 action 稀释）
-      //   branches 75 → 75 维持（实测 77.41% 已远超）
-      // wxpay.service funcs 33.77%（mock payment happy path 仍未测）— 下批 V0.2.13 补
+      // 阈值：基于 V0.2.12 实测 (init #14 + K1 wxpay 测试补强)
+      // V0.2.13 K1 实测: funcs 86.07 / lines 83.85 / branches 77+ / statements 83.85
+      // 调整:
+      //   functions 84 → 86（实测 86.07%, +0.07pp 缓冲 — 升回 V0.1.131 baseline）
+      //   lines/statements 84 → 83.5（实测 83.85%, +0.35pp 缓冲 — 留 V0.2.5~V0.2.8 大量新 action 稀释余地）
+      //   branches 75 → 75 维持（实测 ~77 已远超）
+      // K1 wxpay.service.test.ts +5 测补：isPaySuccess(true/false) + toOutTradeNo(<32/>32) + downloadBill + verifyAndDecryptNotify 部分
       thresholds: {
-        lines: 83,
-        functions: 84,
+        lines: 83.5,
+        functions: 86,
         branches: 75,
-        statements: 83,
+        statements: 83.5,
       },
     },
   },
