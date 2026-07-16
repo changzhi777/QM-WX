@@ -17,6 +17,8 @@ import { Cache } from '../../infra/cache.js';
 import { toCsvHeader, toCsvRow, UTF8_BOM } from '../../common/csv.js';
 import { assertTransition, type OrderStatus } from '../../domain/order-state.js';
 import { enqueueUploadParse } from '../../jobs/queue.js';
+import bcrypt from 'bcrypt';
+import type { FastifyInstance } from 'fastify';
 import type {
   UpsertContentInput,
   UpsertProductInput,
@@ -59,6 +61,68 @@ export async function isAdmin(openid: string): Promise<boolean> {
 export function invalidateAdminCache(): void {
   _adminCache = null;
   _adminCacheAt = 0;
+}
+
+// ===== V0.2.8 RBAC 3 角色 + admin 专属登录 =====
+
+/** super-admin 独占 action（账号管理 + 全局配置 + 登录日志）*/
+const SUPER_ONLY_ACTIONS = [
+  'listAdmins', 'createAdmin', 'updateAdmin', 'disableAdmin', 'setConfig', 'adminLoginLogs',
+];
+/** operator 可用 action（只读 list/stats/export + 轻操作）*/
+const OPERATOR_ACTIONS = [
+  'listUsers', 'listContents', 'listProducts', 'listOrders', 'listReviews',
+  'listWithdrawals', 'listGroupBuys', 'listTrainingPlans', 'listUploads',
+  'listInviteStats', 'listEnrollmentsByContent', 'listAuditLogs',
+  'stats', 'statsByTimeRange', 'exportOrders', 'exportUsers', 'exportSettlement',
+  'banUser', 'unbanUser', 'confirmPickup', 'addReviewReply', 'retryParse', 'submitRaceResult',
+];
+
+/** 权限检查：super-admin 全部 / admin 除 SUPER_ONLY / operator 仅 OPERATOR_ACTIONS */
+export function checkPermission(role: string, action: string): boolean {
+  if (role === 'super-admin') return true;
+  if (role === 'admin') return !SUPER_ONLY_ACTIONS.includes(action);
+  if (role === 'operator') return OPERATOR_ACTIONS.includes(action);
+  return false;
+}
+
+/**
+ * admin 账号密码登录（V0.2.8，替白名单 openid 体系）。
+ * bcrypt verify → 签 admin JWT（kind:admin/sub:adminId/role）+ 写 AdminLoginLog（成功/失败）。
+ */
+export async function adminLogin(
+  app: FastifyInstance,
+  username: string,
+  password: string,
+  meta: { ip?: string; ua?: string } = {},
+) {
+  const admin = await prisma.admin.findUnique({ where: { username } });
+  const ok = !!admin && !admin.disabled && (await bcrypt.compare(password, admin.passwordHash));
+  if (admin) {
+    await prisma.adminLoginLog.create({
+      data: { adminId: admin.id, ip: meta.ip, ua: meta.ua, ok },
+    });
+  }
+  if (!ok) throw Errors.unauthorized();
+  await prisma.admin.update({
+    where: { id: admin.id },
+    data: { lastLoginAt: new Date() },
+  });
+  const accessToken = app.jwt.sign({
+    kind: 'admin',
+    sub: admin.id,
+    id: admin.id,
+    openid: `admin:${admin.username}`,
+  });
+  return {
+    accessToken,
+    admin: {
+      id: admin.id,
+      username: admin.username,
+      role: admin.role,
+      nickname: admin.nickname,
+    },
+  };
 }
 
 /** Decimal → 字符串（避免 JSON 序列化 Decimal 变对象）*/
@@ -114,8 +178,19 @@ export async function setConfig(input: SetConfigInput, actorOpenid: string, ip?:
 }
 
 export async function listAdmins() {
-  const row = await prisma.appConfig.findUnique({ where: { id: 'admin_whitelist' } });
-  return { openids: (row?.value as { openids?: string[] } | undefined)?.openids ?? [] };
+  const list = await prisma.admin.findMany({
+    select: {
+      id: true,
+      username: true,
+      role: true,
+      nickname: true,
+      lastLoginAt: true,
+      disabled: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+  return { list };
 }
 
 // ===== 订单 =====
@@ -1146,5 +1221,62 @@ export async function listInviteStats(input: { page: number; pageSize: number })
     total: groups.length,
     page: input.page,
     pageSize: input.pageSize,
+  };
+}
+
+// ===== V0.2.8 admin 账号管理（super-admin only，RBAC 守卫）=====
+
+export async function createAdmin(input: {
+  username: string;
+  password: string;
+  role: string;
+  nickname?: string;
+}) {
+  const exists = await prisma.admin.findUnique({ where: { username: input.username } });
+  if (exists) throw Errors.badRequest('用户名已存在');
+  const admin = await prisma.admin.create({
+    data: {
+      username: input.username,
+      passwordHash: await bcrypt.hash(input.password, 10),
+      role: input.role,
+      nickname: input.nickname,
+    },
+  });
+  return { id: admin.id, username: admin.username, role: admin.role };
+}
+
+export async function updateAdmin(input: {
+  id: string;
+  password?: string;
+  role?: string;
+  nickname?: string;
+  disabled?: boolean;
+}) {
+  const data: { passwordHash?: string; role?: string; nickname?: string; disabled?: boolean } = {};
+  if (input.password) data.passwordHash = await bcrypt.hash(input.password, 10);
+  if (input.role) data.role = input.role;
+  if (input.nickname !== undefined) data.nickname = input.nickname;
+  if (input.disabled !== undefined) data.disabled = input.disabled;
+  const admin = await prisma.admin.update({ where: { id: input.id }, data });
+  return { id: admin.id, username: admin.username, role: admin.role };
+}
+
+export async function adminLoginLogs(input: { page?: number; pageSize?: number } = {}) {
+  const page = input.page ?? 1;
+  const pageSize = input.pageSize ?? 20;
+  const [list, total] = await Promise.all([
+    prisma.adminLoginLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      include: { admin: { select: { username: true, nickname: true } } },
+    }),
+    prisma.adminLoginLog.count(),
+  ]);
+  return {
+    list: list.map((l) => ({ ...l, createdAt: l.createdAt.toISOString() })),
+    total,
+    page,
+    pageSize,
   };
 }

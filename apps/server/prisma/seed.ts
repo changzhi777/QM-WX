@@ -4,6 +4,7 @@
  * 跑法：`pnpm prisma:seed`
  */
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -97,6 +98,35 @@ async function main() {
     }
   }
   console.log(`✅ TrainingPlans seed done（新增 ${planInserted}，定义 ${SEED_TRAINING_PLANS.length}）`);
+
+  // V0.2.8 admin 账号 seed（root super-admin + admin admin，env 密码 bcrypt；upsert 幂等不覆盖改密）
+  const rootPwd = process.env.ADMIN_ROOT_PWD;
+  const adminPwd = process.env.ADMIN_ADMIN_PWD;
+  if (rootPwd && adminPwd) {
+    await prisma.admin.upsert({
+      where: { username: 'root' },
+      create: {
+        username: 'root',
+        passwordHash: await bcrypt.hash(rootPwd, 10),
+        role: 'super-admin',
+        nickname: '超级管理员',
+      },
+      update: {},
+    });
+    await prisma.admin.upsert({
+      where: { username: 'admin' },
+      create: {
+        username: 'admin',
+        passwordHash: await bcrypt.hash(adminPwd, 10),
+        role: 'admin',
+        nickname: '运营管理员',
+      },
+      update: {},
+    });
+    console.log('✅ Admin seed done（root super-admin + admin admin）');
+  } else {
+    console.log('⚠️ Admin seed 跳过（ADMIN_ROOT_PWD/ADMIN_ADMIN_PWD env 未设）');
+  }
 
   console.log({
     feature_flags: DEFAULT_FEATURE_FLAGS,

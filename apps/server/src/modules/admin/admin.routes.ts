@@ -17,6 +17,7 @@ import type { FastifyInstance } from 'fastify';
 import { featureGatePlugin } from '../../common/middleware/feature-gate.js';
 import { Errors } from '../../common/errors.js';
 import * as adminService from './admin.service.js';
+import { prisma } from '../../infra/prisma.js';
 import {
   UpsertContentSchema,
   UpsertProductSchema,
@@ -41,6 +42,9 @@ import {
   AdjustPointsSchema,
   GrantMemberSchema,
   ListInviteStatsSchema,
+  CreateAdminSchema,
+  UpdateAdminSchema,
+  ListAdminLoginLogsSchema,
   RetryParseSchema,
   ListWithdrawalsSchema,
   WithdrawalIdSchema,
@@ -57,14 +61,33 @@ export async function adminRoutes(app: FastifyInstance) {
   // 应用 featureGatePlugin（auth 已挂）
   await app.register(featureGatePlugin);
 
+  // V0.2.8 admin 登录（public，/api/admin/login，替白名单 openid 体系）
+  app.post('/login', { config: { public: true } }, async (req) => {
+    const { username, password } = req.body as { username: string; password: string };
+    return {
+      code: 0,
+      data: await adminService.adminLogin(app, username, password, {
+        ip: req.ip,
+        ua: req.headers['user-agent'],
+      }),
+    };
+  });
+
   app.post('/', async (req, reply) => {
-    if (!req.user) throw Errors.unauthorized();
-    if (!(await adminService.isAdmin(req.user.openid))) {
-      return reply.status(403).send({ code: 403, msg: 'admin only' });
-    }
+    // V0.2.8 admin 鉴权（替 isAdmin openid）：admin JWT（kind:admin）+ Admin 表 + RBAC
+    const u = req.user as { kind?: string; sub?: string } | undefined;
+    if (!u || u.kind !== 'admin') throw Errors.unauthorized();
+    const admin = await prisma.admin.findUnique({
+      where: { id: u.sub! },
+      select: { id: true, username: true, role: true, disabled: true },
+    });
+    if (!admin || admin.disabled) throw Errors.unauthorized();
 
     const { action, payload } = req.body as { action: string; payload?: unknown };
-    const actorOpenid = req.user.openid;
+    if (!adminService.checkPermission(admin.role, action)) {
+      return reply.status(403).send({ code: 403, msg: '权限不足' });
+    }
+    const actorOpenid = admin.username; // 审计用 username（替 openid）
     const ip = req.ip;
 
     switch (action) {
@@ -220,6 +243,16 @@ export async function adminRoutes(app: FastifyInstance) {
         return {
           code: 0,
           data: await adminService.listInviteStats(ListInviteStatsSchema.parse(payload ?? {})),
+        };
+      // V0.2.8 admin 账号管理（super-admin only，RBAC 守卫）
+      case 'createAdmin':
+        return { code: 0, data: await adminService.createAdmin(CreateAdminSchema.parse(payload)) };
+      case 'updateAdmin':
+        return { code: 0, data: await adminService.updateAdmin(UpdateAdminSchema.parse(payload)) };
+      case 'adminLoginLogs':
+        return {
+          code: 0,
+          data: await adminService.adminLoginLogs(ListAdminLoginLogsSchema.parse(payload ?? {})),
         };
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });

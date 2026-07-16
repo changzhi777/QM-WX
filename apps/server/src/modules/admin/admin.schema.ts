@@ -268,3 +268,27 @@ export const ListInviteStatsSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
 export type ListInviteStatsInput = z.infer<typeof ListInviteStatsSchema>;
+
+// ===== V0.2.8 admin 账号管理（super-admin only）=====
+export const CreateAdminSchema = z.object({
+  username: z.string().min(3).max(32),
+  password: z.string().min(6).max(64),
+  role: z.enum(['super-admin', 'admin', 'operator']),
+  nickname: z.string().max(32).optional(),
+});
+export type CreateAdminInput = z.infer<typeof CreateAdminSchema>;
+
+export const UpdateAdminSchema = z.object({
+  id: z.string().min(1),
+  password: z.string().min(6).max(64).optional(),
+  role: z.enum(['super-admin', 'admin', 'operator']).optional(),
+  nickname: z.string().max(32).optional(),
+  disabled: z.coerce.boolean().optional(),
+});
+export type UpdateAdminInput = z.infer<typeof UpdateAdminSchema>;
+
+export const ListAdminLoginLogsSchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+export type ListAdminLoginLogsInput = z.infer<typeof ListAdminLoginLogsSchema>;

@@ -1158,3 +1158,36 @@ model DailyReport {
   @@unique([userId, date])
   @@index([userId, date])
 }
+
+// ===== V0.2.8 独立 Admin 账号体系（替白名单 openid）=====
+// RBAC 3 角色：super-admin（全部）/ admin（运营）/ operator（只读+轻操作）
+// 预置 root(super-admin) + admin(admin)，密码 env 注入 bcrypt hash
+model Admin {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  role         String   @default("operator") // super-admin | admin | operator
+  nickname     String?
+  lastLoginAt  DateTime?
+  disabled     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  loginLogs AdminLoginLog[]
+
+  @@index([role])
+}
+
+// admin 登录日志（审计）
+model AdminLoginLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  ip        String?
+  ua        String?
+  ok        Boolean  @default(true) // 登录成功/失败
+  createdAt DateTime @default(now())
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, createdAt])
+}
