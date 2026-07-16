@@ -103,9 +103,11 @@
     </scroll-view>
   </view>
 
-  <!-- 输入栏（含 🎤 voice）-->
+  <!-- 输入栏（含 🎤 voice + 同声传译插件）-->
   <view class="input-bar">
-    <view class="voice-btn" bindtap="onTapVoice">语音</view>
+    <view class="voice-btn {{recording ? 'recording' : ''}}" bindtap="onTapVoice">
+      {{recording ? '🎙️ 录音中…' : '🎤 语音'}}
+    </view>
     <input class="input" value="{{inputText}}" bindinput="onInput" confirm-type="send" bindconfirm="onSend" placeholder="问我训练、恢复、营养…" disabled="{{sending}}" adjust-position="{{true}}" />
     <block wx:if="{{sending}}">
       <view class="stop-btn" bindtap="onStop">停止</view>

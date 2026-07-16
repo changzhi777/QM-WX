@@ -64,5 +64,13 @@
   },
   "requiredPrivateInfos": ["getLocation"],
   "sitemapLocation": "sitemap.json",
-  "lazyCodeLoading": "requiredComponents"
+  "lazyCodeLoading": "requiredComponents",
+  "plugins": {
+    "WechatSI": {
+      "version": "0.3.5",
+      "provider": "wx069ba97219f66d99",
+      "description": "微信同声传译 - 语音转文字 (V0.2.19 K5 接入)"
+    }
+  },
+  "permissions": ["scope.record"]
 }
