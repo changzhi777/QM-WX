@@ -36,6 +36,7 @@
 | [**qweather-api.md**](qweather-api.md) | **和风天气 API 对接说明**（`stats.weather` action + 凭据管理 + 长沙默认值 + V0.1.148 API KEY 明文暴露修复记录） | ✅ **V0.1.148 新增** |
 | [**C-DEPLOY-CHECKLIST.md**](C-DEPLOY-CHECKLIST.md) | **C 部署清单 — Terra API key + 微信体验版上传**（挂账主人手动操作项，含 Terra 申请流程 + 微信开发者工具/公众平台步骤 + 真机验证项） | ✅ **V0.1.148 新增** |
 | [**COS-STORAGE.md**](COS-STORAGE.md) | **腾讯云 COS 对象存储 — 部署与对接文档**（V0.1.149 引入；混合模式 server putObject + 本地 fallback；CAM 最小权限 + CDN + 控制台 7 步清单） | ✅ **V0.1.149 新增** |
+| [**CLI-INTEGRATION.md**](CLI-INTEGRATION.md) | **微信开发者工具 CLI 集成指南 — V0.2.10 跨平台打通 + V0.2.11 CI workflow 落地**（`bin/wx` + `scripts/dev-cli/` + 11 子命令 + 3-job CI 矩阵；macOS runner + Ubuntu lint-typecheck + tag push 触发） | ✅ **V0.2.10/2.11 新增** |
 
 ---
 

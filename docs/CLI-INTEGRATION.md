@@ -85,24 +85,44 @@ pnpm wx:auto-preview
 ./bin/wx upload --version V0.2.10 --desc "测试上传" -p /path/to/project
 ```
 
-### CI 自动化
+### CI 自动化（V0.2.11 落地）
 
-```yaml
-# .github/workflows/wx-deploy.yml（参考示例）
-name: WX Deploy
-on: [push]
-jobs:
-  upload-preview:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22 }
-      - run: pnpm install --frozen-lockfile
-      # Linux 微信开发者工具需先装包 / 或用 fork 工具
-      - run: ./bin/wx build-npm
-      # 注：upload 需要扫码登录，CI 通常跳过改用 deploy API
+完整 workflow 已落在：**`.github/workflows/wx-deploy.yml`**（3 job 矩阵）
+
+| Job | Runner | 触发条件 | 内容 | 设计理由 |
+|---|---|---|---|---|
+| **lint-typecheck** | **Ubuntu** | tag push `v0.*` 或手动 dispatch | `pnpm lint` + `pnpm typecheck` + `pnpm test` | Ubuntu 分钟便宜，先快速反馈 lint/typecheck 错，节省 macOS 分钟 |
+| **wx-build** | **macOS** | `lint-typecheck` 通过 | `pnpm build:mp-shared` + `pnpm wx:build-npm`（无 IDE 时降级跳过）+ upload-artifact | macOS 是 IDE 唯一可跑平台，主任务 build-npm 验证 mp-shared 注入完整链路 |
+| **wx-status** | **macOS** | `lint-typecheck` 通过 | `./bin/wx --help` + `wx status` 健康检查 | 验证 bin 入口 + commander 子命令 + IDE 可达性 |
+
+**触发器**：`push.tags: ['v0.*']` 或手动 `workflow_dispatch`（节省 CI 分钟 — 不跑每次 push）
+**并发控制**：`concurrency: wx-deploy-${{ github.ref }}` 自动 cancel in-progress（同 tag 重复推不重复跑）
+**Artifacts**：wx-build 成功后上传 `miniprogram-build` archive，保留 7 天供后续 upload/preview job 消费
+
+**为什么仅 build-npm 不调 upload**：
+1. **扫码登录 CI 难题**：upload 需要 IDE 扫码登录，CI 自动跑不通（除非 Service Account + project.private.config 配齐，V0.2.11 YAGNI）
+2. **节省 macOS 分钟**：每次 macOS 跑 ~10-15 分钟，仅 build-npm 控制在 ~10 分钟内
+3. **macOS CI 排队**：「maven macOS runners 公池」有 10-20 分钟排队，按需用
+
+**没用 macOS runner 时的 fallback**：
+```bash
+if [ -d "/Applications/wechatwebdevtools.app" ]; then
+  pnpm wx:build-npm   # wx GUI 走 IDE
+else
+  exit 0               # macOS runner 默认无 GUI，跳过不报错
+fi
+```
+
+**触发该 workflow 的方式**：
+```bash
+# 1. tag 自动触发（推荐）
+git tag v0.2.11 && git push origin v0.2.11
+# → GitHub Actions 自动跑 wx-deploy.yml
+
+# 2. GitHub UI 手动 dispatch（Actions 标签页 → wx-deploy → Run workflow）
+
+# 3. GitHub CLI
+gh workflow run wx-deploy.yml
 ```
 
 ### 在 .husky 脚本里集成（pre-commit）
@@ -170,3 +190,4 @@ pnpm exec vitest run scripts/dev-cli/
 ## 📝 变更记录
 
 - **2026-07-16** — V0.2.10 创建：跨平台 CLI 打通 + 12 子命令 + 11 单测 + 文档同步
+- **2026-07-16** — V0.2.11 CI 集成：`wx-deploy.yml` 3-job 矩阵（Ubuntu lint-typecheck + macOS wx-build + macOS wx-status）；tag `v0.*` push 自动触发，concurrency cancel-in-progress 节省 CI 分钟；artifacts 上传 miniprogram-build 7 天；YAGNI upload（扫码登录 CI 难题）

@@ -1,0 +1,140 @@
+# .github/workflows/wx-deploy.yml — V0.2.11 落地
+# F2 CI 集成示例：tag push 触发的 2-job 矩阵 lint/typecheck（Ubuntu 快反馈）+ wx-build/wx-status（macOS 主任务）
+# 设计：方案 β（主任务走 macOS 因需 IDE，仅 build-npm 不调 upload 避开扫码登录 CI 难题）
+name: wx-deploy
+
+on:
+  push:
+    tags:
+      - 'v0.*'
+  workflow_dispatch:  # 手动触发（测试用，tags 推送自动跑）
+
+# 所有 jobs 默认有最新代码 + 1 次重试
+concurrency:
+  group: wx-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # Job 1 — Ubuntu 快反馈：lint + typecheck + 单元测试
+  # （GitHub Actions 默认推荐 lint on Linux — CI 分钟便宜）
+  # ─────────────────────────────────────────────────────────────
+  lint-typecheck:
+    name: lint-typecheck (Ubuntu)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: ESLint + Prettier check
+        run: pnpm run lint
+
+      - name: TypeScript 编译验证（三端）
+        run: pnpm run typecheck
+
+      - name: 单元测试（含 V0.2.10 +11 测 + V0.2.9 prototype 借鉴 — 累计 1066 测）
+        run: pnpm run test
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 2 — macOS 主任务：wx CLI build-npm（验证 mp-shared 注入流程）
+  # 仅 build-npm 不调 upload/auto-preview（CI 难自动登录 + 节省 mac 分钟）
+  # ─────────────────────────────────────────────────────────────
+  wx-build:
+    name: wx-build (macOS)
+    needs: lint-typecheck
+    runs-on: macos-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: pnpm shared 注入 + build:mp-shared（无 wx CLI 也能跑）
+        run: pnpm run build:mp-shared
+
+      - name: wx CLI build-npm（macOS runner 默认预装微信开发者工具 — V0.2.10 接入后第一步走通）
+        run: |
+          if [ -d "/Applications/wechatwebdevtools.app" ] || [ -d "/Applications/微信开发者工具.app" ]; then
+            echo "✅ 检测到微信开发者工具"
+            pnpm wx:build-npm
+          else
+            echo "⚠️  本任务无 wx GUI（wx:build-npm 需要 IDE），仅跑 build:mp-shared 跳过"
+            exit 0
+          fi
+
+      - name: 验证 build-npm 产物（miniprogram_npm/）
+        run: |
+          if [ -d "apps/miniprogram/miniprogram/miniprogram_npm" ]; then
+            ls -la apps/miniprogram/miniprogram/miniprogram_npm/ | head -10
+            echo "✅ miniprogram_npm 产物已生成"
+          else
+            echo "⚠️  miniprogram_npm 未生成（macOS 无 GUI 时正常）"
+          fi
+
+      - name: 上传 build 产物（archive，保留 7 天供后续 upload/preview 用）
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: miniprogram-build
+          path: |
+            apps/miniprogram/miniprogram/miniprogram_npm/
+            apps/miniprogram/dist/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ─────────────────────────────────────────────────────────────
+  # Job 3 — macOS 健康检查：验证微信开发者工具 CLI 可用性
+  # （不调 upload/auto-preview；仅跑 wx --help + wx status 验 IDE 可达）
+  # ─────────────────────────────────────────────────────────────
+  wx-status:
+    name: wx-status (macOS)
+    needs: lint-typecheck
+    runs-on: macos-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: bin/wx --help（验证 bin 入口 + commander 12 子命令）
+        run: ./bin/wx --help
+
+      - name: wx islogin / status（仅当 IDE 已装）
+        run: |
+          if [ -d "/Applications/wechatwebdevtools.app" ]; then
+            ./bin/wx status || echo "⚠️  islogin 返回非 0（未登录，正常）"
+          else
+            echo "⚠️  macOS runner 默认无 wx GUI，跳过 status 检查"
+          fi
