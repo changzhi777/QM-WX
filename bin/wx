@@ -1,0 +1,27 @@
+#!/usr/bin/env node
+/**
+ * bin/wx — 微信开发者工具 CLI 包装入口（V0.2.10）
+ *
+ * 用法（任选其一）：
+ *   ./bin/wx auto-preview                 # 裸调（git tracked，无需 pnpm install）
+ *   pnpm wx:auto-preview                  # npm scripts 转发（推荐）
+ *   pnpm exec tsx scripts/dev-cli/index.ts <cmd>  # 直跑
+ *
+ * 实现：用 tsx 包（devDep，~3MB）跑 .ts，零 Node flag
+ *   - tsx 自动处理 ESM/CJS + TS strip + .js→.ts 解析
+ *   - 跨 Node 18+/22+/25 一致
+ */
+const path = require('node:path');
+const { execSync } = require('node:child_process');
+
+const SCRIPT = path.resolve(__dirname, '..', 'scripts', 'dev-cli', 'index.ts');
+const userArgs = process.argv.slice(2);
+
+try {
+  execSync(`pnpm exec tsx "${SCRIPT}" ${userArgs.map(a => `"${a.replace(/"/g, '\\"')}"`).join(' ')}`, {
+    stdio: 'inherit',
+    cwd: path.resolve(__dirname, '..'),
+  });
+} catch (err) {
+  process.exit(err.status ?? 1);
+}

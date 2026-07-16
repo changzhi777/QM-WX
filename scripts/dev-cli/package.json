@@ -1,0 +1,11 @@
+{
+  "name": "@qm-wx/scripts-dev-cli",
+  "version": "0.2.10",
+  "private": true,
+  "type": "module",
+  "description": "微信开发者工具 CLI 包装层（V0.2.10 — 跨平台 + 双模式）",
+  "main": "cli-helper.ts",
+  "scripts": {
+    "test": "vitest run"
+  }
+}

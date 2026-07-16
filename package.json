@@ -26,16 +26,33 @@
     "prisma:generate": "pnpm --filter @qm-wx/server prisma:generate",
     "prisma:migrate": "pnpm --filter @qm-wx/server prisma:migrate",
     "prisma:studio": "pnpm --filter @qm-wx/server prisma:studio",
-    "clean": "pnpm -r exec rm -rf dist node_modules .turbo coverage"
+    "clean": "pnpm -r exec rm -rf dist node_modules .turbo coverage",
+    "wx:status": "./bin/wx status",
+    "wx:open": "./bin/wx open",
+    "wx:login": "./bin/wx login",
+    "wx:islogin": "./bin/wx islogin",
+    "wx:auto": "./bin/wx auto",
+    "wx:preview": "./bin/wx preview",
+    "wx:auto-preview": "./bin/wx auto-preview",
+    "wx:upload": "./bin/wx upload",
+    "wx:build-npm": "./bin/wx build-npm",
+    "wx:close": "./bin/wx close",
+    "wx:quit": "./bin/wx quit"
+  },
+  "bin": {
+    "wx": "./bin/wx"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
+    "commander": "^15.0.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "miniprogram-automator": "^0.12.1",
     "prettier": "^3.2.0",
-    "typescript": "^5.4.0"
+    "tsx": "^4.19.0",
+    "typescript": "^5.4.0",
+    "vitest": "^2.1.9"
   }
 }
