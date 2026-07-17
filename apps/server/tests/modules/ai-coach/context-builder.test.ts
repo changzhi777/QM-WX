@@ -97,4 +97,29 @@ describe('buildSystemPrompt (V0.1.139 全量聚合)', () => {
     expect(prompt).toContain('青沐 AI 私教');
     expect(prompt).toContain('0km');
   });
+
+  it('V0.2.26 N: 最近跑步天气注入 prompt（温度+湿度+AQI）', async () => {
+    mocks.prisma.user.findUnique.mockResolvedValue({ id: 'u1', gender: 'male', birthday: '1990-01-01' } as never);
+    mocks.prisma.checkin.aggregate.mockResolvedValue({ _sum: { distance: 0 }, _count: 0 } as never);
+    mocks.prisma.goal.findMany.mockResolvedValue([] as never);
+    mocks.prisma.shoe.findMany.mockResolvedValue([] as never);
+    mocks.prisma.userPlanEnrollment.findUnique.mockResolvedValue(null);
+    mocks.prisma.heartRateRecord.findFirst.mockResolvedValue(null);
+    mocks.prisma.sleepRecord.findFirst.mockResolvedValue(null);
+    mocks.prisma.weRunRecord.findMany.mockResolvedValue([] as never);
+    mocks.prisma.bodyCompositionRecord.findFirst.mockResolvedValue(null);
+    // N: 最近带天气打卡
+    mocks.prisma.checkin.findFirst.mockResolvedValueOnce({
+      weatherTemp: 32,
+      humidity: 75,
+      aqi: 120,
+      createdAt: new Date('2026-07-17T10:00:00Z'),
+    } as never);
+
+    const prompt = await buildSystemPrompt('u1');
+    expect(prompt).toContain('最近跑步天气');
+    expect(prompt).toContain('32°C');
+    expect(prompt).toContain('湿度 75%');
+    expect(prompt).toContain('AQI 120');
+  });
 });
