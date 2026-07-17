@@ -11,7 +11,7 @@
 - 命令入口：`index.ts`
 - 裸命令入口：`../../bin/wx`，通过 `pnpm exec tsx` 运行 `index.ts`
 - 默认端口：`9421`
-- 默认项目：`apps/miniprogram/miniprogram`
+- 默认项目：`apps/miniprogram`（project.config.json 所在；V0.2.24 修正，V0.2.10 误用 apps/miniprogram/miniprogram）
 
 常用命令：
 

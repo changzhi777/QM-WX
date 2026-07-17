@@ -13,13 +13,15 @@ import { resolve } from 'node:path';
 export const DEFAULT_PORT = 9421;
 
 /**
- * 项目根目录（绝对路径，解析自当前包根）
- * 微信开发者工具 miniProgramRoot 期望绝对路径。
+ * 项目根目录（绝对路径，解析自仓库根）
+ * 微信开发者工具 --project 期望 project.config.json 所在目录（项目根），
+ * IDE 据其 miniprogramRoot 字段（"miniprogram/"）定位代码。
+ * 注意：不是代码根 apps/miniprogram/miniprogram（V0.2.10 误用，V0.2.24 修正）。
  */
-export const DEFAULT_PROJECT_ROOT = resolve(process.cwd(), 'apps/miniprogram/miniprogram');
+export const DEFAULT_PROJECT_ROOT = resolve(process.cwd(), 'apps/miniprogram');
 
 /**
  * 帮助提示文本（被 cli-helper + docs 引用）
  */
-export const HELP_PROJECT_HINT = '小程序项目根目录（默认 ./apps/miniprogram/miniprogram）';
+export const HELP_PROJECT_HINT = '小程序项目根目录（默认 ./apps/miniprogram，即 project.config.json 所在）';
 export const HELP_PORT_HINT = 'IDE HTTP server 端口（默认 9421）';
