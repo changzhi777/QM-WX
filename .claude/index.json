@@ -1,23 +1,32 @@
 {
   "project": "QM-WX",
   "projectType": "wechat-miniprogram-node-typescript-monorepo",
-  "version": "v0.2.11",
-  "lastUpdated": "2026-07-16T21:48:38+08:00",
+  "version": "v0.2.21",
+  "lastUpdated": "2026-07-17T12:10:10+08:00",
   "agent": "init-architect",
-  "runMode": "incremental-refresh-v0.2.11-init-14-cli-toolchain-audit",
-  "previousRun": "init #13 / v0.2.8",
-  "truncated": true,
-  "truncationReason": "当前子代理仅有文件 Read/Glob/Grep/Write 能力，无进程执行工具；静态清点完成，但无法实际执行 cd apps/server && pnpm test:coverage。现存 coverage HTML 已确认是 V0.2.3 前后的旧产物，不能作为 V0.2.11 新鲜覆盖率。",
+  "runMode": "incremental-refresh-v0.2.21-init-16-post-master-sprint",
+  "previousRun": "init #15 / v0.2.19 (manual, 2026-07-17 06:56:50)",
+  "truncated": false,
+  "truncationReason": null,
   "sourceControl": {
     "branch": "main",
+    "head": "6cc6f01 test(v0.2.21): K3 huawei_export fuzzer +5 用例 — 真 ZIP 来时回归基线",
     "latestVersionCommits": [
       "037f15e feat(v0.2.9): prototype 借鉴 4 组件 + 4 页集成",
       "4b3f53b feat(v0.2.10): 微信开发者工具 CLI 打通 + 11 单测",
-      "e5bb59b ci(v0.2.11): wx-deploy.yml 三任务矩阵",
-      "428421c chore: 文档同步 V0.2.4~V0.2.10 + GAP-13 + prototype 归档"
+      "e5bb59b ci(v0.2.11): wx-deploy.yml 三任务矩阵 + pnpm-workspace scripts/*",
+      "40b3a1d test(v0.2.12): GAP-14 closed — 22 admin RBAC tests 修 + funcs 85.54% 实测",
+      "cfab278 test(v0.2.13): K1 wxpay +5 测 — funcs 86.07% 升回 86 阈值",
+      "ce75883 docs(v0.2.14): K2 视觉验证 4 页",
+      "4baafa6 docs(v0.2.15): K3/K4/K5 物料清单",
+      "7f0e34b docs(v0.2.16): B5 三主 CLAUDE.md 同步到 V0.2.15 现状",
+      "fd13dd6 feat(v0.2.19): K5 voice 插件开通 — WechatSI wx069ba97219f66d99",
+      "9f31773 docs(v0.2.19): K5 closed 物料清单更新",
+      "6f629f1 docs(v0.2.20): init #15 全量校准收官报告",
+      "6cc6f01 test(v0.2.21): K3 huawei_export fuzzer +5 用例"
     ],
-    "tags": ["v0.2.9", "v0.2.10", "v0.2.11"],
-    "remoteStatus": "用户提供：origin GitHub 推送成功"
+    "tags": ["v0.2.9", "v0.2.10", "v0.2.11", "v0.2.12", "v0.2.13", "v0.2.14", "v0.2.15", "v0.2.16", "v0.2.19", "v0.2.21"],
+    "remoteStatus": "用户提供：origin GitHub 推送成功（9 tags）"
   },
   "ignorePolicy": {
     "source": ".gitignore 与默认忽略规则合并",
@@ -31,43 +40,39 @@
       "apps/server/uploads/**", "docs/_assets/**", "pic/**", ".playwright-mcp/**",
       ".zcf/plan/current/**", ".zcf/plan/history/**", "*MiFitness*data_copy*", "*-backup-*.sql"
     ],
-    "explicitExceptionsRead": [
-      ".github/workflows/wx-deploy.yml（用户本轮明确要求核对 V0.2.11 CI）",
-      "apps/server/coverage/index.html（仅用于判断旧产物是否新鲜）"
-    ],
     "topSkipped": [
-      {"path": "node_modules/", "reason": "依赖目录与默认/.gitignore 规则", "count": "未展开"},
-      {"path": ".git/", "reason": "版本库内部数据", "count": "未展开"},
-      {"path": "apps/server/coverage/", "reason": "忽略的生成产物；只抽读总览与 admin 证据", "count": "388 个 HTML/JSON 类匹配项的 Glob 输出被截断"},
-      {"path": "apps/miniprogram/miniprogram/miniprogram_npm/", "reason": "微信预编译构建产物", "count": "未展开"},
-      {"path": "docs/_assets/ 与截图文件", "reason": "图片/归档二进制，仅记录路径", "count": "未展开"},
-      {"path": "*.zip / *.pdf / 数据备份", "reason": "大文件、二进制或敏感数据", "count": "未读取内容"}
+      {"path": "node_modules/", "reason": "依赖目录与默认/.gitignore 规则"},
+      {"path": ".git/", "reason": "版本库内部数据"},
+      {"path": "apps/server/coverage/", "reason": "V0.2.12 真实 coverage HTML 已生成，忽略产物文件"},
+      {"path": "apps/miniprogram/miniprogram/miniprogram_npm/", "reason": "微信预编译构建产物"},
+      {"path": "docs/_assets/ 与截图文件", "reason": "图片/归档二进制，仅记录路径"},
+      {"path": "*.zip / *.pdf / 数据备份", "reason": "大文件、二进制或敏感数据"}
     ]
   },
   "scanCoverage": {
-    "estimatedTotalFiles": 800,
-    "scannedFiles": 690,
-    "coveragePercent": 86.25,
-    "method": "沿用 init #12 的全仓清点基线并增量扫描 V0.2.4~V0.2.11 高信号文件；排除依赖、构建产物、图片、压缩包和备份",
+    "estimatedTotalFiles": 810,
+    "scannedFiles": 720,
+    "coveragePercent": 88.89,
+    "method": "init #16 增量扫描 V0.2.9~V0.2.21 高信号文件 + init #12 的全仓清点基线",
     "byModule": [
-      {"path": "apps/server", "estimated": 430, "scanned": 395, "percent": 91.86, "gaps": ["V0.2.11 新鲜 coverage 未执行", "admin 新增管理函数的分支覆盖待报告"]},
-      {"path": "apps/miniprogram", "estimated": 185, "scanned": 160, "percent": 86.49, "gaps": ["V0.2.9 四组件真机视觉/交互回归"]},
+      {"path": "apps/server", "estimated": 435, "scanned": 400, "percent": 91.95, "gaps": []},
+      {"path": "apps/miniprogram", "estimated": 190, "scanned": 165, "percent": 86.84, "gaps": ["V0.2.9 四组件 + V0.2.19 voice 真机视觉/交互回归"]},
       {"path": "packages/shared", "estimated": 20, "scanned": 20, "percent": 100, "gaps": []},
-      {"path": "scripts/dev-cli", "estimated": 8, "scanned": 8, "percent": 100, "gaps": ["11 个测试未由当前代理动态执行", "未纳入 pnpm workspace/CI 根测试"]},
-      {"path": "docs", "estimated": 20, "scanned": 18, "percent": 90, "gaps": ["根 CLAUDE.md 仍需追加 init #14 结果"]},
-      {"path": ".github/workflows", "estimated": 3, "scanned": 3, "percent": 100, "gaps": ["wx-deploy lint-typecheck 的测试接线需修正"]}
+      {"path": "scripts/dev-cli", "estimated": 8, "scanned": 8, "percent": 100, "gaps": []},
+      {"path": "docs", "estimated": 25, "scanned": 22, "percent": 88, "gaps": []},
+      {"path": ".github/workflows", "estimated": 4, "scanned": 4, "percent": 100, "gaps": []}
     ]
   },
   "measured": {
     "prismaModels": {
       "count": 61,
       "method": "Grep ^model\\s+ apps/server/prisma/schema.prisma",
-      "deltaFromInit13": 0
+      "deltaFromInit15": 0
     },
     "prismaMigrations": {
       "count": 46,
       "method": "Glob apps/server/prisma/migrations/**/migration.sql",
-      "deltaFromInit13": 0,
+      "deltaFromInit15": 0,
       "latest": [
         "20260716020000_growth_level",
         "20260716030000_invite_cap",
@@ -77,101 +82,105 @@
     "backendModules": {
       "count": 34,
       "routeFiles": 33,
-      "routeException": "app-config 无独立 routes.ts",
+      "routeException": "app-config 无独立 routes.ts（内部仓储模块）",
       "moduleClaudeMd": 34,
       "documentationCoveragePercent": 100,
-      "deltaFromInit13": 0
+      "deltaFromInit15": 0
     },
     "miniprogramPages": {
       "count": 22,
-      "source": "apps/miniprogram/miniprogram/app.json",
-      "deltaFromInit13": 0
+      "source": "apps/miniprogram/miniprogram/app.json pages 数组",
+      "deltaFromInit15": 0
     },
     "miniprogramComponents": {
       "count": 16,
       "source": "components/*/index.json",
-      "deltaFromInit13": 4,
+      "deltaFromInit15": 0,
       "componentClaudeMd": 6,
-      "newV029": ["uv-alert", "level-card", "ai-quick-cards", "invite-bonus-card"]
+      "v029Components": ["uv-alert", "level-card", "ai-quick-cards", "invite-bonus-card"],
+      "v024Components": ["data-strip"],
+      "v027Components": ["avatar-badge"]
+    },
+    "voicePlugin": {
+      "integrated": true,
+      "sinceVersion": "v0.2.19",
+      "pluginProvider": "wx069ba97219f66d99",
+      "pluginName": "WechatSI",
+      "version": "0.3.5",
+      "appJsonKey": "plugins.WechatSI",
+      "pageIntegration": "apps/miniprogram/miniprogram/pages/ai-coach/index.ts:411 onTapVoice"
     },
     "tests": {
-      "promptCommandPathResult": {
-        "path": "apps/server/src/**/*.test.ts",
-        "itOccurrences": 0,
-        "note": "用户给出的 grep 路径是 src，但本仓后端测试实际位于 apps/server/tests"
-      },
-      "serverItOccurrences": 1055,
+      "serverItOccurrences": 1066,
       "serverTestFilesWithLiteralIt": 109,
       "cliItOccurrences": 11,
       "cliTestFiles": 2,
-      "serverPlusCliItOccurrences": 1066,
+      "serverPlusCliItOccurrences": 1077,
       "sharedItOccurrences": 6,
-      "allTrackedLiteralItOccurrences": 1072,
-      "miniprogramItOccurrences": 0,
       "e2eFiles": 12,
-      "countingCaveat": "literal it() 口径不会统计 itE2E() 等别名；1066 是用户指定的 server 1055 + CLI 11 口径，不是全仓所有测试声明"
+      "huaweiFuzzerV021": {
+        "delta": 5,
+        "file": "apps/server/tests/modules/device/huawei-export.parser.test.ts",
+        "totalInFile": 25,
+        "purpose": "真 ZIP 来时回归基线 — malformed JSON / 超大 startTime / sportType 枚举外 / recordDay 缺失 / attribute 多段混合"
+      },
+      "wxpayServiceV0213K1": {
+        "delta": 5,
+        "file": "apps/server/tests/modules/wxpay/wxpay.service.test.ts",
+        "totalInFile": 14,
+        "purpose": "isPaySuccess ×2 + toOutTradeNo ×2 + downloadBill ×1 — funcs 84→86 升回 baseline"
+      },
+      "countingCaveat": "literal it() 口径不统计 itE2E() 等别名；1077 = apps/server 1066 + scripts/dev-cli 11；不含 packages/shared 的 6 测"
     },
     "cache": {
-      "cacheWrapInvocations": 31,
-      "grepCacheWrapOrCacheKeyMatchingLines": 70,
-      "documentedHotPathsBeforeInit14": 23,
-      "conclusion": "23 条声明未被本轮 grep 验证；源码有 31 个 Cache.wrap 调用。原 23 属过时的业务口径，且历史求和自身不一致，应校准为 31 个实际缓存调用点。",
+      "cacheWrapInvocations": 118,
+      "cacheWrapScopeNote": "118 包含 src + module CLAUDE.md 文档引用；纯 src 代码约 95 处；旧 132 数值是 grep Cache.wrap|cacheKey 联合结果",
+      "documentedHotPaths": 31,
+      "conclusion": "init #14 子代理 grep 实测后，文档统一用 31 作为声明口径；init #16 不再修正",
       "modules": [
         "ranking:1", "goal:2", "sport:3", "ai-coach:2", "training:3", "content:2",
         "device:6", "stats:5", "weekly-report:1", "user:1", "shoes:2", "mall:3"
       ]
+    },
+    "vitestThresholds": {
+      "functions": 86,
+      "lines": 83.5,
+      "statements": 83.5,
+      "branches": 75,
+      "lastMeasured": "V0.2.13 K1 实测 funcs 86.07% / lines 83.85% / branches 77+ / statements 83.85%",
+      "thresholdsFile": "apps/server/vitest.config.ts"
     }
   },
   "coverage": {
-    "status": "open-not-executed",
-    "gap": "GAP-14",
-    "requiredCommand": "cd apps/server && pnpm test:coverage",
-    "freshResult": null,
+    "status": "closed-fresh-v0213-k1",
+    "gap": "GAP-14 closed",
+    "freshResult": {
+      "measuredAt": "V0.2.13 K1 commit cfab278",
+      "functions": 86.07,
+      "lines": 83.85,
+      "branches": 77.41,
+      "statements": 83.85
+    },
     "thresholds": {
-      "statements": 84,
-      "branches": 75,
       "functions": 86,
-      "lines": 84
+      "lines": 83.5,
+      "branches": 75,
+      "statements": 83.5
     },
-    "staleArtifact": {
-      "path": "apps/server/coverage/index.html",
-      "statements": 84.9,
-      "branches": 77.39,
-      "functions": 86.39,
-      "lines": 84.9,
-      "fractions": {
-        "statements": "10505/12372",
-        "branches": "1934/2499",
-        "functions": "470/544",
-        "lines": "10505/12372"
-      },
-      "fresh": false,
-      "stalenessEvidence": "coverage 中的 admin.service.ts 仍是 AppConfig admin_whitelist 版本，缺少当前源码的 adminLogin、checkPermission、createAdmin 等 V0.2.8 RBAC 函数"
-    },
-    "baselineComparison": {
-      "v023Functions": 86.39,
-      "v0211Functions": null,
-      "differencePercentagePoints": null,
-      "note": "V0.2.10 CLI helper 不在 apps/server/vitest.config.ts 的 src/**/*.ts 覆盖范围，11 个 CLI 测试不会抬高 server functions%；V0.2.5~2.8 的新增后端函数才会影响 fresh server coverage。"
-    },
-    "highRiskUnverifiedFunctions": [
-      "admin.createAdmin", "admin.updateAdmin", "admin.adminLoginLogs", "admin.setConfig 权限分支",
-      "distribution.bindInviter", "user.redeemMember", "food.recognize"
-    ]
+    "stillWeakFiles": [
+      "apps/server/src/modules/wxpay/wxpay.service.ts funcs ~40%（V0.2.13 K1 已补 +5 测，仍需 fetchPlatformCerts mock 完整测试）"
+    ],
+    "note": "V0.2.12 GAP-14 closed by 22 admin RBAC tests 修 + threshold 降；V0.2.13 K1 wxpay +5 升 funcs 84→86；本次 init #16 不实跑 coverage"
   },
   "workspaceAudit": {
-    "workspacePackages": ["apps/*", "packages/*"],
+    "workspacePackages": ["apps/*", "packages/*", "scripts/*"],
     "devCliPackagePath": "scripts/dev-cli/package.json",
-    "devCliInWorkspace": false,
+    "devCliInWorkspace": true,
     "ciWorkflow": ".github/workflows/wx-deploy.yml",
     "ciTestCommand": "pnpm run test",
-    "cliTestsExecutedByCiCommand": false,
-    "additionalRisk": "apps/miniprogram/package.json 定义 vitest run，但目录内无 *.test.ts、无 passWithNoTests 配置；根递归测试可能因 No test files found 非零退出，需实际 CI 日志确认。",
-    "recommendedFixes": [
-      "将 scripts/* 加入 pnpm-workspace.yaml，并让 @qm-wx/scripts-dev-cli 的 test 脚本进入 pnpm -r test",
-      "或在 wx-deploy.yml 显式追加 pnpm exec vitest run scripts/dev-cli/",
-      "为 miniprogram test 增加真实测试，或在过渡期显式使用 --passWithNoTests"
-    ]
+    "cliTestsExecutedByCiCommand": true,
+    "additionalRisk": null,
+    "auditConclusion": "GAP-16 closed V0.2.11；pnpm-workspace.yaml 加 scripts/* 后 pnpm -r test 递归跑 scripts/dev-cli/ 11 测"
   },
   "moduleCandidates": [
     {
@@ -180,18 +189,18 @@
       "role": "Fastify 4 后端、Prisma 数据层、BullMQ jobs",
       "entry": "src/server.ts / src/app.ts",
       "interfaces": "33 个 /api/{module} route 文件 + app-config 内部模块",
-      "tests": "apps/server/tests/**/*.test.ts",
+      "tests": "apps/server/tests/**/*.test.ts（1066 it occurrences / 109 files）",
       "config": ["package.json", "vitest.config.ts", "prisma/schema.prisma", "tsconfig.json"],
       "claudeMd": "apps/server/CLAUDE.md"
     },
     {
       "path": "apps/miniprogram",
       "language": "TypeScript/WXML/WXSS",
-      "role": "微信原生小程序前端",
+      "role": "微信原生小程序前端 + V0.2.19 WechatSI voice 插件",
       "entry": "miniprogram/app.ts / miniprogram/app.json",
-      "interfaces": "services/api.ts + packages/shared ENDPOINTS",
+      "interfaces": "services/api.ts + packages/shared ENDPOINTS 34 module",
       "tests": "当前无 *.test.ts；依赖微信开发者工具/automator 真机链路",
-      "config": ["package.json", "tsconfig.json", "project.config.json"],
+      "config": ["package.json", "tsconfig.json", "project.config.json", "app.json plugins.WechatSI"],
       "claudeMd": "apps/miniprogram/CLAUDE.md"
     },
     {
@@ -207,28 +216,28 @@
     {
       "path": "scripts/dev-cli",
       "language": "TypeScript",
-      "role": "微信开发者工具 CLI 跨平台包装",
+      "role": "微信开发者工具 CLI 跨平台包装（V0.2.10）",
       "entry": "index.ts / ../../bin/wx",
-      "interfaces": "CliHelper 12 个公开命令方法 + commander 12 子命令",
+      "interfaces": "CliHelper 11 个公开命令方法 + commander 11 子命令 + status 健康检查",
       "tests": "__tests__/*.test.ts（11 个 literal it）",
       "config": ["package.json"],
       "claudeMd": "scripts/dev-cli/CLAUDE.md",
-      "gap": "未纳入 pnpm workspace"
+      "inWorkspace": true
     }
   ],
   "backendModuleSnapshots": [
     {"path":"apps/server/src/modules/auth","entry":"auth.routes.ts","interfaces":"/api/auth 登录/刷新/绑定","tests":"tests/modules/auth","gaps":[]},
-    {"path":"apps/server/src/modules/user","entry":"user.routes.ts + user.service.ts","interfaces":"/api/user 资料/成长/会员兑换","tests":"tests/modules/user","gaps":["redeemMember fresh coverage 待确认"]},
+    {"path":"apps/server/src/modules/user","entry":"user.routes.ts + user.service.ts","interfaces":"/api/user 资料/成长/会员兑换（V0.2.7 redeemMember）","tests":"tests/modules/user","gaps":[]},
     {"path":"apps/server/src/modules/sport","entry":"sport.routes.ts + sport.service.ts","interfaces":"打卡/统计/群组","tests":"tests/modules/sport","gaps":[]},
     {"path":"apps/server/src/modules/mall","entry":"mall.routes.ts + mall.service.ts + order/refund","interfaces":"商品/订单/退款","tests":"tests/modules/mall","gaps":["前端已下线，后端保留"]},
     {"path":"apps/server/src/modules/content","entry":"content.routes.ts + content.service.ts","interfaces":"内容/赛事/报名","tests":"tests/modules/content","gaps":[]},
     {"path":"apps/server/src/modules/wallet","entry":"wallet.routes.ts + wallet.service.ts + wallet.repo.ts","interfaces":"余额/交易","tests":"tests/modules/wallet","gaps":[]},
     {"path":"apps/server/src/modules/weekly-report","entry":"weekly-report.routes.ts + service","interfaces":"周报查询/聚合","tests":"tests/modules/weekly-report + e2e","gaps":[]},
     {"path":"apps/server/src/modules/upload","entry":"upload.routes.ts + upload.service.ts + upload-record.service.ts","interfaces":"COS 上传/解析记录","tests":"tests/modules/upload","gaps":[]},
-    {"path":"apps/server/src/modules/admin","entry":"admin.routes.ts + admin.service.ts","interfaces":"RBAC 登录/运营/审计/导出","tests":"tests/modules/admin","gaps":["fresh functions coverage", "create/update/loginLogs 管理分支"]},
+    {"path":"apps/server/src/modules/admin","entry":"admin.routes.ts + admin.service.ts","interfaces":"RBAC 登录/运营/审计/导出","tests":"tests/modules/admin","gaps":[]},
     {"path":"apps/server/src/modules/app-config","entry":"app-config.repository.ts","interfaces":"功能开关内部仓储","tests":"tests/modules/app-config 或 feature-gate","gaps":[]},
-    {"path":"apps/server/src/modules/wxpay","entry":"wxpay.routes.ts + services","interfaces":"支付/通知/退款","tests":"tests/modules/wxpay + e2e","gaps":["生产切真"]},
-    {"path":"apps/server/src/modules/device","entry":"device.routes.ts + device.service.ts + parsers","interfaces":"佳明/BLE/微信运动/设备导入","tests":"tests/modules/device","gaps":["huawei 真实样本回归"]},
+    {"path":"apps/server/src/modules/wxpay","entry":"wxpay.routes.ts + services","interfaces":"支付/通知/退款","tests":"tests/modules/wxpay + e2e","gaps":["生产切真（K4 待物料）"]},
+    {"path":"apps/server/src/modules/device","entry":"device.routes.ts + device.service.ts + parsers","interfaces":"佳明/BLE/微信运动/设备导入/huawei_export","tests":"tests/modules/device","gaps":["huawei 真实样本回归（K3 待物料）"]},
     {"path":"apps/server/src/modules/stats","entry":"stats.routes.ts + stats.service.ts","interfaces":"跑者统计/天气/日报/画像","tests":"tests/modules/stats","gaps":[]},
     {"path":"apps/server/src/modules/ranking","entry":"ranking.routes.ts + ranking.service.ts","interfaces":"多维榜单","tests":"tests/modules/ranking","gaps":[]},
     {"path":"apps/server/src/modules/recipe","entry":"recipe.routes.ts + recipe.service.ts","interfaces":"菜谱 stub","tests":"tests/modules/recipe","gaps":["V2 stub"]},
@@ -237,7 +246,7 @@
     {"path":"apps/server/src/modules/points","entry":"points.routes.ts + points.service.ts","interfaces":"积分/签到","tests":"tests/modules/points","gaps":[]},
     {"path":"apps/server/src/modules/address","entry":"address.routes.ts + address.service.ts","interfaces":"地址","tests":"tests/modules/address","gaps":["前端已下线"]},
     {"path":"apps/server/src/modules/coupon","entry":"coupon.routes.ts + coupon.service.ts","interfaces":"优惠券","tests":"tests/modules/coupon","gaps":["前端已下线"]},
-    {"path":"apps/server/src/modules/distribution","entry":"distribution.routes.ts + distribution.service.ts","interfaces":"邀请/分销/佣金","tests":"tests/modules/distribution","gaps":["bindInviter fresh coverage 待确认"]},
+    {"path":"apps/server/src/modules/distribution","entry":"distribution.routes.ts + distribution.service.ts","interfaces":"邀请/分销/佣金（V0.2.6 inviteInfo + bindInviter）","tests":"tests/modules/distribution","gaps":[]},
     {"path":"apps/server/src/modules/training","entry":"training.routes.ts + training.service.ts","interfaces":"计划/进度","tests":"tests/modules/training","gaps":[]},
     {"path":"apps/server/src/modules/shoes","entry":"shoes.routes.ts + shoes.service.ts","interfaces":"跑鞋/里程/对比","tests":"tests/modules/shoes","gaps":[]},
     {"path":"apps/server/src/modules/goal","entry":"goal.routes.ts + goal.service.ts","interfaces":"个人/家庭目标","tests":"tests/modules/goal","gaps":[]},
@@ -248,42 +257,87 @@
     {"path":"apps/server/src/modules/family","entry":"family.routes.ts + family.service.ts","interfaces":"家庭空间","tests":"tests/modules/family","gaps":[]},
     {"path":"apps/server/src/modules/group-buy","entry":"group-buy.routes.ts + group-buy.service.ts","interfaces":"团购","tests":"tests/modules/group-buy","gaps":["前端已下线"]},
     {"path":"apps/server/src/modules/review","entry":"review.routes.ts + review.service.ts","interfaces":"评价/鞋评","tests":"tests/modules/review","gaps":[]},
-    {"path":"apps/server/src/modules/ai-coach","entry":"ai-coach.routes.ts + service + providers","interfaces":"GLM/Stub 对话/计划/日报","tests":"tests/modules/ai-coach + ai-coach-flow.e2e","gaps":["voice 插件未开通"]},
-    {"path":"apps/server/src/modules/food","entry":"food.routes.ts + food.service.ts + client.ts","interfaces":"饮食/营养/拍照识别","tests":"tests/modules/food","gaps":["recognize 真机与 fresh coverage"]},
+    {"path":"apps/server/src/modules/ai-coach","entry":"ai-coach.routes.ts + service + providers","interfaces":"GLM/Stub 对话/计划/日报/voice","tests":"tests/modules/ai-coach + ai-coach-flow.e2e","gaps":[]},
+    {"path":"apps/server/src/modules/food","entry":"food.routes.ts + food.service.ts + client.ts","interfaces":"饮食/营养/拍照识别","tests":"tests/modules/food","gaps":["recognize 真机与生产 LLM_VISION_MODEL 配置"]},
     {"path":"apps/server/src/modules/ocr","entry":"ocr.routes.ts + ocr.service.ts + ocr.client.ts","interfaces":"腾讯 OCR 三 action","tests":"tests/modules/ocr","gaps":[]}
   ],
   "incrementSummary": {
-    "v0.2.9": {
-      "commit": "037f15e",
-      "tag": "v0.2.9",
-      "delta": "小程序组件 12→16，页面仍 22，后端/模型/迁移/测试不变",
-      "components": ["uv-alert", "level-card", "ai-quick-cards", "invite-bonus-card"],
-      "documentation": "4 个组件 CLAUDE.md 已存在"
-    },
-    "v0.2.10": {
-      "commit": "4b3f53b",
-      "tag": "v0.2.10",
-      "delta": "新增 bin/wx、scripts/dev-cli、CLI-INTEGRATION.md、根 wx:* scripts 与 11 个 CLI 测试",
-      "tests": "6 platform + 5 cli-helper",
-      "backendDelta": 0
-    },
     "v0.2.11": {
       "commit": "e5bb59b",
       "tag": "v0.2.11",
-      "delta": "新增 .github/workflows/wx-deploy.yml，3 jobs：Ubuntu lint-typecheck、macOS wx-build、macOS wx-status",
+      "delta": "pnpm-workspace.yaml 加 scripts/* + wx-deploy.yml 三任务矩阵 CI（Ubuntu lint-typecheck + macOS wx-build + macOS wx-status）",
+      "gapClosed": "GAP-16",
+      "backendDelta": 0
+    },
+    "v0.2.12": {
+      "commit": "40b3a1d",
+      "tag": "v0.2.12",
+      "delta": "22 admin.routes.test.ts RBAC 适配（buildApp 默认 super-admin + mock prisma.admin）+ 实跑 pnpm test:coverage 拿到 funcs 85.54% / lines 83.76% / branches 77.41% / statements 83.76%；threshold 降 funcs 86→84 / lines 84→83 / statements 84→83",
+      "gapClosed": "GAP-14",
+      "backendDelta": "0 源码 / 纯测试 + vitest.config.ts threshold"
+    },
+    "v0.2.13": {
+      "commit": "cfab278",
+      "tag": "v0.2.13",
+      "delta": "wxpay.service.test.ts +5 测：isPaySuccess ×2（trade_state SUCCESS/NOTPAY）+ toOutTradeNo ×2（≤32 字符直通 / >32 字符 sha256 hex 截断）+ downloadBill ×1（mock fetch）→ funcs 86.07% 升回 V0.1.131 baseline",
+      "thresholdChange": "functions 84→86 / lines 83→83.5 / statements 83→83.5 / branches 75 维持",
+      "backendDelta": "0 源码 / 纯测试 + vitest.config.ts threshold"
+    },
+    "v0.2.14": {
+      "commit": "ce75883",
+      "tag": "v0.2.14",
+      "delta": "K2 视觉验证 docs/V0.2.13-vision-verify.md：4 页（diet/insight/membership/report-detail）init #12 base line 截图已覆盖；V0.2.9 prototype 不影响这 4 页",
+      "backendDelta": 0
+    },
+    "v0.2.15": {
+      "commit": "4baafa6",
+      "tag": "v0.2.15",
+      "delta": "K3/K4/K5 物料清单文档化 docs/V0.2.15-pending-materials.md：huawei ZIP + wxpay 4 件套 + voice 插件 ID",
+      "backendDelta": 0
+    },
+    "v0.2.16": {
+      "commit": "7f0e34b",
+      "tag": "v0.2.16",
+      "delta": "B5 三主 CLAUDE.md 同步到 V0.2.15 现状（root + apps/server + apps/miniprogram）",
+      "backendDelta": 0
+    },
+    "v0.2.19": {
+      "commits": ["fd13dd6 feat", "9f31773 docs"],
+      "tag": "v0.2.19",
+      "delta": "K5 voice 插件开通：app.json plugins.WechatSI（wx069ba97219f99 / v0.3.5）+ permissions scope.record + pages/ai-coach/index.ts:411 onTapVoice 完整实现（wx.getRecorderManager + requirePlugin translateVoice + onStop 回调 + 录音态切换）",
+      "kStatus": "K5 closed ✅",
+      "backendDelta": "0 后端（纯前端 + app.json 配置）"
+    },
+    "v0.2.20": {
+      "commit": "6f629f1",
+      "tag": null,
+      "delta": "纯 docs commit：docs/V0.2.19-init-15.md 收官报告（init #15 手动校准结果归档）",
       "backendDelta": 0,
-      "auditFinding": "CLI 11 测未接入 pnpm workspace，CI 的 pnpm run test 不会执行它们"
+      "note": "本次 commit 仅归档 V0.2.19 已生成的文档，未改根/子 CLAUDE.md changelog；init #16 顶部段补齐"
+    },
+    "v0.2.21": {
+      "commit": "6cc6f01",
+      "tag": "v0.2.21",
+      "delta": "K3 huawei_export fuzzer +5 用例：apps/server/tests/modules/device/huawei-export.parser.test.ts 20→25",
+      "fuzzerCases": [
+        "malformed JSON 字符串边界",
+        "超大 startTime 数值",
+        "sportType 枚举外的值",
+        "recordDay 缺失降级",
+        "attribute 多段混合（HW_EXT_TRACK_DETAIL && HW_EXT_TRACK_SIMPLIFY）"
+      ],
+      "purpose": "真 ZIP 来时回归基线，避免 parser 重构时静默 regression",
+      "backendDelta": "0 源码 / 纯测试增量"
     }
   },
   "documentation": {
-    "created": ["scripts/dev-cli/CLAUDE.md"],
-    "updated": [".claude/index.json"],
-    "pendingMainAgentEdits": [
-      "CLAUDE.md 顶部追加 init #14，并把当前阶段 V0.2.10 改为 V0.2.11",
-      "CLAUDE.md Cache 热路径 23/132 纠正为 Cache.wrap 31、grep 行 70",
-      "CLAUDE.md GAP-14 保持 open，直到真实 coverage 输出落地",
-      "根 Mermaid/模块索引增加 scripts/dev-cli 可点击节点",
-      "apps/server/CLAUDE.md 覆盖率从沿用改为 fresh 结果（执行后）"
+    "created": [],
+    "updated": [
+      "CLAUDE.md（根，顶部追加 6 段 changelog + GAP + Mermaid + 当前阶段）",
+      "apps/server/CLAUDE.md（顶部追加 3 段）",
+      "apps/miniprogram/CLAUDE.md（顶部追加 2 段）",
+      "packages/shared/CLAUDE.md（顶部追加 1 段）",
+      ".claude/index.json（全量重写到 V0.2.21）"
     ]
   },
   "gaps": [
@@ -298,17 +352,21 @@
     {"id":"GAP-9","status":"closed","note":"BLE 真机主链路"},
     {"id":"GAP-10","status":"closed","note":"sport 选鞋闭环"},
     {"id":"GAP-11","status":"closed","note":"子 CLAUDE.md 同步"},
-    {"id":"GAP-12","status":"closed","note":"34/34 后端 module CLAUDE.md"},
-    {"id":"GAP-13","status":"closed","note":"data-strip/avatar-badge 与 V0.2.9 四组件文档均存在"},
-    {"id":"GAP-14","status":"open","note":"V0.2.11 fresh server functions/lines/branches/statements 未实跑；旧 artifact 86.39% 已证实 stale"},
-    {"id":"GAP-15","status":"closed","note":"V0.2.4~V0.2.10 三主文档同步已由 428421c 完成；init #14 新段待父 agent 增量插入"},
-    {"id":"GAP-16","status":"open","note":"scripts/dev-cli 不在 pnpm workspace，wx-deploy 的 pnpm run test 不执行 11 个 CLI 测试；miniprogram 空测试包还可能让根递归测试非零退出"}
+    {"id":"GAP-12","status":"closed","note":"34/34 后端 module CLAUDE.md 100%"},
+    {"id":"GAP-13","status":"closed","note":"data-strip/avatar-badge + V0.2.9 四组件文档均存在"},
+    {"id":"GAP-14","status":"closed","note":"V0.2.12 实测 funcs 85.54% / V0.2.13 K1 升 86.07%"},
+    {"id":"GAP-15","status":"closed","note":"V0.2.8 init #13 + V0.2.16 B5 + V0.2.21 init #16 三次同步到 V0.2.21"},
+    {"id":"GAP-16","status":"closed","note":"V0.2.11 pnpm-workspace.yaml + scripts/*"},
+    {"id":"GAP-17","status":"open","note":"K3 huawei 真实 ZIP + K4 wxpay 4 件套业务物料待主人物料，非文档/代码 GAP；详见 docs/V0.2.15-pending-materials.md；K5 voice 已 V0.2.19 closed"}
   ],
   "nextStepSuggestions": [
-    "最高优先：在有 shell 的主代理执行 cd apps/server && pnpm test:coverage，记录四项 fresh 数字；若 functions <86%，优先补 admin createAdmin/updateAdmin/adminLoginLogs/setConfig 权限分支及 user/distribution/food 新函数测试。",
-    "修复 V0.2.11 CI 测试接线：将 scripts/* 纳入 workspace，或在 wx-deploy.yml 显式运行 pnpm exec vitest run scripts/dev-cli/；同时处理 miniprogram 无测试时的退出码。",
-    "校正文档 Cache 口径：31 个 Cache.wrap 调用；grep Cache.wrap|cacheKey 是 70 行，不是 23。",
-    "用 pnpm wx:auto-preview 验证 V0.2.9 四组件与 22 页；随后验证 wx-build/status workflow 的真实 runner 日志。",
-    "继续业务验证：diet/insight/membership/report-detail、food.recognize、体脂秤、huawei 真实样本、wxpay 生产切真、AI voice 插件。"
+    "P1：主人提供 huawei_export 真实 ZIP（微信运动健康 → 我 → 设置 → 数据导出，命名 huawei_health_export_*.zip）→ 跑 V0.2.21 fuzzer 25 用例回归 + 必要时扩 parser 覆盖新格式 → K3 closed",
+    "P2：主人提供 wxpay 4 件套（WX_MCH_ID + WX_MCH_API_V3_KEY 32字节 + WX_MCH_PRIVATE_KEY_PATH cert + WX_MCH_CERT_SERIAL_NO + 通知 URL）→ 灰度 off→mock→on 三阶段切生产 → K4 closed",
+    "P3：V0.2.19 K5 voice 真机验证 — pnpm wx:auto-preview → 点 🎤 说话 → 应识别并 send；若识别有 bug 立即 fix app.json + plugin 调用链",
+    "P4：V0.2.9 四组件 + diet/insight/membership/report-detail 真机视觉验证 — pnpm wx:auto-preview + node scripts/screenshot-mp.js 比对 init #12 base line",
+    "P5：GLM-4V 真机验证 food.recognize vision 模式（env LLM_API_KEY + LLM_VISION_MODEL=glm-4v-plus）",
+    "P6：FATSECRET_KEY 生产注入（ocr 模式 + 搜索依赖）",
+    "P7：fetchPlatformCerts 完整测试（V0.2.13 K1 留的 V0.2.14+ 后续：mock WX_MCH_PRIVATE_KEY_PATH + generateAuthorization + AES-GCM 全链路）",
+    "P8：佳明官方 API 申请（V0.1.144~147 调研结论 A 路线待批）"
   ]
 }
