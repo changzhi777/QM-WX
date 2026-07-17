@@ -145,7 +145,7 @@ export const foodService = {
     return { ok: true };
   },
 
-  /** ⑦拍照识别食物（vision=GLM-4V 识菜品 / ocr=腾讯 OCR 提文字→FatSecret 匹配）*/
+  /** ⑦拍照识别食物（vision=GLM-4.6V 识菜品 / ocr=腾讯 OCR 提文字→FatSecret 匹配）*/
   async recognize(input: { imageUrl: string; mode: 'vision' | 'ocr' }): Promise<MealItem> {
     if (!input.imageUrl) throw Errors.badRequest('imageUrl 必填');
 
@@ -169,7 +169,7 @@ export const foodService = {
       };
     }
 
-    // vision：GLM-4V 多模态识菜品 → 直返 {name, calorie, 3 宏量}
+    // vision：GLM-4.6V 多模态识菜品 → 直返 {name, calorie, 3 宏量}
     const base = process.env.LLM_BASE_URL || 'https://open.bigmodel.cn/api/paas/v4';
     const key = process.env.LLM_API_KEY || '';
     const visionModel = process.env.LLM_VISION_MODEL || 'glm-4.6v';
@@ -191,7 +191,7 @@ export const foodService = {
     });
     if (!res.ok) {
       const detail = await res.text().catch(() => '');
-      throw new Error(`GLM-4V 识别失败 ${res.status}: ${detail.slice(0, 120)}`);
+      throw new Error(`GLM-4.6V 识别失败 ${res.status}: ${detail.slice(0, 120)}`);
     }
     const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
     const content = data.choices?.[0]?.message?.content ?? '{}';
