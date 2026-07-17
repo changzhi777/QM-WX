@@ -156,11 +156,14 @@ async function buildUserContext(userId: string): Promise<string> {
   }
 
   // V0.2.26 N：最近跑步天气（高温/雾霾/湿热针对性建议依据）
+  // V0.2.28 fix：超 3 天标注「较早前」——避免 AI 据过时天气给当天训练建议（旧高温→误建议改晨跑）
   if (latestWeather) {
     const parts = [`${latestWeather.weatherTemp}°C`];
     if (latestWeather.humidity != null) parts.push(`湿度 ${latestWeather.humidity}%`);
     if (latestWeather.aqi != null) parts.push(`AQI ${latestWeather.aqi}`);
-    lines.push(`- 最近跑步天气：${parts.join(' ')}（${fmtDateTime(latestWeather.createdAt)}）`);
+    const ageDays = Math.floor((Date.now() - latestWeather.createdAt.getTime()) / 86_400_000);
+    const prefix = ageDays <= 3 ? '最近跑步天气' : `较早前跑步天气（约 ${ageDays} 天前，可能已变化）`;
+    lines.push(`- ${prefix}：${parts.join(' ')}（${fmtDateTime(latestWeather.createdAt)}）`);
   }
 
   return lines.join('\n');

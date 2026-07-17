@@ -108,12 +108,12 @@ describe('buildSystemPrompt (V0.1.139 全量聚合)', () => {
     mocks.prisma.sleepRecord.findFirst.mockResolvedValue(null);
     mocks.prisma.weRunRecord.findMany.mockResolvedValue([] as never);
     mocks.prisma.bodyCompositionRecord.findFirst.mockResolvedValue(null);
-    // N: 最近带天气打卡
+    // N: 最近带天气打卡（1 小时前，落在 3 天「最近」窗口内，避免测试随运行日期漂移变脆弱）
     mocks.prisma.checkin.findFirst.mockResolvedValueOnce({
       weatherTemp: 32,
       humidity: 75,
       aqi: 120,
-      createdAt: new Date('2026-07-17T10:00:00Z'),
+      createdAt: new Date(Date.now() - 3_600_000),
     } as never);
 
     const prompt = await buildSystemPrompt('u1');
@@ -121,5 +121,31 @@ describe('buildSystemPrompt (V0.1.139 全量聚合)', () => {
     expect(prompt).toContain('32°C');
     expect(prompt).toContain('湿度 75%');
     expect(prompt).toContain('AQI 120');
+  });
+
+  it('V0.2.28 fix: 超 3 天的天气标注「较早前」避免 AI 据过时天气误判当天训练', async () => {
+    mocks.prisma.user.findUnique.mockResolvedValue({ id: 'u1', gender: 'male', birthday: '1990-01-01' } as never);
+    mocks.prisma.checkin.aggregate.mockResolvedValue({ _sum: { distance: 0 }, _count: 0 } as never);
+    mocks.prisma.goal.findMany.mockResolvedValue([] as never);
+    mocks.prisma.shoe.findMany.mockResolvedValue([] as never);
+    mocks.prisma.userPlanEnrollment.findUnique.mockResolvedValue(null);
+    mocks.prisma.heartRateRecord.findFirst.mockResolvedValue(null);
+    mocks.prisma.sleepRecord.findFirst.mockResolvedValue(null);
+    mocks.prisma.weRunRecord.findMany.mockResolvedValue([] as never);
+    mocks.prisma.bodyCompositionRecord.findFirst.mockResolvedValue(null);
+    // 8 天前的带天气打卡（动态相对日期，测试不随日历漂移）
+    mocks.prisma.checkin.findFirst.mockResolvedValueOnce({
+      weatherTemp: 35,
+      humidity: 80,
+      aqi: 150,
+      createdAt: new Date(Date.now() - 8 * 86_400_000),
+    } as never);
+
+    const prompt = await buildSystemPrompt('u1');
+    expect(prompt).toContain('较早前跑步天气');
+    expect(prompt).toContain('8 天前');
+    expect(prompt).toContain('可能已变化');
+    // 不应以「最近跑步天气：」前缀误导 AI 这是当前天气
+    expect(prompt).not.toContain('最近跑步天气：');
   });
 });
