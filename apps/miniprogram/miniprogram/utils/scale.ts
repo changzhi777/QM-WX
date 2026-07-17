@@ -177,7 +177,7 @@ function parseBodyCompositionBytes(bytes: Uint8Array): ScaleData {
   const flags = bytes[0];
   const weightRaw = bytes[1] | (bytes[2] << 8); // uint16 LE
   const isStable = (flags & 0x20) !== 0; // bit5 = weight stabilized
-  const weight = weightRaw * 0.01; // 10g 分辨率 → kg
+  const weight = weightRaw * 0.005; // 5g 分辨率 → kg（MIBCS 0x2A9C 规范；V0.2.24 真机验证 0.01 偏大 2 倍）
   // 阻抗值在 byte 11-12（体成分秤才有，部分固件偏移不同）
   let impedance: number | undefined;
   if (bytes.length >= 13) {
