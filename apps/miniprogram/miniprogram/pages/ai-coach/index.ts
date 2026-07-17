@@ -431,9 +431,17 @@ Page({
       // 调同声传译插件识别（requirePlugin 编译期静态解析）
       // 类型: WechatSI 插件全局对象 { translateVoice(opts) → Promise<{ result?: string }> }
       // 服务 ID: wx069ba97219f66d99（plugin provider）
-      const siPlugin = (typeof requirePlugin === 'function' ? requirePlugin('WechatSI') : (wx as unknown as { requirePlugin?: (id: string) => unknown }).requirePlugin?.('WechatSI')) as
+      // V0.2.24 临时绕过：app.json WechatSI 插件未授权已移除，requirePlugin 会抛 → try/catch 防崩（授权后 app.json 加回插件即正常）
+      let siPlugin:
         | { translateVoice: (o: { lfrom: string; lto: string; content: string; success?: (r: { result: string }) => void; fail?: (e: unknown) => void }) => void }
         | undefined;
+      try {
+        siPlugin = (typeof requirePlugin === 'function' ? requirePlugin('WechatSI') : (wx as unknown as { requirePlugin?: (id: string) => unknown }).requirePlugin?.('WechatSI')) as
+          | { translateVoice: (o: { lfrom: string; lto: string; content: string; success?: (r: { result: string }) => void; fail?: (e: unknown) => void }) => void }
+          | undefined;
+      } catch {
+        siPlugin = undefined;
+      }
       if (!siPlugin || typeof siPlugin.translateVoice !== 'function') {
         wx.showToast({ title: '同声传译插件未启用 (请检查 app.json)', icon: 'none' });
         that.setData({ recording: false });

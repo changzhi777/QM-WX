@@ -60,19 +60,9 @@
   "permission": {
     "scope.userLocation": {
       "desc": "用于显示您所在地点的天气和海拔信息"
-    },
-    "scope.record": {
-      "desc": "用于语音输入，将您的语音转为文字发送给健康助手"
     }
   },
   "requiredPrivateInfos": ["getLocation"],
   "sitemapLocation": "sitemap.json",
-  "lazyCodeLoading": "requiredComponents",
-  "plugins": {
-    "WechatSI": {
-      "version": "0.3.5",
-      "provider": "wx069ba97219f66d99",
-      "description": "微信同声传译 - 语音转文字 (V0.2.19 K5 接入)"
-    }
-  }
+  "lazyCodeLoading": "requiredComponents"
 }
