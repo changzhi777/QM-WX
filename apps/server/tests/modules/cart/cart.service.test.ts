@@ -78,3 +78,13 @@ describe('cartService.list', () => {
     expect(r.items[0].product.price).toBe('99');
   });
 });
+
+// V0.2.23 funcs% 加固：补 clear（原 80% 缺口）
+describe('cartService.clear', () => {
+  it('清空购物车 deleteMany by userId', async () => {
+    mockedPrisma.cart.deleteMany.mockResolvedValue({ count: 3 } as never);
+    const r = await cartService.clear('u1');
+    expect(r).toEqual({ ok: true, deleted: 3 });
+    expect(mockedPrisma.cart.deleteMany).toHaveBeenCalledWith({ where: { userId: 'u1' } });
+  });
+});

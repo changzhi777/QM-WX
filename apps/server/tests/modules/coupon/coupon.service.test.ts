@@ -59,3 +59,15 @@ describe('couponService.myCoupons', () => {
     expect(mockedPrisma.coupon.updateMany).toHaveBeenCalled();
   });
 });
+
+// V0.2.23 funcs% 加固：补 availableCount（原 80% 缺口）
+describe('couponService.availableCount', () => {
+  it('先 markExpired 再 count unused', async () => {
+    mockedPrisma.coupon.updateMany.mockResolvedValue({ count: 0 } as never);
+    mockedPrisma.coupon.count.mockResolvedValue(2 as never);
+    const r = await couponService.availableCount('u1');
+    expect(r).toBe(2);
+    expect(mockedPrisma.coupon.updateMany).toHaveBeenCalled();
+    expect(mockedPrisma.coupon.count).toHaveBeenCalledWith({ where: { userId: 'u1', status: 'unused' } });
+  });
+});
