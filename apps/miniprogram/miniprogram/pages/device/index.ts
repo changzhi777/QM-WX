@@ -293,7 +293,20 @@ Page({
       this.pushLog(`✓ 体脂秤已连接，Service ${type === 'body_composition' ? '0x181B（体成分）' : '0x181D（体重）'}`);
       this.setData({ scanVisible: false, connecting: false, scaleConnected: true, boundBleDeviceId: device.deviceId });
       wx.hideLoading();
-      wx.showToast({ title: '请站上秤测量', icon: 'none' });
+      // V0.2.x profile 兜底：体成分（体脂率/肌肉/骨量）计算需身高/生日/性别，
+      // 缺失字段会用默认值（male/170/30）→ 结果偏差。modal 引导完善，否则只 toast 测量提示
+      const u = (getApp() as { globalData: { user?: { height?: number; birthday?: string; gender?: string } } }).globalData.user;
+      if (!u?.height || !u?.birthday || !u?.gender) {
+        wx.showModal({
+          title: '请站上秤测量',
+          content: '体成分（体脂率/肌肉/骨量）计算需要身高、生日、性别。缺失字段将用默认值，结果可能不准。完善后更精准。',
+          confirmText: '去完善',
+          cancelText: '先用默认',
+          success: (r) => { if (r.confirm) wx.navigateTo({ url: '/pages/profile/index' }); },
+        });
+      } else {
+        wx.showToast({ title: '请站上秤测量', icon: 'none' });
+      }
 
       subscribeScaleData(device.deviceId, serviceId, characteristicId, (data) => {
         if (data.impedance) {

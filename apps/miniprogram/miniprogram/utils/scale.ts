@@ -65,16 +65,30 @@ export async function connectScale(
     wx.createBLEConnection({ deviceId, success: () => resolve(), fail: reject });
   });
 
-  // 等 Service 发现（部分设备连接后需要延迟）
-  await new Promise((r) => setTimeout(r, 500));
-
-  const services = await new Promise<WechatMiniprogram.BLEService[]>((resolve, reject) => {
-    wx.getBLEDeviceServices({
-      deviceId,
-      success: (res) => resolve(res.services),
-      fail: reject,
+  // V0.2.x retry：体脂秤连接后服务发现延迟，首次 getBLEDeviceServices 常因服务未就绪返空/失败
+  // 仿 utils/ble.ts subscribeHeartRate 3 次重试 + 500ms 间隔
+  const hasScaleService = (list: WechatMiniprogram.BLEService[]) =>
+    list.some((s) => {
+      const u = s.uuid.toUpperCase();
+      return u === SVC_BODY || u === SVC_WEIGHT;
     });
-  });
+
+  let services: WechatMiniprogram.BLEService[] = [];
+  let lastErr: Error | null = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    await new Promise((r) => setTimeout(r, 500));
+    try {
+      services = await new Promise<WechatMiniprogram.BLEService[]>((resolve, reject) => {
+        wx.getBLEDeviceServices({ deviceId, success: (res) => resolve(res.services), fail: reject });
+      });
+      if (hasScaleService(services)) break;
+    } catch (e) {
+      lastErr = e as Error;
+    }
+  }
+  if (!hasScaleService(services)) {
+    throw lastErr ?? new Error('未找到体脂秤 BLE Service（0x181B/0x181D）');
+  }
 
   // 优先体成分 Service（0x181B）
   let svcUUID = services.find((s) => s.uuid.toUpperCase() === SVC_BODY)?.uuid;
@@ -87,8 +101,6 @@ export async function connectScale(
     charUUID = CHAR_WEIGHT_MEASUREMENT;
     type = 'weight';
   }
-
-  if (!svcUUID) throw new Error('未找到体脂秤 BLE Service（0x181B/0x181D）');
 
   return { serviceId: svcUUID, characteristicId: charUUID, type };
 }
