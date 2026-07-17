@@ -335,7 +335,7 @@ export const statsService = {
   async computeWeatherAnalysis(userId: string) {
     const checkins = await prisma.checkin.findMany({
       where: { userId, weatherTemp: { not: null } },
-      select: { weatherTemp: true, humidity: true, pace: true, heartRate: true },
+      select: { weatherTemp: true, humidity: true, aqi: true, pace: true, heartRate: true },
       take: 200,
       orderBy: { createdAt: 'desc' },
     });
@@ -344,8 +344,18 @@ export const statsService = {
     }
     const tempPace = checkins.filter((c) => c.pace).map((c) => ({ x: c.weatherTemp!, y: parsePaceSec(c.pace!) }));
     const humidityHr = checkins.filter((c) => c.humidity != null && c.heartRate != null).map((c) => ({ x: c.humidity!, y: c.heartRate! }));
+    // V0.2.26 B1: AQI × 心率（Checkin 存了 aqi 之前没用）
+    const aqiHr = checkins.filter((c) => c.aqi != null && c.heartRate != null).map((c) => ({ x: c.aqi!, y: c.heartRate! }));
     const tempPaceR = pearson(tempPace);
     const humidityHrR = humidityHr.length >= 10 ? pearson(humidityHr) : null;
+    const aqiHrR = aqiHr.length >= 10 ? pearson(aqiHr) : null;
+    // V0.2.26 A1: 体感温度区间配速曲线（feelsLike Rothfusz，标注最快区间）
+    const feelsLikeZones = computeFeelsLikeZones(checkins);
+    const validZones = feelsLikeZones.filter((z) => z.count >= 3 && z.avgPaceSec != null);
+    // ≥2 桶有数据才有对比意义（1 桶时 fastestZone undefined，不生成 insight，让兜底文案生效）
+    const fastestZone = validZones.length >= 2
+      ? [...validZones].sort((a, b) => a.avgPaceSec! - b.avgPaceSec!)[0]
+      : undefined;
     const insights: string[] = [];
     if (tempPaceR != null && Math.abs(tempPaceR) >= 0.3) {
       insights.push(tempPaceR > 0 ? `温度升高配速变慢（相关 ${tempPaceR.toFixed(2)}），高温天建议改晨跑` : `温度升高配速反而快（相关 ${tempPaceR.toFixed(2)}），你更耐热`);
@@ -353,13 +363,21 @@ export const statsService = {
     if (humidityHrR != null && humidityHrR >= 0.3) {
       insights.push(`湿度升高运动心率偏高（相关 ${humidityHrR.toFixed(2)}），湿热天注意补水降强`);
     }
+    if (aqiHrR != null && aqiHrR >= 0.3) {
+      insights.push(`空气污染加重时心率偏高（相关 ${aqiHrR.toFixed(2)}），雾霾天宜改室内训练`);
+    }
+    if (fastestZone) {
+      insights.push(`你在体感 ${fastestZone.label}°C 配速最快（均 ${formatPace(fastestZone.avgPaceSec!)}，${fastestZone.count} 次）`);
+    }
     if (insights.length === 0) insights.push('暂未发现显著天气-表现关联（样本波动大）');
     return {
       sufficient: true,
       count: checkins.length,
       insights,
-      correlations: { tempPace: tempPaceR, humidityHr: humidityHrR },
-      scatter: { tempPace: tempPace.slice(0, 50), humidityHr: humidityHr.slice(0, 50) },
+      correlations: { tempPace: tempPaceR, humidityHr: humidityHrR, aqiHr: aqiHrR },
+      scatter: { tempPace: tempPace.slice(0, 50), humidityHr: humidityHr.slice(0, 50), aqiHr: aqiHr.slice(0, 50) },
+      feelsLikeZones,
+      optimalZone: fastestZone?.zone ?? null,
     };
   },
 
@@ -417,6 +435,45 @@ function pearson(pairs: { x: number; y: number }[]): number | null {
   for (const p of pairs) { num += (p.x - mx) * (p.y - my); dx += (p.x - mx) ** 2; dy += (p.y - my) ** 2; }
   const den = Math.sqrt(dx * dy);
   return den === 0 ? null : num / den;
+}
+
+// V0.2.26 A1: 体感温度（简化版：高温高湿区线性加成）
+// 高温区(≥27°C)+湿度>40% 每点湿度加 0.1°C 体感（高温高湿热应激趋势准确）
+// 注：完整 NOAA Rothfusz 用华氏度+非线性系数，V0.2.26 简化（绝对值粗略，但 Pearson 趋势 + 区间分桶不受影响）
+function feelsLike(temp: number, humidity: number): number {
+  if (temp >= 27 && humidity > 40) {
+    return temp + (humidity - 40) * 0.1;
+  }
+  return temp;
+}
+
+// V0.2.26 A1: 体感温度区间分桶（配速曲线用，行业最优 ~9°C 落 <10 桶）
+const FEELS_LIKE_ZONES = [
+  { zone: '<10', label: '<10', min: -Infinity, max: 10 },
+  { zone: '10-20', label: '10-20', min: 10, max: 20 },
+  { zone: '20-30', label: '20-30', min: 20, max: 30 },
+  { zone: '>30', label: '>30', min: 30, max: Infinity },
+];
+function computeFeelsLikeZones(
+  checkins: { weatherTemp: number | null; humidity: number | null; pace: string | null }[],
+): Array<{ zone: string; label: string; avgPaceSec: number | null; count: number }> {
+  const buckets = FEELS_LIKE_ZONES.map((z) => ({ ...z, paces: [] as number[] }));
+  for (const c of checkins) {
+    if (c.weatherTemp == null || c.pace == null) continue;
+    const fl = feelsLike(c.weatherTemp, c.humidity ?? 50);
+    const bucket = buckets.find((z) => fl >= z.min && fl < z.max);
+    if (bucket) bucket.paces.push(parsePaceSec(c.pace));
+  }
+  return buckets.map((b) => ({
+    zone: b.zone,
+    label: b.label,
+    avgPaceSec: b.paces.length > 0 ? Math.round(b.paces.reduce((s, p) => s + p, 0) / b.paces.length) : null,
+    count: b.paces.length,
+  }));
+}
+
+function formatPace(sec: number): string {
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 }
 
 // ============================================================

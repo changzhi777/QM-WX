@@ -485,6 +485,40 @@ describe('statsService.weatherAnalysis (V0.2.0)', () => {
     // tempPaceR=null(因全相同)+ humidityHrR=null → insights 兜底
     expect(r.insights.some((t) => t.includes('未发现显著'))).toBe(true);
   });
+
+  it('V0.2.26 B1: AQI×心率正相关 → 雾霾天宜室内 insight', async () => {
+    // 12 条：AQI 递增(30-140) + 心率递增(正相关)，温湿度固定避免干扰
+    const data = Array.from({ length: 12 }, (_, i) => ({
+      weatherTemp: 20,
+      humidity: 50,
+      aqi: 30 + i * 10,
+      pace: '5:30',
+      heartRate: 140 + i,
+    }));
+    mockedPrisma.checkin.findMany.mockResolvedValueOnce(data as never);
+
+    const r = await statsService.weatherAnalysis('u1');
+    expect(r.correlations.aqiHr).not.toBeNull();
+    expect(r.correlations.aqiHr!).toBeGreaterThan(0.3);
+    expect(r.insights.some((t) => t.includes('雾霾'))).toBe(true);
+  });
+
+  it('V0.2.26 A1: 体感温度区间配速曲线 + optimalZone（低温最快）', async () => {
+    // 12 条：4 桶（体感 <10/10-20/20-30/>30）各 3 条，低温快/高温慢
+    const data = [
+      ...Array.from({ length: 3 }, () => ({ weatherTemp: 5, humidity: 50, pace: '5:00', heartRate: 140 })),
+      ...Array.from({ length: 3 }, () => ({ weatherTemp: 15, humidity: 50, pace: '5:20', heartRate: 150 })),
+      ...Array.from({ length: 3 }, () => ({ weatherTemp: 25, humidity: 50, pace: '5:40', heartRate: 160 })),
+      ...Array.from({ length: 3 }, () => ({ weatherTemp: 35, humidity: 50, pace: '6:00', heartRate: 170 })),
+    ];
+    mockedPrisma.checkin.findMany.mockResolvedValueOnce(data as never);
+
+    const r = await statsService.weatherAnalysis('u1');
+    expect(r.feelsLikeZones).toHaveLength(4);
+    expect(r.feelsLikeZones.find((z) => z.zone === '<10')?.avgPaceSec).toBe(300); // 5:00
+    expect(r.feelsLikeZones.find((z) => z.zone === '>30')?.avgPaceSec).toBe(360); // 6:00
+    expect(r.optimalZone).toBe('<10'); // 最快
+  });
 });
 
 // ============================================================
