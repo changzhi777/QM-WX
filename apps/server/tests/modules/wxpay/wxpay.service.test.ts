@@ -7,8 +7,11 @@
  * - verifyAndDecryptNotify 验签失败抛错（mock 验签不过）
  * - refund                 参数校验 + mock 微信 API 成功响应
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createCipheriv, randomBytes } from 'node:crypto';
+import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
+import { createCipheriv, randomBytes, generateKeyPairSync } from 'node:crypto';
+import { writeFileSync, unlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   generateAuthorization,
   aesGcmDecrypt,
@@ -19,6 +22,7 @@ import {
   fetchPlatformCerts,
   downloadBill,
 } from '../../../src/modules/wxpay/wxpay.service.js';
+import { env } from '../../../src/config/env.js';
 
 const mockErrors = vi.hoisted(() => ({
   internal: (msg: string) => {
@@ -242,9 +246,7 @@ describe('wxpay.service', () => {
     });
   });
 
-  // fetchPlatformCerts 跳过：mock 链路复杂（generateAuthorization 用 WX_MCH_PRIVATE_KEY_PATH，
-  // service 当前 mock 缺该 PATH；改 vi.mock 整个 crypto + env 影响范围广）
-  // V0.2.13 演示覆盖 isPaySuccess + toOutTradeNo + downloadBill 三个 funcs 已达标。
+  // fetchPlatformCerts 完整覆盖在本文件末尾 describe（V0.2.21 补 V0.2.13 K1 留的后续）。
 
   describe('downloadBill', () => {
     it('下载 + 返原始字符串（含 GZIP body）', async () => {
@@ -264,6 +266,105 @@ describe('wxpay.service', () => {
       }
       expect(fetchMock).toHaveBeenCalled();
       fetchMock.mockRestore();
+    });
+  });
+
+  // ===== fetchPlatformCerts（V0.2.21 补 V0.2.13 K1 留的后续）=====
+  // 关键：fetchPlatformCerts 内部调 generateAuthorization('GET', ...) 不传 options.privateKey，
+  // 必走 loadPrivateKey() 读 env.WX_MCH_PRIVATE_KEY_PATH。
+  // 破解：beforeAll 生成临时 RSA 私钥写临时文件 → 走真签名路径，只 mock fetch。
+  describe('fetchPlatformCerts', () => {
+    // 自签测试证书（与 wxpay.cert.test.ts 同一份，registerPlatformCert 解析其序列号）
+    const PLATFORM_CERT_PEM = `-----BEGIN CERTIFICATE-----
+MIIC/zCCAeegAwIBAgIUZuloC8xuGIWWKZuYGr+MQA/SvH0wDQYJKoZIhvcNAQEL
+BQAwDzENMAsGA1UEAwwEdGVzdDAeFw0yNjA2MTQwODUxNDlaFw0zNjA2MTEwODUx
+NDlaMA8xDTALBgNVBAMMBHRlc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+AoIBAQCpwSYZycaOIlFJRB/wtAw0SnF2xZF+CbwrHy+xAChPVss/jJdADxGqlUtn
+ErCYpQOl3Hpb/94YO3nHGeByMWnK0C3igZiociCY9GSzLgtJXcKh4YqbVLTrI4Kk
+FmY45+XWINCzWJ8FUr2gzjBwn/WiYT5PkYPYdV288QxJzK5Pm3qF8kp4LfG5jgoO
+He7Fu4tqM+RB04BiP0nArXzBqG4R0tmF/2P0iGXXJCdVcX2HlruM/VPlLZY8NFDa
+k+ChdQd/ApU1R+ZPqf1K45y/+urwtwoXEKdx+2pZmbPnmjk11vlJoKtTIlE42bA/
+gCV2JQAPfNnPgaWBa+h3PB2NkAXxAgMBAAGjUzBRMB0GA1UdDgQWBBSlMHVtg2/z
+Io4N0qBlUfpZOUh57zAfBgNVHSMEGDAWgBSlMHVtg2/zIo4N0qBlUfpZOUh57zAP
+BgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQB0M0Tl8lALWdtRriYP
+YRalkzcz6CdrdivSdhZwUOShopVT+TvewjRJN6PROij2dkmvce5pVZSm1cRQ9eYl
+LvKvVde8UiKyeXl+guvh1Q73X8kUkiugYv9EwcpGG625RyaSH1yMLuLVRTJt/lI0
+Kv9XF34IqeIvG7ddFVOXJgqEtAcjijDIB0tyQ7V2YbkRP4Y82NqdraCD+OofWI90
+1/5z9PefPUuIShcJEGzU+XuLPPXWXTyN2xZl7Pp8Cz1uuF8hIgDdukc749Ug1L2t
+ANlbo4VnX3hsJ8lShcK0pK1l2ifdOE5tSA12WdROOLRUmadlBMkoDaIgHeOmrJ3z
+XKBW
+-----END CERTIFICATE-----
+`;
+
+    let tmpKeyPath: string;
+    beforeAll(() => {
+      const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+      const pem = privateKey.export({ type: 'pkcs8', format: 'pem' }) as string;
+      tmpKeyPath = join(tmpdir(), `wxpay-test-key-${process.pid}-${Date.now()}.pem`);
+      writeFileSync(tmpKeyPath, pem);
+    });
+    afterAll(() => {
+      try {
+        unlinkSync(tmpKeyPath);
+      } catch {
+        /* 临时文件清理失败忽略 */
+      }
+    });
+
+    const ORIG_KEY = env.WX_PAY_KEY;
+    afterEach(() => {
+      env.WX_PAY_KEY = ORIG_KEY;
+      vi.restoreAllMocks();
+    });
+
+    it('WX_PAY_KEY 未配置 → 抛错（在签名之前）', async () => {
+      env.WX_PAY_KEY = '';
+      await expect(fetchPlatformCerts()).rejects.toThrow(/WX_PAY_KEY 未配置/);
+    });
+
+    it('WX_PAY_KEY 长度非 32 字节 → 抛错', async () => {
+      env.WX_PAY_KEY = 'too-short';
+      await expect(fetchPlatformCerts()).rejects.toThrow(/32 字节/);
+    });
+
+    it('fetch 非 2xx → 抛"平台证书拉取失败"（过签名后）', async () => {
+      (env as Record<string, unknown>).WX_MCH_PRIVATE_KEY_PATH = tmpKeyPath;
+      env.WX_PAY_KEY = ORIG_KEY; // 32 字节，让签名通过
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(JSON.stringify({ code: 'SYSTEM_ERROR', message: '系统错误' }), { status: 500 }),
+      );
+      await expect(fetchPlatformCerts()).rejects.toThrow(/平台证书拉取失败/);
+    });
+
+    it('happy path：mock fetch 返加密证书 → AES-GCM 解密 + 注册 + 返 serials', async () => {
+      (env as Record<string, unknown>).WX_MCH_PRIVATE_KEY_PATH = tmpKeyPath;
+      env.WX_PAY_KEY = ORIG_KEY;
+      // 用 APIv3 key 对平台证书 PEM 做 AES-256-GCM 加密，构造微信 encrypt_certificate 结构
+      const key = Buffer.from(env.WX_PAY_KEY, 'utf8');
+      const nonce = Buffer.from('n'.repeat(12), 'utf8');
+      const aad = Buffer.from('certificate', 'utf8');
+      const cipher = createCipheriv('aes-256-gcm', key, nonce);
+      cipher.setAAD(aad, { plaintextLength: 0 });
+      const enc = Buffer.concat([cipher.update(PLATFORM_CERT_PEM, 'utf8'), cipher.final()]);
+      const tag = cipher.getAuthTag();
+      const ciphertext = Buffer.concat([enc, tag]).toString('base64');
+
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            data: [
+              {
+                serial_no: 'PLATFORM-SERIAL-1',
+                encrypt_certificate: { nonce: 'n'.repeat(12), associated_data: 'certificate', ciphertext },
+              },
+            ],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        ),
+      );
+
+      const serials = await fetchPlatformCerts();
+      expect(serials).toEqual(['PLATFORM-SERIAL-1']);
     });
   });
 });
