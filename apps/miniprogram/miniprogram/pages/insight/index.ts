@@ -14,11 +14,18 @@ interface Analysis {
   count: number;
   message?: string;
   insights: string[];
-  correlations: { tempPace: number | null; humidityHr: number | null };
-  scatter: { tempPace: Array<{ x: number; y: number }>; humidityHr: Array<{ x: number; y: number }> };
+  correlations: { tempPace: number | null; humidityHr: number | null; aqiHr: number | null };
+  scatter: { tempPace: Array<{ x: number; y: number }>; humidityHr: Array<{ x: number; y: number }>; aqiHr: Array<{ x: number; y: number }> };
+  feelsLikeZones?: Array<{ zone: string; label: string; avgPaceSec: number | null; count: number; avgPace?: string | null }>;
+  optimalZone?: string | null;
 }
 
 /** 小程序 Canvas 2d node（typing 弱，用 any 避 CanvasRenderingContext2D 缺失坑）*/
+
+/** V0.2.26 秒 → mm:ss 配速（feelsLikeZones 展示用）*/
+function formatPace(sec: number): string {
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+}
 
 Page({
   data: {
@@ -42,6 +49,13 @@ Page({
         api.call<Profile>('stats', 'userProfile').catch(() => null),
         api.call<Analysis>('stats', 'weatherAnalysis').catch(() => null),
       ]);
+      // V0.2.26 A1: feelsLikeZones avgPaceSec → mm:ss（展示用）
+      if (analysis?.feelsLikeZones) {
+        analysis.feelsLikeZones = analysis.feelsLikeZones.map((z) => ({
+          ...z,
+          avgPace: z.avgPaceSec != null ? formatPace(z.avgPaceSec) : null,
+        }));
+      }
       this.setData({ profile, analysis });
       if (analysis?.sufficient && analysis.scatter.tempPace.length) {
         // 等 canvas 渲染完再画

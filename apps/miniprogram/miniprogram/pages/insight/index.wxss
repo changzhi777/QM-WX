@@ -103,6 +103,54 @@
   font-weight: 600;
 }
 
+/* V0.2.26 体感温度区间配速 */
+.zones {
+  margin: 20rpx 0 8rpx;
+  padding: 16rpx;
+  background: #f9fbfa;
+  border-radius: 12rpx;
+}
+.zones-title {
+  font-size: 25rpx;
+  color: #888;
+  margin-bottom: 12rpx;
+}
+.zone-row {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 10rpx 0;
+  border-bottom: 1rpx solid #eee;
+}
+.zone-row:last-child {
+  border-bottom: none;
+}
+.zone-opt {
+  background: rgba(45, 157, 120, 0.08);
+  border-radius: 8rpx;
+  padding: 10rpx 12rpx;
+}
+.zone-label {
+  font-size: 26rpx;
+  color: #555;
+  min-width: 100rpx;
+}
+.zone-pace {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+.zone-count {
+  font-size: 23rpx;
+  color: #aaa;
+}
+.zone-star {
+  font-size: 22rpx;
+  color: #2d9d78;
+  font-weight: 600;
+}
+
 /* AI 策略 */
 .strategy-text {
   font-size: 28rpx;

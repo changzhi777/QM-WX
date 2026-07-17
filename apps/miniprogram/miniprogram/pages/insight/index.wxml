@@ -45,6 +45,20 @@
       <view class="corr-row" wx:if="{{analysis.correlations.humidityHr != null}}">
         湿度-心率相关系数：<text class="corr-val">{{analysis.correlations.humidityHr}}</text>
       </view>
+      <!-- V0.2.26 B1: AQI × 心率 -->
+      <view class="corr-row" wx:if="{{analysis.correlations.aqiHr != null}}">
+        AQI-心率相关系数：<text class="corr-val">{{analysis.correlations.aqiHr}}</text>
+      </view>
+      <!-- V0.2.26 A1: 体感温度区间配速（★ 最快区间高亮）-->
+      <view class="zones" wx:if="{{analysis.feelsLikeZones.length}}">
+        <view class="zones-title">体感温度区间配速</view>
+        <view class="zone-row {{item.zone === analysis.optimalZone ? 'zone-opt' : ''}}" wx:for="{{analysis.feelsLikeZones}}" wx:key="zone">
+          <text class="zone-label">{{item.label}}°C</text>
+          <text class="zone-pace">{{item.avgPace || '-'}}</text>
+          <text class="zone-count">{{item.count}}次</text>
+          <text class="zone-star" wx:if="{{item.zone === analysis.optimalZone}}">★最快</text>
+        </view>
+      </view>
     </block>
   </view>
 
