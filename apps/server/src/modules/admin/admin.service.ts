@@ -76,6 +76,7 @@ const OPERATOR_ACTIONS = [
   'listInviteStats', 'listEnrollmentsByContent', 'listAuditLogs',
   'stats', 'statsByTimeRange', 'exportOrders', 'exportUsers', 'exportSettlement',
   'banUser', 'unbanUser', 'confirmPickup', 'addReviewReply', 'retryParse', 'submitRaceResult',
+  'listInterpret',
 ];
 
 /** 权限检查：super-admin 全部 / admin 除 SUPER_ONLY / operator 仅 OPERATOR_ACTIONS */
@@ -1134,6 +1135,46 @@ export async function listUploads(input: {
   ]);
   return {
     list: list.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() })),
+    total,
+    page: input.page,
+    pageSize: input.pageSize,
+  };
+}
+
+/** V0.2.37 interpret 解读记录列表（admin 只读，admin/operator/super-admin 可看）*/
+export async function listInterpret(input: {
+  userId?: string;
+  type?: string;
+  page: number;
+  pageSize: number;
+}) {
+  const where = {
+    ...(input.userId ? { userId: input.userId } : {}),
+    ...(input.type ? { type: input.type } : {}),
+  };
+  const [list, total] = await Promise.all([
+    prisma.interpretRecord.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (input.page - 1) * input.pageSize,
+      take: input.pageSize,
+      include: { user: { select: { id: true, nickname: true } } },
+    }),
+    prisma.interpretRecord.count({ where }),
+  ]);
+  return {
+    list: list.map((r) => ({
+      id: r.id,
+      userId: r.userId,
+      nickname: r.user.nickname,
+      type: r.type,
+      inputKey: r.inputKey,
+      result: r.result,
+      model: r.model,
+      inputTokens: r.inputTokens,
+      outputTokens: r.outputTokens,
+      createdAt: r.createdAt.toISOString(),
+    })),
     total,
     page: input.page,
     pageSize: input.pageSize,

@@ -28,6 +28,7 @@ import {
   ListUsersSchema,
   ListContentsSchema,
   ListProductsSchema,
+  ListInterpretSchema,
   BanUserSchema,
   UnbanUserSchema,
   ListAuditLogsSchema,
@@ -130,6 +131,8 @@ export async function adminRoutes(app: FastifyInstance) {
       // ===== 上传记录管理（V0.1.150 COS 中转解析）=====
       case 'listUploads':
         return { code: 0, data: await adminService.listUploads(ListUploadsSchema.parse(payload ?? {})) };
+      case 'listInterpret':
+        return { code: 0, data: await adminService.listInterpret(ListInterpretSchema.parse(payload ?? {})) };
       case 'retryParse':
         return { code: 0, data: await adminService.retryParse(RetryParseSchema.parse(payload)) };
       // ===== 黑名单 + 审计（V0.1.18 新增）=====

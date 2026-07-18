@@ -108,6 +108,14 @@ export const ListUploadsSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+// V0.2.37 interpret 解读记录管理（admin 只读）
+export const ListInterpretSchema = z.object({
+  userId: z.string().optional(),
+  type: z.string().optional(), // garmin_fit | garmin_zip | medical | screenshot
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+
 export const RetryParseSchema = z.object({
   id: z.string().min(1),
 });
