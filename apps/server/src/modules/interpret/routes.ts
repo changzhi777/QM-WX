@@ -13,7 +13,8 @@ import { isMinimaxConfigured } from './client.js';
 import { interpretGarminFit } from './service.js';
 
 export async function interpretRoutes(app: FastifyInstance) {
-  app.post('/', async (req) => {
+  // bodyLimit 10MB：FIT 文件 base64 后可能超 Fastify 默认 1MB（base64 比binary大 33%）
+  app.post('/', { bodyLimit: 10 * 1024 * 1024 }, async (req) => {
     if (!req.user) throw Errors.unauthorized();
     if (!isMinimaxConfigured()) throw Errors.featureDisabled('minimax 解读');
     const { action, payload } = (req.body ?? {}) as {
