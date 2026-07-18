@@ -1,0 +1,42 @@
+.page { min-height: 100vh; background: linear-gradient(180deg, #f0faf7 0%, #f5f6f8 30%); padding: 32rpx 24rpx 60rpx; box-sizing: border-box; }
+
+.header { text-align: center; margin-bottom: 40rpx; }
+.title { font-size: 40rpx; font-weight: 700; color: #2D9D78; }
+.sub { font-size: 26rpx; color: #888; margin-top: 12rpx; }
+
+.upload-card {
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 60rpx 32rpx;
+  text-align: center;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.05);
+  border: 2rpx dashed #2D9D78;
+}
+.upload-card:active { opacity: 0.7; }
+.upload-card.loading { border-color: #ccc; }
+.upload-icon { font-size: 80rpx; line-height: 1; margin-bottom: 20rpx; }
+.upload-text { font-size: 30rpx; font-weight: 600; color: #2D9D78; }
+.upload-hint { font-size: 24rpx; color: #999; margin-top: 12rpx; }
+
+.error {
+  margin-top: 24rpx;
+  background: #fff4e6;
+  color: #d46b08;
+  padding: 20rpx 24rpx;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+  border-left: 6rpx solid #fa8c16;
+}
+
+.result-card {
+  margin-top: 32rpx;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 32rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.05);
+  border-left: 8rpx solid #2D9D78;
+}
+.result-title { font-size: 30rpx; font-weight: 700; color: #2D9D78; margin-bottom: 20rpx; }
+.result-text { font-size: 28rpx; color: #333; line-height: 1.8; white-space: pre-wrap; }
+
+.tip { margin-top: 40rpx; font-size: 24rpx; color: #aaa; text-align: center; line-height: 1.6; }

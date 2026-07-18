@@ -23,7 +23,8 @@
     "pages/report-detail/index",
     "pages/membership/index",
     "pages/report-monthly/index",
-    "pages/more/index"
+    "pages/more/index",
+    "pages/interpret/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",

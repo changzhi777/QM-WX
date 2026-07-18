@@ -1,0 +1,23 @@
+<view class="page">
+  <view class="header">
+    <view class="title">📊 资料解读</view>
+    <view class="sub">上传佳明 FIT 文件，AI 解读你的运动数据</view>
+  </view>
+
+  <view class="upload-card {{loading ? 'loading' : ''}}" bindtap="onChooseFile">
+    <view class="upload-icon">{{loading ? '⏳' : '📁'}}</view>
+    <view class="upload-text">{{loading ? '解读中…请稍候' : '上传佳明 FIT 文件'}}</view>
+    <view class="upload-hint" wx:if="{{fileName && !loading}}">已选：{{fileName}}</view>
+  </view>
+
+  <view class="error" wx:if="{{error}}">⚠️ {{error}}</view>
+
+  <view class="result-card" wx:if="{{interpretation}}">
+    <view class="result-title">✨ AI 解读</view>
+    <view class="result-text">{{interpretation}}</view>
+  </view>
+
+  <view class="tip" wx:if="{{!interpretation && !loading && !error}}">
+    💡 提示：从佳明 Connect / COROS 等 app 导出 FIT 文件，从微信文件选择上传。
+  </view>
+</view>
