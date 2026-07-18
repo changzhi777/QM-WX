@@ -1,0 +1,41 @@
+<view class="page">
+  <!-- 健康数据条（从 mine 移来）-->
+  <data-strip
+    mode="light"
+    steps="{{todayHealth.steps}}"
+    restingHr="{{todayHealth.restingHr}}"
+    sleepHours="{{todayHealth.sleepHours}}"
+    healthScore="{{todayHealth.healthScore}}"
+  />
+
+  <!-- 运动 -->
+  <view class="card">
+    <view class="card-title">运动</view>
+    <view class="entry-grid">
+      <view class="entry-item" bindtap="goSportTab"><view class="entry-icon">🏃</view><view class="entry-label">打卡</view></view>
+      <view class="entry-item" bindtap="goShoes"><view class="entry-icon">👟</view><view class="entry-label">跑鞋</view></view>
+      <view class="entry-item" bindtap="goTraining"><view class="entry-icon">📋</view><view class="entry-label">训练</view></view>
+      <view class="entry-item" bindtap="goRanking"><view class="entry-icon">🏆</view><view class="entry-label">榜单</view></view>
+    </view>
+  </view>
+
+  <!-- 数据 -->
+  <view class="card">
+    <view class="card-title">数据</view>
+    <view class="entry-grid">
+      <view class="entry-item" bindtap="goDeviceBind"><view class="entry-icon">📤</view><view class="entry-label">上传数据</view></view>
+      <view class="entry-item" bindtap="goHealth"><view class="entry-icon">❤️</view><view class="entry-label">健康</view></view>
+      <view class="entry-item" bindtap="goInsight"><view class="entry-icon">🔍</view><view class="entry-label">AI 洞察</view></view>
+      <view class="entry-item" bindtap="goDiet"><view class="entry-icon">🥗</view><view class="entry-label">饮食日记</view></view>
+    </view>
+  </view>
+
+  <!-- 服务 -->
+  <view class="card">
+    <view class="card-title">服务</view>
+    <view class="entry-grid">
+      <view class="entry-item" bindtap="goFeed"><view class="entry-icon">📰</view><view class="entry-label">动态</view></view>
+      <view class="entry-item" bindtap="goContent"><view class="entry-icon">🎯</view><view class="entry-label">赛事</view></view>
+    </view>
+  </view>
+</view>

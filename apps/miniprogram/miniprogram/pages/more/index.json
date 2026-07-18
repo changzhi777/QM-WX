@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "更多功能",
+  "usingComponents": {
+    "data-strip": "../../components/data-strip/index"
+  }
+}

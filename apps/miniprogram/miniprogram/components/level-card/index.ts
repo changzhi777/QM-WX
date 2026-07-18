@@ -6,6 +6,8 @@ Component({
     growthLevel: { type: String, value: 'free' },  // free/bronze/silver/gold/diamond
     totalPointsEarned: { type: Number, value: 0 },
     nickname: { type: String, value: '跑者' },
+    avatar: { type: String, value: '🏃' },          // V0.2.32 融合 user-card：头像 emoji
+    memberLevel: { type: String, value: 'free' },   // V0.2.32 融合：会员等级（≠free 显👑皇冠）
   },
   data: {
     icon: '🌱',

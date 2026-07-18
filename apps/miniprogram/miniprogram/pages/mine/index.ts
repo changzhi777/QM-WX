@@ -146,7 +146,6 @@ Page({
   },
 
   // ===== 入口 =====
-  goSportTab() { wx.switchTab({ url: '/pages/sport/index' }); },
   goProfile() { wx.navigateTo({ url: '/pages/profile/index' }); },
   goMembership() {
     wx.navigateTo({ url: '/pages/membership/index' });
@@ -197,20 +196,11 @@ Page({
 
   goDeviceBind() { wx.navigateTo({ url: '/pages/device/index' }); },
   goRunner() { wx.navigateTo({ url: '/pages/runner/index' }); },
-  goInsight() { wx.navigateTo({ url: '/pages/insight/index' }); },
-  goDiet() { wx.navigateTo({ url: '/pages/diet/index' }); },
-  goShoes() { wx.navigateTo({ url: '/pages/shoes/index' }); },
-  goHealth() { wx.navigateTo({ url: '/pages/health/index' }); },
-  goTraining() { wx.navigateTo({ url: '/pages/training/index' }); },
-  goContent() { wx.navigateTo({ url: '/pages/content-list/index' }); },
-  goRanking() { wx.navigateTo({ url: '/pages/ranking/index' }); },
-  goFeed() { wx.navigateTo({ url: '/pages/feed/index' }); },
+  /** V0.2.32 更多功能（待定页，收纳原型没有的功能）*/
+  goMore() { wx.navigateTo({ url: '/pages/more/index' }); },
 
   /** 健康助手（原 AI 私教，V0.2.4 改名）*/
   goAiCoach() { wx.switchTab({ url: '/pages/ai-coach/index' }); },
-
-  /** V0.2.9 prototype 借鉴：3 列邀请奖励卡点击 → membership 页 */
-  onTapInviteBonus() { wx.navigateTo({ url: '/pages/membership/index' }); },
 
   goAgreement() { wx.navigateTo({ url: '/pages/agreement/index' }); },
 

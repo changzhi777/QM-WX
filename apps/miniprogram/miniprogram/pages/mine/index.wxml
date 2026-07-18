@@ -2,90 +2,104 @@
   <error-state wx:if="{{error}}" message="{{errorMsg}}" bind:retry="refresh" />
 
   <block wx:if="{{!error}}">
-  <!-- A 用户卡 -->
-  <view class="card user-card">
-    <view class="user-row" bindtap="goProfile">
-      <avatar-badge member-level="{{memberLevel}}" growth-level="{{growthLevel}}">
-        <view class="avatar">🏃</view>
-      </avatar-badge>
-      <view class="user-info">
-        <view class="name">{{user.nickname || '跑者'}}</view>
-        <view class="status">{{memberLabel}} · 已绑定微信运动</view>
-      </view>
-    </view>
-    <button class="upgrade-btn" bindtap="goMembership" wx:if="{{!isMember}}">
-      <text>升级会员 — 解锁完整解读 + 无限问答</text>
-      <text class="arrow">›</text>
-    </button>
-  </view>
-
-  <!-- V0.2.9 prototype 借鉴：3 列邀请奖励卡（跳 membership） -->
-  <invite-bonus-card bind:tap="onTapInviteBonus" />
-
-  <!-- B 数据概览条 -->
-  <view class="card strip-card">
-    <!-- V0.2.9 prototype 借鉴：紫色等级卡 + 进度条 -->
+    <!-- 顶部：融合 level-card（头像+名字+成长等级+积分进度）替代原 user-card -->
     <level-card
-      wx:if="{{growthLevel}}"
+      wx:if="{{user}}"
       growth-level="{{growthLevel}}"
       total-points-earned="{{totalPointsEarned}}"
       nickname="{{user.nickname || '跑者'}}"
+      avatar="🏃"
+      member-level="{{memberLevel}}"
     />
-    <data-strip
-      mode="light"
-      steps="{{todayHealth.steps}}"
-      restingHr="{{todayHealth.restingHr}}"
-      sleepHours="{{todayHealth.sleepHours}}"
-      healthScore="{{todayHealth.healthScore}}"
-    />
-  </view>
 
-  <!-- C 运动 -->
-  <view class="card">
-    <view class="card-title">运动</view>
-    <view class="entry-grid">
-      <view class="entry-item" bindtap="goSportTab"><view class="entry-icon">🏃</view><view class="entry-label">打卡</view></view>
-      <view class="entry-item" bindtap="goShoes"><view class="entry-icon">👟</view><view class="entry-label">跑鞋</view></view>
-      <view class="entry-item" bindtap="goTraining"><view class="entry-icon">📋</view><view class="entry-label">训练</view></view>
-      <view class="entry-item" bindtap="goRanking"><view class="entry-icon">🏆</view><view class="entry-label">榜单</view></view>
+    <!-- 非会员升级入口（原型 profile-header 升级按钮）-->
+    <view class="upgrade-cell" wx:if="{{!isMember}}" bindtap="goMembership">
+      <text class="upgrade-text">⭐ 升级会员 — 解锁完整解读 + 无限问答</text>
+      <text class="mi-arrow">›</text>
     </view>
-  </view>
 
-  <!-- D 数据 -->
-  <view class="card">
-    <view class="card-title">数据</view>
-    <view class="entry-grid">
-      <view class="entry-item" bindtap="goDeviceBind"><view class="entry-icon">📤</view><view class="entry-label">上传数据</view></view>
-      <view class="entry-item" bindtap="goHealth"><view class="entry-icon">❤️</view><view class="entry-label">健康</view></view>
-      <view class="entry-item" bindtap="goInsight"><view class="entry-icon">🔍</view><view class="entry-label">AI 洞察</view></view>
-      <view class="entry-item" bindtap="goDiet"><view class="entry-icon">🥗</view><view class="entry-label">饮食日记</view></view>
+    <!-- 设备与数据 -->
+    <view class="section">
+      <view class="section-title">设备与数据</view>
+      <view class="menu-section">
+        <view class="menu-item" bindtap="goDeviceBind">
+          <view class="mi-icon bg-green">📱</view>
+          <view class="mi-text">设备绑定</view>
+          <view class="mi-arrow">›</view>
+        </view>
+        <view class="menu-item" bindtap="goProfile">
+          <view class="mi-icon bg-blue">📊</view>
+          <view class="mi-text">数据授权管理</view>
+          <view class="mi-arrow">›</view>
+        </view>
+      </view>
     </view>
-  </view>
 
-  <!-- E 服务 -->
-  <view class="card">
-    <view class="card-title">服务</view>
-    <view class="entry-grid">
-      <view class="entry-item" bindtap="goAiCoach"><view class="entry-icon">🤖</view><view class="entry-label">健康助手</view></view>
-      <view class="entry-item" bindtap="goRunner"><view class="entry-icon">📊</view><view class="entry-label">解读报告</view></view>
-      <view class="entry-item" bindtap="goFeed"><view class="entry-icon">📰</view><view class="entry-label">动态</view></view>
-      <view class="entry-item" bindtap="goContent"><view class="entry-icon">🎯</view><view class="entry-label">赛事</view></view>
+    <!-- AI服务 -->
+    <view class="section">
+      <view class="section-title">AI服务</view>
+      <view class="menu-section">
+        <view class="menu-item" bindtap="goAiCoach">
+          <view class="mi-icon bg-purple">🤖</view>
+          <view class="mi-text">健康助手 <text class="new-label">NEW</text></view>
+          <view class="mi-arrow">›</view>
+        </view>
+        <view class="menu-item" bindtap="goRunner">
+          <view class="mi-icon bg-orange">📋</view>
+          <view class="mi-text">我的解读报告</view>
+          <view class="mi-arrow">›</view>
+        </view>
+        <view class="menu-item" bindtap="goAiCoach">
+          <view class="mi-icon bg-pink">💬</view>
+          <view class="mi-text">问答历史</view>
+          <view class="mi-arrow">›</view>
+        </view>
+      </view>
     </view>
-  </view>
 
-  <!-- F 设置卡 -->
-  <view class="card">
-    <view class="cell" bindtap="onShowNotif">
-      <text class="cell-label">消息中心</text>
-      <text class="cell-badge" wx:if="{{notifUnread > 0}}">{{notifUnread > 99 ? '99+' : notifUnread}}</text>
-      <text class="cell-arrow">›</text>
+    <!-- 通用 -->
+    <view class="section">
+      <view class="section-title">通用</view>
+      <view class="menu-section">
+        <view class="menu-item" bindtap="onShowNotif">
+          <view class="mi-icon bg-cyan">🔔</view>
+          <view class="mi-text">消息中心</view>
+          <text class="mi-badge" wx:if="{{notifUnread > 0}}">{{notifUnread > 99 ? '99+' : notifUnread}}</text>
+          <view class="mi-arrow">›</view>
+        </view>
+        <view class="menu-item" bindtap="goProfile">
+          <view class="mi-icon bg-gray">⚙️</view>
+          <view class="mi-text">设置</view>
+          <view class="mi-arrow">›</view>
+        </view>
+        <button class="menu-item cell-btn" open-type="contact" session-from="mine_page">
+          <view class="mi-icon bg-gray">❓</view>
+          <view class="mi-text">帮助与反馈</view>
+          <view class="mi-arrow">›</view>
+        </button>
+        <view class="menu-item" bindtap="goAgreement">
+          <view class="mi-icon bg-gray">📄</view>
+          <view class="mi-text">用户协议</view>
+          <view class="mi-arrow">›</view>
+        </view>
+      </view>
     </view>
-    <view class="cell" bindtap="goProfile"><text class="cell-label">设置（资料/账号绑定）</text><text class="cell-arrow">›</text></view>
-    <button class="cell cell-btn" open-type="contact" session-from="mine_page">帮助与反馈</button>
-    <view class="cell" bindtap="goAgreement"><text class="cell-label">用户协议</text><text class="cell-arrow">›</text></view>
-  </view>
 
-  <view class="logout" wx:if="{{user}}" bindtap="onTapReactivate">重新激活授权</view>
+    <!-- 更多功能（待定入口 → pages/more）-->
+    <view class="section">
+      <view class="menu-section">
+        <view class="menu-item" bindtap="goMore">
+          <view class="mi-icon bg-more">📋</view>
+          <view class="mi-text">
+            更多功能
+            <view class="mi-sub">打卡/跑鞋/训练/榜单/健康/饮食/动态/赛事</view>
+          </view>
+          <view class="mi-arrow">›</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="logout" wx:if="{{user}}" bindtap="onTapReactivate">重新激活授权</view>
   </block>
 
   <!-- 消息弹层（V0.1.143 合并 notification，保留）-->

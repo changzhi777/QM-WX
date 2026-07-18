@@ -1,9 +1,13 @@
+<!-- V0.2.32 升级：融合 user-card（头像+名字+会员皇冠），作 mine 顶部主卡 -->
 <view class="level-card">
   <view class="row">
-    <view class="level-icon">{{icon}}</view>
+    <view class="avatar">{{avatar}}</view>
     <view class="level-meta">
-      <view class="level-title">{{nickname}} · {{label}}</view>
-      <view class="level-points">累计积分 <text class="num">{{totalPointsEarned}}</text></view>
+      <view class="name-row">
+        <text class="name">{{nickname}}</text>
+        <text class="vip-tag" wx:if="{{memberLevel && memberLevel !== 'free'}}">👑</text>
+      </view>
+      <view class="level-line">{{icon}} {{label}} · 累计积分 <text class="num">{{totalPointsEarned}}</text></view>
     </view>
     <view class="level-tier">{{growthLevel === 'diamond' ? 'MAX' : (nextLevelLabel || '—')}}</view>
   </view>

@@ -22,7 +22,8 @@
     "pages/insight/index",
     "pages/report-detail/index",
     "pages/membership/index",
-    "pages/report-monthly/index"
+    "pages/report-monthly/index",
+    "pages/more/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",
