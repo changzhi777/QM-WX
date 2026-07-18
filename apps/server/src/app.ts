@@ -25,6 +25,7 @@ import { authRoutes } from './modules/auth/auth.routes.js';
 import { uploadRoutes } from './modules/upload/upload.routes.js';
 import { foodRoutes } from './modules/food/food.routes.js';
 import { ocrRoutes } from './modules/ocr/ocr.routes.js';
+import { interpretRoutes } from './modules/interpret/routes.js';
 import { wxpayRoutes } from './modules/wxpay/wxpay.routes.js';
 import { weeklyReportRoutes } from './modules/weekly-report/weekly-report.routes.js';
 import { deviceRoutes } from './modules/device/device.routes.js';
@@ -137,6 +138,7 @@ export async function buildApp() {
   await app.register(uploadRoutes, { prefix: '/api/upload' });
   await app.register(foodRoutes, { prefix: '/api/food' }); // V0.2.0 FatSecret 饮食搜索
   await app.register(ocrRoutes, { prefix: '/api/ocr' }); // V0.2.1 腾讯云 OCR SDK（通用/高精度/身份证）
+  await app.register(interpretRoutes, { prefix: '/api/interpret' }); // V0.2.33 资料解读（minimax M3）
   await app.register(userRoutes, { prefix: '/api/user' });
   await app.register(sportRoutes, { prefix: '/api/sport' });
   await app.register(mallRoutes, { prefix: '/api/mall' });

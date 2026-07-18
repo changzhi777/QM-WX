@@ -79,6 +79,7 @@ model User {
   spo2Records            SpO2Record[] // V0.1.43 血氧历史（BLE 0x1822）
   sleepRecords           SleepRecord[] // V0.1.43 睡眠历史（小米数据包导入）
   bodyCompositionRecords BodyCompositionRecord[] // V0.1.124 体脂秤数据（BLE 小米体脂秤）
+  interpretRecords       InterpretRecord[] // V0.2.33 资料解读（minimax M3）
   corosRawEvents         CorosRawEvent[] // V0.1.130 COROS Terra webhook 原始数据
   conversationTurns      ConversationTurn[] // V0.1.139 AI 私教对话（多轮记忆）
   dailyReports           DailyReport[] // V0.1.144 每日 AI 健康简报（健康分数+AI 解读）
@@ -1190,4 +1191,23 @@ model AdminLoginLog {
   admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
 
   @@index([adminId, createdAt])
+}
+
+// V0.2.33 interpret module：资料解读记录（佳明 FIT/ZIP / 病历图片 / 运动截图 → minimax M3 解读）
+model InterpretRecord {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String   // garmin_fit | garmin_zip | medical | screenshot
+  inputKey     String   // 上传资料 COS object key
+  result       String   @db.Text // minimax 解读文本
+  model        String   // 模型名（MiniMax-M3）
+  inputTokens  Int?     // 输入 token 数
+  outputTokens Int?     // 输出 token 数
+  cost         Float?   // 估算费用（元）
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([type])
 }

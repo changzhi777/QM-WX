@@ -66,6 +66,12 @@ const EnvSchema = z.object({
   LLM_MODEL: z.string().optional(),
   LLM_VISION_MODEL: z.string().optional(),
 
+  // V0.2.33 interpret module：MiniMax M3（Anthropic 兼容协议，解读佳明/病历/截图资料）
+  // base URL 默认国内官方 anthropic 兼容端点；key 缺省时 interpret route 返 503（未配置）
+  MINIMAX_API_KEY: z.string().optional(),
+  MINIMAX_BASE_URL: z.string().url().default('https://api.minimaxi.com/anthropic'),
+  MINIMAX_MODEL: z.string().default('MiniMax-M3'),
+
   // V0.1.144 MQTT（EMQX Cloud Serverless，AI 简报推送；缺省走 API 拉）
   MQTT_HOST: z.string().default('rd133da1.ala.cn-hangzhou.emqxsl.cn'),
   MQTT_PORT: z.coerce.number().default(8883),

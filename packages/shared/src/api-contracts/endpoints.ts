@@ -112,6 +112,10 @@ export const ENDPOINTS = {
     generalAccurate: '/api/ocr', // 通用高精度（模糊截图增强）
     idCard: '/api/ocr', // 身份证实名（赛事报名/账户安全）
   },
+  interpret: {
+    // V0.2.33 资料解读（minimax M3 Anthropic 兼容）
+    garmin: '/api/interpret', // 佳明 FIT 解读（parseAsync → minimax → 落表）
+  },
   device: {
     listBindings: '/api/device',
     startOAuth: '/api/device',
