@@ -1,20 +1,20 @@
-// components/ai-quick-cards — 健康助手 5 色分类卡（V0.2.9 prototype 借鉴）
-// 替代原 QUICK_QUESTIONS 横滚胶囊：5 张分类卡（膳食/科学/商业/思维/分享 5 色：绿/紫/黄/白/橙）
-// 每张卡显示 emoji icon + 引导语，点击触发 onTap 事件（父级把 q + tag 注入到 ai-coach 输入框）
-type ColorKey = 'green' | 'purple' | 'yellow' | 'white' | 'orange';
+// components/ai-quick-cards — 健康助手分类卡（V0.2.9 prototype 借鉴 / V0.2.30 对齐原型 4 卡 2×2）
+// 4 张分类卡 2×2 网格（恢复/损伤/睡眠/饮食），每卡 icon + 问题 + 副标题
+// 点击触发 onTap 事件（父级把 q 注入到 ai-coach 输入框发送）
+type ColorKey = 'green' | 'purple' | 'yellow' | 'orange';
 interface Card {
   tag: string;
   q: string;
+  sub: string;
   icon: string;
   color: ColorKey;
 }
 
 const DEFAULT_CARDS: Card[] = [
-  { tag: '膳食',   q: '我今天该吃什么？',         icon: '🥗', color: 'green' },
-  { tag: '科学',   q: '用科学角度分析我的训练', icon: '🔬', color: 'purple' },
-  { tag: '商业',   q: '跑步相关的商业装备推荐', icon: '🛒', color: 'yellow' },
-  { tag: '思维',   q: '怎么保持跑步动力？',     icon: '💡', color: 'white' },
-  { tag: '分享',   q: '帮我写一段跑步感悟文案', icon: '🎙️', color: 'orange' },
+  { tag: '恢复', q: '今天该怎么练？',       sub: '基于你的恢复状态', icon: '🏃', color: 'green' },
+  { tag: '损伤', q: '跑步膝盖疼怎么办？',   sub: '运动损伤评估',     icon: '💪', color: 'orange' },
+  { tag: '睡眠', q: '最近睡不好怎么调？',   sub: '睡眠优化建议',     icon: '😴', color: 'purple' },
+  { tag: '饮食', q: '减脂期吃什么？',       sub: '饮食营养指导',     icon: '🍱', color: 'yellow' },
 ];
 
 Component({

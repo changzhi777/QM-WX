@@ -2,7 +2,7 @@
 <view class="coach-page">
   <!-- 头部：健康助手 + 健康提醒 + 数据概览条 -->
   <view class="ai-header" wx:if="{{todayData}}">
-    <view class="ai-page-title">健康助手</view>
+    <view class="ai-page-title">🤖 健康助手</view>
     <view class="ai-page-sub">💡 健康提醒</view>
     <data-strip
       mode="dark"
@@ -46,8 +46,17 @@
     </view>
   </view>
 
-  <!-- V0.2.9 prototype 借鉴：5 色分类卡（绿/紫/黄/白/橙）替横滚胶囊 -->
+  <!-- V0.2.9 prototype 借鉴 / V0.2.30 对齐原型：4 色分类卡 2×2（恢复/损伤/睡眠/饮食）-->
   <ai-quick-cards wx:if="{{!hasHistory && !sending}}" bind:tap="onQuickCardTap" />
+
+  <!-- V0.2.30 原型对齐：AI 建议气泡（chat-preview，今日 dailyReport reportText）-->
+  <view class="ai-advice-preview" wx:if="{{reportAdvice && !hasHistory && !sending}}">
+    <view class="preview-title">✨ 最近建议</view>
+    <view class="ai-bubble">
+      <view class="ai-bubble-tag">青沐AI</view>
+      <view class="ai-bubble-text">{{reportAdvice}}</view>
+    </view>
+  </view>
 
   <!-- 消息列表 -->
   <scroll-view class="msg-list" scroll-y scroll-top="{{scrollTop}}" scroll-with-animation enhanced show-scrollbar="{{false}}">

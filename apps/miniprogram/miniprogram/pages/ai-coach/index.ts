@@ -46,6 +46,7 @@ Page({
     quickQuestions: QUICK_QUESTIONS,
     alert: null as string | null, // V0.1.144 AI 主动提醒
     todayData: null as { steps: number; restingHr: number | null; sleepHours: number | null; healthScore: number } | null,
+    reportAdvice: '', // V0.2.30 AI 建议气泡（今日 dailyReport reportText）
     hasHistory: false,
     showConversations: false,
     conversationList: [] as Array<{ conversationId: string; lastMessage: string; lastTime: string; messageCount: number }>,
@@ -71,13 +72,17 @@ Page({
     this.loadAlert(); // V0.1.144 AI 主动提醒 + 今日数据条
   },
 
-  /** V0.1.144 AI 主动提醒（基于今日数据：睡眠不足/心率异常/步数低）+ 头部数据条 */
+  /** V0.1.144 AI 主动提醒（基于今日数据）+ 头部数据条 + V0.2.30 AI 建议气泡（dailyReport reportText）*/
   async loadAlert() {
     try {
-      const res = await api.call<{ alert: string | null; healthScore: number; steps: number; restingHr: number | null; sleepHours: number | null }>('aiCoach', 'proactiveAlert', {});
+      const [res, reportRes] = await Promise.all([
+        api.call<{ alert: string | null; healthScore: number; steps: number; restingHr: number | null; sleepHours: number | null }>('aiCoach', 'proactiveAlert', {}),
+        api.call<{ reportText?: string }>('stats', 'dailyReport', {}).catch(() => null),
+      ]);
       this.setData({
         alert: res.alert,
         todayData: { steps: res.steps, restingHr: res.restingHr, sleepHours: res.sleepHours, healthScore: res.healthScore },
+        reportAdvice: reportRes?.reportText || '',
       });
     } catch {
       // 静默（无数据时不阻塞）

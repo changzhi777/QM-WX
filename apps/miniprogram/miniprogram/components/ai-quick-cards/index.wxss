@@ -1,19 +1,19 @@
 .quick-cards {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12rpx;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16rpx;
   padding: 16rpx 24rpx;
 }
 
 .quick-card {
-  border-radius: 16rpx;
-  padding: 16rpx 8rpx;
+  border-radius: 20rpx;
+  padding: 28rpx 22rpx;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  text-align: center;
+  align-items: flex-start;
   cursor: pointer;
   transition: transform 0.15s ease;
+  min-height: 168rpx;
 }
 .quick-card:active {
   transform: scale(0.96);
@@ -31,35 +31,26 @@
   background: linear-gradient(135deg, #fdecc0, #fbd677);
   color: #7a4b06;
 }
-.card-white {
-  background: #f5f6f5;
-  color: #1a1a1a;
-  border: 1rpx solid #e9e9e9;
-}
 .card-orange {
   background: linear-gradient(135deg, #ffb888, #e8830c);
   color: #fff;
 }
 
 .card-icon {
-  font-size: 36rpx;
+  font-size: 44rpx;
   line-height: 1;
-  margin-bottom: 8rpx;
-}
-
-.card-tag {
-  font-size: 22rpx;
-  font-weight: 600;
-  margin-bottom: 4rpx;
-  letter-spacing: 1rpx;
+  margin-bottom: 12rpx;
 }
 
 .card-q {
-  font-size: 18rpx;
-  opacity: 0.88;
+  font-size: 28rpx;
+  font-weight: 600;
   line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  margin-bottom: 6rpx;
+}
+
+.card-sub {
+  font-size: 22rpx;
+  opacity: 0.85;
+  line-height: 1.3;
 }
