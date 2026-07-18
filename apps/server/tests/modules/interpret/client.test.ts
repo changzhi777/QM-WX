@@ -70,4 +70,37 @@ describe('minimax client (V0.2.33 Anthropic 兼容)', () => {
     const r = await callMinimax('s', [{ role: 'user', content: 'd' }]);
     expect(r.content).toBe('段1段2');
   });
+
+  it('P0: fetch reject（网络错误）抛', async () => {
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('network down'));
+    await expect(callMinimax('s', [{ role: 'user', content: 'd' }])).rejects.toThrow(/network down/);
+  });
+
+  it('P0: empty content（无 text block）返空串不崩', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ content: [], usage: { input_tokens: 5 } }), { status: 200 }),
+    );
+    const r = await callMinimax('s', [{ role: 'user', content: 'd' }]);
+    expect(r.content).toBe('');
+    expect(r.inputTokens).toBe(5);
+    expect(r.outputTokens).toBe(0);
+  });
+
+  it('P1: max_tokens 透传到 body', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ content: [{ type: 'text', text: 'x' }], usage: {} }), { status: 200 }),
+    );
+    await callMinimax('s', [{ role: 'user', content: 'd' }], { maxTokens: 4096 });
+    const body = JSON.parse((fetchSpy.mock.calls[0][1] as RequestInit).body as string);
+    expect(body.max_tokens).toBe(4096);
+  });
+
+  it('P1: usage 缺失默认 tokens=0', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify({ content: [{ type: 'text', text: 'x' }] }), { status: 200 }),
+    );
+    const r = await callMinimax('s', [{ role: 'user', content: 'd' }]);
+    expect(r.inputTokens).toBe(0);
+    expect(r.outputTokens).toBe(0);
+  });
 });

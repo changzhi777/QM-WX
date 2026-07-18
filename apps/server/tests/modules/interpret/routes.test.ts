@@ -92,4 +92,13 @@ describe('interpret routes (V0.2.33)', () => {
     });
     await app.close();
   });
+
+  it('P2: bodyLimit 10MB（5MB base64 body 通过，默认 1MB 会 413）', async () => {
+    mocks.interpretGarminFit.mockResolvedValue({ interpretation: '大文件解读', recordId: 'rec-big' });
+    const big = 'A'.repeat(5 * 1024 * 1024); // 5MB base64（超默认 1MB bodyLimit）
+    const app = await buildApp();
+    const r = await post(app, 'garmin', { fileBase64: big, inputKey: 'k' });
+    expect(r.statusCode).toBe(200);
+    await app.close();
+  });
 });
