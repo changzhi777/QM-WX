@@ -38,6 +38,7 @@ describe('statsService.dailyReport (V0.1.144)', () => {
 
   it('无报告 → 聚合数据 + 算分 + 生成文本 + 存表 + MQTT 推', async () => {
     mockedPrisma.dailyReport.findUnique.mockResolvedValue(null);
+    mockedPrisma.dailyReport.findMany.mockResolvedValue([] as never); // V0.2.30 avgSteps 查询：无历史
     mockedPrisma.weRunRecord.findUnique.mockResolvedValue({ step: 5000 } as never);
     mockedPrisma.heartRateRecord.findFirst.mockResolvedValue({ value: 70 } as never);
     mockedPrisma.sleepRecord.findUnique.mockResolvedValue({ durationSeconds: 25200 } as never); // 7h
@@ -46,13 +47,15 @@ describe('statsService.dailyReport (V0.1.144)', () => {
     const r = await statsService.dailyReport('u1', {});
 
     expect(r.healthScore).toBeGreaterThan(0);
-    expect(r.reportText).toContain('健康分数');
+    expect(r.reportText).toContain('AI建议');
+    expect(r.reportText).toContain('步数');
     expect(r.steps).toBe(5000);
     expect(mockedPrisma.dailyReport.create).toHaveBeenCalled();
   });
 
   it('睡眠不足 → 生成 alertText', async () => {
     mockedPrisma.dailyReport.findUnique.mockResolvedValue(null);
+    mockedPrisma.dailyReport.findMany.mockResolvedValue([] as never); // V0.2.30 avgSteps 查询：无历史
     mockedPrisma.weRunRecord.findUnique.mockResolvedValue({ step: 3000 } as never);
     mockedPrisma.heartRateRecord.findFirst.mockResolvedValue({ value: 70 } as never);
     mockedPrisma.sleepRecord.findUnique.mockResolvedValue({ durationSeconds: 18000 } as never); // 5h

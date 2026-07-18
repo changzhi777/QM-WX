@@ -259,7 +259,15 @@ export const statsService = {
       getTodaySteps(userId, date), getRestingHr(userId, date), getLastNightSleep(userId, date),
     ]);
     const healthScore = calcHealthScore(steps, restingHr, sleepHours);
-    const reportText = buildReportText(steps, restingHr, sleepHours, healthScore);
+    // V0.2.30 充实简报：最近 7 日平均步数（对比「远低于平均水平」用）
+    const recent = await prisma.dailyReport.findMany({
+      where: { userId, date: { lt: date } },
+      orderBy: { date: 'desc' },
+      take: 7,
+      select: { steps: true },
+    });
+    const avgSteps = recent.length ? Math.round(recent.reduce((s, r) => s + r.steps, 0) / recent.length) : null;
+    const reportText = buildReportText(steps, restingHr, sleepHours, healthScore, avgSteps);
     const alertText = buildAlertText(steps, restingHr, sleepHours);
     const report = await prisma.dailyReport.create({
       data: { userId, date, healthScore, reportText, alertText, steps, restingHr, sleepHours },
@@ -522,14 +530,55 @@ function calcHealthScore(steps: number, restingHr: number | null, sleepHours: nu
   return Math.round(stepScore + hrScore + sleepScore);
 }
 
-/** 简报文本（规则模板，基于数据 + 分数）*/
-function buildReportText(steps: number, hr: number | null, sleep: number | null, score: number): string {
-  const parts: string[] = [`今日健康分数 ${score} 分`, `步数 ${steps.toLocaleString()} 步${steps < 8000 ? '，低于目标' : '，达标'}`];
-  if (hr != null) parts.push(`静息心率 ${hr} bpm${hr >= 60 && hr <= 80 ? '，良好' : hr > 80 ? '，偏高' : '，偏低'}`);
-  if (sleep != null) parts.push(`昨晚睡眠 ${sleep} 小时${sleep < 7 ? '，不足' : '，充足'}`);
-  if (steps < 8000) parts.push('建议增加日常活动');
-  if (sleep != null && sleep < 6) parts.push('建议今晚早睡');
-  return parts.join('。');
+/** 简报文本（V0.2.30 充实版：数据对比 + 状态判断 + 量化可执行建议）*/
+function buildReportText(steps: number, hr: number | null, sleep: number | null, score: number, avgSteps: number | null): string {
+  void score; // 分数已在卡顶展示，简报正文聚焦数据对比 + 状态 + 建议
+  // ① 数据对比段（步数 vs 历史平均）
+  const lowSteps = avgSteps != null ? steps < avgSteps * 0.6 : steps < 3000;
+  const stepPart = avgSteps != null
+    ? lowSteps
+      ? `你今天步数仅${steps.toLocaleString()}步，远低于你的平均水平（${avgSteps.toLocaleString()}步）`
+      : steps > avgSteps * 1.2
+        ? `你今天步数${steps.toLocaleString()}步，高于你的平均水平（${avgSteps.toLocaleString()}步）`
+        : `你今天步数${steps.toLocaleString()}步，接近你的平均水平（${avgSteps.toLocaleString()}步）`
+    : `你今天步数${steps.toLocaleString()}步${steps < 8000 ? '，低于目标' : '，达标'}`;
+  const sleepPart = sleep != null ? `结合昨晚睡眠仅${formatSleep(sleep)}` : '';
+  const state = judgeState(lowSteps, sleep, hr);
+  const dataSeg = [stepPart, sleepPart, state].filter(Boolean).join('，');
+  // ② AI 建议段（量化、可执行）
+  const advice = buildAdvice(lowSteps, sleep, hr);
+  return `${dataSeg}。\n\n💡 AI建议：${advice}`;
+}
+
+/** 睡眠小时 → "5h12min" 格式 */
+function formatSleep(hours: number): string {
+  const h = Math.floor(hours);
+  const min = Math.round((hours - h) * 60);
+  return min > 0 ? `${h}h${String(min).padStart(2, '0')}min` : `${h}h`;
+}
+
+/** 综合状态判断（步数 + 睡眠 + 心率）*/
+function judgeState(lowSteps: boolean, sleep: number | null, hr: number | null): string {
+  const sleepLack = sleep != null && sleep < 6;
+  if (sleepLack && lowSteps) return '身体处于疲劳恢复期';
+  if (sleepLack) return '身体略显疲态';
+  if (lowSteps) return '活动量偏低';
+  if (hr != null && hr > 80) return '心血管负荷偏高';
+  if (sleep != null && sleep >= 7) return '身体状态良好';
+  return '整体状态平稳';
+}
+
+/** 量化可执行建议（入睡时间 + 运动强度/时长/配速）*/
+function buildAdvice(lowSteps: boolean, sleep: number | null, hr: number | null): string {
+  const tips: string[] = [];
+  if (sleep != null && sleep < 6) tips.push('今晚22:00前入睡');
+  else if (sleep != null && sleep < 7) tips.push('今晚尽量23:00前入睡');
+  const sleepLack = sleep != null && sleep < 6;
+  if (sleepLack && lowSteps) tips.push("明天尝试30分钟低强度有氧（快走/慢跑），配速控制在6'00以内");
+  else if (lowSteps) tips.push("明天增加活动量，尝试40分钟中等强度有氧，配速5'30左右");
+  else if (hr != null && hr > 80) tips.push('明天以低强度恢复为主，避免高强度间歇');
+  else tips.push("明天可保持规律训练，尝试45分钟中等强度跑，配速5'30-6'00");
+  return tips.join('；');
 }
 
 /** 主动提醒（睡眠不足/心率异常/步数过低）*/
