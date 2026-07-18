@@ -1,0 +1,40 @@
+<view class="page">
+  <view class="loading" wx:if="{{loading}}">加载中...</view>
+  <view class="empty" wx:elif="{{months.length === 0}}">
+    <view class="empty-icon">📊</view>
+    <view>暂无历史报告</view>
+    <view class="empty-tip">坚持打卡，积累你的月度健康趋势</view>
+  </view>
+
+  <view class="month-card" wx:for="{{months}}" wx:for-item="m" wx:key="key">
+    <view class="month-header">
+      <text class="month-label">📅 {{m.label}}</text>
+      <text class="month-days">报告 {{m.days}} 天</text>
+    </view>
+    <view class="month-stats">
+      <view class="stat">
+        <view class="stat-val">{{m.avgScore}}</view>
+        <view class="stat-label">均健康分</view>
+      </view>
+      <view class="stat">
+        <view class="stat-val">{{m.avgSteps}}</view>
+        <view class="stat-label">均步数</view>
+      </view>
+      <view class="stat" wx:if="{{m.avgHr !== null}}">
+        <view class="stat-val">{{m.avgHr}}</view>
+        <view class="stat-label">均心率</view>
+      </view>
+      <view class="stat" wx:if="{{m.avgSleep !== null}}">
+        <view class="stat-val">{{m.avgSleep}}</view>
+        <view class="stat-label">均睡眠h</view>
+      </view>
+    </view>
+    <view class="days-list">
+      <view class="day-chip" wx:for="{{m.reports}}" wx:for-item="r" wx:key="id"
+            data-date="{{r.date}}" bindtap="onTapReport">
+        <text class="day-score">{{r.healthScore}}</text>
+        <text class="day-date">{{r.date}}</text>
+      </view>
+    </view>
+  </view>
+</view>

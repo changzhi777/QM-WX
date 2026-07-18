@@ -10,7 +10,6 @@
       <text wx:if="{{weather}}" class="weather">{{weather.icon}} {{weather.city}} · {{weather.text}} {{weather.temperature}}°C</text>
       <text wx:if="{{altitude !== null}}" class="altitude">🏔 {{altitude}}m</text>
     </view>
-    <view class="location" wx:if="{{locationText}}">📍 {{locationText}}</view>
     <view class="score-ring">
       <view class="score-inner">
         <view class="score-num">{{score.score || '--'}}</view>
@@ -27,7 +26,7 @@
   <view class="loading" wx:if="{{loading}}">加载中...</view>
 
   <block wx:elif="{{report}}">
-    <!-- AI 解读卡：摘要 + 查看完整报告 + 解锁 + 问AI深聊 -->
+    <!-- AI 解读卡：摘要 + 查看完整报告 + 解锁 -->
     <view class="ai-card">
       <view class="ai-header">
         <text class="ai-badge">✨ AI解读</text>
@@ -40,7 +39,12 @@
         <view class="ai-action-btn primary" bindtap="goReportDetail">查看完整报告 →</view>
         <view class="ai-action-btn unlock" wx:if="{{!isMember}}" bindtap="goMembership">解锁完整版 👑</view>
       </view>
-      <view class="ai-deep-chat" bindtap="goDeepChat">💬 问 AI 深聊更多建议</view>
+    </view>
+
+    <!-- 运动与天气建议（stats.weatherAnalysis insights）-->
+    <view class="weather-advice-card" wx:if="{{weatherAdvice.length}}">
+      <view class="advice-title">🌡️ 运动与天气建议</view>
+      <view class="advice-item" wx:for="{{weatherAdvice}}" wx:key="*this">{{item}}</view>
     </view>
 
     <!-- 3 数据卡 -->
@@ -63,7 +67,7 @@
     </view>
 
     <!-- 本周趋势（柱顶数值 + 柱底日期）-->
-    <view class="section-title" wx:if="{{weekTrend.length}}">本周趋势 <text class="more">健康分数 7 日</text></view>
+    <view class="section-title" wx:if="{{weekTrend.length}}">本周趋势 <text class="more" bindtap="goMonthlyReport">查看月度 →</text></view>
     <view class="week-chart" wx:if="{{weekTrend.length}}">
       <view class="bars">
         <view class="bar-item" wx:for="{{weekTrend}}" wx:key="index">
@@ -81,12 +85,12 @@
     <!-- 历史 AI 报告（默认 7 日 + 更多展开全部）-->
     <view class="section-title" wx:if="{{history.length}}">
       历史 AI 报告
-      <text class="more" wx:if="{{history.length >= 7}}" bindtap="onToggleHistory">{{showAllHistory ? '收起' : '更多'}}</text>
+      <text class="more" wx:if="{{history.length >= 7}}" bindtap="goMonthlyReport">月度报告 →</text>
     </view>
     <view class="history-list" wx:if="{{history.length}}">
       <van-cell-group>
         <van-cell
-          wx:for="{{showAllHistory ? historyAll : history}}"
+          wx:for="{{history}}"
           wx:key="id"
           title="{{item.date}}"
           label="{{item.reportText}}"

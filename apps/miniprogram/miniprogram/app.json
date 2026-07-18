@@ -21,7 +21,8 @@
     "pages/diet/index",
     "pages/insight/index",
     "pages/report-detail/index",
-    "pages/membership/index"
+    "pages/membership/index",
+    "pages/report-monthly/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",

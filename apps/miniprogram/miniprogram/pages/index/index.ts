@@ -1,5 +1,5 @@
 // pages/index/index.ts — 今日 tab（V0.1.144 原型图 + V0.2.4 健康中心改版 + 批 1 趋势带日期）
-// 健康分数环 + AI 摘要卡（查看完整报告/解锁/深聊）+ 3 数据卡 + 本周趋势（数值+日期）+ 历史 AI 报告（7日+更多）
+// 健康分数环 + AI 摘要卡（查看完整报告/解锁）+ 3 数据卡 + 本周趋势（数值+日期）+ 历史 AI 报告（7日+更多）
 import { api } from '../../services/api';
 import { ensureLogin } from '../../utils/auth';
 import { syncWeRunIfFirstToday } from '../../utils/werun';
@@ -47,8 +47,6 @@ Page({
     report: null as DailyReport | null,
     score: null as HealthScoreRes | null,
     history: [] as HistoryItem[],          // 默认显示（最近 7 日）
-    historyAll: [] as HistoryItem[],       // 全部（点"更多"懒加载）
-    showAllHistory: false,
     weekTrend: [] as WeekTrendItem[],      // 本周趋势：分数 + 日期（批 1）
     greeting: '',
     dateStr: '',
@@ -57,11 +55,11 @@ Page({
     reportSummary: '',                     // AI 建议：reportText 前 2 句摘要
     weather: null as { city: string; text: string; temperature: number; feelsLike: number; icon: string } | null,
     altitude: null as number | null,
-    locationText: '' as string,
     latitude: null as number | null,
     longitude: null as number | null,
     uv: 0,                          // V0.2.9 UV 指数（来自 stats.weatherAir）
     uvShow: true,                   // V0.2.9 UV 提示条显示开关
+    weatherAdvice: [] as string[],  // 运动与天气建议（stats.weatherAnalysis insights）
   },
 
   onLoad() {
@@ -83,7 +81,6 @@ Page({
         altitude: res.altitude ? Math.round(res.altitude) : null,
         latitude: res.latitude,
         longitude: res.longitude,
-        locationText: `${res.latitude.toFixed(2)}°, ${res.longitude.toFixed(2)}°`,
       });
     } catch {
       // 授权失败静默（不阻塞首页）
@@ -137,12 +134,13 @@ Page({
       const lat = this.data.latitude;
       const lon = this.data.longitude;
       const coord = lat != null ? { lat, lon } : {};
-      const [reportRes, scoreRes, historyRes, weatherRes, airRes] = await Promise.all([
+      const [reportRes, scoreRes, historyRes, weatherRes, airRes, analysisRes] = await Promise.all([
         api.call<DailyReport>('stats', 'dailyReport', {}),
         api.call<HealthScoreRes>('stats', 'healthScore', {}),
         api.call<{ list: HistoryItem[]; total: number }>('stats', 'dailyReportList', { page: 1, pageSize: 7 }),
         api.call<{ city: string; text: string; temperature: number; feelsLike: number; icon: string }>('stats', 'weather', coord),
         api.call<{ uv?: number }>('stats', 'weatherAir', coord).catch(() => null),  // V0.2.9 UV 提示：失败静默（不阻塞首页）
+        api.call<{ sufficient?: boolean; insights?: string[] }>('stats', 'weatherAnalysis', {}).catch(() => null),  // 运动与天气建议：失败静默
       ]);
       // V0.2.9 短期 banner 持久化：单日关了就关，不存盘
       const uv = (airRes && typeof airRes.uv === 'number') ? airRes.uv : 0;
@@ -160,6 +158,7 @@ Page({
         uv,
         isMember,
         reportSummary: this.summarizeReport(reportRes.reportText),
+        weatherAdvice: (analysisRes && analysisRes.insights) ? analysisRes.insights : [],
         loading: false,
       });
     } catch (e) {
@@ -168,22 +167,9 @@ Page({
     }
   },
 
-  /** 历史 AI 报告：点"更多"懒加载全部，再点"收起" */
-  async onToggleHistory() {
-    if (this.data.showAllHistory) {
-      this.setData({ showAllHistory: false });
-      return;
-    }
-    if (this.data.historyAll.length === 0) {
-      try {
-        const res = await api.call<{ list: HistoryItem[]; total: number }>('stats', 'dailyReportList', { page: 1, pageSize: 100 });
-        this.setData({ historyAll: res.list });
-      } catch {
-        wx.showToast({ title: '加载失败', icon: 'none' });
-        return;
-      }
-    }
-    this.setData({ showAllHistory: true });
+  /** 「更多」→ 月度健康报告页（按月聚合展示历史）*/
+  goMonthlyReport() {
+    wx.navigateTo({ url: '/pages/report-monthly/index' });
   },
 
   /** 查看完整报告 → report-detail 详情页（今日）*/
@@ -195,11 +181,6 @@ Page({
   onTapHistory(e: WechatMiniprogram.TouchEvent) {
     const date = (e.currentTarget.dataset as { date?: string }).date;
     wx.navigateTo({ url: `/pages/report-detail/index${date ? '?date=' + date : ''}` });
-  },
-
-  /** 问 AI 深聊 → 健康助手 tab */
-  goDeepChat() {
-    wx.switchTab({ url: '/pages/ai-coach/index' });
   },
 
   /** 解锁完整版 → 会员引导（membership 页未建，fail 兜底提示）*/
