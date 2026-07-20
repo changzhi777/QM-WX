@@ -21,10 +21,10 @@ import { Cache } from '../../infra/cache.js';
 import { buildSystemPrompt } from './context-builder.js';
 import { stubProvider } from './providers/stub.js';
 import { glmProvider } from './providers/glm.js';
-import type { LLMProvider, ChatMessage } from './providers/types.js';
+import type { LLMProvider, ChatMessage, ContentPart } from './providers/types.js';
 import type { ChatInput, GeneratePlanInput, PlanStructure, HistoryQuery, RegenerateInput, DeleteConversationInput, SetPersonaInput } from './ai-coach.schema.js';
 
-const HISTORY_TURNS = 10;
+const HISTORY_TURNS = 20; // V0.2.46 c：10→20，多轮记忆翻倍（更深上下文）
 
 /**
  * SSE 帧 ASCII-safe 序列化（V0.1.139）
@@ -43,6 +43,15 @@ async function pickProvider(): Promise<LLMProvider> {
   return process.env.LLM_API_KEY ? glmProvider : stubProvider;
 }
 
+/** V0.2.45 构造 user 消息内容：有图走 ContentPart[]（OpenAI vision 格式，GLM-4.6V 兼容），无图走 string */
+function buildUserContent(message: string, imageUrl?: string): string | ContentPart[] {
+  if (!imageUrl) return message;
+  return [
+    { type: 'text', text: message },
+    { type: 'image_url', image_url: { url: imageUrl } },
+  ];
+}
+
 export const aiCoachService = {
   /** 非流式对话（多轮记忆 + 落库） */
   async chat(userId: string, input: ChatInput) {
@@ -50,7 +59,8 @@ export const aiCoachService = {
     const provider = await pickProvider();
     const system = await buildSystemPrompt(userId);
     const history = await loadHistory(userId, conversationId);
-    const messages: ChatMessage[] = [...history, { role: 'user', content: input.message }];
+    // V0.2.45 有 imageUrl 走多模态 ContentPart[]，落库仍存纯文本（input.message）
+    const messages: ChatMessage[] = [...history, { role: 'user', content: buildUserContent(input.message, input.imageUrl) }];
     const reply = await provider.chat(messages, system);
     await saveTurns(userId, conversationId, input.message, reply);
     return { reply, conversationId };
@@ -62,7 +72,8 @@ export const aiCoachService = {
     const provider = await pickProvider();
     const system = await buildSystemPrompt(userId);
     const history = await loadHistory(userId, conversationId);
-    const messages: ChatMessage[] = [...history, { role: 'user', content: input.message }];
+    // V0.2.45 有 imageUrl 走多模态 ContentPart[]（GLM-4.6V 流式）
+    const messages: ChatMessage[] = [...history, { role: 'user', content: buildUserContent(input.message, input.imageUrl) }];
 
     // hijack Fastify reply，手动写 SSE 流
     reply.hijack();

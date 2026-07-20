@@ -8,10 +8,11 @@
  */
 import { z } from 'zod';
 
-/** 对话输入 */
+/** 对话输入（V0.2.45 +imageUrl 多模态识图，COS URL 可选）*/
 export const ChatInputSchema = z.object({
   message: z.string().min(1).max(2000),
   conversationId: z.string().optional(),
+  imageUrl: z.string().url().optional(), // V0.2.45 多模态：带图时 user content 走 ContentPart[]
 });
 export type ChatInput = z.infer<typeof ChatInputSchema>;
 

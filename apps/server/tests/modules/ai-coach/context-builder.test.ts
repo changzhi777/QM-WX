@@ -22,6 +22,8 @@ const mocks = vi.hoisted(() => {
       'sleepRecord',
       'weRunRecord',
       'bodyCompositionRecord',
+      'meal', // V0.2.46 c
+      'strengthSession', // V0.2.46 c
     ],
   });
 });
@@ -45,6 +47,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   // V0.1.140 C：recentRuns（checkin.findMany）默认空
   mocks.prisma.checkin.findMany.mockResolvedValue([] as never);
+  // V0.2.46 c：今日饮食 / 近 7 天力量 默认空
+  mocks.prisma.meal.findMany.mockResolvedValue([] as never);
+  mocks.prisma.strengthSession.findMany.mockResolvedValue([] as never);
 });
 
 describe('buildSystemPrompt (V0.1.139 全量聚合)', () => {
@@ -147,5 +152,45 @@ describe('buildSystemPrompt (V0.1.139 全量聚合)', () => {
     expect(prompt).toContain('可能已变化');
     // 不应以「最近跑步天气：」前缀误导 AI 这是当前天气
     expect(prompt).not.toContain('最近跑步天气：');
+  });
+
+  it('V0.2.46 c: 今日饮食 + 近 7 天力量训练注入 prompt（更深上下文）', async () => {
+    mocks.prisma.user.findUnique.mockResolvedValue({ id: 'u1', gender: 'male', birthday: '1990-01-01' } as never);
+    mocks.prisma.checkin.aggregate.mockResolvedValue({ _sum: { distance: 0 }, _count: 0 } as never);
+    mocks.prisma.goal.findMany.mockResolvedValue([] as never);
+    mocks.prisma.shoe.findMany.mockResolvedValue([] as never);
+    mocks.prisma.userPlanEnrollment.findUnique.mockResolvedValue(null);
+    mocks.prisma.heartRateRecord.findFirst.mockResolvedValue(null);
+    mocks.prisma.sleepRecord.findFirst.mockResolvedValue(null);
+    mocks.prisma.weRunRecord.findMany.mockResolvedValue([] as never);
+    mocks.prisma.bodyCompositionRecord.findFirst.mockResolvedValue(null);
+    // 今日 2 餐：早餐 + 午餐（items 含宏量）
+    mocks.prisma.meal.findMany.mockResolvedValue([
+      { mealType: 'breakfast', totalCalorie: 450, items: [{ name: '鸡蛋', calorie: 80, protein: 6, fat: 5, carb: 0 }] },
+      {
+        mealType: 'lunch',
+        totalCalorie: 650,
+        items: [
+          { name: '米饭', calorie: 200, protein: 4, fat: 0, carb: 44 },
+          { name: '鸡胸', calorie: 200, protein: 30, fat: 4, carb: 0 },
+        ],
+      },
+    ] as never);
+    // 近 7 天 2 次力量训练
+    mocks.prisma.strengthSession.findMany.mockResolvedValue([
+      { dateStr: '2026-07-19', totalVolume: 2400, durationSec: 2700 },
+      { dateStr: '2026-07-17', totalVolume: 1800, durationSec: 1800 },
+    ] as never);
+
+    const prompt = await buildSystemPrompt('u1');
+    // 饮食：2 餐 1100 千卡 + 蛋白 40g + 脂肪 9g + 碳水 44g
+    expect(prompt).toContain('今日饮食（2 餐）');
+    expect(prompt).toContain('1100 千卡');
+    expect(prompt).toContain('蛋白 40g');
+    expect(prompt).toContain('碳水 44g');
+    // 力量：2 次，总容量 4200，累计 75 分钟
+    expect(prompt).toContain('近 7 天力量训练：2 次');
+    expect(prompt).toContain('总容量 4200kg·次');
+    expect(prompt).toContain('累计 75 分钟');
   });
 });

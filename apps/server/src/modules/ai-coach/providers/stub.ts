@@ -10,6 +10,7 @@
  * 演示模式话术明确告知用户"配置真实 AI 后体验更佳"，不伪装成真 AI
  */
 import type { ChatMessage, LLMProvider } from './types.js';
+import { extractText } from './types.js';
 import type { PlanStructure } from '../ai-coach.schema.js';
 
 /** 关键词 → 回复池（覆盖跑者高频问题） */
@@ -166,18 +167,19 @@ function inferLevel(message: string): string {
 export const stubProvider: LLMProvider = {
   async chat(messages: ChatMessage[], _systemPrompt: string): Promise<string> {
     const lastUser = [...messages].reverse().find((m) => m.role === 'user');
-    return matchReply(lastUser?.content ?? '');
+    // V0.2.45 content 可能是 ContentPart[]（带图），extractText 取文本段
+    return matchReply(lastUser ? extractText(lastUser.content) : '');
   },
 
   async *chatStream(messages: ChatMessage[], _systemPrompt: string): AsyncIterable<string> {
     const lastUser = [...messages].reverse().find((m) => m.role === 'user');
-    const reply = matchReply(lastUser?.content ?? '');
+    const reply = matchReply(lastUser ? extractText(lastUser.content) : '');
     yield* streamText(reply);
   },
 
   async generatePlan(messages: ChatMessage[], _systemPrompt: string): Promise<PlanStructure> {
     const lastUser = [...messages].reverse().find((m) => m.role === 'user');
-    const content = lastUser?.content ?? '';
+    const content = lastUser ? extractText(lastUser.content) : '';
     return PLAN_TEMPLATES[inferLevel(content)];
   },
 };

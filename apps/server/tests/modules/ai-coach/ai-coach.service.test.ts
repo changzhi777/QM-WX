@@ -91,6 +91,37 @@ describe('aiCoachService.chat (V0.1.139 多轮记忆)', () => {
     const r = await aiCoachService.chat('u1', { message: 'hi' });
     expect(r.conversationId).toMatch(/^[0-9a-f-]{36}$/i);
   });
+
+  it('V0.2.45 带 imageUrl → user content 走 ContentPart[]，落库仍存纯文本', async () => {
+    mocks.prisma.conversationTurn.findMany.mockResolvedValue([] as never);
+    mockProvider.chat.mockResolvedValue('图中是跑步姿势');
+    mocks.prisma.conversationTurn.createMany.mockResolvedValue({ count: 2 } as never);
+
+    await aiCoachService.chat('u1', { message: '看图', imageUrl: 'https://cos.test/x.jpg' });
+
+    // provider 收到的最后一条 user content 是数组（含 image_url）
+    const lastCallMessages = mockProvider.chat.mock.calls[0][0] as Array<{
+      role: string;
+      content: unknown;
+    }>;
+    const lastMsg = lastCallMessages[lastCallMessages.length - 1];
+    expect(lastMsg.role).toBe('user');
+    expect(Array.isArray(lastMsg.content)).toBe(true);
+    expect(lastMsg.content).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'text', text: '看图' }),
+        expect.objectContaining({ type: 'image_url', image_url: { url: 'https://cos.test/x.jpg' } }),
+      ]),
+    );
+    // 落库仍存纯文本（图片 URL 不入库，历史会话不回放图）
+    expect(mocks.prisma.conversationTurn.createMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.arrayContaining([
+          expect.objectContaining({ role: 'user', content: '看图' }),
+        ]),
+      }),
+    );
+  });
 });
 
 describe('aiCoachService.chatStream (V0.1.139 流式 + asciiFrame)', () => {

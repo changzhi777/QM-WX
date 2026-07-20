@@ -66,6 +66,7 @@
       </block>
       <block wx:else>
         <view class="bubble">
+          <image wx:if="{{item.imageUrl}}" class="msg-image" src="{{item.imageUrl}}" mode="widthFix" />
           <view wx:if="{{item.pending && !item.content}}" class="thinking">
             <van-loading size="20px" type="spinner" color="#2D9D78" />
             <text class="thinking-text">思考中…</text>
@@ -112,15 +113,23 @@
     </scroll-view>
   </view>
 
-  <!-- 输入栏（V0.2.44 去 voice 按钮，用户用系统输入法语音）-->
+  <!-- 输入栏（V0.2.44 去 voice 按钮；V0.2.45 +📷 选图多模态）-->
   <view class="input-bar">
-    <input class="input" value="{{inputText}}" bindinput="onInput" confirm-type="send" bindconfirm="onSend" placeholder="问我训练、恢复、营养…" disabled="{{sending}}" adjust-position="{{true}}" />
-    <block wx:if="{{sending}}">
-      <view class="stop-btn" bindtap="onStop">停止</view>
-    </block>
-    <block wx:else>
-      <van-button type="primary" size="small" round disabled="{{!inputText || sending}}" bindtap="onSend">发送</van-button>
-    </block>
+    <!-- V0.2.45 待发送图片缩略图 -->
+    <view class="img-thumb-wrap" wx:if="{{curImageUrl}}">
+      <image class="img-thumb" src="{{curImageUrl}}" mode="aspectFill" />
+      <view class="img-thumb-del" catchtap="onRemoveImage">✕</view>
+    </view>
+    <view class="input-row">
+      <view class="pick-btn {{sending ? 'disabled' : ''}}" bindtap="onChooseImage">📷</view>
+      <input class="input" value="{{inputText}}" bindinput="onInput" confirm-type="send" bindconfirm="onSend" placeholder="问我训练、恢复、营养…" disabled="{{sending}}" adjust-position="{{true}}" />
+      <block wx:if="{{sending}}">
+        <view class="stop-btn" bindtap="onStop">停止</view>
+      </block>
+      <block wx:else>
+        <van-button type="primary" size="small" round disabled="{{(!inputText && !curImageUrl) || sending}}" bindtap="onSend">发送</van-button>
+      </block>
+    </view>
   </view>
 
   <!-- 会话弹层 -->

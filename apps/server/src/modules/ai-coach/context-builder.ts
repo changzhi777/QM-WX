@@ -59,7 +59,7 @@ export async function buildSystemPrompt(userId: string): Promise<string> {
 
 /** 聚合全量数据 → 画像文本（含 C：计划进度 + 最近 7 天打卡）*/
 async function buildUserContext(userId: string): Promise<string> {
-  const [user, yearStats, monthStats, activeGoals, shoes, enrollment, recentHr, recentSleep, recentSteps, latestBodyComp, recentRuns, latestWeather] =
+  const [user, yearStats, monthStats, activeGoals, shoes, enrollment, recentHr, recentSleep, recentSteps, latestBodyComp, recentRuns, latestWeather, recentMeals, recentStrength] =
     await Promise.all([
       prisma.user.findUnique({ where: { id: userId } }),
       aggregateRange(userId, yearStart(), new Date()),
@@ -86,6 +86,18 @@ async function buildUserContext(userId: string): Promise<string> {
         where: { userId, weatherTemp: { not: null } },
         orderBy: { createdAt: 'desc' },
         select: { weatherTemp: true, humidity: true, aqi: true, createdAt: true },
+      }),
+      // V0.2.46 c：今日饮食（营养建议依据，复用 Meal 表）
+      prisma.meal.findMany({
+        where: { userId, date: cnToday() },
+        orderBy: { createdAt: 'asc' },
+      }),
+      // V0.2.46 c：近 7 天力量训练（综合训练负荷，复用 StrengthSession 表）
+      prisma.strengthSession.findMany({
+        where: { userId, createdAt: { gte: new Date(Date.now() - 7 * 86_400_000) } },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: { dateStr: true, totalVolume: true, durationSec: true },
       }),
     ]);
 
@@ -166,6 +178,33 @@ async function buildUserContext(userId: string): Promise<string> {
     lines.push(`- ${prefix}：${parts.join(' ')}（${fmtDateTime(latestWeather.createdAt)}）`);
   }
 
+  // V0.2.46 c：今日饮食汇总（营养建议依据，items 宏量累加）
+  if (recentMeals.length) {
+    const totalCal = recentMeals.reduce((s, m) => s + m.totalCalorie, 0);
+    const items = recentMeals.flatMap(
+      (m) => (Array.isArray(m.items) ? m.items : []) as Array<{ protein?: number; fat?: number; carb?: number }>,
+    );
+    const sum = (key: 'protein' | 'fat' | 'carb') =>
+      Math.round(items.reduce((s, it) => s + (it[key] ?? 0), 0));
+    const parts = [`${totalCal} 千卡`];
+    const p = sum('protein'),
+      f = sum('fat'),
+      c = sum('carb');
+    if (p) parts.push(`蛋白 ${p}g`);
+    if (f) parts.push(`脂肪 ${f}g`);
+    if (c) parts.push(`碳水 ${c}g`);
+    lines.push(`- 今日饮食（${recentMeals.length} 餐）：${parts.join('，')}`);
+  }
+
+  // V0.2.46 c：近 7 天力量训练（综合训练负荷，跑者力量补充参考）
+  if (recentStrength.length) {
+    const totalVol = Math.round(recentStrength.reduce((s, ss) => s + ss.totalVolume, 0));
+    const totalMin = Math.round(recentStrength.reduce((s, ss) => s + ss.durationSec, 0) / 60);
+    lines.push(
+      `- 近 7 天力量训练：${recentStrength.length} 次，总容量 ${totalVol}kg·次，累计 ${totalMin} 分钟`,
+    );
+  }
+
   return lines.join('\n');
 }
 
@@ -193,6 +232,11 @@ function monthStart(): Date {
 function daysAgo(n: number): string {
   const d = new Date(Date.now() - n * 86_400_000);
   return d.toISOString().slice(0, 10);
+}
+
+/** V0.2.46 c：CN 时区（UTC+8）今日 YYYY-MM-DD（Meal.date 按 CN 时区存，查询需对齐）*/
+function cnToday(): string {
+  return new Date(Date.now() + 8 * 3600_000).toISOString().slice(0, 10);
 }
 
 function calcAge(birthday: string): number {

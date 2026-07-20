@@ -15,10 +15,12 @@
  * 实现：原生 fetch + ReadableStream（Node 18+ 全局），不依赖任何第三方 LLM SDK
  */
 import type { ChatMessage, LLMProvider } from './types.js';
+import { hasImage } from './types.js';
 import { PlanStructureSchema, type PlanStructure } from '../ai-coach.schema.js';
 
 const DEFAULT_BASE_URL = 'https://open.bigmodel.cn/api/paas/v4';
 const DEFAULT_MODEL = 'glm-4.7';
+const DEFAULT_VISION_MODEL = 'glm-4.6v';
 
 function baseUrl(): string {
   return process.env.LLM_BASE_URL || DEFAULT_BASE_URL;
@@ -28,6 +30,10 @@ function apiKey(): string {
 }
 function model(): string {
   return process.env.LLM_MODEL || DEFAULT_MODEL;
+}
+/** V0.2.45 多模态模型（含图时切，复用 food.recognize 同款 GLM-4.6V） */
+function visionModel(): string {
+  return process.env.LLM_VISION_MODEL || DEFAULT_VISION_MODEL;
 }
 
 interface GlmChoice {
@@ -61,7 +67,8 @@ async function postChat(body: Record<string, unknown>): Promise<GlmChunk> {
 export const glmProvider: LLMProvider = {
   async chat(messages: ChatMessage[], systemPrompt: string): Promise<string> {
     const data = await postChat({
-      model: model(),
+      // V0.2.45 含图切 vision 模型（GLM-4.6V），否则常规模型
+      model: hasImage(messages) ? visionModel() : model(),
       messages: [{ role: 'system', content: systemPrompt }, ...messages],
     });
     return data.choices?.[0]?.message?.content ?? '';
@@ -75,7 +82,8 @@ export const glmProvider: LLMProvider = {
         Authorization: `Bearer ${apiKey()}`,
       },
       body: JSON.stringify({
-        model: model(),
+        // V0.2.45 含图切 vision 模型（GLM-4.6V 流式同支持）
+        model: hasImage(messages) ? visionModel() : model(),
         messages: [{ role: 'system', content: systemPrompt }, ...messages],
         stream: true,
       }),

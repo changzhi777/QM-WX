@@ -40,6 +40,32 @@ describe('glmProvider.chat (V0.1.139 非流式)', () => {
       /GLM API 401/,
     );
   });
+
+  it('V0.2.45 含图消息 → 切 vision 模型 + content 透传数组', async () => {
+    process.env.LLM_VISION_MODEL = 'glm-4.6v';
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: '图中是跑步姿势' } }] }),
+    });
+    const r = await glmProvider.chat(
+      [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: '帮我看看' },
+            { type: 'image_url', image_url: { url: 'https://cos.test/run.jpg' } },
+          ],
+        },
+      ],
+      'sys',
+    );
+    expect(r).toBe('图中是跑步姿势');
+    const body = JSON.parse((mockFetch.mock.calls[0][1] as { body: string }).body);
+    expect(body.model).toBe('glm-4.6v'); // 含图切 vision
+    expect(body.messages[1].content).toEqual(
+      expect.arrayContaining([expect.objectContaining({ type: 'image_url' })]),
+    );
+  });
 });
 
 describe('glmProvider.chatStream (V0.1.139 SSE 解析)', () => {

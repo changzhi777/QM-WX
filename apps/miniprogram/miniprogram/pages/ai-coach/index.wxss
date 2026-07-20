@@ -161,11 +161,55 @@
 /* 输入栏 */
 .input-bar {
   display: flex;
-  align-items: center;
+  flex-direction: column;
   padding: 16rpx 24rpx;
   background: #fff;
   border-top: 1rpx solid #eee;
   gap: 12rpx;
+}
+/* V0.2.45 输入栏内行（📷 + input + 发送）*/
+.input-row { display: flex; align-items: center; gap: 12rpx; }
+/* V0.2.45 选图按钮 */
+.pick-btn {
+  width: 72rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  text-align: center;
+  font-size: 36rpx;
+  background: #f5f5f5;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.pick-btn.disabled { opacity: 0.4; }
+/* V0.2.45 待发送图片缩略图 */
+.img-thumb-wrap {
+  position: relative;
+  align-self: flex-start;
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+.img-thumb { width: 140rpx; height: 140rpx; }
+.img-thumb-del {
+  position: absolute;
+  top: 4rpx;
+  right: 4rpx;
+  width: 36rpx;
+  height: 36rpx;
+  line-height: 36rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #fff;
+  background: rgba(0,0,0,0.5);
+  border-radius: 50%;
+}
+/* V0.2.45 消息气泡内图片（user 多模态）*/
+.msg-image {
+  max-width: 320rpx;
+  border-radius: 12rpx;
+  margin-bottom: 8rpx;
+  display: block;
 }
 .input {
   flex: 1;

@@ -21,6 +21,7 @@ interface Msg {
   plan?: PlanStructure;
   pending?: boolean;
   suggestions?: Suggestion[];
+  imageUrl?: string; // V0.2.45 多模态：user 消息附带图片（COS URL）
 }
 
 const PERSONAS = [
@@ -53,6 +54,7 @@ Page({
     persona: 'buddy' as string,
     personaList: PERSONAS,
     recording: false, // V0.2.44 已弃用（去 voice 按钮，保留字段防 wxml 残留引用报错）
+    curImageUrl: '', // V0.2.45 多模态：当前待发送的图片 URL（COS），发送后清空
   },
   streamingTask: null as WechatMiniprogram.RequestTask | null,
   // V0.1.141 A throttle：buffer 累积 token + 50ms timer flush（setData 频率降 ~20x）
@@ -125,6 +127,33 @@ Page({
     this.setData({ inputText: e.detail.value });
   },
 
+  /** V0.2.45 多模态：选图 → 上传 COS → 拿 URL 待发送（一次一张，重选覆盖）*/
+  async onChooseImage() {
+    if (this.data.sending) return;
+    try {
+      const res = await wx.chooseMedia({
+        count: 1,
+        mediaType: ['image'],
+        sizeType: ['compressed'],
+        sourceType: ['album', 'camera'],
+      });
+      const file = res.tempFiles[0];
+      if (!file) return;
+      wx.showLoading({ title: '上传中…' });
+      const url = await api.uploadFile(file.tempFilePath, 'image');
+      this.setData({ curImageUrl: url });
+    } catch {
+      wx.showToast({ title: '上传失败', icon: 'none' });
+    } finally {
+      wx.hideLoading();
+    }
+  },
+
+  /** V0.2.45 移除已选图片 */
+  onRemoveImage() {
+    this.setData({ curImageUrl: '' });
+  },
+
   /** A 人设切换：本地缓存 + DB 同步 */
   async onSelectPersona(e: WechatMiniprogram.Touch) {
     const persona = (e.currentTarget.dataset as { key: string }).key;
@@ -167,25 +196,30 @@ Page({
 
   async onSend() {
     const text = (this.data.inputText || '').trim();
-    if (!text || this.data.sending) return;
+    const imageUrl = this.data.curImageUrl;
+    // V0.2.45 有图无字时补默认问句（schema message min(1)，必填）
+    const message = text || (imageUrl ? '请帮我看看这张图' : '');
+    if ((!message && !imageUrl) || this.data.sending) return;
     try {
       await ensureLogin(); // V0.1.142 确保登录（token 有效，防 401）
     } catch {
       wx.showToast({ title: '请先登录', icon: 'none' });
       return;
     }
-    const userMsg: Msg = { role: 'user', content: text, type: 'text' };
+    const userMsg: Msg = { role: 'user', content: message, type: 'text', imageUrl: imageUrl || undefined };
     const asstMsg: Msg = { role: 'assistant', content: '', type: 'text', pending: true, suggestions: [] };
     this.setData({
       messages: [...this.data.messages, userMsg, asstMsg],
       inputText: '',
+      curImageUrl: '', // V0.2.45 发送后清空待发图
       sending: true,
     });
     this.scrollBottom();
-    await this.streamChat(text);
+    await this.streamChat(message, imageUrl);
   },
 
-  streamChat(message: string): Promise<void> {
+  /** V0.2.45 streamChat 加 imageUrl 参数（多模态）*/
+  streamChat(message: string, imageUrl?: string): Promise<void> {
     return new Promise((resolve) => {
       const token = wx.getStorageSync('accessToken');
       const task = wx.request({
@@ -193,7 +227,14 @@ Page({
         method: 'POST',
         enableChunked: true,
         header: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
-        data: { action: 'chatStream', payload: { message, conversationId: this.data.conversationId } },
+        data: {
+          action: 'chatStream',
+          payload: {
+            message,
+            conversationId: this.data.conversationId,
+            ...(imageUrl ? { imageUrl } : {}), // V0.2.45 有图才带
+          },
+        },
         success: (res: { statusCode?: number }) => {
           // V0.1.142 401/403 → token 过期，提示重登（否则流式无数据 assistant 永远 pending）
           if (res.statusCode === 401 || res.statusCode === 403) {
