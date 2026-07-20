@@ -93,3 +93,5 @@ apps/miniprogram/.cloudbase/
 .zcf/plan/current/
 .zcf/plan/history/
 docs/_assets/
+# qm-rhythmind 子项目（Ag2Hermes 独立工作空间，本地参考，不入 QM-WX 仓）
+qm-rhythmind/

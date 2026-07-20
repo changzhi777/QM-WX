@@ -82,10 +82,9 @@
       </view>
     </view>
 
-    <!-- 历史 AI 报告（默认 7 日 + 更多展开全部）-->
+    <!-- 历史 AI 报告（默认 7 日；更多历史进月度报告页，入口在本周趋势标题）-->
     <view class="section-title" wx:if="{{history.length}}">
       历史 AI 报告
-      <text class="more" wx:if="{{history.length >= 7}}" bindtap="goMonthlyReport">月度报告 →</text>
     </view>
     <view class="history-list" wx:if="{{history.length}}">
       <van-cell-group>
