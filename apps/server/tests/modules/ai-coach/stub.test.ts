@@ -22,6 +22,23 @@ describe('stubProvider.chat (V0.1.139)', () => {
     const r = await stubProvider.chat([{ role: 'user', content: '今天天气不错' }], 'sys');
     expect(r).toContain('演示模式');
   });
+
+  it('V0.2.45 content 为 ContentPart[]（带图）→ extractText 提取文本段 → 关键词匹配', async () => {
+    // 多模态降级：stub 无视觉能力，靠 extractText 取 text 段做关键词匹配
+    const r = await stubProvider.chat(
+      [
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: '我怎么训练' },
+            { type: 'image_url', image_url: { url: 'https://cos.test/run.jpg' } },
+          ],
+        },
+      ],
+      'sys',
+    );
+    expect(r).toMatch(/训练|80\/20|长距离|间歇/);
+  });
 });
 
 describe('stubProvider.chatStream (V0.1.139 逐字流式)', () => {
