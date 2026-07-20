@@ -56,6 +56,10 @@ export async function statsRoutes(app: FastifyInstance) {
         const input = (payload ?? {}) as { lat?: number; lon?: number };
         return { code: 0, data: await statsService.weather(userId, input) };
       }
+      case 'weatherAir': {
+        const input = (payload ?? {}) as { lat?: number; lon?: number };
+        return { code: 0, data: await statsService.weatherAir(userId, input) };
+      }
       case 'weatherAnalysis': {
         return { code: 0, data: await statsService.weatherAnalysis(userId) };
       }

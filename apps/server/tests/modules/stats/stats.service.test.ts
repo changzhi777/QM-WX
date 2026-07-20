@@ -347,7 +347,7 @@ describe('statsService.weather (V0.1.148)', () => {
     expect(r.temperature).toBe(25);
     expect(r.feelsLike).toBe(26);
     expect(r.humidity).toBe(60);
-    expect(r.icon).toBe('999');
+    expect(r.icon).toBe('☀️');
     expect(r.updatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
@@ -390,7 +390,7 @@ describe('statsService.weather (V0.1.148)', () => {
     expect(r.temperature).toBe(37);
     expect(r.feelsLike).toBe(39);
     expect(r.humidity).toBe(45);
-    expect(r.icon).toBe('101');
+    expect(r.icon).toBe('🌤');
   });
 
   it('fetch 抛错 → catch 兜底返"未知+获取失败"', async () => {
@@ -403,7 +403,7 @@ describe('statsService.weather (V0.1.148)', () => {
     expect(r.city).toBe('未知');
     expect(r.text).toBe('获取失败');
     expect(r.temperature).toBe(0);
-    expect(r.icon).toBe('999');
+    expect(r.icon).toBe('');
   });
 });
 

@@ -302,7 +302,7 @@ export const statsService = {
     const location = `${lon.toFixed(2)},${lat.toFixed(2)}`;
     if (!key) {
       // 默认经纬度 28.23N, 112.94E → 长沙（实际地理坐标，非「杭州」历史 bug 修复）
-      return { city: '长沙', text: '晴', temperature: 25, feelsLike: 26, humidity: 60, icon: '999', updatedAt: new Date().toISOString() };
+      return { city: '长沙', text: '晴', temperature: 25, feelsLike: 26, humidity: 60, icon: '☀️', updatedAt: new Date().toISOString() };
     }
     try {
       const apiHost = env.QWEATHER_API_HOST;
@@ -324,11 +324,33 @@ export const statsService = {
         temperature: parseInt(now.temp ?? '25'),
         feelsLike: parseInt(now.feelsLike ?? '26'),
         humidity: parseInt(now.humidity ?? '60'),
-        icon: now.icon ?? '999',
+        icon: weatherIconToEmoji(now.icon),
         updatedAt: new Date().toISOString(),
       };
     } catch {
-      return { city: '未知', text: '获取失败', temperature: 0, feelsLike: 0, humidity: 0, icon: '999', updatedAt: new Date().toISOString() };
+      return { city: '未知', text: '获取失败', temperature: 0, feelsLike: 0, humidity: 0, icon: '', updatedAt: new Date().toISOString() };
+    }
+  },
+
+  /** V0.2.9 uv-alert UV 指数（qweather indices type=5；无 key/失败/异常值返 0 → uv-alert 不显示）*/
+  async weatherAir(userId: string, input?: { lat?: number; lon?: number }) {
+    void userId;
+    const key = env.QWEATHER_KEY;
+    if (!key) return { uv: 0 };
+    try {
+      const lat = input?.lat ?? 28.23;
+      const lon = input?.lon ?? 112.94;
+      const location = `${lon.toFixed(2)},${lat.toFixed(2)}`;
+      const apiHost = env.QWEATHER_API_HOST;
+      const res = await fetch(`https://${apiHost}/v7/indices/${location}?type=5`, {
+        headers: { 'X-QW-Api-Key': key },
+      });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = (await res.json()) as any;
+      const uv = parseInt(data?.daily?.[0]?.value ?? '0');
+      return { uv: uv >= 0 && uv <= 11 ? uv : 0 }; // UV 正常 0-11，异常当 0
+    } catch {
+      return { uv: 0 };
     }
   },
 
@@ -434,6 +456,18 @@ function parsePaceSec(pace: string): number {
   const [m, s] = pace.split(':').map(Number);
   return (m || 0) * 60 + (s || 0);
 }
+/** qweather icon 代码 → emoji（V0.2.40 修「999 长沙」显示：100 晴 / 101-103 多云 / 104 阴 / 300s 雨 / 400s 雪 / 500s 雾霾 / 999 无观测→空不显示）*/
+function weatherIconToEmoji(code: string | undefined): string {
+  const c = parseInt(code ?? '999');
+  if (c === 100) return '☀️';
+  if (c >= 101 && c <= 103) return '🌤';
+  if (c === 104) return '☁️';
+  if (c >= 300 && c < 400) return '🌧';
+  if (c >= 400 && c < 500) return '❄️';
+  if (c >= 500 && c < 600) return '🌫';
+  return ''; // 999 无观测 / 未知 → 空不显示
+}
+
 function pearson(pairs: { x: number; y: number }[]): number | null {
   const n = pairs.length;
   if (n < 2) return null;
