@@ -1,39 +1,37 @@
 {
   "project": "QM-WX",
   "projectType": "wechat-miniprogram-node-typescript-monorepo",
-  "version": "v0.2.27",
-  "lastUpdated": "2026-07-17T21:13:14+08:00",
+  "version": "v0.2.38",
+  "lastUpdated": "2026-07-20T11:36:36+08:00",
   "agent": "init-architect",
-  "runMode": "incremental-refresh-v0.2.27-init-17",
-  "previousRun": "init #16 / v0.2.21 (2026-07-17 12:10:10)",
+  "runMode": "incremental-refresh-v0.2.38-init-18",
+  "previousRun": "init #17 / v0.2.27 (2026-07-17 21:13:14)",
   "truncated": false,
   "truncationReason": null,
   "sourceControl": {
     "branch": "main",
-    "head": "b847e42 feat(v0.2.27): aiCoach contextBuilder 天气感知（N）",
+    "head": "V0.2.38 (interpret module 全栈落地 + docs)",
     "latestVersionCommits": [
-      "037f15e feat(v0.2.9): prototype 借鉴 4 组件 + 4 页集成",
-      "4b3f53b feat(v0.2.10): 微信开发者工具 CLI 打通 + 11 单测",
-      "e5bb59b ci(v0.2.11): wx-deploy.yml 三任务矩阵 + pnpm-workspace scripts/*",
-      "40b3a1d test(v0.2.12): GAP-14 closed — 22 admin RBAC tests 修 + funcs 85.54% 实测",
-      "cfab278 test(v0.2.13): K1 wxpay +5 测 — funcs 86.07% 升回 86 阈值",
-      "ce75883 docs(v0.2.14): K2 视觉验证 4 页",
-      "4baafa6 docs(v0.2.15): K3/K4/K5 物料清单",
-      "7f0e34b docs(v0.2.16): B5 三主 CLAUDE.md 同步到 V0.2.15 现状",
-      "fd13dd6 feat(v0.2.19): K5 voice 插件开通 — WechatSI wx069ba97219f66d99",
-      "9f31773 docs(v0.2.19): K5 closed 物料清单更新",
-      "6f629f1 docs(v0.2.20): init #15 全量校准收官报告",
-      "6cc6f01 test(v0.2.21): K3 huawei_export fuzzer +5 用例",
-      "wxpay22 test(v0.2.22): wxpay fetchPlatformCerts +4 测 — V0.2.13 K1 留的后续",
-      "0f86e23 test(v0.2.23): funcs% 加固 87.5% — +14 测 address/sport.repository/cart/coupon",
-      "2af453e+ccde511 feat(v0.2.24): 小米体脂秤真机验收 + 修复 — 体重系数 0.005 + 3 次 retry",
-      "efe2632+b3fd353 fix(v0.2.25): dev-cli --project 修正 + WechatSI 临时移除",
-      "8dee343 feat(v0.2.26): weatherAnalysis 加 AQI×心率 + 体感区间配速（B1+A1）",
-      "817f8f9 feat(v0.2.26): insight 页展示 AQI×心率 + 体感区间配速（步骤 5 前端）",
-      "b847e42 feat(v0.2.27): aiCoach contextBuilder 天气感知（N）"
+      "b847e42 feat(v0.2.27): aiCoach contextBuilder 天气感知（N）",
+      "v0.2.28 fix: aiCoach contextBuilder 天气注入加 3 天时效判断",
+      "v0.2.29 feat: 今日页改版 + 月度报告新页 pages/report-monthly",
+      "v0.2.30 feat: stats.service buildReportText 重写（数据对比+量化建议）",
+      "v0.2.31 feat: 健康助手页对齐原型（ai-quick-cards 5→4 卡 2×2 + AI 气泡）",
+      "v0.2.32 feat: mine 原型重构 + pages/more 待定页 + level-card 融合",
+      "v0.2.33 feat: interpret module（第 35 个 module）minimax M3 + 佳明 FIT + InterpretRecord #62",
+      "v0.2.34 feat: interpret 小程序上传页 pages/interpret",
+      "v0.2.35 fix: interpret routes bodyLimit 10MB",
+      "v0.2.36 test: interpret 测试加固 +7（20 测）",
+      "v0.2.37 feat: admin listInterpret action + RBAC",
+      "v0.2.38 docs: interpret/CLAUDE.md（GAP-12 35/35）+ apps/server changelog"
     ],
-    "tags": ["v0.2.9", "v0.2.10", "v0.2.11", "v0.2.12", "v0.2.13", "v0.2.14", "v0.2.15", "v0.2.16", "v0.2.19", "v0.2.21", "v0.2.22", "v0.2.23", "v0.2.24", "v0.2.25", "v0.2.26", "v0.2.27"],
-    "remoteStatus": "用户提供：origin GitHub 推送成功（v0.2.27 已 push）"
+    "tags": [
+      "v0.2.9", "v0.2.10", "v0.2.11", "v0.2.12", "v0.2.13", "v0.2.14", "v0.2.15",
+      "v0.2.16", "v0.2.19", "v0.2.21", "v0.2.22", "v0.2.23", "v0.2.24", "v0.2.25",
+      "v0.2.26", "v0.2.27", "v0.2.28", "v0.2.29", "v0.2.30", "v0.2.31", "v0.2.32",
+      "v0.2.33", "v0.2.34", "v0.2.35", "v0.2.36", "v0.2.37", "v0.2.38"
+    ],
+    "remoteStatus": "V0.2.28-38 commit/tag 待主人确认 push 节奏；init #18 仅做文档同步"
   },
   "ignorePolicy": {
     "source": ".gitignore 与默认忽略规则合并",
@@ -57,13 +55,13 @@
     ]
   },
   "scanCoverage": {
-    "estimatedTotalFiles": 815,
-    "scannedFiles": 730,
-    "coveragePercent": 89.57,
-    "method": "init #17 增量扫描 V0.2.22~V0.2.27 高信号文件 + init #16 的全仓清点基线",
+    "estimatedTotalFiles": 830,
+    "scannedFiles": 745,
+    "coveragePercent": 89.76,
+    "method": "init #18 增量扫描 V0.2.28~V0.2.38 高信号文件（interpret module 全栈 + 前端新页）+ init #17 全仓基线",
     "byModule": [
-      {"path": "apps/server", "estimated": 440, "scanned": 410, "percent": 93.18, "gaps": []},
-      {"path": "apps/miniprogram", "estimated": 190, "scanned": 165, "percent": 86.84, "gaps": ["V0.2.26 insight 增强 + V0.2.19 voice 待授权真机视觉/交互回归"]},
+      {"path": "apps/server", "estimated": 455, "scanned": 420, "percent": 92.31, "gaps": ["interpret 真机验证待 minimax key 注入"]},
+      {"path": "apps/miniprogram", "estimated": 210, "scanned": 170, "percent": 80.95, "gaps": ["V0.2.29 今日页改版 + V0.2.32 mine 重构 + V0.2.34 interpret 页真机视觉验证"]},
       {"path": "packages/shared", "estimated": 20, "scanned": 20, "percent": 100, "gaps": []},
       {"path": "scripts/dev-cli", "estimated": 8, "scanned": 8, "percent": 100, "gaps": []},
       {"path": "docs", "estimated": 25, "scanned": 22, "percent": 88, "gaps": []},
@@ -72,45 +70,47 @@
   },
   "measured": {
     "prismaModels": {
-      "count": 61,
+      "count": 62,
       "method": "Grep ^model\\s+ apps/server/prisma/schema.prisma",
-      "deltaFromInit16": 0
+      "deltaFromInit17": 1,
+      "newModel": "InterpretRecord（V0.2.33 #62，迁移 20260718000000_interpret_record）"
     },
     "prismaMigrations": {
-      "count": 46,
+      "count": 47,
       "method": "Glob apps/server/prisma/migrations/**/migration.sql",
-      "deltaFromInit16": 0,
+      "deltaFromInit17": 1,
       "latest": [
-        "20260716020000_growth_level",
-        "20260716030000_invite_cap",
-        "20260716040000_admin_rbac"
+        "20260716040000_admin_rbac",
+        "20260718000000_interpret_record"
       ]
     },
     "backendModules": {
-      "count": 34,
-      "routeFiles": 33,
+      "count": 35,
+      "routeFiles": 34,
       "routeException": "app-config 无独立 routes.ts（内部仓储模块）",
-      "moduleClaudeMd": 34,
+      "moduleClaudeMd": 35,
       "documentationCoveragePercent": 100,
-      "deltaFromInit16": 0
+      "deltaFromInit17": 1,
+      "newModule": "interpret（V0.2.33 第 35 个：minimax M3 + 佳明 FIT 解读）"
     },
     "miniprogramPages": {
-      "count": 22,
+      "count": 25,
       "source": "apps/miniprogram/miniprogram/app.json pages 数组",
-      "deltaFromInit16": 0
+      "deltaFromInit17": 3,
+      "newPages": [
+        "pages/report-monthly（V0.2.29 月度报告）",
+        "pages/more（V0.2.32 待定页/更多入口）",
+        "pages/interpret（V0.2.34 AI 资料解读上传页）"
+      ]
     },
     "miniprogramComponents": {
       "count": 16,
       "source": "components/*/index.json",
-      "deltaFromInit16": 0,
-      "componentClaudeMd": 6,
-      "v029Components": ["uv-alert", "level-card", "ai-quick-cards", "invite-bonus-card"],
-      "v024Components": ["data-strip"],
-      "v027Components": ["avatar-badge"]
+      "deltaFromInit17": 0
     },
     "voicePlugin": {
       "integrated": false,
-      "status": "V0.2.25 临时移除待授权",
+      "status": "V0.2.25 临时移除待授权（GAP-18 open）",
       "sinceVersion": "v0.2.19",
       "removedInVersion": "v0.2.25",
       "removalReason": "开发者 uin 未授权 wx:auto-preview 编译卡「插件未授权」",
@@ -122,35 +122,39 @@
       "pageIntegration": "apps/miniprogram/miniprogram/pages/ai-coach/index.ts onTapVoice requirePlugin try/catch 永久防御（V0.2.25）"
     },
     "tests": {
-      "serverItOccurrences": 1088,
-      "serverTestFilesWithLiteralIt": 110,
+      "serverItOccurrences": 1108,
+      "serverTestFilesWithLiteralIt": 113,
       "cliItOccurrences": 11,
       "cliTestFiles": 2,
       "cliItBreakdown": {"platform.test.ts": 6, "cli-helper.test.ts": 5},
-      "cliItBaselineCorrection": "init #16 声明 11（platform 6 + cli-helper 5）正确；本次主智能体逐行复核 cli-helper.test.ts 确认实 5 个 it（upload 成功/失败、buildNpm、autoPreview、islogin），init-architect 子智能体初报 10 有误",
-      "serverPlusCliItOccurrences": 1099,
+      "serverPlusCliItOccurrences": 1119,
       "sharedItOccurrences": 6,
       "e2eFiles": 12,
-      "deltaFromInit16": {
-        "serverDelta": 22,
+      "deltaFromInit17": {
+        "serverDelta": 20,
         "cliDelta": 0,
-        "totalDelta": 22,
+        "totalDelta": 20,
         "breakdown": {
-          "v022_wxpay_fetchPlatformCerts": {"delta": 4, "file": "tests/modules/wxpay/wxpay.service.test.ts"},
-          "v023_funcs_875_reinforce": {"delta": 14, "files": ["address.service +4", "sport.repository +8 (新文件)", "cart +1", "coupon +1"]},
-          "v026_weatherAnalysis_B1_A1": {"delta": 2, "file": "tests/modules/stats/stats.service.test.ts", "cases": ["V0.2.26 B1: AQI×心率正相关", "V0.2.26 A1: 体感温度区间配速曲线 + optimalZone"]},
-          "v027_aiCoach_weather_N": {"delta": 1, "file": "tests/modules/ai-coach/context-builder.test.ts", "case": "V0.2.26 N: 最近跑步天气注入 prompt"},
-          "v028_contextBuilder_weather_age": {"delta": 1, "file": "tests/modules/ai-coach/context-builder.test.ts", "case": "V0.2.28 fix: 超 3 天标注「较早前」避免 AI 据过时天气误判"}
+          "v033_interpret_module_mvp": {
+            "delta": 13,
+            "files": ["tests/modules/interpret/client.test.ts:5", "tests/modules/interpret/service.test.ts:3", "tests/modules/interpret/routes.test.ts:5"],
+            "cases": "Anthropic 协议 url/header/body + 401 + 多 block 拼接 + FIT parseAsync + minimax 失败 + 落表 + 401/503/4xx routes 分支"
+          },
+          "v036_interpret_test_reinforce": {
+            "delta": 7,
+            "files": ["tests/modules/interpret/client.test.ts:+3", "tests/modules/interpret/service.test.ts:+2", "tests/modules/interpret/routes.test.ts:+2"],
+            "cases": "client fetch reject/empty content/max_tokens/usage + service records fallback/parseAsync throw + routes bodyLimit 10MB"
+          }
         },
-        "correctionNote": "init-architect 子智能体初报 serverDelta=30 + 虚构 edge_others +9；主智能体 grep 交叉验证订正为 21（4+14+2+1），与 1066→1087 完全自洽"
+        "correctionNote": "V0.2.28 contextBuilder +1 已计入 init #17 基线 1088（init #17 顶部段已含 V0.2.28）；V0.2.30 buildReportText 重写未加新测（仅修改断言）；V0.2.37 admin listInterpret action 未加新测（admin.service.test.ts 39 测沿用）；+20 全部来自 interpret module（V0.2.33 13 + V0.2.36 +7 = 20，与 client 8 + service 5 + routes 7 = 20 完全自洽）"
       },
-      "countingCaveat": "literal it/test 口径（grep ^\\s*(it|test)\\( 于 tests+src）；1099 = apps/server 1088 + scripts/dev-cli 11；不含 packages/shared 的 6 测"
+      "countingCaveat": "literal it/test 口径（grep ^\\s*(it|test)\\( 于 tests+src）；1119 = apps/server 1108 + scripts/dev-cli 11；不含 packages/shared 的 6 测"
     },
     "cache": {
       "cacheWrapInvocations": 118,
-      "cacheWrapScopeNote": "118 包含 src + module CLAUDE.md 文档引用；纯 src 代码约 95 处；旧 132 数值是 grep Cache.wrap|cacheKey 联合结果；V0.2.22~V0.2.27 0 Cache 改动",
+      "cacheWrapScopeNote": "118 包含 src + module CLAUDE.md 文档引用；纯 src 代码约 95 处；旧 132 数值是 grep Cache.wrap|cacheKey 联合结果；V0.2.28~V0.2.38 0 Cache 改动",
       "documentedHotPaths": 31,
-      "conclusion": "init #14 子代理 grep 实测后，文档统一用 31 作为声明口径；init #17 沿用",
+      "conclusion": "init #17 沿用口径；V0.2.28-38 全是前端/interpret/admin/stats.service 增强，未接 Cache",
       "modules": [
         "ranking:1", "goal:2", "sport:3", "ai-coach:2", "training:3", "content:2",
         "device:6", "stats:5", "weekly-report:1", "user:1", "shoes:2", "mall:3"
@@ -161,61 +165,118 @@
       "lines": 83.5,
       "statements": 83.5,
       "branches": 75,
-      "lastMeasured": "init #17 当场实跑（lcov.info 聚合）：funcs 87.74%（494/563）/ lines 84.59%（10915/12903）/ branches 77.83%（2054/2639）",
+      "lastMeasured": "init #17 实跑（lcov.info 聚合）：funcs 87.74%（494/563）/ lines 84.59%（10915/12903）/ branches 77.83%（2054/2639）；init #18 沿用未实跑",
       "thresholdsFile": "apps/server/vitest.config.ts",
-      "note": "init #17 实测 funcs 87.74% > 86（缓冲 1.74pp）/ lines 84.59% > 83.5 / branches 77.83% > 75，三项全过；V0.2.23 加固 87.5% 后 V0.2.26/2.7 +3 it 微升 0.24pp"
+      "note": "init #18 沿用 init #17 实测 87.74% > 86（缓冲 1.74pp）；interpret module 20 测加入后函数基数 563→573（+10 函数：client 4 + service 4 + routes 2），估算 funcs 微降 0.5pp 仍在 86 阈值之上（待真测验证）"
     },
-    "v026WeatherAnalysis": {
-      "commit": "8dee343",
-      "statsServiceChanges": [
-        "line 347-352: aqiHr = checkins.filter((c) => c.aqi != null && c.heartRate != null).map((c) => ({ x: c.aqi!, y: c.heartRate! }))",
-        "aqiHrR = pearson(aqiHr) — V0.2.26 B1",
-        "feelsLikeZones 4 桶 <10/10-20/20-30/>30 — V0.2.26 A1",
-        "optimalZone 最快桶（一般低温最快）— V0.2.26 A1"
+    "v033InterpretModule": {
+      "commit": "v0.2.33 (hash 待补)",
+      "moduleOrdinal": "第 35 个 module（34→35）",
+      "architectureChoice": "C-子集（TS 独立实现，非 qm-rhythmind 转发：qm-rhythmind 是 Python AG2 多智能体，语言不通不能直接转发；本模块用 TS 单 agent + minimax，简化版）",
+      "files": [
+        "apps/server/src/modules/interpret/client.ts (~75 行 MiniMax M3 Anthropic 兼容 Provider)",
+        "apps/server/src/modules/interpret/service.ts (~85 行 佳明 FIT parseAsync → minimax → 落表)",
+        "apps/server/src/modules/interpret/routes.ts (~35 行 POST /api/interpret JWT + bodyLimit 10MB)",
+        "apps/server/src/modules/interpret/CLAUDE.md (V0.2.38 新建 150 行)"
       ],
-      "typeExtensions": ["correlations.aqiHr", "scatter.aqiHr", "feelsLikeZones?", "optimalZone?"],
-      "testCases": [
-        "V0.2.26 B1: AQI×心率正相关 → 雾霾天宜室内 insight",
-        "V0.2.26 A1: 体感温度区间配速曲线 + optimalZone（低温最快）"
-      ],
-      "frontendConsumer": "apps/miniprogram/miniprogram/pages/insight/index.ts + index.wxml（已 Grep 确认含 AQI / 体感区间 关键词）",
-      "insightChanges": [
-        "index.ts line 17-20: WeatherAnalysisResult 类型扩容（加 aqiHr/feelsLikeZones/optimalZone）",
-        "index.ts line 50: api.call<Analysis>('stats', 'weatherAnalysis') 调用",
-        "index.ts: feelsLikeZones avgPaceSec → mm:ss 展示转换（V0.2.26 A1 注释）",
-        "index.wxml: 加 AQI×心率散点 + 体感区间配速柱状 + optimalZone 高亮"
-      ]
+      "interpretRecordTable": {
+        "ordinal": "#62",
+        "migration": "20260718000000_interpret_record",
+        "fields": "id/userId/type(garmin_fit|garmin_zip|medical|screenshot)/inputKey(COS object key)/result @db.Text/model/inputTokens?/outputTokens?/cost?/createdAt",
+        "indexes": ["[userId, createdAt]", "[type]"],
+        "onDelete": "Cascade"
+      },
+      "envConfig": {
+        "MINIMAX_API_KEY": "sk-cp-...（缺省 routes 返 featureDisabled 503）",
+        "MINIMAX_BASE_URL": "https://api.minimaxi.com/anthropic（国内官方；国际 api.minimax.io）",
+        "MINIMAX_MODEL": "MiniMax-M3"
+      },
+      "anthropicProtocol": {
+        "endpoint": "POST {MINIMAX_BASE_URL}/v1/messages",
+        "header": "x-api-key + anthropic-version: 2023-06-01（非 Bearer）",
+        "body": "{model, max_tokens, system, messages: [{role, content}]}",
+        "response": "{content: [{type:'text', text}], usage: {input_tokens, output_tokens}}"
+      },
+      "keyConcern": "sk-cp- 前缀疑似代理（非 minimax 官方格式），真机调官方若 401 → 切代理 base URL（env.ts 可改）",
+      "testCoverage": {
+        "totalTests": 20,
+        "client": 8,
+        "service": 5,
+        "routes": 7,
+        "v033Initial": 13,
+        "v036Reinforce": 7
+      },
+      "endpointsExtension": "packages/shared/src/api-contracts/endpoints.ts:115 加 ENDPOINTS.interpret.garmin = '/api/interpret'",
+      "adminIntegration": "V0.2.37 admin.service.listInterpret action + RBAC（OPERATOR_ACTIONS，admin/operator/super-admin 只读）+ qm-admin Web Interpret.tsx 跨仓同步（commit f314235）",
+      "realMachineVerificationPending": "minimax key 注入 + 佳明真实 .fit 样本 → 真机调 → 验解读文本 + 落表 + admin 列表"
     },
-    "v027AiCoachWeather": {
-      "commit": "b847e42",
-      "contextBuilderChanges": [
-        "line 30 SYSTEM_BASE: 增「结合用户当前跑量、目标、跑鞋状态、训练计划进度、最近天气环境个性化（高温/雾霾/湿热天给针对性建议）」",
-        "line 84-89: prisma.checkin.findFirst({ where:{ userId, weatherTemp:{ not:null } }, orderBy:{ createdAt:'desc' }, select:{ weatherTemp, humidity, aqi, createdAt } }) — 走 prisma 直查避循环依赖 stats service",
-        "line 158-164: prompt 注入「最近跑步天气：温度°C 湿度% AQI xxx（时间）」段"
-      ],
-      "testCase": "context-builder.test.ts:101 it('V0.2.26 N: 最近跑步天气注入 prompt（温度+湿度+AQI）')（测试名 V0.2.26 N 是开发时序号，commit message 标 V0.2.27）",
-      "designNote": "走 prisma.checkin.findFirst 直查避循环依赖 stats service（关键设计）；Checkin 表 V0.2.0 已有 weatherTemp/humidity/aqi 字段（迁移 20260716000000_checkin_weather_geo）"
+    "v028_aiCoach_weather_age": {
+      "commit": "v0.2.28 (init #17 code review 发现)",
+      "changeSummary": "context-builder.ts line 158-167 加 ageDays 判断：≤3 天「最近跑步天气」/ >3 天「较早前跑步天气（约 N 天前，可能已变化）」避免 AI 据过时天气误判",
+      "testFragilityFix": "V0.2.26 N 测试固定日期 2026-07-17T10:00:00Z 会随运行日期漂移失败 → 改动态 Date.now()-3_600_000",
+      "deltaIt": 1,
+      "testCase": "mock 8 天前断言「较早前」/「8 天前」/「可能已变化」且不含「最近跑步天气：」"
+    },
+    "v029_frontend_revamp": {
+      "changeSummary": "今日页改版（删「问 AI 深聊」入口 + 删经纬度 + 加天气建议卡）+ 月度报告新页 pages/report-monthly",
+      "scope": "apps/miniprogram 纯前端，apps/server 零改",
+      "deltaPages": 1
+    },
+    "v030_stats_buildReportText": {
+      "changeSummary": "stats.service buildReportText 重写为三段式（步数 vs 7 日均对比 + 状态判断 + 量化建议），dailyReport action 加查 avgSteps + 抽 judgeState/buildAdvice helpers，formatSleep 5h12min 格式",
+      "scope": "apps/server",
+      "deltaIt": 0,
+      "note": "测试断言改「AI建议」关键词，未加新测"
+    },
+    "v031_health_assistant_revamp": {
+      "changeSummary": "健康助手页对齐原型：ai-quick-cards 5→4 卡 2×2 grid（删商业装备推荐卡）+ AI 气泡渐变优化",
+      "scope": "apps/miniprogram 纯前端",
+      "deltaPages": 0
+    },
+    "v032_mine_revamp": {
+      "changeSummary": "mine 页照 prototype 重构（用户卡 + data-strip + level-card 融合 + 3 组宫格重归类）+ pages/more 待定页（更多入口）+ level-card 与 invite-bonus-card 融合",
+      "scope": "apps/miniprogram 纯前端",
+      "deltaPages": 1
+    },
+    "v034_interpret_frontend": {
+      "changeSummary": "小程序 pages/interpret（chooseMessageFile 选佳明 .fit → base64 → POST /api/interpret action:garmin → 展示 result）",
+      "scope": "apps/miniprogram 纯前端（配合 V0.2.33 后端）",
+      "deltaPages": 1
+    },
+    "v035_routes_bodyLimit": {
+      "changeSummary": "interpret routes bodyLimit 10MB（FIT base64 比 binary 大 33%，超 Fastify 默认 1MB → 413）",
+      "scope": "apps/server/src/modules/interpret/routes.ts"
+    },
+    "v037_admin_listInterpret": {
+      "changeSummary": "admin.service.listInterpret action + RBAC（OPERATOR_ACTIONS 白名单，admin/operator/super-admin 只读）+ qm-admin Web Interpret.tsx 跨仓",
+      "scope": "apps/server/src/modules/admin + qm-admin 独立仓",
+      "deltaIt": 0
+    },
+    "v038_interpret_claude_md": {
+      "changeSummary": "interpret/CLAUDE.md 新建（150 行）+ apps/server changelog 同步",
+      "scope": "docs 纯文档 commit",
+      "gap12Status": "保持 35/35（V0.2.1 init #10 100% → V0.2.21 init #16 保持 34/34 → V0.2.38 init #18 升 35/35）"
     }
   },
   "coverage": {
-    "status": "closed-reinforced-init17-8774",
+    "status": "closed-reinforced-init17-8774-init18-unchanged",
     "gap": "GAP-14 closed（V0.2.12 → V0.2.13 K1 → V0.2.23 加固）",
     "history": [
       {"version": "v0.2.3", "funcs": 86.39, "note": "baseline 沿用声明"},
-      {"version": "v0.2.11 init #14", "funcs": 85.54, "note": "首次实测 -0.85pp（V0.2.5~V0.2.8 大量新 action 稀释）"},
-      {"version": "v0.2.12", "funcs": 85.54, "note": "降 threshold 86→84 缓冲"},
+      {"version": "v0.2.11 init #14", "funcs": 85.54, "note": "首次实测 -0.85pp"},
       {"version": "v0.2.13 K1", "funcs": 86.07, "note": "wxpay +5 测升回 + threshold 84→86"},
       {"version": "v0.2.22", "funcs": 86.42, "note": "wxpay fetchPlatformCerts +4 测 +0.35pp"},
-      {"version": "v0.2.23", "funcs": 87.5, "note": "+14 测加固（address+4 / sport.repository+8 / cart+1 / coupon+1）+1.08pp，缓冲 0.42→1.5pp"},
-      {"version": "init #17", "funcs": 87.74, "note": "当场实跑 lcov.info 聚合：funcs 87.74%（494/563）/ lines 84.59%（10915/12903）/ branches 77.83%（2054/2639），threshold 三项全过；测试 1094 passed + 62 skipped 0 failed"}
+      {"version": "v0.2.23", "funcs": 87.5, "note": "+14 测加固（缓冲 1.5pp）"},
+      {"version": "init #17", "funcs": 87.74, "note": "当场实跑 lcov.info 聚合 494/563"},
+      {"version": "init #18", "funcs": 87.74, "note": "沿用 init #17 实测；interpret module +20 测加 +10 函数（client 4 + service 4 + routes 2），估算微降 0.5pp 仍 > 86（待真测验证）"}
     ],
     "freshResult": {
-      "measuredAt": "init #17 当场实跑（pnpm -C apps/server test:coverage → lcov.info 聚合，2026-07-17）",
+      "measuredAt": "init #17 实跑（init #18 沿用，2026-07-20 11:36:36 未实跑）",
       "functions": 87.74,
       "lines": 84.59,
       "branches": 77.83,
-      "functionsCount": "494/563",
-      "note": "V0.2.23 实测 87.5% → init #17 实测 87.74%（V0.2.26/2.7 +3 it 微升 +0.24pp）；lines 84.59% / branches 77.83% 均为本次实测（旧文档沿用 V0.2.13 K1 83.85%/77% 已刷新）"
+      "functionsCount": "494/563（init #17 实测；init #18 沿用）",
+      "note": "init #18 沿用 init #17 数字；interpret module 20 测加 +10 函数后估算 funcs 微降 0.5pp 仍在 86 阈值之上（缓冲 1.74pp → ~1.24pp）"
     },
     "thresholds": {
       "functions": 86,
@@ -224,9 +285,9 @@
       "statements": 83.5
     },
     "stillWeakFiles": [
-      "apps/server/src/modules/wxpay/wxpay.service.ts funcs 66.66%（lines 55.51%，init #17 实测）— V0.2.22 时点 funcs 曾 87.5%（fetchPlatformCerts 4 分支全覆盖），但后续赛事支付 V0.1.119 contentType/contentId 分支 + 退款/对账等大量内部逻辑函数未测，稀释至 66.66%；待 GAP-17 K4 wxpay 4 件套切生产后补真集成测试回升"
+      "apps/server/src/modules/wxpay/wxpay.service.ts funcs 66.66%（init #17 实测）— 赛事支付/退款分支未测稀释，待 GAP-17 K4 wxpay 4 件套切生产后补真集成测试回升"
     ],
-    "note": "V0.2.12 GAP-14 closed → V0.2.13 K1 升 86.07% → V0.2.22 wxpay +4 测 86.42% → V0.2.23 +14 测加固 87.5% → **init #17 当场实跑 87.74%（threshold 三项全过）**；wxpay.service.ts 因赛事/退款分支未测从 87.5% 跌至 66.66%（待 K4 切生产补测）"
+    "note": "V0.2.12 GAP-14 closed → V0.2.13 K1 升 86.07% → V0.2.22 +4 测 86.42% → V0.2.23 +14 测 87.5% → init #17 实测 87.74% → init #18 沿用（interpret +20 测微降估算仍 > 86）"
   },
   "workspaceAudit": {
     "workspacePackages": ["apps/*", "packages/*", "scripts/*"],
@@ -236,7 +297,7 @@
     "ciTestCommand": "pnpm run test",
     "cliTestsExecutedByCiCommand": true,
     "additionalRisk": null,
-    "auditConclusion": "GAP-16 closed V0.2.11；pnpm-workspace.yaml 加 scripts/* 后 pnpm -r test 递归跑 scripts/dev-cli/ 11 测（platform 6 + cli-helper 5，init #16/#17 一致）"
+    "auditConclusion": "GAP-16 closed V0.2.11；pnpm-workspace.yaml 加 scripts/* 后 pnpm -r test 递归跑 scripts/dev-cli/ 11 测（platform 6 + cli-helper 5，init #17/#18 一致）"
   },
   "moduleCandidates": [
     {
@@ -244,25 +305,25 @@
       "language": "TypeScript",
       "role": "Fastify 4 后端、Prisma 数据层、BullMQ jobs",
       "entry": "src/server.ts / src/app.ts",
-      "interfaces": "33 个 /api/{module} route 文件 + app-config 内部模块",
-      "tests": "apps/server/tests/**/*.test.ts（1088 it occurrences / 110 files）",
+      "interfaces": "34 个 /api/{module} route 文件 + app-config 内部模块 + V0.2.33 interpret POST /api/interpret",
+      "tests": "apps/server/tests/**/*.test.ts（1108 it occurrences / 113 files）",
       "config": ["package.json", "vitest.config.ts", "prisma/schema.prisma", "tsconfig.json"],
       "claudeMd": "apps/server/CLAUDE.md"
     },
     {
       "path": "apps/miniprogram",
       "language": "TypeScript/WXML/WXSS",
-      "role": "微信原生小程序前端 + WechatSI voice 插件（V0.2.19 接入 / V0.2.25 临时移除待授权）",
+      "role": "微信原生小程序前端 + WechatSI voice 插件（V0.2.19 接入 / V0.2.25 临时移除待授权）+ V0.2.34 interpret 上传页",
       "entry": "miniprogram/app.ts / miniprogram/app.json",
-      "interfaces": "services/api.ts + packages/shared ENDPOINTS 34 module",
+      "interfaces": "services/api.ts + packages/shared ENDPOINTS 35 module",
       "tests": "当前无 *.test.ts；依赖微信开发者工具/automator 真机链路",
-      "config": ["package.json", "tsconfig.json", "project.config.json", "app.json (V0.2.25 WechatSI 已移除)"],
+      "config": ["package.json", "tsconfig.json", "project.config.json", "app.json (V0.2.25 WechatSI 已移除；V0.2.34 +pages/interpret)"],
       "claudeMd": "apps/miniprogram/CLAUDE.md"
     },
     {
       "path": "packages/shared",
       "language": "TypeScript",
-      "role": "共享类型、Zod、常量、API 契约",
+      "role": "共享类型、Zod、常量、API 契约（含 V0.2.33 ENDPOINTS.interpret）",
       "entry": "src/index.ts",
       "interfaces": "package.json exports",
       "tests": "tests/endpoints.test.ts（6 个 literal it）",
@@ -290,11 +351,11 @@
     {"path":"apps/server/src/modules/wallet","entry":"wallet.routes.ts + wallet.service.ts + wallet.repo.ts","interfaces":"余额/交易","tests":"tests/modules/wallet","gaps":[]},
     {"path":"apps/server/src/modules/weekly-report","entry":"weekly-report.routes.ts + service","interfaces":"周报查询/聚合","tests":"tests/modules/weekly-report + e2e","gaps":[]},
     {"path":"apps/server/src/modules/upload","entry":"upload.routes.ts + upload.service.ts + upload-record.service.ts","interfaces":"COS 上传/解析记录","tests":"tests/modules/upload","gaps":[]},
-    {"path":"apps/server/src/modules/admin","entry":"admin.routes.ts + admin.service.ts","interfaces":"RBAC 登录/运营/审计/导出","tests":"tests/modules/admin","gaps":[]},
+    {"path":"apps/server/src/modules/admin","entry":"admin.routes.ts + admin.service.ts","interfaces":"RBAC 登录/运营/审计/导出/V0.2.37 listInterpret","tests":"tests/modules/admin","gaps":[]},
     {"path":"apps/server/src/modules/app-config","entry":"app-config.repository.ts","interfaces":"功能开关内部仓储","tests":"tests/modules/app-config 或 feature-gate","gaps":[]},
     {"path":"apps/server/src/modules/wxpay","entry":"wxpay.routes.ts + services","interfaces":"支付/通知/退款","tests":"tests/modules/wxpay + e2e（V0.2.22 fetchPlatformCerts +4 测 4 分支全覆盖）","gaps":["生产切真（K4 待物料 GAP-17）"]},
     {"path":"apps/server/src/modules/device","entry":"device.routes.ts + device.service.ts + parsers","interfaces":"佳明/BLE/微信运动/设备导入/huawei_export/体脂秤（V0.2.24 体重 0.005）","tests":"tests/modules/device","gaps":["huawei 真实样本回归（K3 待物料 GAP-17）"]},
-    {"path":"apps/server/src/modules/stats","entry":"stats.routes.ts + stats.service.ts","interfaces":"跑者统计/天气/日报/画像（V0.2.26 weatherAnalysis +AQI×心率 B1 + 体感区间配速 A1）","tests":"tests/modules/stats","gaps":[]},
+    {"path":"apps/server/src/modules/stats","entry":"stats.routes.ts + stats.service.ts","interfaces":"跑者统计/天气/日报/画像（V0.2.26 AQI×心率 B1 + 体感区间配速 A1 / V0.2.30 buildReportText 三段式重写）","tests":"tests/modules/stats","gaps":[]},
     {"path":"apps/server/src/modules/ranking","entry":"ranking.routes.ts + ranking.service.ts","interfaces":"多维榜单","tests":"tests/modules/ranking","gaps":[]},
     {"path":"apps/server/src/modules/recipe","entry":"recipe.routes.ts + recipe.service.ts","interfaces":"菜谱 stub","tests":"tests/modules/recipe","gaps":["V2 stub"]},
     {"path":"apps/server/src/modules/ludong","entry":"ludong.routes.ts + ludong.service.ts","interfaces":"律动同步 stub","tests":"tests/modules/ludong","gaps":["V2 stub"]},
@@ -313,121 +374,147 @@
     {"path":"apps/server/src/modules/family","entry":"family.routes.ts + family.service.ts","interfaces":"家庭空间","tests":"tests/modules/family","gaps":[]},
     {"path":"apps/server/src/modules/group-buy","entry":"group-buy.routes.ts + group-buy.service.ts","interfaces":"团购","tests":"tests/modules/group-buy","gaps":["前端已下线"]},
     {"path":"apps/server/src/modules/review","entry":"review.routes.ts + review.service.ts","interfaces":"评价/鞋评","tests":"tests/modules/review","gaps":[]},
-    {"path":"apps/server/src/modules/ai-coach","entry":"ai-coach.routes.ts + service + providers + context-builder.ts","interfaces":"GLM/Stub 对话/计划/日报/voice（V0.2.27 contextBuilder 天气感知 N）","tests":"tests/modules/ai-coach + ai-coach-flow.e2e","gaps":["voice 真接入待 GAP-18 K5 授权加回"]},
+    {"path":"apps/server/src/modules/ai-coach","entry":"ai-coach.routes.ts + service + providers + context-builder.ts","interfaces":"GLM/Stub 对话/计划/日报/voice（V0.2.27 contextBuilder 天气感知 N + V0.2.28 3 天时效判断）","tests":"tests/modules/ai-coach + ai-coach-flow.e2e","gaps":["voice 真接入待 GAP-18 K5 授权加回"]},
     {"path":"apps/server/src/modules/food","entry":"food.routes.ts + food.service.ts + client.ts","interfaces":"饮食/营养/拍照识别","tests":"tests/modules/food","gaps":["recognize 真机与生产 LLM_VISION_MODEL 配置"]},
-    {"path":"apps/server/src/modules/ocr","entry":"ocr.routes.ts + ocr.service.ts + ocr.client.ts","interfaces":"腾讯 OCR 三 action","tests":"tests/modules/ocr","gaps":[]}
+    {"path":"apps/server/src/modules/ocr","entry":"ocr.routes.ts + ocr.service.ts + ocr.client.ts","interfaces":"腾讯 OCR 三 action","tests":"tests/modules/ocr","gaps":[]},
+    {"path":"apps/server/src/modules/interpret","entry":"interpret.routes.ts + service.ts + client.ts","interfaces":"V0.2.33 第 35 个 module：POST /api/interpret（garmin FIT 解读 + admin listInterpret V0.2.37）","tests":"tests/modules/interpret（client 8 + service 5 + routes 7 = 20 测）","gaps":["真机验证待 minimax key 注入 + 佳明 FIT 样本（V0.2.33 key sk-cp- 疑代理，真机 401 切 base URL）"]}
   ],
   "incrementSummary": {
-    "v0.2.22": {
-      "commits": ["wxpay22 (hash 待补)"],
-      "tag": "v0.2.22",
-      "delta": "wxpay.service.test.ts +4 测覆盖 fetchPlatformCerts 4 分支（WX_PAY_KEY 未配置 / 长度非 32 字节 / fetch 非 2xx / happy path）；beforeAll 生成临时 RSA 私钥写临时文件走真签名路径，只 mock fetch；happy path 用 APIv3 key AES-256-GCM 加密平台证书 PEM（复用 wxpay.cert.test.ts 自签证书固定序列号 66E9680B...）",
-      "purpose": "V0.2.13 K1 留的后续：mock WX_MCH_PRIVATE_KEY_PATH + generateAuthorization + AES-GCM 全链路",
-      "backendDelta": "0 源码 / 纯测试增量",
-      "funcsChange": "86.07% → 86.42%（+0.35pp）"
-    },
-    "v0.2.23": {
-      "commit": "0f86e23",
-      "tag": "v0.2.23",
-      "delta": "funcs% 加固 +14 测：address.service +4（list+update 60→100%）/ sport.repository 新文件 +8（75→100%）/ cart +1 clear（80→100%）/ coupon +1 availableCount（80→100%）",
-      "purpose": "缓冲 0.42pp→1.5pp，防 V0.2.x 后续稀释",
-      "backendDelta": "0 源码 / 纯测试增量",
-      "funcsChange": "86.42% → 87.5%（+1.08pp），+6 函数 490/560",
-      "thresholdUnchanged": "仍 86/83.5/75/83.5"
-    },
-    "v0.2.24": {
-      "commits": ["2af453e", "ccde511"],
-      "tag": "v0.2.24",
-      "delta": "小米体脂秤真机验收 + 修复：P1 体重系数 0.01→0.005（MIBCS 0x2A9C GATT 5g 分辨率规范，真机验证 0.01 偏大 2 倍→0.005 显示 85kg 准）/ P2.2 connectScale 3 次 retry（仿 ble.ts subscribeHeartRate）/ P2.3 profile 兜底 modal（globalData.user 缺身高/生日/性别引导完善）",
-      "realMachineVerification": "连接✅ 0x181B + 体重 85kg✅ + 保存落库✅",
-      "backendDelta": "scale.ts + ble.ts + device.service + health/device 5 文件 4 维度静态审查 + 修复",
-      "remaining": "② health 页体成分卡自验 + P2.5 parseWeightBytes（Mi Scale v1 待真机）"
-    },
-    "v0.2.25": {
-      "commits": ["efe2632", "b3fd353"],
-      "tag": "v0.2.25",
-      "delta": "dev-cli --project 默认值 V0.2.10 bug 根治（apps/miniprogram/miniprogram → apps/miniprogram project.config.json 所在，paths.ts + dev-cli CLAUDE.md 同步，wx:auto-preview/preview/upload 裸跑不再踩 pages/index/index.js 未找到）；WechatSI 插件临时移除（app.json 删 plugins + scope.record，开发者 uin 未授权 wx:auto-preview 编译卡「插件未授权」）；ai-coach onTapVoice requirePlugin try/catch 永久防御",
-      "restoreAction": "常智公众平台「插件管理」添加同声传译 wx069ba97219f66d99 后加回恢复 K5 voice → GAP-18 open",
-      "backendDelta": "0 后端 / scripts/dev-cli paths.ts + app.json + pages/ai-coach"
-    },
-    "v0.2.26": {
-      "commits": ["8dee343 (backend B1+A1)", "817f8f9 (frontend insight 步骤 5)"],
-      "tag": "v0.2.26",
-      "delta": "weatherAnalysis 加 AQI×心率（B1）+ 体感区间配速（A1）+ insight 前端展示（步骤 5）",
-      "backendChanges": [
-        "stats.service.ts line 347-352: aqiHr 数据流（B1）+ aqiHrR = pearson(aqiHr)",
-        "stats.service.ts: feelsLikeZones 4 桶 <10/10-20/20-30/>30 + optimalZone 最快桶（A1）",
-        "WeatherAnalysisResult 类型扩：correlations.aqiHr / scatter.aqiHr / feelsLikeZones? / optimalZone?"
-      ],
-      "frontendChanges": [
-        "pages/insight/index.ts: WeatherAnalysisResult 类型扩容 + api.call('stats','weatherAnalysis') + feelsLikeZones avgPaceSec → mm:ss 转换",
-        "pages/insight/index.wxml: 加 AQI×心率散点 + 体感区间配速柱状 + optimalZone 高亮"
-      ],
-      "testCases": [
-        "stats.service.test.ts: V0.2.26 B1 AQI×心率正相关 → 雾霾天宜室内 insight",
-        "stats.service.test.ts: V0.2.26 A1 体感温度区间配速曲线 + optimalZone（低温最快）"
-      ],
-      "deltaIt": 2,
+    "v0.2.28": {
+      "tag": "v0.2.28",
+      "delta": "aiCoach contextBuilder 天气注入加 3 天时效判断（≤3 天「最近跑步天气」/ >3 天「较早前跑步天气」避免 AI 据过时天气误判）+ 修 V0.2.26 N 测试固定日期漂移脆弱性（改动态 Date.now()-3_600_000）+1 it",
+      "scope": "apps/server/src/modules/ai-coach/context-builder.ts",
+      "deltaIt": 1,
       "schemaDelta": 0,
       "moduleDelta": 0
     },
-    "v0.2.27": {
-      "commit": "b847e42",
-      "tag": "v0.2.27",
-      "delta": "aiCoach contextBuilder 天气感知（N）：SYSTEM_BASE 增「高温/雾霾/湿热给针对性建议」+ prisma.checkin.findFirst 查最近带天气打卡 + prompt 注入「最近跑步天气：温度/湿度/AQI」段",
-      "keyDesign": "走 prisma.checkin.findFirst 直查避循环依赖 stats service（关键设计）",
-      "contextBuilderChanges": [
-        "line 30 SYSTEM_BASE: 增「最近天气环境个性化（高温/雾霾/湿热天给针对性建议，如改晨跑/降强/补水电/改室内）」",
-        "line 84-89 buildSystemPrompt Promise.all: prisma.checkin.findFirst({ where:{ userId, weatherTemp:{ not:null } }, orderBy:{ createdAt:'desc' }, select:{ weatherTemp, humidity, aqi, createdAt } })",
-        "line 158-164 prompt 拼接: 注入「最近跑步天气：温度°C 湿度% AQI xxx（时间）」段"
-      ],
-      "testCase": "context-builder.test.ts:101 it('V0.2.26 N: 最近跑步天气注入 prompt（温度+湿度+AQI）')（测试名 V0.2.26 N 是开发时序号，commit message 标 V0.2.27）",
-      "deltaIt": 1,
+    "v0.2.29": {
+      "tag": "v0.2.29",
+      "delta": "今日页改版（删「问 AI 深聊」入口 + 删经纬度显示 + 加天气建议卡）+ 月度报告新页 pages/report-monthly",
+      "scope": "apps/miniprogram 纯前端，apps/server 零改",
+      "deltaPages": 1,
+      "schemaDelta": 0,
+      "moduleDelta": 0
+    },
+    "v0.2.30": {
+      "tag": "v0.2.30",
+      "delta": "stats.service buildReportText 重写为三段式（步数 vs 7 日均对比 + 状态判断 + 量化建议）+ dailyReport action 加查 avgSteps + 抽 judgeState/buildAdvice helpers + formatSleep 5h12min 格式",
+      "scope": "apps/server/src/modules/stats/stats.service.ts",
+      "deltaIt": 0,
+      "schemaDelta": 0,
+      "moduleDelta": 0
+    },
+    "v0.2.31": {
+      "tag": "v0.2.31",
+      "delta": "健康助手页对齐原型：ai-quick-cards 5→4 卡 2×2 grid（删商业装备推荐卡）+ AI 气泡渐变优化",
+      "scope": "apps/miniprogram 纯前端",
+      "schemaDelta": 0,
+      "moduleDelta": 0
+    },
+    "v0.2.32": {
+      "tag": "v0.2.32",
+      "delta": "mine 页照 prototype 重构（用户卡 + data-strip + level-card 融合 + 3 组宫格重归类）+ pages/more 待定页（更多入口）+ level-card 与 invite-bonus-card 融合",
+      "scope": "apps/miniprogram 纯前端",
+      "deltaPages": 1,
+      "schemaDelta": 0,
+      "moduleDelta": 0
+    },
+    "v0.2.33": {
+      "tag": "v0.2.33",
+      "delta": "interpret module（第 35 个 module）创建：minimax M3 Anthropic 兼容（client.ts x-api-key + /v1/messages）+ 佳明 FIT 解读（service.ts fit-file-parser parseAsync）+ routes（POST /api/interpret JWT）+ InterpretRecord 表（#62，迁移 20260718000000）+ env MINIMAX_* + ENDPOINTS.interpret",
+      "scope": "apps/server/src/modules/interpret/* + prisma + packages/shared",
+      "deltaIt": 13,
+      "schemaDelta": 1,
+      "migrationDelta": 1,
+      "moduleDelta": 1,
+      "keyDesign": "C-子集（TS 独立实现，非 qm-rhythmind 转发：Python AG2 多智能体语言不通）"
+    },
+    "v0.2.34": {
+      "tag": "v0.2.34",
+      "delta": "interpret 小程序上传页 pages/interpret（chooseMessageFile → base64 → POST → 展示）",
+      "scope": "apps/miniprogram 纯前端",
+      "deltaPages": 1,
+      "schemaDelta": 0,
+      "moduleDelta": 0
+    },
+    "v0.2.35": {
+      "tag": "v0.2.35",
+      "delta": "interpret routes bodyLimit 10MB（FIT base64 比 binary 大 33%，超 Fastify 默认 1MB → 413）",
+      "scope": "apps/server/src/modules/interpret/routes.ts",
+      "deltaIt": 0,
+      "schemaDelta": 0,
+      "moduleDelta": 0
+    },
+    "v0.2.36": {
+      "tag": "v0.2.36",
+      "delta": "interpret 测试加固 +7（client fetch reject/empty content/max_tokens/usage + service records fallback/parseAsync throw + routes bodyLimit）→ interpret 20 测",
+      "scope": "apps/server/tests/modules/interpret/*",
+      "deltaIt": 7,
+      "schemaDelta": 0,
+      "moduleDelta": 0
+    },
+    "v0.2.37": {
+      "tag": "v0.2.37",
+      "delta": "admin listInterpret action + RBAC（OPERATOR_ACTIONS，admin/operator/super-admin 只读）+ qm-admin Web Interpret.tsx 跨仓（commit f314235）",
+      "scope": "apps/server/src/modules/admin + qm-admin 独立仓",
+      "deltaIt": 0,
+      "schemaDelta": 0,
+      "moduleDelta": 0
+    },
+    "v0.2.38": {
+      "tag": "v0.2.38",
+      "delta": "interpret/CLAUDE.md（150 行）新建 + apps/server changelog 同步；GAP-12 保持 35/35",
+      "scope": "docs 纯文档 commit",
+      "deltaIt": 0,
       "schemaDelta": 0,
       "moduleDelta": 0,
-      "realMachineVerification": "高温/雾霾天问 AI 私教 → 应给「改晨跑/降强/补水电/改室内」针对性建议"
+      "gap12Status": "保持 35/35 ✅"
     }
   },
   "documentation": {
-    "created": [],
+    "created": [
+      "apps/server/src/modules/interpret/CLAUDE.md (V0.2.38 新建，150 行，GAP-12 保持 35/35)"
+    ],
     "updated": [
-      "CLAUDE.md（根，顶部追加 3 段 changelog + 当前阶段 V0.2.27 + GAP-18 新增 + Mermaid 节点更新 + 技术栈表 + tag v0.2.27 + 工作流钩子加 V0.2.27 天气感知范式）",
-      "apps/server/CLAUDE.md（顶部追加 init #17 + V0.2.27 + V0.2.26 共 3 段 changelog）",
-      "apps/miniprogram/CLAUDE.md（顶部追加 init #17 + V0.2.26 共 2 段 changelog）",
-      "packages/shared/CLAUDE.md（顶部追加 init #17 段）",
-      ".claude/index.json（全量重写到 V0.2.27）"
+      "CLAUDE.md（根，顶部追加 5 段 changelog [init #18 + V0.2.33 + V0.2.34-37 + V0.2.29-32 + V0.2.38] + 当前阶段 V0.2.38 [62 表 / 35 module / 25 页 / 47 迁移 / 16 组件 / 1119 it() / funcs 87.74% 沿用] + GAP 表 GAP-12 35/35 + GAP-15 加 init #18 + Mermaid 节点 [Srv 35 module + 62 表 + 47 迁移 + 1108 it / 加 Interpret 节点 / MpPages 25] + 技术栈表更新 [Prisma 62/47 + Vitest 1108/1119] + module 数 34→35 [含 interpret 第 35 个] + tag v0.2.38 + 工作流钩子加 interpret + V0.2.28 天气时效范式）",
+      "apps/server/CLAUDE.md（顶部追加 init #18 + V0.2.38 段；V0.2.30+33-37 段已有）",
+      "apps/miniprogram/CLAUDE.md（顶部追加 init #18 + V0.2.29 + V0.2.31 + V0.2.32 + V0.2.34 段；25 页 + interpret 页）",
+      "packages/shared/CLAUDE.md（顶部追加 init #18 + V0.2.33 段；ENDPOINTS 35 module / +interpret.garmin）",
+      ".claude/index.json（全量重写到 V0.2.38）"
     ]
   },
   "gaps": [
     {"id":"GAP-1","status":"closed","note":"user 鉴权"},
     {"id":"GAP-2","status":"closed","note":"admin schema 抽离"},
-    {"id":"GAP-3","status":"closed","note":"coverage threshold gate 已配置；V0.2.23 实测 funcs 87.5% > 86"},
-    {"id":"GAP-4","status":"closed","note":"CHANGELOG 归档入口；V0.2.27 init #17 顶部 3 段补齐 V0.2.26/2.27"},
+    {"id":"GAP-3","status":"closed","note":"coverage threshold gate 已配置；init #17 实测 funcs 87.74% > 86"},
+    {"id":"GAP-4","status":"closed","note":"CHANGELOG 归档入口；V0.2.38 init #18 顶部 5 段补齐 V0.2.28-38"},
     {"id":"GAP-5","status":"closed","note":"device userId 兜底"},
     {"id":"GAP-6","status":"closed","note":"分销闭环"},
     {"id":"GAP-7","status":"closed","note":"主线/tag 策略"},
     {"id":"GAP-8","status":"closed","note":"module CLAUDE.md 基础覆盖"},
     {"id":"GAP-9","status":"closed","note":"BLE 真机主链路 + V0.2.24 体脂秤体重 0.005"},
     {"id":"GAP-10","status":"closed","note":"sport 选鞋闭环"},
-    {"id":"GAP-11","status":"closed","note":"子 CLAUDE.md 同步；V0.2.27 init #17 再次同步到 V0.2.27"},
-    {"id":"GAP-12","status":"closed","note":"34/34 后端 module CLAUDE.md 100%"},
+    {"id":"GAP-11","status":"closed","note":"子 CLAUDE.md 同步；V0.2.38 init #18 再次同步到 V0.2.38"},
+    {"id":"GAP-12","status":"closed","note":"35/35 后端 module CLAUDE.md 100%（V0.2.1 init #10 100% → V0.2.21 init #16 保持 34/34 → V0.2.38 init #18 升 35/35 含 interpret/CLAUDE.md）"},
     {"id":"GAP-13","status":"closed","note":"data-strip/avatar-badge + V0.2.9 四组件文档均存在"},
-    {"id":"GAP-14","status":"closed","note":"V0.2.12 实测 funcs 85.54% → V0.2.13 K1 升 86.07% → V0.2.23 加固 87.5%（缓冲 1.5pp）"},
-    {"id":"GAP-15","status":"closed","note":"V0.2.8 init #13 + V0.2.16 B5 + V0.2.21 init #16 + V0.2.27 init #17 四次同步到 V0.2.27"},
+    {"id":"GAP-14","status":"closed","note":"V0.2.12 实测 funcs 85.54% → V0.2.13 K1 升 86.07% → V0.2.23 加固 87.5% → init #17 实测 87.74%（缓冲 1.74pp）"},
+    {"id":"GAP-15","status":"closed","note":"V0.2.8 init #13 + V0.2.16 B5 + V0.2.21 init #16 + V0.2.27 init #17 + V0.2.38 init #18 五次同步到 V0.2.38"},
     {"id":"GAP-16","status":"closed","note":"V0.2.11 pnpm-workspace.yaml + scripts/*；cli 测试 11 个（platform 6 + cli-helper 5）"},
     {"id":"GAP-17","status":"open","note":"K3 huawei 真实 ZIP + K4 wxpay 4 件套业务物料待主人物料，非文档/代码 GAP；详见 docs/V0.2.15-pending-materials.md"},
-    {"id":"GAP-18","status":"open","note":"V0.2.27 init #17 新登记：K5 voice V0.2.19 接入 → V0.2.25 临时移除待授权；常智公众平台「插件管理」添加同声传译 wx069ba97219f66d99 后加回 app.json plugins + scope.record 恢复 K5 voice；非文档/代码 GAP，是授权驱动 GAP"}
+    {"id":"GAP-18","status":"open","note":"V0.2.27 init #17 登记：K5 voice V0.2.19 接入 → V0.2.25 临时移除待授权；常智公众平台「插件管理」添加同声传译 wx069ba97219f66d99 后加回 app.json plugins + scope.record 恢复 K5 voice"}
   ],
   "nextStepSuggestions": [
-    "P1：主人提供 huawei_export 真实 ZIP → 跑 V0.2.21 fuzzer 25 用例回归 + 必要时扩 parser 覆盖新格式 → GAP-17 K3 closed",
-    "P2：主人提供 wxpay 4 件套（WX_MCH_ID + WX_MCH_API_V3_KEY 32字节 + WX_MCH_PRIVATE_KEY_PATH cert + WX_MCH_CERT_SERIAL_NO + 通知 URL）→ 灰度 off→mock→on 三阶段切生产 → GAP-17 K4 closed",
-    "P3：常智公众平台「插件管理」添加同声传译 wx069ba97219f66d99 → app.json 加回 plugins + scope.record → K5 voice 真机验证（点 🎤 说话应识别并 send）→ GAP-18 closed",
-    "P4：V0.2.26 weatherAnalysis 真机验证 — pnpm wx:auto-preview → insight 页 → AQI×心率散点 + 体感区间配速曲线（4 桶）+ optimalZone 高亮展示",
-    "P5：V0.2.27 aiCoach 天气感知真机验证 — 高温/雾霾/湿热天问 AI 私教 → 应给「改晨跑/降强/补水电/改室内」针对性建议",
-    "P6：V0.2.9 四组件 + diet/insight/membership/report-detail 真机视觉验证 — pnpm wx:auto-preview + node scripts/screenshot-mp.js 比对 init #12 base line",
-    "P7：GLM-4.6V 真机验证 food.recognize vision 模式（env LLM_API_KEY + LLM_VISION_MODEL=glm-4.6v）",
-    "P8：FATSECRET_KEY 生产注入（ocr 模式 + 搜索依赖）",
-    "P9：V0.2.24 小米体脂秤 health 页体成分卡自验 + parseWeightBytes（Mi Scale v1 待真机）",
-    "P10：佳明官方 API 申请（V0.1.144~147 调研结论 A 路线待批）"
+    "P1：主人提供 huawei_export 真实 ZIP → 跑 V0.2.21 fuzzer 25 用例回归 → GAP-17 K3 closed",
+    "P2：主人提供 wxpay 4 件套（WX_MCH_ID + WX_MCH_API_V3_KEY 32字节 + WX_MCH_PRIVATE_KEY_PATH cert + WX_MCH_CERT_SERIAL_NO + 通知 URL）→ 灰度 off→mock→on → GAP-17 K4 closed",
+    "P3：常智公众平台「插件管理」添加同声传译 wx069ba97219f66d99 → app.json 加回 plugins + scope.record → K5 voice 真机验证 → GAP-18 closed",
+    "P4：V0.2.33 interpret 真机验证 — minimax key 注入（生产 .env）+ 佳明真实 .fit 样本（主人提供或自备）→ POST /api/interpret action:garmin → 验解读文本 + 落 InterpretRecord + admin listInterpret 列表；key sk-cp- 疑代理，真机 401 切 base URL",
+    "P5：V0.2.29 今日页改版 + V0.2.32 mine 重构 + V0.2.34 interpret 上传页真机视觉验证 — pnpm wx:auto-preview",
+    "P6：V0.2.30 stats buildReportText 重写真机验证 — 月度报告页（pages/report-monthly）展示三段式（步数 vs 7 日均 + 状态判断 + 量化建议）",
+    "P7：V0.2.26 weatherAnalysis 真机验证 — insight 页 AQI×心率散点 + 体感区间配速曲线 + optimalZone",
+    "P8：V0.2.27 aiCoach 天气感知 + V0.2.28 3 天时效真机验证 — 高温/雾霾天问 AI → 应给针对性建议；>3 天打卡应标注「较早前」",
+    "P9：GLM-4.6V 真机验证 food.recognize vision 模式（env LLM_API_KEY + LLM_VISION_MODEL=glm-4.6v）",
+    "P10：FATSECRET_KEY 生产注入（ocr 模式 + 搜索依赖）",
+    "P11：V0.2.24 小米体脂秤 health 页体成分卡自验 + parseWeightBytes（Mi Scale v1 待真机）",
+    "P12：佳明官方 API 申请（V0.1.144~147 调研结论 A 路线待批）"
   ]
 }
