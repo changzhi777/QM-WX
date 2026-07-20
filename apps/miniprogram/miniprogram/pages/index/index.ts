@@ -143,7 +143,9 @@ Page({
         api.call<{ sufficient?: boolean; insights?: string[] }>('stats', 'weatherAnalysis', {}).catch(() => null),  // 运动与天气建议：失败静默
       ]);
       // V0.2.9 短期 banner 持久化：单日关了就关，不存盘
-      const uv = (airRes && typeof airRes.uv === 'number') ? airRes.uv : 0;
+      const rawUv = (airRes && typeof airRes.uv === 'number') ? airRes.uv : 0;
+      // UV 正常 0-11，异常值（如 999 qweather 错误码）当 0 → uv-alert 不显示
+      const uv = rawUv > 0 && rawUv <= 11 ? rawUv : 0;
       // 批 1：本周趋势带日期（history 日期 'YYYY-MM-DD' → 'MM-DD'）
       const weekTrend = historyRes.list.slice(0, 7).reverse().map((h) => ({
         date: (h.date || '').slice(5),
