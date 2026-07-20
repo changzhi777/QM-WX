@@ -80,6 +80,7 @@ model User {
   sleepRecords           SleepRecord[] // V0.1.43 睡眠历史（小米数据包导入）
   bodyCompositionRecords BodyCompositionRecord[] // V0.1.124 体脂秤数据（BLE 小米体脂秤）
   interpretRecords       InterpretRecord[] // V0.2.33 资料解读（minimax M3）
+  strengthSessions       StrengthSession[] // V0.2.42 力量训练（训记式）
   corosRawEvents         CorosRawEvent[] // V0.1.130 COROS Terra webhook 原始数据
   conversationTurns      ConversationTurn[] // V0.1.139 AI 私教对话（多轮记忆）
   dailyReports           DailyReport[] // V0.1.144 每日 AI 健康简报（健康分数+AI 解读）
@@ -1210,4 +1211,54 @@ model InterpretRecord {
 
   @@index([userId, createdAt])
   @@index([type])
+}
+
+// V0.2.42 strength module（力量训练记录，训记式）
+model StrengthSession {
+  id          String   @id @default(cuid())
+  userId      String
+  date        DateTime @default(now()) // 训练时间
+  dateStr     String   // YYYY-MM-DD（按日聚合/统计）
+  durationSec Int      @default(0) // 训练时长
+  totalVolume Float    @default(0) // 训练容量（Σ reps×weight，kg·次）
+  notes       String?  // 训练备注
+  createdAt   DateTime @default(now())
+
+  user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sets StrengthSet[]
+
+  @@index([userId, createdAt])
+  @@index([dateStr])
+}
+
+model StrengthSet {
+  id           String   @id @default(cuid())
+  sessionId    String
+  order        Int // 动作序号（一次训练多动作）
+  exerciseName String // 动作名（如 深蹲）
+  exerciseId   String? // FK Exercise（预设；自定义空）
+  reps         Int // 次数
+  weight       Float // 重量 kg
+  setIndex     Int // 第几组（同动作多组）
+  restSec      Int? // 组间间歇秒（记录用）
+  createdAt    DateTime @default(now())
+
+  session   StrengthSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  exercise  Exercise?       @relation(fields: [exerciseId], references: [id])
+
+  @@index([sessionId])
+  @@index([exerciseId])
+}
+
+model Exercise {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  category    String // 胸/背/腿/肩/手臂/核心
+  muscleGroup String? // 具体肌群（如 股四头肌）
+  isCustom    Boolean  @default(false) // 用户自定义 vs 预设
+  createdAt   DateTime @default(now())
+
+  sets StrengthSet[]
+
+  @@index([category])
 }

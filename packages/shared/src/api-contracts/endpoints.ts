@@ -116,6 +116,16 @@ export const ENDPOINTS = {
     // V0.2.33 资料解读（minimax M3 Anthropic 兼容）
     garmin: '/api/interpret', // 佳明 FIT 解读（parseAsync → minimax → 落表）
   },
+  strength: {
+    // V0.2.42 力量训练记录（训记式）
+    startSession: '/api/strength',
+    addSet: '/api/strength',
+    finishSession: '/api/strength',
+    listSessions: '/api/strength',
+    sessionDetail: '/api/strength',
+    myVolume: '/api/strength',
+    listExercises: '/api/strength',
+  },
   device: {
     listBindings: '/api/device',
     startOAuth: '/api/device',
