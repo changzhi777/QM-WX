@@ -67,7 +67,8 @@ Page({
     } catch {
       // 登录失败不阻塞（显欢迎语，用户操作时再触发登录）
     }
-    this.loadHistory();
+    // V0.2.43 默认新聊：进页不恢复历史（hasHistory=false → 显 quick cards + AI 气泡 + 快速提问）
+    // 用户点「历史」按钮（onShowConversations）才看历史会话
     this.warmup(); // V0.1.141 B 预热 system prompt Cache（首问快）
     this.loadAlert(); // V0.1.144 AI 主动提醒 + 今日数据条
   },
