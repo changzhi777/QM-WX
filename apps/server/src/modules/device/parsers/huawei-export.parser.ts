@@ -41,6 +41,7 @@
  *   - 本实现未移植 HiTrack 二进制解析（Pass2 再加）
  */
 import unzipper from 'unzipper';
+import { XMLParser } from 'fast-xml-parser';
 
 export interface HuaweiActivity {
   sportType: number;
@@ -139,6 +140,84 @@ export function toCheckin(activity: HuaweiActivity): ParsedCheckin {
   };
 }
 
+// ===== V0.2.47 TCX 支持（华为「运动记录导出」exportSportData / Garmin 通用格式）=====
+
+const tcxParser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '@_' });
+
+/** TCX Activity@Sport → QM sport（Garmin 标准枚举）*/
+const TCX_SPORT_MAP: Record<string, string> = {
+  Running: 'run',
+  Biking: 'cycling',
+  Cycling: 'cycling',
+  MountainBiking: 'cycling',
+  Swimming: 'swim',
+  Walking: 'walk',
+  Hiking: 'hike',
+  Other: 'other',
+};
+
+/**
+ * 解析 TCX（TrainingCenterDatabase XML）→ ParsedCheckin[]
+ *
+ * 华为「运动记录导出」(exportSportData) 每条运动一个 .tcx（Garmin/Strava 通用标准格式）。
+ * 结构：TrainingCenterDatabase > Activities > Activity{ @Sport, Id, Lap[]{ TotalTimeSeconds, DistanceMeters, Calories?, AverageHeartRateBpm?{Value} } }
+ * Lap 可能单数或多圈（数组），多圈累加 duration/distance/calories。
+ */
+export function parseTcxXml(text: string): ParsedCheckin[] {
+  let obj: unknown;
+  try {
+    obj = tcxParser.parse(text);
+  } catch {
+    return [];
+  }
+  const tcd = (obj as { TrainingCenterDatabase?: { Activities?: { Activity?: unknown } } })
+    ?.TrainingCenterDatabase;
+  const activity = tcd?.Activities?.Activity;
+  if (!activity) return [];
+  const acts = Array.isArray(activity) ? activity : [activity];
+  return acts.map((a): ParsedCheckin => {
+    const act = a as { '@_Sport'?: string; Id?: string; Lap?: unknown };
+    const lapsRaw = act.Lap;
+    const laps = Array.isArray(lapsRaw) ? lapsRaw : lapsRaw ? [lapsRaw] : [];
+    // fast-xml-parser 把无子节点的文本元素解析为 string，数值字段统一 parseFloat 兜底
+    const num = (l: unknown, k: string): number => {
+      const v = (l as Record<string, unknown>)?.[k];
+      const n = typeof v === 'string' ? parseFloat(v) : typeof v === 'number' ? v : NaN;
+      return Number.isFinite(n) ? n : 0;
+    };
+    const totalSec = laps.reduce((s, l) => s + num(l, 'TotalTimeSeconds'), 0);
+    const totalDist = laps.reduce((s, l) => s + num(l, 'DistanceMeters'), 0);
+    const totalCal = laps.reduce((s, l) => s + num(l, 'Calories'), 0);
+    const hrVals = laps
+      .map((l) =>
+        num((l as { AverageHeartRateBpm?: { Value?: number } })?.AverageHeartRateBpm, 'Value'),
+      )
+      .filter((v) => v > 0);
+    const avgHr = hrVals.length
+      ? Math.round(hrVals.reduce((s, v) => s + v, 0) / hrVals.length)
+      : undefined;
+    const idStr = act.Id ?? (laps[0] as { '@_StartTime'?: string })?.['@_StartTime'];
+    return {
+      sport: TCX_SPORT_MAP[act['@_Sport'] ?? ''] ?? 'other',
+      startedAt: idStr ? new Date(idStr) : new Date(),
+      durationSec: Math.round(totalSec),
+      distanceKm: totalDist / 1000,
+      calories: totalCal,
+      source: 'huawei_export',
+      // raw 保留 TCX 原始关键字段用于追溯（avgHr 是 TCX 派生，HuaweiActivity 类型擦除）
+      raw: {
+        sportType: -1,
+        startTime: idStr ? new Date(idStr).getTime() : Date.now(),
+        totalTime: totalSec * 1000,
+        totalDistance: totalDist,
+        totalCalories: totalCal * 1000,
+        attribute: `tcx:${act['@_Sport'] ?? ''}`,
+        ...(avgHr ? { avgHr } : {}),
+      } as unknown as HuaweiActivity,
+    };
+  });
+}
+
 /** 主入口：解压 ZIP + 解析 + 转 Checkin */
 export interface ParseResult {
   activities: ParsedCheckin[];
@@ -149,21 +228,37 @@ export interface ParseResult {
 export async function parseHuaweiExport(buffer: Buffer, password?: string): Promise<ParseResult> {
   const directory = await unzipper.Open.buffer(buffer);
 
-  // 找 motion path detail data JSON（兼容大小写 + 文件名前缀匹配）
+  // 优先找 motion path detail data JSON（隐私中心导出，Hitrava JSON）
   const motionFile = directory.files.find(
     (f) => /motion[ _]path[ _]detail[ _]data.*\.json$/i.test(f.path),
   );
-  if (!motionFile) {
-    throw new Error('未找到 motion path detail data JSON（请确认 ZIP 是华为运动健康隐私中心导出）');
+  if (motionFile) {
+    const text = (await motionFile.buffer(password)).toString('utf8');
+    const activities = parseMotionJson(text).map(toCheckin);
+    return {
+      activities,
+      rawCount: activities.length,
+      filteredCount: activities.filter((a) => a.distanceKm > 0).length,
+    };
   }
 
-  // 解压（password 可选：AES 加密 ZIP 必需）
-  const text = (await motionFile.buffer(password)).toString('utf8');
-  const activities = parseMotionJson(text).map(toCheckin);
-
+  // V0.2.47 fallback：运动记录导出（exportSportData）= TCX 文件批量解析
+  const tcxFiles = directory.files.filter((f) => /\.tcx$/i.test(f.path));
+  if (tcxFiles.length === 0) {
+    throw new Error('未找到 motion path detail data JSON 或 .tcx 文件（请确认 ZIP 是华为运动健康导出）');
+  }
+  const all: ParsedCheckin[] = [];
+  for (const f of tcxFiles) {
+    try {
+      const text = (await f.buffer(password)).toString('utf8');
+      all.push(...parseTcxXml(text));
+    } catch {
+      // 单个 tcx 解析失败跳过（优雅降级，不阻塞其他文件）
+    }
+  }
   return {
-    activities,
-    rawCount: activities.length,
-    filteredCount: activities.filter((a) => a.distanceKm > 0).length,
+    activities: all,
+    rawCount: all.length,
+    filteredCount: all.filter((a) => a.distanceKm > 0).length,
   };
 }

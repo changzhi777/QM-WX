@@ -16,6 +16,7 @@ import {
   parseMotionJson,
   parseAttribute,
   toCheckin,
+  parseTcxXml,
   parseHuaweiExport,
   type HuaweiActivity,
 } from '../../../src/modules/device/parsers/huawei-export.parser.js';
@@ -137,6 +138,62 @@ describe('huawei-export.parser', () => {
     it('毫秒 → 秒换算（totalTime 1800000ms → 1800s）', () => {
       const r = toCheckin({ sportType: 4, startTime: 0, totalTime: 1800000, totalDistance: 0, totalCalories: 0 });
       expect(r.durationSec).toBe(1800);
+    });
+  });
+
+  describe('parseTcxXml (V0.2.47 TCX 支持，华为运动记录导出 / Garmin 通用)', () => {
+    it('单 Activity 单 Lap → sport/duration/distance/calories/avgHr', () => {
+      const tcx = `<?xml version="1.0"?>
+<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">
+  <Activities>
+    <Activity Sport="Running">
+      <Id>2024-04-30T22:42:25Z</Id>
+      <Lap StartTime="2024-04-30T22:42:25Z">
+        <TotalTimeSeconds>372</TotalTimeSeconds>
+        <DistanceMeters>1000</DistanceMeters>
+        <Calories>80</Calories>
+        <AverageHeartRateBpm><Value>105</Value></AverageHeartRateBpm>
+      </Lap>
+    </Activity>
+  </Activities>
+</TrainingCenterDatabase>`;
+      const r = parseTcxXml(tcx);
+      expect(r).toHaveLength(1);
+      expect(r[0]?.sport).toBe('run');
+      expect(r[0]?.durationSec).toBe(372);
+      expect(r[0]?.distanceKm).toBe(1);
+      expect(r[0]?.calories).toBe(80);
+      expect((r[0]?.raw as { avgHr?: number }).avgHr).toBe(105);
+    });
+
+    it('多 Lap 累加 duration/distance/calories', () => {
+      const tcx = `<?xml version="1.0"?>
+<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2">
+  <Activities>
+    <Activity Sport="Cycling">
+      <Id>2024-05-01T10:00:00Z</Id>
+      <Lap><TotalTimeSeconds>600</TotalTimeSeconds><DistanceMeters>3000</DistanceMeters><Calories>150</Calories></Lap>
+      <Lap><TotalTimeSeconds>900</TotalTimeSeconds><DistanceMeters>5000</DistanceMeters><Calories>250</Calories></Lap>
+    </Activity>
+  </Activities>
+</TrainingCenterDatabase>`;
+      const r = parseTcxXml(tcx);
+      expect(r[0]?.sport).toBe('cycling');
+      expect(r[0]?.durationSec).toBe(1500);
+      expect(r[0]?.distanceKm).toBe(8);
+      expect(r[0]?.calories).toBe(400);
+    });
+
+    it('未知 Sport → other；缺心率不报错', () => {
+      const tcx = `<TrainingCenterDatabase xmlns="x"><Activities><Activity Sport="Yoga"><Id>2024-01-01T00:00:00Z</Id><Lap><TotalTimeSeconds>60</TotalTimeSeconds><DistanceMeters>0</DistanceMeters></Lap></Activity></Activities></TrainingCenterDatabase>`;
+      const r = parseTcxXml(tcx);
+      expect(r[0]?.sport).toBe('other');
+      expect((r[0]?.raw as { avgHr?: number }).avgHr).toBeUndefined();
+    });
+
+    it('非 XML / 缺 Activity → 空数组（不抛）', () => {
+      expect(parseTcxXml('not xml at all')).toEqual([]);
+      expect(parseTcxXml('<TrainingCenterDatabase xmlns="x"></TrainingCenterDatabase>')).toEqual([]);
     });
   });
 
