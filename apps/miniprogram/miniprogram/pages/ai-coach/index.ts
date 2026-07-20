@@ -52,7 +52,7 @@ Page({
     conversationList: [] as Array<{ conversationId: string; lastMessage: string; lastTime: string; messageCount: number }>,
     persona: 'buddy' as string,
     personaList: PERSONAS,
-    recording: false, // V0.2.19 K5: 同声传译录音态
+    recording: false, // V0.2.44 已弃用（去 voice 按钮，保留字段防 wxml 残留引用报错）
   },
   streamingTask: null as WechatMiniprogram.RequestTask | null,
   // V0.1.141 A throttle：buffer 累积 token + 50ms timer flush（setData 频率降 ~20x）
@@ -413,82 +413,7 @@ Page({
     this.setData({ inputText: '请调整这份计划：' });
   },
 
-  /** F 语音输入（V0.2.19 K5：同声传译插件 wx069ba97219f66d99 已开通） */
-  onTapVoice() {
-    // 在录音中再次点 = 停止 + 识别
-    if (this.data.recording) {
-      this.stopAndRecognize();
-      return;
-    }
-    // 第一次点 = 开始录音
-    const that = this;
-    if (!wx.getRecorderManager) {
-      wx.showToast({ title: '当前微信版本不支持录音', icon: 'none' });
-      return;
-    }
-    const recorder = wx.getRecorderManager();
-    that._recorder = recorder;
-    recorder.onStop((res: { tempFilePath: string; duration: number }) => {
-      if (!res || !res.tempFilePath || res.duration < 300) {
-        wx.showToast({ title: '录音太短', icon: 'none' });
-        that.setData({ recording: false });
-        return;
-      }
-      // 调同声传译插件识别（requirePlugin 编译期静态解析）
-      // 类型: WechatSI 插件全局对象 { translateVoice(opts) → Promise<{ result?: string }> }
-      // 服务 ID: wx069ba97219f66d99（plugin provider）
-      // V0.2.24 临时绕过：app.json WechatSI 插件未授权已移除，requirePlugin 会抛 → try/catch 防崩（授权后 app.json 加回插件即正常）
-      let siPlugin:
-        | { translateVoice: (o: { lfrom: string; lto: string; content: string; success?: (r: { result: string }) => void; fail?: (e: unknown) => void }) => void }
-        | undefined;
-      try {
-        siPlugin = (typeof requirePlugin === 'function' ? requirePlugin('WechatSI') : (wx as unknown as { requirePlugin?: (id: string) => unknown }).requirePlugin?.('WechatSI')) as
-          | { translateVoice: (o: { lfrom: string; lto: string; content: string; success?: (r: { result: string }) => void; fail?: (e: unknown) => void }) => void }
-          | undefined;
-      } catch {
-        siPlugin = undefined;
-      }
-      if (!siPlugin || typeof siPlugin.translateVoice !== 'function') {
-        wx.showToast({ title: '同声传译插件未启用 (请检查 app.json)', icon: 'none' });
-        that.setData({ recording: false });
-        return;
-      }
-      siPlugin.translateVoice({
-        lfrom: 'zh_CN',
-        lto: 'zh_CN',
-        content: res.tempFilePath, // 录的 mp3 路径
-        success: (r: { result?: string }) => {
-          const text = (r?.result ?? '').trim();
-          if (text) {
-            that.setData({ inputText: text });
-            that.onSend();
-          } else {
-            wx.showToast({ title: '未识别到语音', icon: 'none' });
-          }
-          that.setData({ recording: false });
-        },
-        fail: (e: unknown) => {
-          const msg = (e as { errMsg?: string } | undefined)?.errMsg ?? '未知错误';
-          wx.showToast({ title: `识别失败：${msg}`, icon: 'none' });
-          that.setData({ recording: false });
-        },
-      });
-    });
-    recorder.onError((err: { errMsg: string }) => {
-      wx.showToast({ title: `录音错误：${err.errMsg}`, icon: 'none' });
-      that.setData({ recording: false });
-    });
-    recorder.start({ duration: 30000, format: 'mp3' }); // 上限 30 秒
-    that.setData({ recording: true });
-    wx.showToast({ title: '开始录音 — 再点停止', icon: 'none', duration: 1500 });
-  },
-
-  /** 停止录音 + 触发识别（在 onTapVoice 录音态分支调） */
-  stopAndRecognize() {
-    if (this._recorder) {
-      this._recorder.stop(); // → onStop 会触发识别
-    }
-  },
+  /** F 语音输入（V0.2.44 已移除：去 WechatSI 插件依赖，用户用系统输入法语音）*/
 
   /** D 分享 */
   onShareAppMessage() {

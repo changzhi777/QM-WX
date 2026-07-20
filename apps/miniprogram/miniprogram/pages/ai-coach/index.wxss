@@ -167,14 +167,6 @@
   border-top: 1rpx solid #eee;
   gap: 12rpx;
 }
-.voice-btn {
-  padding: 12rpx 16rpx;
-  text-align: center;
-  font-size: 24rpx;
-  color: #2D9D78;
-  background: #f0f7f4;
-  border-radius: 24rpx;
-}
 .input {
   flex: 1;
   height: 72rpx;
