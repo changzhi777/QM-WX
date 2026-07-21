@@ -10,7 +10,8 @@
 import type { FastifyInstance } from 'fastify';
 import { Errors } from '../../common/errors.js';
 import { isMinimaxConfigured, isGlmVisionConfigured } from './client.js';
-import { interpretGarminFit, interpretScreenshot, confirmScreenshotCheckin } from './service.js';
+import { interpretGarminFit, interpretScreenshot, confirmScreenshotCheckin, issueH5Token, verifyH5Token, myInterpretHistory } from './service.js';
+import { uploadFile } from '../upload/upload.service.js';
 
 export async function interpretRoutes(app: FastifyInstance) {
   // bodyLimit 10MB：FIT 文件 base64 后可能超 Fastify 默认 1MB（base64 比binary大 33%）
@@ -19,7 +20,7 @@ export async function interpretRoutes(app: FastifyInstance) {
     if (!req.user) throw Errors.unauthorized();
     const { action, payload } = (req.body ?? {}) as {
       action: string;
-      payload?: { fileBase64?: string; inputKey?: string; imageUrl?: string; recordId?: string };
+      payload?: { fileBase64?: string; inputKey?: string; imageUrl?: string; recordId?: string; page?: number; pageSize?: number };
     };
     const inputKey = payload?.inputKey?.trim();
 
@@ -45,8 +46,44 @@ export async function interpretRoutes(app: FastifyInstance) {
         if (!recordId) throw Errors.badRequest('recordId 必填');
         return { code: 0, data: await confirmScreenshotCheckin(req.user.id, { recordId }) };
       }
+      case 'issueH5Token': {
+        // V0.2.63 小程序截图失败 → 生成 H5 跳转 token（5min TTL）
+        return { code: 0, data: await issueH5Token(req.user.id) };
+      }
+      case 'myInterpretHistory': {
+        // V0.2.63 小程序回看历史解读
+        const { page, pageSize } = (payload ?? {}) as { page?: number; pageSize?: number };
+        return { code: 0, data: await myInterpretHistory(req.user.id, { page, pageSize }) };
+      }
       default:
         throw Errors.badRequest(`unknown action: ${action}`);
     }
+  });
+
+  // ===== V0.2.63 H5 fallback（token 鉴权，非 JWT；public 跳过 authPlugin）=====
+
+  // H5 上传截图：multipart 接收 → 验 token → COS → interpretScreenshot
+  app.post('/h5', { config: { public: true, rateLimit: { max: 30, timeWindow: '1 minute' } }, bodyLimit: 10 * 1024 * 1024 }, async (req) => {
+    const token = (req.headers['x-h5-token'] as string | undefined)?.trim();
+    if (!token) throw Errors.unauthorized();
+    const userId = await verifyH5Token(token);
+    if (!isGlmVisionConfigured()) throw Errors.featureDisabled('AI 视觉解读');
+    const data = await req.file({ limits: { fileSize: 10 * 1024 * 1024 } });
+    if (!data) throw Errors.badRequest('no file');
+    const buffer = await data.toBuffer();
+    const upload = await uploadFile({ buffer, mime: data.mimetype, filename: data.filename ?? undefined, type: 'interpret-screenshot', userId, localFallback: false });
+    const inputKey = decodeURIComponent(new URL(upload.url).pathname.slice(1));
+    return { code: 0, data: await interpretScreenshot(userId, { imageUrl: upload.url, inputKey }) };
+  });
+
+  // H5 确认打卡：验 token → confirmScreenshotCheckin
+  app.post('/h5/checkin', { config: { public: true } }, async (req) => {
+    const token = (req.headers['x-h5-token'] as string | undefined)?.trim();
+    if (!token) throw Errors.unauthorized();
+    const userId = await verifyH5Token(token);
+    const { recordId } = (req.body ?? {}) as { recordId?: string };
+    const rid = recordId?.trim();
+    if (!rid) throw Errors.badRequest('recordId 必填');
+    return { code: 0, data: await confirmScreenshotCheckin(userId, { recordId: rid }) };
   });
 }

@@ -56,3 +56,11 @@
 .extract-tip { font-size: 24rpx; color: #999; margin: 12rpx 0 20rpx; }
 .confirm-btn { background: #2D9D78; color: #fff; font-size: 28rpx; border-radius: 40rpx; width: 100%; }
 .confirm-btn[disabled] { background: #a0c9b8; color: #fff; }
+
+/* V0.2.63 历史解读 */
+.history-empty { font-size: 26rpx; color: #aaa; text-align: center; padding: 40rpx 0; }
+.history-item { margin-top: 20rpx; background: #fff; border-radius: 16rpx; padding: 24rpx; box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.04); }
+.history-meta { display: flex; justify-content: space-between; font-size: 26rpx; color: #2D9D78; font-weight: 600; margin-bottom: 12rpx; }
+.history-date { color: #aaa; font-weight: 400; }
+.history-result { font-size: 26rpx; color: #333; line-height: 1.7; white-space: pre-line; }
+.history-checkin { margin-top: 12rpx; font-size: 24rpx; color: #2D9D78; background: #f0faf7; padding: 10rpx 16rpx; border-radius: 8rpx; }

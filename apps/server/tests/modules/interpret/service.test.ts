@@ -9,10 +9,11 @@ let mockFitThrow: Error | null = null;
 
 vi.mock('src/infra/prisma.js', () => ({
   prisma: {
-    interpretRecord: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
+    interpretRecord: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn(), findMany: vi.fn(), count: vi.fn() },
     checkin: { findFirst: vi.fn() },
   },
 }));
+vi.mock('src/infra/redis.js', () => ({ redis: { set: vi.fn(), get: vi.fn(), del: vi.fn() } }));
 vi.mock('src/modules/interpret/client.js', () => ({
   callMinimax: vi.fn(),
   isMinimaxConfigured: () => true,
@@ -33,12 +34,14 @@ vi.mock('fit-file-parser', () => ({
 }));
 
 import { prisma } from 'src/infra/prisma.js';
+import { redis } from 'src/infra/redis.js';
 import { callMinimax, callGlmVision, callGlm } from 'src/modules/interpret/client.js';
 import { sportService } from 'src/modules/sport/sport.service.js';
 import { buildUserContext } from 'src/modules/ai-coach/context-builder.js';
-import { interpretGarminFit, interpretScreenshot, confirmScreenshotCheckin } from 'src/modules/interpret/service.js';
+import { interpretGarminFit, interpretScreenshot, confirmScreenshotCheckin, issueH5Token, verifyH5Token, myInterpretHistory } from 'src/modules/interpret/service.js';
 
 const mockedPrisma = vi.mocked(prisma);
+const mockedRedis = vi.mocked(redis);
 const mockedCallMinimax = vi.mocked(callMinimax);
 const mockedCallGlmVision = vi.mocked(callGlmVision);
 const mockedCallGlm = vi.mocked(callGlm);
@@ -202,5 +205,32 @@ describe('confirmScreenshotCheckin (V0.2.60 用户确认 + 去重 + 防重复)',
     });
     await expect(confirmScreenshotCheckin('u1', { recordId: 'rec1' })).rejects.toThrow(/未识别|不可打卡|无效/);
     expect(mockedCheckin).not.toHaveBeenCalled();
+  });
+});
+
+// ===== V0.2.63 H5 fallback：token + 历史 =====
+
+describe('H5 token + history (V0.2.63)', () => {
+  it('issueH5Token: redis.set EX 300 + 返 token/url', async () => {
+    const r = await issueH5Token('u1');
+    expect(r.token).toBeTruthy();
+    expect(r.url).toContain('/h5/interpret.html?token=');
+    expect(mockedRedis.set).toHaveBeenCalledWith(`interpret:h5:${r.token}`, 'u1', 'EX', 300);
+  });
+
+  it('verifyH5Token: 有效返 userId / 空 token 抛 unauthorized', async () => {
+    mockedRedis.get.mockResolvedValueOnce('u1');
+    expect(await verifyH5Token('valid-token')).toBe('u1');
+    mockedRedis.get.mockResolvedValueOnce(null);
+    await expect(verifyH5Token('expired')).rejects.toThrow(/unauthorized|未授权|未登录/);
+  });
+
+  it('myInterpretHistory: findMany screenshot desc + count', async () => {
+    mockedPrisma.interpretRecord.findMany.mockResolvedValueOnce([{ id: 'r1', result: '解读', extract: { type: 'run', distanceKm: 5 }, checkinConfirmedAt: null, createdAt: new Date() }]);
+    mockedPrisma.interpretRecord.count.mockResolvedValueOnce(1);
+    const r = await myInterpretHistory('u1', { page: 1, pageSize: 10 });
+    expect(r.total).toBe(1);
+    expect(r.list[0].id).toBe('r1');
+    expect(mockedPrisma.interpretRecord.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: { userId: 'u1', type: 'screenshot' }, orderBy: { createdAt: 'desc' } }));
   });
 });

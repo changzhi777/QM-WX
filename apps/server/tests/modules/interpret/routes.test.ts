@@ -9,11 +9,16 @@ const mocks = vi.hoisted(() => ({
   interpretGarminFit: vi.fn(),
   interpretScreenshot: vi.fn(),
   confirmScreenshotCheckin: vi.fn(),
+  issueH5Token: vi.fn(),
+  verifyH5Token: vi.fn(),
+  myInterpretHistory: vi.fn(),
+  uploadFile: vi.fn(),
   isMinimaxConfigured: vi.fn(() => true),
   isGlmVisionConfigured: vi.fn(() => true),
 }));
 
-vi.mock('src/modules/interpret/service.js', () => ({ interpretGarminFit: mocks.interpretGarminFit, interpretScreenshot: mocks.interpretScreenshot, confirmScreenshotCheckin: mocks.confirmScreenshotCheckin }));
+vi.mock('src/modules/interpret/service.js', () => ({ interpretGarminFit: mocks.interpretGarminFit, interpretScreenshot: mocks.interpretScreenshot, confirmScreenshotCheckin: mocks.confirmScreenshotCheckin, issueH5Token: mocks.issueH5Token, verifyH5Token: mocks.verifyH5Token, myInterpretHistory: mocks.myInterpretHistory }));
+vi.mock('src/modules/upload/upload.service.js', () => ({ uploadFile: mocks.uploadFile }));
 vi.mock('src/modules/interpret/client.js', () => ({ isMinimaxConfigured: mocks.isMinimaxConfigured, isGlmVisionConfigured: mocks.isGlmVisionConfigured }));
 vi.mock('src/common/errors.js', () => ({
   Errors: {
@@ -160,6 +165,37 @@ describe('interpret routes · screenshot (V0.2.57)', () => {
     const app = await buildApp();
     const r = await post(app, 'screenshotCheckin', {});
     expect(r.statusCode).toBe(400);
+    await app.close();
+  });
+});
+
+// ===== V0.2.63 H5 fallback + 历史 =====
+
+describe('interpret routes · H5 fallback + history (V0.2.63)', () => {
+  it('issueH5Token → JWT 透传返 token+url', async () => {
+    mocks.issueH5Token.mockResolvedValue({ token: 't1', url: 'https://qingmulife.cn/h5/interpret.html?token=t1' });
+    const app = await buildApp();
+    const r = await post(app, 'issueH5Token', {});
+    expect(r.statusCode).toBe(200);
+    expect(r.json().data.token).toBe('t1');
+    expect(mocks.issueH5Token).toHaveBeenCalledWith('u1');
+    await app.close();
+  });
+
+  it('myInterpretHistory → JWT 透传', async () => {
+    mocks.myInterpretHistory.mockResolvedValue({ list: [], total: 0, page: 1, pageSize: 10 });
+    const app = await buildApp();
+    const r = await post(app, 'myInterpretHistory', { page: 1 });
+    expect(r.statusCode).toBe(200);
+    expect(r.json().data.total).toBe(0);
+    expect(mocks.myInterpretHistory).toHaveBeenCalledWith('u1', { page: 1 });
+    await app.close();
+  });
+
+  it('/h5 无 token → 401', async () => {
+    const app = await buildApp();
+    const r = await app.inject({ method: 'POST', url: '/h5' });
+    expect(r.statusCode).toBe(401);
     await app.close();
   });
 });

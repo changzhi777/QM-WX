@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>沐禾健康 · AI 截图解读</title>
+<style>
+  body { font-family: -apple-system, "PingFang SC", sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; background: #f0faf7; color: #333; }
+  h1 { color: #2D9D78; font-size: 22px; margin: 8px 0; }
+  .card { background: #fff; border-radius: 12px; padding: 20px; margin: 16px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+  .upload { display: block; border: 2px dashed #2D9D78; border-radius: 12px; padding: 40px 20px; text-align: center; cursor: pointer; color: #2D9D78; font-weight: 600; }
+  .upload:active { opacity: 0.7; }
+  input[type=file] { display: none; }
+  .result-title { font-weight: 600; color: #2D9D78; margin-bottom: 8px; }
+  .result { white-space: pre-line; line-height: 1.75; font-size: 14px; }
+  .extract { background: #f0faf7; padding: 14px; border-radius: 8px; border-left: 4px solid #2D9D78; font-size: 14px; white-space: pre-line; line-height: 1.7; }
+  button { background: #2D9D78; color: #fff; border: none; padding: 14px 24px; border-radius: 28px; font-size: 15px; cursor: pointer; width: 100%; margin-top: 12px; }
+  button:disabled { background: #a0c9b8; }
+  .err { color: #d46b08; background: #fff4e6; padding: 12px; border-radius: 8px; }
+  .tip { color: #999; font-size: 13px; line-height: 1.6; }
+  img.preview { max-width: 100%; border-radius: 8px; margin-top: 12px; }
+</style>
+</head>
+<body>
+<h1>📊 沐禾健康 · AI 截图解读</h1>
+<p class="tip">上传运动/健康截图，AI 识图分析 + 联动个人画像。<br>🔒 请勿上传含身份证号 / 病历号等敏感信息的图片。</p>
+
+<div class="card">
+  <label class="upload" id="pickLabel">📷 点击选择截图
+    <input type="file" id="fileInput" accept="image/*">
+  </label>
+  <img id="preview" class="preview" style="display:none">
+  <div id="status" class="tip" style="margin-top:12px"></div>
+</div>
+
+<div id="resultArea" style="display:none">
+  <div class="card"><div class="extract" id="extract"></div></div>
+  <div class="card">
+    <div class="result-title">✨ AI 综合分析</div>
+    <div class="result" id="analysis"></div>
+  </div>
+  <div id="checkinArea" style="display:none">
+    <button id="checkinBtn" onclick="doCheckin()">确认加入运动记录</button>
+    <div id="checkinMsg" class="tip" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<div id="errBox" class="err" style="display:none"></div>
+
+<script>
+// V0.2.63 H5 fallback：小程序生成 token → URL ?token=xxx → 此页调 /api/interpret/h5（header x-h5-token）
+const token = new URLSearchParams(location.search).get('token');
+const HEADER = { 'x-h5-token': token || '' };
+let currentRecordId = null;
+
+if (!token) showErr('缺少 token，请从沐禾健康小程序「截图解读」失败引导进入');
+
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+  const f = e.target.files[0];
+  if (!f) return;
+  document.getElementById('preview').src = URL.createObjectURL(f);
+  document.getElementById('preview').style.display = 'block';
+  document.getElementById('status').textContent = '识别分析中…';
+  document.getElementById('errBox').style.display = 'none';
+  document.getElementById('resultArea').style.display = 'none';
+  const fd = new FormData();
+  fd.append('file', f);
+  try {
+    const res = await fetch('/api/interpret/h5', { method: 'POST', headers: HEADER, body: fd });
+    const j = await res.json();
+    if (j.code !== 0) throw new Error(j.msg || '上传失败');
+    const d = j.data;
+    currentRecordId = d.recordId;
+    const ex = d.extract || {};
+    let exText = `类型: ${ex.type||'-'}\n摘要: ${ex.summary||'-'}`;
+    if (ex.distanceKm) exText += `\n距离: ${ex.distanceKm}km`;
+    if (ex.durationSec) exText += ` · 时长: ${Math.round(ex.durationSec/60)}min`;
+    if (ex.heartRate) exText += ` · 心率: ${ex.heartRate}bpm`;
+    if (ex.date) exText += `\n日期: ${ex.date}`;
+    document.getElementById('extract').textContent = exText;
+    document.getElementById('analysis').textContent = d.interpretation;
+    document.getElementById('resultArea').style.display = 'block';
+    const canCheckin = ex.type && ex.type !== 'other' && Number(ex.distanceKm) > 0;
+    document.getElementById('checkinArea').style.display = canCheckin ? 'block' : 'none';
+    document.getElementById('checkinBtn').disabled = false;
+    document.getElementById('checkinBtn').textContent = '确认加入运动记录';
+    document.getElementById('checkinBtn').style.display = '';
+    document.getElementById('status').textContent = '✓ 解读完成' + (canCheckin ? '（可确认打卡）' : '');
+  } catch (err) {
+    showErr(err.message);
+    document.getElementById('status').textContent = '';
+  }
+});
+
+async function doCheckin() {
+  if (!currentRecordId) return;
+  const btn = document.getElementById('checkinBtn');
+  btn.disabled = true; btn.textContent = '提交中…';
+  document.getElementById('checkinMsg').textContent = '';
+  try {
+    const res = await fetch('/api/interpret/h5/checkin', {
+      method: 'POST',
+      headers: { ...HEADER, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recordId: currentRecordId }),
+    });
+    const j = await res.json();
+    if (j.code !== 0) throw new Error(j.msg || '打卡失败');
+    const d = j.data;
+    document.getElementById('checkinMsg').textContent = d.checkinCreated ? '✅ 已加入运动记录' : `未打卡：${d.reason||'已存在相同记录'}`;
+    if (d.checkinCreated) { btn.style.display = 'none'; }
+    else { btn.disabled = false; btn.textContent = '确认加入运动记录'; }
+  } catch (err) {
+    document.getElementById('checkinMsg').textContent = '打卡失败：' + err.message;
+    btn.disabled = false; btn.textContent = '确认加入运动记录';
+  }
+}
+
+function showErr(msg) {
+  const b = document.getElementById('errBox');
+  b.textContent = '⚠️ ' + msg;
+  b.style.display = 'block';
+}
+</script>
+</body>
+</html>

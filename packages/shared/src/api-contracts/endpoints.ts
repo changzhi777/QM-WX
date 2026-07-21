@@ -117,6 +117,8 @@ export const ENDPOINTS = {
     garmin: '/api/interpret', // 佳明 FIT 解读（parseAsync → minimax → 落表）
     screenshot: '/api/interpret', // V0.2.57 运动截图（GLM-4.6V 识图 → checkin → 联动画像 → AI 分析）
     screenshotCheckin: '/api/interpret', // V0.2.60 用户确认打卡（查 extract + 去重 + checkin）
+    issueH5Token: '/api/interpret', // V0.2.63 H5 fallback token（小程序上传失败引导浏览器重试）
+    myInterpretHistory: '/api/interpret', // V0.2.63 历史解读回看
   },
   strength: {
     // V0.2.42 力量训练记录（训记式）

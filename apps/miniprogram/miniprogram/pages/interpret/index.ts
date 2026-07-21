@@ -16,6 +16,15 @@ interface InterpretExtract {
   summary: string;
 }
 
+// V0.2.63 历史解读项
+interface InterpretHistoryItem {
+  id: string;
+  result: string;
+  extract: InterpretExtract | null;
+  checkinConfirmedAt: string | null;
+  createdAt: string;
+}
+
 Page({
   data: {
     loading: false,
@@ -32,6 +41,8 @@ Page({
     canCheckin: false,
     confirming: false,
     checkinMsg: '',
+    history: [] as InterpretHistoryItem[],
+    historyLoading: false,
   },
 
   async onChooseFile() {
@@ -99,7 +110,15 @@ Page({
       this.setData({ shotLoading: false, shotResult: res.interpretation, imageUrl, recordId: res.recordId, extract, canCheckin });
     } catch (e) {
       const msg = (e as Error).message || '解读失败';
-      this.setData({ shotLoading: false, shotError: msg });
+      // V0.2.63 上传失败 → 生成 H5 token + 复制链接引导浏览器重试
+      try {
+        const r = await api.call<{ token: string; url: string }>('interpret', 'issueH5Token', {});
+        await new Promise<void>((resolve, reject) => wx.setClipboardData({ data: r.url, success: () => resolve(), fail: reject }));
+        this.setData({ shotLoading: false, shotError: msg });
+        wx.showModal({ title: '上传失败', content: '小程序上传失败，已复制 H5 链接到剪贴板，请用浏览器打开重试', showCancel: false });
+      } catch {
+        this.setData({ shotLoading: false, shotError: msg });
+      }
     }
   },
 
@@ -123,6 +142,36 @@ Page({
   // 移除截图，重选
   onRemoveImage() {
     this.setData({ imageUrl: '', shotResult: '', shotError: '', recordId: '', extract: null, canCheckin: false, confirming: false, checkinMsg: '' });
+  },
+
+  // V0.2.63 历史解读（H5 上传的结果回小程序查看）
+  onLoad() {
+    this.loadHistory();
+  },
+
+  async loadHistory() {
+    this.setData({ historyLoading: true });
+    try {
+      const res = await api.call<{ list: InterpretHistoryItem[]; total: number }>('interpret', 'myInterpretHistory', {});
+      this.setData({ history: res.list || [], historyLoading: false });
+    } catch {
+      this.setData({ historyLoading: false });
+    }
+  },
+
+  async onConfirmHistoryCheckin(e: WechatMiniprogram.BaseEvent) {
+    const recordId = e.currentTarget.dataset.recordId as string;
+    if (!recordId) return;
+    wx.showLoading({ title: '提交中…' });
+    try {
+      const res = await api.call<{ checkinCreated: boolean; reason?: string }>('interpret', 'screenshotCheckin', { recordId });
+      wx.hideLoading();
+      wx.showToast({ title: res.checkinCreated ? '已加入运动记录' : (res.reason || '已存在'), icon: res.checkinCreated ? 'success' : 'none' });
+      if (res.checkinCreated) this.loadHistory();
+    } catch {
+      wx.hideLoading();
+      wx.showToast({ title: '打卡失败', icon: 'none' });
+    }
   },
 
   onShareAppMessage() {

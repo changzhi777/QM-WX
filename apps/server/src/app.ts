@@ -95,6 +95,12 @@ export async function buildApp() {
     prefix: '/uploads/',
     decorateReply: false,
   });
+  // V0.2.63 H5 fallback 静态托管（qingmulife.cn/h5/interpret.html）
+  await app.register(staticFiles, {
+    root: join(process.cwd(), 'public', 'h5'),
+    prefix: '/h5/',
+    decorateReply: false,
+  });
   await app.register(jwt, {
     secret: env.JWT_SECRET,
     sign: { expiresIn: env.JWT_ACCESS_TTL },

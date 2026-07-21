@@ -49,7 +49,20 @@
     <view class="result-text">{{interpretation}}</view>
   </view>
 
-  <view class="tip" wx:if="{{!interpretation && !loading && !error && !shotResult}}">
+  <!-- V0.2.63 历史解读（H5 上传的结果回看 + 确认打卡）-->
+  <view class="section-title">🕘 历史解读</view>
+  <view class="history-empty" wx:if="{{!historyLoading && history.length === 0}}">暂无历史解读记录</view>
+  <view class="history-item" wx:for="{{history}}" wx:key="id">
+    <view class="history-meta">
+      <text>{{item.extract.distanceKm}}km · {{item.extract.summary}}</text>
+      <text class="history-date">{{item.createdAt}}</text>
+    </view>
+    <view class="history-result">{{item.result}}</view>
+    <view class="history-checkin" wx:if="{{item.checkinConfirmedAt}}">✅ 已加入运动记录</view>
+    <button wx:elif="{{item.extract.type !== 'other' && item.extract.distanceKm > 0}}" class="confirm-btn" data-record-id="{{item.id}}" bindtap="onConfirmHistoryCheckin">确认加入运动记录</button>
+  </view>
+
+  <view class="tip" wx:if="{{!interpretation && !loading && !error && !shotResult && history.length === 0}}">
     💡 截图：跑步 app 成绩页 / 体脂秤报告 / 体检单拍照。FIT：佳明 Connect / COROS 导出。
   </view>
 </view>

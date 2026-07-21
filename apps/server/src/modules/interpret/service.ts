@@ -6,8 +6,10 @@
  *
  * 后续阶段扩展：garmin_zip / medical（图片 OCR+解读）/ screenshot
  */
+import { randomUUID } from 'node:crypto';
 import FitParser from 'fit-file-parser';
 import { prisma } from '../../infra/prisma.js';
+import { redis } from '../../infra/redis.js';
 import { callMinimax, isMinimaxConfigured, callGlmVision, callGlm, isGlmVisionConfigured, type MinimaxMessage } from './client.js';
 import { sportService } from '../sport/sport.service.js';
 import { buildUserContext } from '../ai-coach/context-builder.js';
@@ -248,4 +250,44 @@ export async function confirmScreenshotCheckin(
     data: { checkinConfirmedAt: new Date() },
   });
   return { checkinCreated: true };
+}
+
+// ===== V0.2.63 H5 fallback：一次性 token + 历史解读 =====
+
+const H5_TOKEN_TTL_SEC = 300; // 5min（非一次性，H5 内可多次调识图+确认）
+const H5_KEY = (token: string) => `interpret:h5:${token}`;
+
+/** 小程序生成 H5 跳转 token（Redis 5min TTL，关联 userId）*/
+export async function issueH5Token(userId: string): Promise<{ token: string; url: string }> {
+  const token = randomUUID();
+  await redis.set(H5_KEY(token), userId, 'EX', H5_TOKEN_TTL_SEC);
+  const base = process.env.H5_PUBLIC_BASE || 'https://qingmulife.cn';
+  return { token, url: `${base}/h5/interpret.html?token=${token}` };
+}
+
+/** H5 验 token → userId（不删，TTL 内多次；过期/无效抛 401）*/
+export async function verifyH5Token(token: string): Promise<string> {
+  const userId = await redis.get(H5_KEY(token));
+  if (!userId) throw Errors.unauthorized();
+  return userId;
+}
+
+/** 小程序回看历史解读（type=screenshot，最新置顶）*/
+export async function myInterpretHistory(
+  userId: string,
+  opts: { page?: number; pageSize?: number } = {},
+) {
+  const page = opts.page ?? 1;
+  const pageSize = Math.min(opts.pageSize ?? 10, 50);
+  const [list, total] = await Promise.all([
+    prisma.interpretRecord.findMany({
+      where: { userId, type: 'screenshot' },
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      select: { id: true, inputKey: true, result: true, extract: true, checkinConfirmedAt: true, createdAt: true },
+    }),
+    prisma.interpretRecord.count({ where: { userId, type: 'screenshot' } }),
+  ]);
+  return { list, total, page, pageSize };
 }
