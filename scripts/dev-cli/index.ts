@@ -87,16 +87,16 @@ projectOpt(
     program
       .command('upload')
       .description('上传小程序（体验版 / 正式版）')
-      .requiredOption('-V, --version <ver>', '版本号，如 V0.2.10')
+      .requiredOption('-v, --ver <ver>', '版本号，如 V0.2.10（V0.2.61 修：避 program -V 冲突）')
       .requiredOption('-d, --desc <desc>', '版本说明'),
   ),
 ).action(
-  async (opts: { project: string; port: number; version: string; desc: string }) => {
+  async (opts: { project: string; port: number; ver: string; desc: string }) => {
     const helper = new CliHelper();
     await helper.upload({
       project: opts.project,
       port: opts.port,
-      version: opts.version,
+      version: opts.ver,
       desc: opts.desc,
     });
   },
