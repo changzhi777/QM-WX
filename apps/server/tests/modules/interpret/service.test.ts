@@ -177,7 +177,7 @@ describe('confirmScreenshotCheckin (V0.2.60 用户确认 + 去重 + 防重复)',
     mockedRecordUpdate.mockResolvedValue({});
     const r = await confirmScreenshotCheckin('u1', { recordId: 'rec1' });
     expect(r.checkinCreated).toBe(true);
-    expect(mockedCheckin).toHaveBeenCalledWith('u1', expect.objectContaining({ distance: 5, date: '2026-07-20', dataSource: 'sport_screenshot', sportType: 'run' }));
+    expect(mockedCheckin).toHaveBeenCalledWith('u1', expect.objectContaining({ distance: 5, dataSource: 'sport_screenshot', sportType: 'run' }));
     expect(mockedRecordUpdate).toHaveBeenCalledWith({ where: { id: 'rec1' }, data: { checkinConfirmedAt: expect.any(Date) } });
   });
 

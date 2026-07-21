@@ -25,6 +25,10 @@ export const CheckinInputSchema = z
     lon: z.number().min(-180).max(180).optional(),
     /** ⚠️ 前端可以传，但服务端忽略；防作弊 */
     points: z.number().int().optional(),
+    /** V0.1.25 运动类型（run/ride/swim/walk；手动打卡默认 run，截图/导入识别） */
+    sportType: z.string().optional(),
+    /** V0.1.25 数据来源（manual/garmin/coros/huawei_export/sport_screenshot） */
+    dataSource: z.string().optional(),
   })
   .strict();
 export type CheckinInput = z.infer<typeof CheckinInputSchema>;

@@ -124,10 +124,9 @@ export const PARSERS: Record<DataUploadType, Parser> = {
         await sportService.checkin(userId, {
           distance: score.distanceKm,
           durationSec: score.durationSec ?? undefined,
-          date: new Date().toISOString().slice(0, 10),
           dataSource: 'sport_screenshot',
           sportType: 'run',
-        } as never);
+        });
         checkinCreated = true;
       } catch (e) {
         // Checkin 校验失败不阻塞，存 OCR 文本 + 成绩可追溯（人工兜底）

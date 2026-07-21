@@ -241,10 +241,9 @@ export async function confirmScreenshotCheckin(
   await sportService.checkin(userId, {
     distance: distKm,
     durationSec: extract.durationSec ?? undefined,
-    date,
     dataSource: 'sport_screenshot',
     sportType,
-  } as never);
+  });
   await prisma.interpretRecord.update({
     where: { id: input.recordId },
     data: { checkinConfirmedAt: new Date() },
