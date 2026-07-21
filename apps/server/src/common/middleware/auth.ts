@@ -38,6 +38,9 @@ declare module 'fastify' {
 export const authPlugin = fp(async (app: FastifyInstance) => {
   app.addHook('onRequest', async (req: FastifyRequest) => {
     if (req.routeOptions.config?.public) return;
+    // V0.2.63 静态资源跳过 JWT（@fastify/static 托管的 /h5/ H5 页 + /uploads/ 文件）
+    const u = req.url;
+    if (u.startsWith('/h5/') || u.startsWith('/uploads/')) return;
     try {
       await req.jwtVerify();
     } catch {
