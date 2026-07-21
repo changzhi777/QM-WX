@@ -12,7 +12,7 @@ vi.mock('src/config/env.js', () => ({
   },
 }));
 
-import { callMinimax, isMinimaxConfigured } from 'src/modules/interpret/client.js';
+import { callMinimax, isMinimaxConfigured, callGlmVision, isGlmVisionConfigured } from 'src/modules/interpret/client.js';
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -102,5 +102,62 @@ describe('minimax client (V0.2.33 Anthropic 兼容)', () => {
     const r = await callMinimax('s', [{ role: 'user', content: 'd' }]);
     expect(r.inputTokens).toBe(0);
     expect(r.outputTokens).toBe(0);
+  });
+});
+
+// ===== V0.2.57 GLM-4.6V vision（screenshot action）=====
+
+describe('GLM-4.6V vision client (V0.2.57 screenshot)', () => {
+  it('isGlmVisionConfigured: LLM_API_KEY 配置返 true / 空返 false', () => {
+    vi.stubEnv('LLM_API_KEY', 'glm-key');
+    expect(isGlmVisionConfigured()).toBe(true);
+    vi.stubEnv('LLM_API_KEY', '');
+    expect(isGlmVisionConfigured()).toBe(false);
+  });
+
+  it('callGlmVision: GLM 协议（Bearer + /chat/completions + ContentPart[] + response_format）', async () => {
+    vi.stubEnv('LLM_API_KEY', 'glm-key');
+    vi.stubEnv('LLM_BASE_URL', 'https://open.bigmodel.cn/api/paas/v4');
+    vi.stubEnv('LLM_VISION_MODEL', 'glm-4.6v');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: '识图结果' } }],
+          usage: { prompt_tokens: 50, completion_tokens: 100 },
+        }),
+        { status: 200 },
+      ),
+    );
+    const r = await callGlmVision('sys', '识别这张图', 'https://cdn/x.jpg', { responseFormatJson: true });
+
+    expect(r.content).toBe('识图结果');
+    expect(r.inputTokens).toBe(50);
+    expect(r.outputTokens).toBe(100);
+    expect(r.model).toBe('glm-4.6v');
+
+    const [url, init] = fetchSpy.mock.calls[0];
+    expect(url).toBe('https://open.bigmodel.cn/api/paas/v4/chat/completions');
+    const headers = (init as RequestInit).headers as Record<string, string>;
+    expect(headers.Authorization).toBe('Bearer glm-key');
+    const body = JSON.parse((init as RequestInit).body as string);
+    expect(body.model).toBe('glm-4.6v');
+    expect(body.response_format).toEqual({ type: 'json_object' });
+    // user content 是 ContentPart[]（text + image_url，GLM-4.6V vision 格式）
+    const userMsg = body.messages.find((m: { role: string }) => m.role === 'user');
+    expect(userMsg.content).toEqual([
+      { type: 'text', text: '识别这张图' },
+      { type: 'image_url', image_url: { url: 'https://cdn/x.jpg' } },
+    ]);
+  });
+
+  it('callGlmVision: 未配 LLM_API_KEY 抛错', async () => {
+    vi.stubEnv('LLM_API_KEY', '');
+    await expect(callGlmVision('s', 't', 'url')).rejects.toThrow(/LLM_API_KEY 未配置/);
+  });
+
+  it('callGlmVision: API 非 2xx 抛带 status', async () => {
+    vi.stubEnv('LLM_API_KEY', 'glm-key');
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('err', { status: 500 }));
+    await expect(callGlmVision('s', 't', 'url')).rejects.toThrow(/500/);
   });
 });

@@ -9,26 +9,35 @@
  */
 import type { FastifyInstance } from 'fastify';
 import { Errors } from '../../common/errors.js';
-import { isMinimaxConfigured } from './client.js';
-import { interpretGarminFit } from './service.js';
+import { isMinimaxConfigured, isGlmVisionConfigured } from './client.js';
+import { interpretGarminFit, interpretScreenshot } from './service.js';
 
 export async function interpretRoutes(app: FastifyInstance) {
   // bodyLimit 10MB：FIT 文件 base64 后可能超 Fastify 默认 1MB（base64 比binary大 33%）
   app.post('/', { bodyLimit: 10 * 1024 * 1024 }, async (req) => {
     if (!req.user) throw Errors.unauthorized();
-    if (!isMinimaxConfigured()) throw Errors.featureDisabled('minimax 解读');
     const { action, payload } = (req.body ?? {}) as {
       action: string;
-      payload?: { fileBase64?: string; inputKey?: string };
+      payload?: { fileBase64?: string; inputKey?: string; imageUrl?: string };
     };
-    const b64 = payload?.fileBase64?.trim();
     const inputKey = payload?.inputKey?.trim();
-    if (!b64 || !inputKey) throw Errors.badRequest('fileBase64 + inputKey 必填');
-    const buffer = Buffer.from(b64, 'base64');
 
     switch (action) {
-      case 'garmin':
+      case 'garmin': {
+        // 佳明 FIT：minimax M3 文本解读
+        if (!isMinimaxConfigured()) throw Errors.featureDisabled('minimax 解读');
+        const b64 = payload?.fileBase64?.trim();
+        if (!b64 || !inputKey) throw Errors.badRequest('fileBase64 + inputKey 必填');
+        const buffer = Buffer.from(b64, 'base64');
         return { code: 0, data: await interpretGarminFit(req.user.id, { buffer, inputKey }) };
+      }
+      case 'screenshot': {
+        // V0.2.57 运动截图：GLM-4.6V 识图 → 入 checkin → 联动画像 → AI 综合分析
+        if (!isGlmVisionConfigured()) throw Errors.featureDisabled('AI 视觉解读');
+        const imageUrl = payload?.imageUrl?.trim();
+        if (!imageUrl || !inputKey) throw Errors.badRequest('imageUrl + inputKey 必填');
+        return { code: 0, data: await interpretScreenshot(req.user.id, { imageUrl, inputKey }) };
+      }
       default:
         throw Errors.badRequest(`unknown action: ${action}`);
     }

@@ -4,7 +4,7 @@
 > 父级：[apps/server CLAUDE.md](../../../CLAUDE.md) | 同级：[ai-coach](../ai-coach/)（LLM 范式参考）/ [device](../device/)（fit-file-parser 复用）/ [admin](../admin/)（listInterpret 管理）
 
 > 引入版本：**V0.2.33**（2026-07-18，阶段 1 MVP 后端核心）/ V0.2.34 前端 / V0.2.37 admin
-> 状态：阶段 1-3 完成（后端 + 小程序 + admin Web），阶段 4 真机验证待 minimax key 注入
+> 状态：阶段 1-3 完成 + **V0.2.57 screenshot 多模态识图**（GLM-4.6V + 数据联动闭环）；阶段 4 真机验证待 minimax/LLM key 注入
 
 ---
 
@@ -38,7 +38,7 @@ body `{ action, payload }`：
 | --- | --- | --- | --- |
 | `garmin` | `{ fileBase64, inputKey }` | `{ interpretation, recordId }` | 佳明 FIT 解读（V0.2.33） |
 | `medical` | — | — | 🚧 阶段 5（病历图片 OCR+解读） |
-| `screenshot` | — | — | 🚧 阶段 5（运动截图） |
+| `screenshot` | `{ imageUrl, inputKey }` | `{ interpretation, recordId, checkinCreated }` | ✅ **V0.2.57** GLM-4.6V 识图 → checkin → 联动画像 → AI 综合分析 |
 
 - `fileBase64`：FIT 文件 base64（不含 data: 前缀）
 - `inputKey`：COS object key 留痕（MVP 用文件名）
@@ -102,13 +102,13 @@ body `{ action, payload }`：
 
 ---
 
-## 🧪 测试（20 测，V0.2.33+36）
+## 🧪 测试（32 测，V0.2.33+36+57）
 
 | 文件 | 用例 | 覆盖 |
 | --- | ---: | --- |
-| `client.test.ts` | 8 | Anthropic 协议（url/headers/body）/ 401 / 多 block 拼接 / **fetch reject / empty content / max_tokens 透传 / usage 缺失** |
-| `service.test.ts` | 5 | happy（FIT→minimax→落表）/ FIT 无数据 / minimax 失败 / **records fallback / parseAsync throw** |
-| `routes.test.ts` | 7 | 401 / 503（未配）/ fileBase64 缺 / inputKey 缺 / unknown action / happy 透传 / **bodyLimit 10MB** |
+| `client.test.ts` | 12 | Anthropic 协议 / 401 / 多 block / fetch reject / empty / max_tokens / usage 缺失 + **V0.2.57 GLM-4.6V vision（isGlmVisionConfigured / Bearer+ContentPart[] / 未配抛 / 非2xx 抛）** |
+| `service.test.ts` | 9 | FIT happy / 无数据 / minimax 失败 / records fallback / parseAsync throw + **V0.2.57 interpretScreenshot（happy 识图+checkin+联动+落表 / type=other 不 checkin / checkin 失败不阻塞 / GLM 失败传播）** |
+| `routes.test.ts` | 11 | 401 / 503 / fileBase64 缺 / inputKey 缺 / unknown / happy / bodyLimit + **V0.2.57 screenshot（GLM 未配 503 / imageUrl 缺 400 / inputKey 缺 400 / happy 透传）** |
 
 **未覆盖**（P2 前置缺）：真 FIT 文件解析（待真 .fit 样本，字段名已对齐 importCorosFit 佐证）/ streaming（MVP 未实现）。
 
@@ -140,6 +140,9 @@ MINIMAX_MODEL=MiniMax-M3
 3. **bodyLimit 10MB**（V0.2.35）：FIT base64 比 binary 大 33%，超 Fastify 默认 1MB → 413。route option `{ bodyLimit: 10*1024*1024 }`。
 4. **C-子集 vs qm-rhythmind**：本模块是 TS 独立实现，**不调 qm-rhythmind API**。qm-rhythmind（Python AG2 多智能体）生产继续跑，两套并行（不同定位：qm-rhythmind 深度多 agent / 本模块轻量单 agent）。
 5. **key 归属**：sk-cp- 疑似代理，真机 401 切 base URL（env 可改，不硬编码）。
+6. **V0.2.57 双 provider 分工**：FIT 文本走 minimax（Anthropic 协议）/ **截图走 GLM-4.6V**（OpenAI vision 协议，复用 ai-coach V0.2.45 + food.recognize 范式）；minimax 不确定支持 vision，截图确定用 GLM-4.6V。routes 按 action 分开关 isMinimaxConfigured / isGlmVisionConfigured 守卫。
+7. **V0.2.57 数据联动复用**：`buildUserContext` 从 ai-coach/context-builder **export**（13 路全量画像：跑量/目标/跑鞋/计划/心率/睡眠/体成分/天气/饮食/力量），interpretScreenshot 第二次 GLM 注入画像做综合分析；checkin 复用 `sportService.checkin`（`dataSource='sport_screenshot'`，与 device-parser.registry 一致数据源，无循环依赖——context-builder 只依赖 prisma+Cache）。
+8. **V0.2.57 两调 GLM**：第一次 `response_format:json_object` 识图提结构化数据（type/distanceKm/durationSec/heartRate/paceSecPerKm/calorie/metrics/summary）→ 决定是否 checkin；第二次纯文本综合分析（截图数据 + 画像 + 原图）。两次 token 累加落 InterpretRecord。checkin 失败 try/catch 不阻塞解读。
 
 ---
 
@@ -150,3 +153,4 @@ MINIMAX_MODEL=MiniMax-M3
 - **2026-07-18** — 🎯 **V0.2.35 审查优化**：routes bodyLimit 10MB（防大 FIT base64 超 1MB → 413）
 - **2026-07-18** — 🎯 **V0.2.36 测试加固**：+7 测（client fetch reject/empty content/max_tokens/usage + service records fallback/parseAsync throw + routes bodyLimit）→ 20 测
 - **2026-07-18** — 🎯 **V0.2.37 admin 管理**：admin listInterpret action + RBAC（OPERATOR_ACTIONS）+ qm-admin Web Interpret.tsx（跨仓）
+- **2026-07-21** — 🎯 **V0.2.57 screenshot 多模态识图闭环**：interpret `screenshot` action 全栈实现（阶段 5 stub 补全）—— `client.ts` +`callGlmVision`（GLM-4.6V OpenAI vision 协议，Bearer + ContentPart[] + response_format）+ `isGlmVisionConfigured`；`service.ts` +`interpretScreenshot`（① GLM-4.6V 识图提结构化 JSON ② distanceKm>0 → sportService.checkin dataSource='sport_screenshot' ③ buildUserContext 联动 13 路画像 ④ GLM 综合分析 ⑤ 落 InterpretRecord type=screenshot）；`routes.ts` switch +screenshot case（按 action 分开关 minimax/GLM 守卫）；context-builder export buildUserContext；ENDPOINTS +interpret.screenshot；前端 pages/interpret +📷 截图入口（chooseMedia→uploadFile COS→POST→展示 + 已打卡提示）；**+12 测**（client+4 / service+4 / routes+4）→ interpret 20→32 测；0 新表/迁移（InterpretRecord 字段够）；复用 GLM-4.6V（food.recognize 范式）+ context-builder 13 路联动 + parseSportScore/checkin（device pipeline 一致）；与 device sport_screenshot OCR pipeline 互补（同步交互式 vs 异步批量）

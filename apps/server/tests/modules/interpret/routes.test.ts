@@ -7,11 +7,13 @@ import Fastify from 'fastify';
 
 const mocks = vi.hoisted(() => ({
   interpretGarminFit: vi.fn(),
+  interpretScreenshot: vi.fn(),
   isMinimaxConfigured: vi.fn(() => true),
+  isGlmVisionConfigured: vi.fn(() => true),
 }));
 
-vi.mock('src/modules/interpret/service.js', () => ({ interpretGarminFit: mocks.interpretGarminFit }));
-vi.mock('src/modules/interpret/client.js', () => ({ isMinimaxConfigured: mocks.isMinimaxConfigured }));
+vi.mock('src/modules/interpret/service.js', () => ({ interpretGarminFit: mocks.interpretGarminFit, interpretScreenshot: mocks.interpretScreenshot }));
+vi.mock('src/modules/interpret/client.js', () => ({ isMinimaxConfigured: mocks.isMinimaxConfigured, isGlmVisionConfigured: mocks.isGlmVisionConfigured }));
 vi.mock('src/common/errors.js', () => ({
   Errors: {
     unauthorized: () => Object.assign(new Error('unauthorized'), { statusCode: 401 }),
@@ -37,6 +39,7 @@ async function buildApp(authed = true) {
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.isMinimaxConfigured.mockReturnValue(true);
+  mocks.isGlmVisionConfigured.mockReturnValue(true);
 });
 
 async function post(app: Awaited<ReturnType<typeof buildApp>>, action: string, payload?: unknown) {
@@ -99,6 +102,45 @@ describe('interpret routes (V0.2.33)', () => {
     const app = await buildApp();
     const r = await post(app, 'garmin', { fileBase64: big, inputKey: 'k' });
     expect(r.statusCode).toBe(200);
+    await app.close();
+  });
+});
+
+// ===== V0.2.57 screenshot action =====
+
+describe('interpret routes · screenshot (V0.2.57)', () => {
+  it('GLM 视觉未配 → 503 featureDisabled', async () => {
+    mocks.isGlmVisionConfigured.mockReturnValue(false);
+    const app = await buildApp();
+    const r = await post(app, 'screenshot', { imageUrl: 'https://x.jpg', inputKey: 'k' });
+    expect(r.statusCode).toBe(503);
+    await app.close();
+  });
+
+  it('imageUrl 缺失 → 400', async () => {
+    const app = await buildApp();
+    const r = await post(app, 'screenshot', { inputKey: 'k' });
+    expect(r.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('inputKey 缺失 → 400', async () => {
+    const app = await buildApp();
+    const r = await post(app, 'screenshot', { imageUrl: 'https://x.jpg' });
+    expect(r.statusCode).toBe(400);
+    await app.close();
+  });
+
+  it('screenshot happy → 200 + interpretScreenshot 透传 imageUrl/inputKey/userId + checkinCreated', async () => {
+    mocks.interpretScreenshot.mockResolvedValue({ interpretation: '截图分析', recordId: 'rec-s', checkinCreated: true });
+    const app = await buildApp();
+    const r = await post(app, 'screenshot', { imageUrl: 'https://cdn/x.jpg', inputKey: 'cos/shot.jpg' });
+    expect(r.statusCode).toBe(200);
+    expect(r.json().data).toEqual({ interpretation: '截图分析', recordId: 'rec-s', checkinCreated: true });
+    expect(mocks.interpretScreenshot).toHaveBeenCalledWith('u1', {
+      imageUrl: 'https://cdn/x.jpg',
+      inputKey: 'cos/shot.jpg',
+    });
     await app.close();
   });
 });

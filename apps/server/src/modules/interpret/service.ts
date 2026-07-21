@@ -8,7 +8,9 @@
  */
 import FitParser from 'fit-file-parser';
 import { prisma } from '../../infra/prisma.js';
-import { callMinimax, isMinimaxConfigured, type MinimaxMessage } from './client.js';
+import { callMinimax, isMinimaxConfigured, callGlmVision, isGlmVisionConfigured, type MinimaxMessage } from './client.js';
+import { sportService } from '../sport/sport.service.js';
+import { buildUserContext } from '../ai-coach/context-builder.js';
 
 const GARMIN_SYSTEM_PROMPT = `你是青沐运动健康 AI 解读助手。根据用户上传的佳明运动数据，给出通俗、个性化、可执行的解读。
 要求：
@@ -77,4 +79,147 @@ export async function interpretGarminFit(
     },
   });
   return { interpretation: result.content, recordId: record.id };
+}
+
+// ===== V0.2.57 screenshot：GLM-4.6V 识图 → 入 checkin → 联动画像 → AI 综合分析 =====
+
+const SCREENSHOT_EXTRACT_PROMPT = `你是运动健康数据识别助手。分析用户上传的截图，提取结构化数据。
+只返回 JSON，字段：
+- type: "run"|"ride"|"swim"|"walk"|"medical"|"other"（截图类型）
+- distanceKm: number|null（距离 km，无则 null）
+- durationSec: number|null（时长秒，无则 null）
+- heartRate: number|null（心率 bpm，无则 null）
+- paceSecPerKm: number|null（配速 秒/km，无则 null）
+- calorie: number|null（卡路里，无则 null）
+- metrics: [{"name":"指标名","value":"值"}]（其他关键指标，如步频/海拔/血压/血糖/睡眠分等）
+- summary: 一句话描述截图内容
+若非运动/健康数据，type="other"，数值字段 null，summary 描述截图实际内容。`;
+
+const SCREENSHOT_ANALYSIS_PROMPT = `你是青沐 AI 健康分析助手。根据用户上传的截图识别数据 + 个人健康画像，给出综合性分析建议。
+要求：
+1. 截图数据解读（识别到的运动/健康指标含义，数值是否合理）
+2. 联动个人数据分析（与跑量/心率/目标/跑鞋/天气/饮食等对比，指出趋势/异常/亮点）
+3. 2-3 条可执行建议（恢复/调整/就医提示）
+4. 涉及医学指标谨慎，建议就医而非诊断
+5. 中文，600 字内，换行分段，避免空话套话`;
+
+interface ScreenshotExtract {
+  type: string;
+  distanceKm: number | null;
+  durationSec: number | null;
+  heartRate: number | null;
+  paceSecPerKm: number | null;
+  calorie: number | null;
+  metrics: Array<{ name: string; value: string }>;
+  summary: string;
+}
+
+/** 格式化识别数据为文本（喂综合分析 prompt + 前端展示）*/
+function formatExtract(e: ScreenshotExtract, checkinCreated: boolean): string {
+  const parts = [`类型: ${e.type}`, `摘要: ${e.summary}`];
+  if (e.distanceKm != null) parts.push(`距离: ${e.distanceKm}km`);
+  if (e.durationSec != null) parts.push(`时长: ${Math.round(e.durationSec / 60)}min`);
+  if (e.heartRate != null) parts.push(`心率: ${e.heartRate}bpm`);
+  if (e.paceSecPerKm != null) {
+    const m = Math.floor(e.paceSecPerKm / 60);
+    const s = String(Math.round(e.paceSecPerKm % 60)).padStart(2, '0');
+    parts.push(`配速: ${m}'${s}"/km`);
+  }
+  if (e.calorie != null) parts.push(`卡路里: ${e.calorie}kcal`);
+  if (e.metrics.length) parts.push(`其他指标: ${e.metrics.map((m) => `${m.name}=${m.value}`).join('，')}`);
+  if (checkinCreated) parts.push('（已自动加入个人运动记录）');
+  return parts.join('\n');
+}
+
+/**
+ * 截图解读（V0.2.57 端到端闭环）
+ * ① GLM-4.6V 识图 → 结构化数据
+ * ② 识别出运动距离 → sportService.checkin 入个人数据（dataSource='sport_screenshot'，与 device pipeline 一致）
+ * ③ 联动 buildUserContext 全量画像（13 路：跑量/目标/跑鞋/计划/心率/睡眠/体成分/天气/饮食/力量）
+ * ④ GLM-4.6V 综合分析（截图数据 + 画像 → 个性化建议）
+ * ⑤ 落 InterpretRecord type='screenshot'
+ */
+export async function interpretScreenshot(
+  userId: string,
+  input: { imageUrl: string; inputKey: string },
+): Promise<{ interpretation: string; recordId: string; checkinCreated: boolean }> {
+  if (!isGlmVisionConfigured()) {
+    throw new Error('LLM_API_KEY 未配置');
+  }
+
+  // ① GLM-4.6V 识图 → 结构化数据（json_object）
+  const extractRes = await callGlmVision(
+    SCREENSHOT_EXTRACT_PROMPT,
+    '请识别这张截图的运动/健康数据。',
+    input.imageUrl,
+    { maxTokens: 800, responseFormatJson: true },
+  );
+  let extract: ScreenshotExtract;
+  try {
+    extract = JSON.parse(extractRes.content) as ScreenshotExtract;
+  } catch {
+    // GLM 未返合法 JSON → 兜底 other，保留原始文本作 summary
+    extract = {
+      type: 'other',
+      distanceKm: null,
+      durationSec: null,
+      heartRate: null,
+      paceSecPerKm: null,
+      calorie: null,
+      metrics: [],
+      summary: extractRes.content.slice(0, 100),
+    };
+  }
+
+  // ② 识别出运动距离 → 自动打卡（dataSource='sport_screenshot'，与 device-parser.registry 一致数据源）
+  let checkinCreated = false;
+  const distKm = Number(extract.distanceKm);
+  const sportTypeMap: Record<string, 'run' | 'ride' | 'swim' | 'walk'> = {
+    run: 'run',
+    ride: 'ride',
+    swim: 'swim',
+    walk: 'walk',
+  };
+  if (extract.type !== 'other' && Number.isFinite(distKm) && distKm > 0) {
+    const sportType = sportTypeMap[extract.type] ?? 'run';
+    try {
+      await sportService.checkin(userId, {
+        distance: distKm,
+        durationSec: extract.durationSec ?? undefined,
+        date: new Date().toISOString().slice(0, 10),
+        dataSource: 'sport_screenshot',
+        sportType,
+      } as never);
+      checkinCreated = true;
+    } catch {
+      // checkin 校验失败不阻塞（解读 + 识别数据仍可追溯，人工兜底）
+    }
+  }
+
+  // ③ 联动个人全量画像（复用 ai-coach context-builder 13 路数据；查失败兜底不阻塞）
+  const userProfile = await buildUserContext(userId).catch(() => '（画像数据暂不可用）');
+
+  // ④ GLM-4.6V 综合分析（截图识别数据 + 个人画像 + 原图 → 个性化建议）
+  const extractText = formatExtract(extract, checkinCreated);
+  const analysisRes = await callGlmVision(
+    SCREENSHOT_ANALYSIS_PROMPT,
+    `截图识别数据：\n${extractText}\n\n个人健康画像：\n${userProfile}`,
+    input.imageUrl,
+    { maxTokens: 1500 },
+  );
+
+  // ⑤ 落 InterpretRecord（两次 GLM 调用 token 累加）
+  const record = await prisma.interpretRecord.create({
+    data: {
+      userId,
+      type: 'screenshot',
+      inputKey: input.inputKey,
+      result: analysisRes.content,
+      model: analysisRes.model,
+      inputTokens: extractRes.inputTokens + analysisRes.inputTokens,
+      outputTokens: extractRes.outputTokens + analysisRes.outputTokens,
+    },
+  });
+
+  return { interpretation: analysisRes.content, recordId: record.id, checkinCreated };
 }

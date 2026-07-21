@@ -9,6 +9,12 @@ Page({
     interpretation: '',
     error: '',
     fileName: '',
+    // V0.2.57 截图解读
+    imageUrl: '',
+    shotLoading: false,
+    shotResult: '',
+    shotError: '',
+    checkinCreated: false,
   },
 
   async onChooseFile() {
@@ -44,6 +50,48 @@ Page({
       const msg = (e as Error).message || '解读失败';
       this.setData({ loading: false, error: msg });
     }
+  },
+
+  // V0.2.57 上传运动/健康截图 → GLM-4.6V 识图 → 入 checkin → 联动画像 → AI 综合分析
+  async onChooseImage() {
+    try {
+      await ensureLogin();
+      const choose = await new Promise<WechatMiniprogram.ChooseMediaSuccessCallbackResult>(
+        (resolve, reject) => {
+          wx.chooseMedia({
+            count: 1,
+            mediaType: ['image'],
+            sizeType: ['compressed'],
+            sourceType: ['album', 'camera'],
+            success: resolve,
+            fail: reject,
+          });
+        },
+      );
+      const tempPath = choose.tempFiles[0].tempFilePath;
+      this.setData({ shotLoading: true, shotError: '', shotResult: '', imageUrl: tempPath, checkinCreated: false });
+      // 先上传 COS 拿公网 URL（GLM-4.6V 需可访问）
+      const imageUrl = await api.uploadFile(tempPath, 'image');
+      const res = await api.call<{ interpretation: string; recordId: string; checkinCreated: boolean }>(
+        'interpret',
+        'screenshot',
+        { imageUrl, inputKey: `interpret/shot/${Date.now()}.jpg` },
+      );
+      this.setData({
+        shotLoading: false,
+        shotResult: res.interpretation,
+        checkinCreated: res.checkinCreated,
+        imageUrl,
+      });
+    } catch (e) {
+      const msg = (e as Error).message || '解读失败';
+      this.setData({ shotLoading: false, shotError: msg });
+    }
+  },
+
+  // 移除截图，重选
+  onRemoveImage() {
+    this.setData({ imageUrl: '', shotResult: '', shotError: '', checkinCreated: false });
   },
 
   onShareAppMessage() {

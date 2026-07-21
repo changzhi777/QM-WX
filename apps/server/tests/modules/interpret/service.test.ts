@@ -13,7 +13,11 @@ vi.mock('src/infra/prisma.js', () => ({
 vi.mock('src/modules/interpret/client.js', () => ({
   callMinimax: vi.fn(),
   isMinimaxConfigured: () => true,
+  callGlmVision: vi.fn(),
+  isGlmVisionConfigured: () => true,
 }));
+vi.mock('src/modules/sport/sport.service.js', () => ({ sportService: { checkin: vi.fn() } }));
+vi.mock('src/modules/ai-coach/context-builder.js', () => ({ buildUserContext: vi.fn() }));
 vi.mock('fit-file-parser', () => ({
   default: class MockFitParser {
     constructor() {}
@@ -25,11 +29,16 @@ vi.mock('fit-file-parser', () => ({
 }));
 
 import { prisma } from 'src/infra/prisma.js';
-import { callMinimax } from 'src/modules/interpret/client.js';
-import { interpretGarminFit } from 'src/modules/interpret/service.js';
+import { callMinimax, callGlmVision } from 'src/modules/interpret/client.js';
+import { sportService } from 'src/modules/sport/sport.service.js';
+import { buildUserContext } from 'src/modules/ai-coach/context-builder.js';
+import { interpretGarminFit, interpretScreenshot } from 'src/modules/interpret/service.js';
 
 const mockedPrisma = vi.mocked(prisma);
 const mockedCallMinimax = vi.mocked(callMinimax);
+const mockedCallGlmVision = vi.mocked(callGlmVision);
+const mockedCheckin = vi.mocked(sportService.checkin);
+const mockedBuildUserContext = vi.mocked(buildUserContext);
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -89,5 +98,80 @@ describe('interpret service (V0.2.33 佳明 FIT 解读)', () => {
     );
     expect(mockedCallMinimax).not.toHaveBeenCalled();
     expect(mockedPrisma.interpretRecord.create).not.toHaveBeenCalled();
+  });
+});
+
+// ===== V0.2.57 interpretScreenshot（识图 → checkin → 联动 → AI 分析 → 落表）=====
+
+describe('interpretScreenshot (V0.2.57 截图闭环)', () => {
+  const shotExtract = {
+    type: 'run',
+    distanceKm: 5,
+    durationSec: 1800,
+    heartRate: 150,
+    paceSecPerKm: 360,
+    calorie: 300,
+    metrics: [{ name: '步频', value: '180' }],
+    summary: '5km 晨跑',
+  };
+
+  it('happy: 识图 run + checkin + 联动画像 + 综合分析 + 落表（token 累加）', async () => {
+    mockedCallGlmVision
+      .mockResolvedValueOnce({ content: JSON.stringify(shotExtract), inputTokens: 10, outputTokens: 20, model: 'glm-4.6v' })
+      .mockResolvedValueOnce({ content: '综合分析建议', inputTokens: 30, outputTokens: 40, model: 'glm-4.6v' });
+    mockedCheckin.mockResolvedValue({});
+    mockedBuildUserContext.mockResolvedValue('- 本年跑量：100km');
+    (mockedPrisma.interpretRecord.create as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'rec-shot' });
+
+    const r = await interpretScreenshot('u1', { imageUrl: 'https://cdn/x.jpg', inputKey: 'interpret/shot/x.jpg' });
+
+    expect(r.interpretation).toBe('综合分析建议');
+    expect(r.recordId).toBe('rec-shot');
+    expect(r.checkinCreated).toBe(true);
+    // 运动数据入 checkin（dataSource='sport_screenshot' 与 device pipeline 一致）
+    expect(mockedCheckin).toHaveBeenCalledWith('u1', expect.objectContaining({ distance: 5, dataSource: 'sport_screenshot', sportType: 'run' }));
+    // 联动画像被调用
+    expect(mockedBuildUserContext).toHaveBeenCalledWith('u1');
+    // 落表 type=screenshot + 两次 GLM token 累加（10+30 / 20+40）
+    const createArg = (mockedPrisma.interpretRecord.create as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0] as { data: Record<string, unknown> };
+    expect(createArg.data.type).toBe('screenshot');
+    expect(createArg.data.inputKey).toBe('interpret/shot/x.jpg');
+    expect(createArg.data.result).toBe('综合分析建议');
+    expect(createArg.data.inputTokens).toBe(40);
+    expect(createArg.data.outputTokens).toBe(60);
+  });
+
+  it('type=other（非运动）→ 不 checkin，仍落表 + 返解读', async () => {
+    mockedCallGlmVision
+      .mockResolvedValueOnce({ content: JSON.stringify({ type: 'other', distanceKm: null, durationSec: null, heartRate: null, paceSecPerKm: null, calorie: null, metrics: [], summary: '风景照' }), inputTokens: 5, outputTokens: 5, model: 'glm-4.6v' })
+      .mockResolvedValueOnce({ content: '这是风景照解读', inputTokens: 5, outputTokens: 5, model: 'glm-4.6v' });
+    mockedBuildUserContext.mockResolvedValue('画像');
+    (mockedPrisma.interpretRecord.create as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'rec2' });
+
+    const r = await interpretScreenshot('u1', { imageUrl: 'u', inputKey: 'k' });
+    expect(r.checkinCreated).toBe(false);
+    expect(mockedCheckin).not.toHaveBeenCalled();
+    expect(r.interpretation).toBe('这是风景照解读');
+  });
+
+  it('checkin 失败不阻塞（仍落表 + 返解读，checkinCreated=false）', async () => {
+    mockedCallGlmVision
+      .mockResolvedValueOnce({ content: JSON.stringify(shotExtract), inputTokens: 10, outputTokens: 20, model: 'glm-4.6v' })
+      .mockResolvedValueOnce({ content: '分析', inputTokens: 10, outputTokens: 10, model: 'glm-4.6v' });
+    mockedCheckin.mockRejectedValue(new Error('checkin 校验失败：重复打卡'));
+    mockedBuildUserContext.mockResolvedValue('画像');
+    (mockedPrisma.interpretRecord.create as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'rec3' });
+
+    const r = await interpretScreenshot('u1', { imageUrl: 'u', inputKey: 'k' });
+    expect(r.checkinCreated).toBe(false);
+    expect(r.interpretation).toBe('分析');
+    expect(mockedPrisma.interpretRecord.create).toHaveBeenCalled();
+  });
+
+  it('GLM 识图失败抛错传播（不落表）', async () => {
+    mockedCallGlmVision.mockRejectedValue(new Error('GLM-4.6V API 500: down'));
+    await expect(interpretScreenshot('u1', { imageUrl: 'u', inputKey: 'k' })).rejects.toThrow(/GLM-4.6V API 500/);
+    expect(mockedPrisma.interpretRecord.create).not.toHaveBeenCalled();
+    expect(mockedCheckin).not.toHaveBeenCalled();
   });
 });

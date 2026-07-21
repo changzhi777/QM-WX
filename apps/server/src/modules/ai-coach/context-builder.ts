@@ -58,7 +58,7 @@ export async function buildSystemPrompt(userId: string): Promise<string> {
 }
 
 /** 聚合全量数据 → 画像文本（含 C：计划进度 + 最近 7 天打卡）*/
-async function buildUserContext(userId: string): Promise<string> {
+export async function buildUserContext(userId: string): Promise<string> {
   const [user, yearStats, monthStats, activeGoals, shoes, enrollment, recentHr, recentSleep, recentSteps, latestBodyComp, recentRuns, latestWeather, recentMeals, recentStrength] =
     await Promise.all([
       prisma.user.findUnique({ where: { id: userId } }),

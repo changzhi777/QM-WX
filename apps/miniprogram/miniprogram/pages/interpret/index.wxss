@@ -40,3 +40,10 @@
 .result-text { font-size: 28rpx; color: #333; line-height: 1.8; white-space: pre-wrap; }
 
 .tip { margin-top: 40rpx; font-size: 24rpx; color: #aaa; text-align: center; line-height: 1.6; }
+
+/* V0.2.57 截图解读 */
+.section-title { font-size: 28rpx; font-weight: 600; color: #555; margin: 32rpx 0 16rpx 8rpx; }
+.shot-preview { margin-top: 20rpx; position: relative; }
+.shot-img { width: 100%; max-height: 400rpx; border-radius: 16rpx; background: #fff; box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.05); }
+.shot-remove { position: absolute; top: 16rpx; right: 16rpx; background: rgba(0,0,0,0.6); color: #fff; font-size: 24rpx; padding: 8rpx 20rpx; border-radius: 24rpx; }
+.shot-checkin { margin-top: 16rpx; background: #f0faf7; color: #2D9D78; padding: 16rpx 24rpx; border-radius: 12rpx; font-size: 26rpx; border-left: 6rpx solid #2D9D78; }

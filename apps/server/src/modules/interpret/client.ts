@@ -17,6 +17,7 @@
  *   const { content, inputTokens, outputTokens } = await callMinimax(systemPrompt, [{role:'user', content: dataSummary}]);
  */
 import { env } from '../../config/env.js';
+import type { ContentPart } from '../ai-coach/providers/types.js';
 
 export interface MinimaxMessage {
   role: 'user' | 'assistant';
@@ -78,5 +79,71 @@ export async function callMinimax(
     inputTokens: data.usage?.input_tokens ?? 0,
     outputTokens: data.usage?.output_tokens ?? 0,
     model: env.MINIMAX_MODEL,
+  };
+}
+
+// ===== V0.2.57 screenshot：GLM-4.6V 多模态识图（复用 ai-coach V0.2.45 + food.recognize 范式）=====
+
+/**
+ * GLM-4.6V 多模态识图 helper（V0.2.57 interpret screenshot action）
+ *
+ * 协议：智谱 GLM v4 chat/completions（OpenAI 兼容）+ vision content（image_url 段）
+ *   - endpoint：POST {LLM_BASE_URL}/chat/completions（默认智谱）
+ *   - 鉴权：Authorization: Bearer {LLM_API_KEY}
+ *   - messages.user.content = ContentPart[]（text + image_url，GLM-4.6V 兼容 OpenAI vision 格式）
+ *
+ * 与 minimax（FIT 文本）分工：FIT 走 callMinimax（Anthropic 协议）/ 截图走 callGlmVision（GLM-4.6V）
+ * 用 process.env.LLM_*（与 ai-coach glm.ts / food.recognize 一致，非 env.ts Zod）
+ */
+
+/** GLM-4.6V 是否已配置（routes 层 screenshot 守卫，未配返 503 featureDisabled）*/
+export function isGlmVisionConfigured(): boolean {
+  return !!process.env.LLM_API_KEY;
+}
+
+/** 调 GLM-4.6V 识图（system + userText + imageUrl → 文本/JSON 内容）*/
+export async function callGlmVision(
+  system: string,
+  userText: string,
+  imageUrl: string,
+  opts: { maxTokens?: number; responseFormatJson?: boolean } = {},
+): Promise<{ content: string; inputTokens: number; outputTokens: number; model: string }> {
+  const apiKey = process.env.LLM_API_KEY || '';
+  if (!apiKey) throw new Error('LLM_API_KEY 未配置');
+  const base = process.env.LLM_BASE_URL || 'https://open.bigmodel.cn/api/paas/v4';
+  const visionModel = process.env.LLM_VISION_MODEL || 'glm-4.6v';
+
+  const content: ContentPart[] = [
+    { type: 'text', text: userText },
+    { type: 'image_url', image_url: { url: imageUrl } },
+  ];
+  const body: Record<string, unknown> = {
+    model: visionModel,
+    messages: [
+      { role: 'system', content: system },
+      { role: 'user', content },
+    ],
+    max_tokens: opts.maxTokens ?? 2048,
+  };
+  if (opts.responseFormatJson) body.response_format = { type: 'json_object' };
+
+  const res = await fetch(`${base}/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`GLM-4.6V API ${res.status}: ${detail.slice(0, 200)}`);
+  }
+  const data = (await res.json()) as {
+    choices?: { message?: { content?: string } }[];
+    usage?: { prompt_tokens?: number; completion_tokens?: number };
+  };
+  return {
+    content: data.choices?.[0]?.message?.content ?? '',
+    inputTokens: data.usage?.prompt_tokens ?? 0,
+    outputTokens: data.usage?.completion_tokens ?? 0,
+    model: visionModel,
   };
 }
