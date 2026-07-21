@@ -69,7 +69,7 @@ export function invalidateAdminCache(): void {
 /** super-admin 独占 action（账号管理 + 全局配置 + 登录日志）*/
 const SUPER_ONLY_ACTIONS = [
   'listAdmins', 'createAdmin', 'updateAdmin', 'disableAdmin', 'setConfig', 'adminLoginLogs',
-  'submitMpAudit', 'uploadMpMedia', // V0.2.65 小程序代码提审（高风险发布，super-admin 独占）
+  'submitMpAudit', 'uploadMpMedia', 'getMpCategory', // V0.2.65 小程序代码提审（高风险发布，super-admin 独占）
 ];
 /** operator 可用 action（只读 list/stats/export + 轻操作）*/
 const OPERATOR_ACTIONS = [
@@ -1325,6 +1325,18 @@ export async function adminLoginLogs(input: { page?: number; pageSize?: number }
 }
 
 // ===== V0.2.65 小程序代码提审 API（mp access_token + submitAudit/uploadMedia）=====
+
+/** 上传审核素材（截图）→ media_id（供 submitAudit 的 preview_info.pic_id_list）*/
+/** 查询账号已配置的服务类目（提审前确认 category_id，需 mp 后台先加类目）→ category_list */
+export async function getMpCategory(): Promise<{ categoryList: unknown; errcode?: number; errmsg?: string }> {
+  const token = await getMpAccessToken();
+  const res = await fetch(`https://api.weixin.qq.com/wxa/get_category?access_token=${token}`);
+  const data = (await res.json()) as { category_list?: unknown; errcode?: number; errmsg?: string };
+  if (data.errcode && data.errcode !== 0) {
+    throw Errors.badRequest(`getMpCategory 失败: errcode=${data.errcode} ${data.errmsg ?? ''}`);
+  }
+  return { categoryList: data.category_list, errcode: data.errcode, errmsg: data.errmsg };
+}
 
 /** 上传审核素材（截图）→ media_id（供 submitAudit 的 preview_info.pic_id_list）*/
 export async function uploadMpMedia(input: {

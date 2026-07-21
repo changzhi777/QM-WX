@@ -136,6 +136,8 @@ export async function adminRoutes(app: FastifyInstance) {
       case 'retryParse':
         return { code: 0, data: await adminService.retryParse(RetryParseSchema.parse(payload)) };
       // ===== V0.2.65 小程序代码提审（super-admin 独占，SUPER_ONLY_ACTIONS）=====
+      case 'getMpCategory':
+        return { code: 0, data: await adminService.getMpCategory() };
       case 'uploadMpMedia': {
         // base64 上传审核素材（截图）→ media_id（供 submitMpAudit preview_info）
         const p = (payload ?? {}) as { fileBase64?: string; filename?: string; mime?: string };
