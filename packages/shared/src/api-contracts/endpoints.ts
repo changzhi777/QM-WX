@@ -116,6 +116,7 @@ export const ENDPOINTS = {
     // V0.2.33 资料解读（minimax M3 Anthropic 兼容）
     garmin: '/api/interpret', // 佳明 FIT 解读（parseAsync → minimax → 落表）
     screenshot: '/api/interpret', // V0.2.57 运动截图（GLM-4.6V 识图 → checkin → 联动画像 → AI 分析）
+    screenshotCheckin: '/api/interpret', // V0.2.60 用户确认打卡（查 extract + 去重 + checkin）
   },
   strength: {
     // V0.2.42 力量训练记录（训记式）
