@@ -139,7 +139,7 @@ Component({
               ctx.font = '24px sans-serif';
               ctx.fillStyle = 'rgba(255,255,255,0.6)';
               ctx.textBaseline = 'bottom';
-              ctx.fillText('青沐 · QM-WX', W / 2, H - 40);
+              ctx.fillText('沐禾健康', W / 2, H - 40);
 
               // 10. 转临时文件
               wx.canvasToTempFilePath({

@@ -76,6 +76,6 @@ Page({
   },
 
   onShareAppMessage() {
-    return { title: '青沐·月度健康报告', path: '/pages/report-monthly/index' };
+    return { title: '沐禾健康·月度健康报告', path: '/pages/report-monthly/index' };
   },
 });

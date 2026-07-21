@@ -1,4 +1,17 @@
-.page { padding-bottom: 80rpx; }
-.title { font-size: 32rpx; font-weight: 600; }
-.text { font-size: 28rpx; line-height: 1.6; color: var(--text-primary); }
-.bold { font-weight: 600; }
+.page {
+  padding: 32rpx;
+  padding-bottom: 80rpx;
+  background: #fff;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* 纯文本协议：text 转 block + pre-line 保留段落换行（\n 渲染为换行，空行渲染为段间距）*/
+.content {
+  display: block;
+  font-size: 28rpx;
+  line-height: 1.75;
+  color: #333;
+  white-space: pre-line;
+  word-break: break-word;
+}

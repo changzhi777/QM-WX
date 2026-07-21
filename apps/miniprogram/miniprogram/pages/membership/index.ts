@@ -107,7 +107,7 @@ Page({
   onShareAppMessage() {
     const code = this.data.inviteCode;
     return {
-      title: '一起来青沐运动，邀请好友解锁完整健康解读 🏃',
+      title: '一起来沐禾健康，邀请好友解锁完整健康解读 🏃',
       path: '/pages/index/index' + (code ? `?inviterCode=${code}` : ''),
     };
   },

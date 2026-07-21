@@ -52,7 +52,7 @@ Page({
   onShareAppMessage() {
     const code = (getApp().globalData as { inviteCode?: string }).inviteCode;
     return {
-      title: '来青沐运动，一起奔跑！🏃',
+      title: '来沐禾健康，一起奔跑！🏃',
       path: '/pages/feed/index' + (code ? `?inviterCode=${code}` : ''),
       success: () => {
         api.call('points', 'awardShare').catch(() => {});

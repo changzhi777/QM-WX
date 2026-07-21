@@ -95,6 +95,6 @@ Page({
   },
 
   onShareAppMessage() {
-    return { title: '青沐·AI 资料解读', path: '/pages/interpret/index' };
+    return { title: '沐禾健康·AI 资料解读', path: '/pages/interpret/index' };
   },
 });

@@ -35,7 +35,7 @@ const PERSONAS = [
 const QUICK_QUESTIONS = ['今天该怎么练？', '跑步后膝盖酸怎么办？', '在家放松/恢复建议', '最近睡不好怎么调？', '减脂期吃什么？'];
 
 const WELCOME =
-  '你好，我是青沐 AI 私教 🏃。点上方人设切换风格，问我训练/恢复/营养/伤病，或点「计划」定制训练计划。';
+  '你好，我是沐禾健康 AI 私教 🏃。点上方人设切换风格，问我训练/恢复/营养/伤病，或点「计划」定制训练计划。';
 
 Page({
   data: {
@@ -462,7 +462,7 @@ Page({
     const text = last?.role === 'assistant' && last.content ? last.content.replace(/📋建议：[^\n]+/g, '').trim() : '';
     const code = (getApp().globalData as { inviteCode?: string }).inviteCode;
     return {
-      title: text ? `AI 私教：${text.slice(0, 40)}…` : '青沐 AI 私教 — 你的私人跑步教练 🏃',
+      title: text ? `AI 私教：${text.slice(0, 40)}…` : '沐禾健康 AI 私教 — 你的私人跑步教练 🏃',
       path: '/pages/ai-coach/index' + (code ? `?inviterCode=${code}` : ''),
       success: () => {
         api.call('points', 'awardShare').catch(() => {});

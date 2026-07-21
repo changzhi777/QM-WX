@@ -79,7 +79,7 @@
         </button>
         <view class="menu-item" bindtap="goAgreement">
           <view class="mi-icon bg-gray">📄</view>
-          <view class="mi-text">用户协议</view>
+          <view class="mi-text">用户服务协议</view>
           <view class="mi-arrow">›</view>
         </view>
       </view>

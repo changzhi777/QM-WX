@@ -96,7 +96,7 @@
   <view class="step-content" wx:if="{{step === 4}}">
     <view class="finish-icon">🎉</view>
     <view class="finish-title">激活完成！</view>
-    <view class="finish-desc">你已完成激活，开始享受青沐运动</view>
+    <view class="finish-desc">你已完成激活，开始享受沐禾健康</view>
     <button class="next-btn" bindtap="finish">进入首页</button>
   </view>
 </view>

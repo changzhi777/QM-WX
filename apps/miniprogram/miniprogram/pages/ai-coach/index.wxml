@@ -53,7 +53,7 @@
   <view class="ai-advice-preview" wx:if="{{reportAdvice && !hasHistory && !sending}}">
     <view class="preview-title">✨ 最近建议</view>
     <view class="ai-bubble">
-      <view class="ai-bubble-tag">青沐AI</view>
+      <view class="ai-bubble-tag">沐禾AI</view>
       <view class="ai-bubble-text">{{reportAdvice}}</view>
     </view>
   </view>

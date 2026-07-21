@@ -326,7 +326,7 @@ Page({
       };
     }
     return {
-      title: '青沐跑者数据中心 🏃',
+      title: '沐禾健康跑者数据中心 🏃',
       path: '/pages/runner/index' + suffix,
       success: onSuccess,
     };
@@ -376,7 +376,7 @@ Page({
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 28px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('青沐 · 跑群周报', CANVAS_WIDTH / 2, 80);
+      ctx.fillText('沐禾健康 · 跑群周报', CANVAS_WIDTH / 2, 80);
 
       ctx.font = 'bold 48px sans-serif';
       ctx.fillText(report.groupName, CANVAS_WIDTH / 2, 160);

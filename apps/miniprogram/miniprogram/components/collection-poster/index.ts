@@ -127,7 +127,7 @@ Component({
               ctx.font = '24px sans-serif';
               ctx.textAlign = 'center';
               ctx.textBaseline = 'bottom';
-              ctx.fillText('青沐 · QM-WX · 收藏合集', W / 2, H - 40);
+              ctx.fillText('沐禾健康 · 收藏合集', W / 2, H - 40);
 
               wx.canvasToTempFilePath({
                 canvas,
