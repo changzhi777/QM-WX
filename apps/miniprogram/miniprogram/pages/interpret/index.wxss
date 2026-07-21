@@ -47,3 +47,12 @@
 .shot-img { width: 100%; max-height: 400rpx; border-radius: 16rpx; background: #fff; box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.05); }
 .shot-remove { position: absolute; top: 16rpx; right: 16rpx; background: rgba(0,0,0,0.6); color: #fff; font-size: 24rpx; padding: 8rpx 20rpx; border-radius: 24rpx; }
 .shot-checkin { margin-top: 16rpx; background: #f0faf7; color: #2D9D78; padding: 16rpx 24rpx; border-radius: 12rpx; font-size: 26rpx; border-left: 6rpx solid #2D9D78; }
+
+/* V0.2.60 用户确认 checkin */
+.privacy-hint { font-size: 22rpx; color: #b88; margin-top: 10rpx; }
+.extract-card { margin-top: 24rpx; background: #fff; border-radius: 16rpx; padding: 28rpx; box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.05); border-left: 8rpx solid #2D9D78; }
+.extract-title { font-size: 28rpx; font-weight: 700; color: #2D9D78; margin-bottom: 16rpx; }
+.extract-row { font-size: 28rpx; color: #333; line-height: 1.8; }
+.extract-tip { font-size: 24rpx; color: #999; margin: 12rpx 0 20rpx; }
+.confirm-btn { background: #2D9D78; color: #fff; font-size: 28rpx; border-radius: 40rpx; width: 100%; }
+.confirm-btn[disabled] { background: #a0c9b8; color: #fff; }

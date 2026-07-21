@@ -147,3 +147,46 @@ export async function callGlmVision(
     model: visionModel,
   };
 }
+
+/**
+ * GLM 文本调用 helper（V0.2.60 screenshot 综合分析用，无图，省 token）
+ *
+ * 与 callGlmVision 分工：识图用 callGlmVision（GLM-4.6V vision）/ 纯文本分析用 callGlm（glm-4.7 文本）
+ * screenshot 流程：第一次 callGlmVision 识图提数据 → 第二次 callGlm 文本综合分析（不再传图，省 ~50% token）
+ */
+export async function callGlm(
+  system: string,
+  userText: string,
+  opts: { maxTokens?: number } = {},
+): Promise<{ content: string; inputTokens: number; outputTokens: number; model: string }> {
+  const apiKey = process.env.LLM_API_KEY || '';
+  if (!apiKey) throw new Error('LLM_API_KEY 未配置');
+  const base = process.env.LLM_BASE_URL || 'https://open.bigmodel.cn/api/paas/v4';
+  const textModel = process.env.LLM_MODEL || 'glm-4.7';
+  const res = await fetch(`${base}/chat/completions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
+    body: JSON.stringify({
+      model: textModel,
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: userText },
+      ],
+      max_tokens: opts.maxTokens ?? 2048,
+    }),
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`GLM API ${res.status}: ${detail.slice(0, 200)}`);
+  }
+  const data = (await res.json()) as {
+    choices?: { message?: { content?: string } }[];
+    usage?: { prompt_tokens?: number; completion_tokens?: number };
+  };
+  return {
+    content: data.choices?.[0]?.message?.content ?? '',
+    inputTokens: data.usage?.prompt_tokens ?? 0,
+    outputTokens: data.usage?.completion_tokens ?? 0,
+    model: textModel,
+  };
+}

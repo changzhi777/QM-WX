@@ -8,11 +8,12 @@ import Fastify from 'fastify';
 const mocks = vi.hoisted(() => ({
   interpretGarminFit: vi.fn(),
   interpretScreenshot: vi.fn(),
+  confirmScreenshotCheckin: vi.fn(),
   isMinimaxConfigured: vi.fn(() => true),
   isGlmVisionConfigured: vi.fn(() => true),
 }));
 
-vi.mock('src/modules/interpret/service.js', () => ({ interpretGarminFit: mocks.interpretGarminFit, interpretScreenshot: mocks.interpretScreenshot }));
+vi.mock('src/modules/interpret/service.js', () => ({ interpretGarminFit: mocks.interpretGarminFit, interpretScreenshot: mocks.interpretScreenshot, confirmScreenshotCheckin: mocks.confirmScreenshotCheckin }));
 vi.mock('src/modules/interpret/client.js', () => ({ isMinimaxConfigured: mocks.isMinimaxConfigured, isGlmVisionConfigured: mocks.isGlmVisionConfigured }));
 vi.mock('src/common/errors.js', () => ({
   Errors: {
@@ -131,16 +132,34 @@ describe('interpret routes · screenshot (V0.2.57)', () => {
     await app.close();
   });
 
-  it('screenshot happy → 200 + interpretScreenshot 透传 imageUrl/inputKey/userId + checkinCreated', async () => {
-    mocks.interpretScreenshot.mockResolvedValue({ interpretation: '截图分析', recordId: 'rec-s', checkinCreated: true });
+  it('screenshot happy → 200 + interpretScreenshot 透传 + 返 extract（V0.2.60 不 auto checkin）', async () => {
+    mocks.interpretScreenshot.mockResolvedValue({ interpretation: '截图分析', recordId: 'rec-s', extract: { type: 'run', date: '2026-07-20', distanceKm: 5, durationSec: 1800, heartRate: 150, paceSecPerKm: 360, calorie: 300, metrics: [], summary: '5km' } });
     const app = await buildApp();
     const r = await post(app, 'screenshot', { imageUrl: 'https://cdn/x.jpg', inputKey: 'cos/shot.jpg' });
     expect(r.statusCode).toBe(200);
-    expect(r.json().data).toEqual({ interpretation: '截图分析', recordId: 'rec-s', checkinCreated: true });
+    expect(r.json().data.recordId).toBe('rec-s');
+    expect(r.json().data.extract.distanceKm).toBe(5);
     expect(mocks.interpretScreenshot).toHaveBeenCalledWith('u1', {
       imageUrl: 'https://cdn/x.jpg',
       inputKey: 'cos/shot.jpg',
     });
+    await app.close();
+  });
+
+  it('screenshotCheckin happy → 200 + confirmScreenshotCheckin 透传 recordId/userId', async () => {
+    mocks.confirmScreenshotCheckin.mockResolvedValue({ checkinCreated: true });
+    const app = await buildApp();
+    const r = await post(app, 'screenshotCheckin', { recordId: 'rec-s' });
+    expect(r.statusCode).toBe(200);
+    expect(r.json().data).toEqual({ checkinCreated: true });
+    expect(mocks.confirmScreenshotCheckin).toHaveBeenCalledWith('u1', { recordId: 'rec-s' });
+    await app.close();
+  });
+
+  it('screenshotCheckin recordId 缺 → 400', async () => {
+    const app = await buildApp();
+    const r = await post(app, 'screenshotCheckin', {});
+    expect(r.statusCode).toBe(400);
     await app.close();
   });
 });

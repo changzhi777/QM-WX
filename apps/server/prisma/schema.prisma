@@ -1205,6 +1205,8 @@ model InterpretRecord {
   inputTokens  Int?     // 输入 token 数
   outputTokens Int?     // 输出 token 数
   cost         Float?   // 估算费用（元）
+  extract      Json?    // V0.2.60 截图识别数据（供 confirmScreenshotCheckin 查回，防前端篡改）
+  checkinConfirmedAt DateTime? // V0.2.60 确认打卡时间（null=未确认，防重复确认）
   createdAt    DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -3,18 +3,35 @@
 import { api } from '../../services/api';
 import { ensureLogin } from '../../utils/auth';
 
+// V0.2.60 截图识别数据（screenshot action 返 extract，供前端展示 + 用户确认）
+interface InterpretExtract {
+  type: string;
+  date: string | null;
+  distanceKm: number | null;
+  durationSec: number | null;
+  heartRate: number | null;
+  paceSecPerKm: number | null;
+  calorie: number | null;
+  metrics: Array<{ name: string; value: string }>;
+  summary: string;
+}
+
 Page({
   data: {
     loading: false,
     interpretation: '',
     error: '',
     fileName: '',
-    // V0.2.57 截图解读
+    // V0.2.57 截图解读 / V0.2.60 用户确认 checkin
     imageUrl: '',
     shotLoading: false,
     shotResult: '',
     shotError: '',
-    checkinCreated: false,
+    recordId: '',
+    extract: null as InterpretExtract | null,
+    canCheckin: false,
+    confirming: false,
+    checkinMsg: '',
   },
 
   async onChooseFile() {
@@ -52,7 +69,7 @@ Page({
     }
   },
 
-  // V0.2.57 上传运动/健康截图 → GLM-4.6V 识图 → 入 checkin → 联动画像 → AI 综合分析
+  // V0.2.60 上传截图 → 识图+分析（不 auto checkin）→ 展示识别数据 + 确认按钮
   async onChooseImage() {
     try {
       await ensureLogin();
@@ -69,29 +86,43 @@ Page({
         },
       );
       const tempPath = choose.tempFiles[0].tempFilePath;
-      this.setData({ shotLoading: true, shotError: '', shotResult: '', imageUrl: tempPath, checkinCreated: false });
-      // 先上传 COS 拿公网 URL（GLM-4.6V 需可访问）
+      this.setData({ shotLoading: true, shotError: '', shotResult: '', imageUrl: tempPath, recordId: '', extract: null, canCheckin: false, checkinMsg: '' });
+      // 上传 COS 拿公网 URL（GLM-4.6V 需可访问）
       const imageUrl = await api.uploadFile(tempPath, 'image');
-      const res = await api.call<{ interpretation: string; recordId: string; checkinCreated: boolean }>(
+      const res = await api.call<{ interpretation: string; recordId: string; extract: InterpretExtract }>(
         'interpret',
         'screenshot',
         { imageUrl, inputKey: `interpret/shot/${Date.now()}.jpg` },
       );
-      this.setData({
-        shotLoading: false,
-        shotResult: res.interpretation,
-        checkinCreated: res.checkinCreated,
-        imageUrl,
-      });
+      const extract = res.extract || null;
+      const canCheckin = !!extract && extract.type !== 'other' && Number(extract.distanceKm) > 0;
+      this.setData({ shotLoading: false, shotResult: res.interpretation, imageUrl, recordId: res.recordId, extract, canCheckin });
     } catch (e) {
       const msg = (e as Error).message || '解读失败';
       this.setData({ shotLoading: false, shotError: msg });
     }
   },
 
+  // V0.2.60 P1.2 用户确认才打卡（防误识别污染跑量；后端去重 + record.extract 防篡改）
+  async onConfirmCheckin() {
+    if (!this.data.recordId || this.data.confirming) return;
+    this.setData({ confirming: true, checkinMsg: '' });
+    try {
+      const res = await api.call<{ checkinCreated: boolean; reason?: string }>(
+        'interpret',
+        'screenshotCheckin',
+        { recordId: this.data.recordId },
+      );
+      const msg = res.checkinCreated ? '✅ 已加入运动记录' : `未打卡：${res.reason || '已存在相同记录'}`;
+      this.setData({ confirming: false, checkinMsg: msg, canCheckin: res.checkinCreated ? false : this.data.canCheckin });
+    } catch (e) {
+      this.setData({ confirming: false, checkinMsg: `打卡失败：${(e as Error).message}` });
+    }
+  },
+
   // 移除截图，重选
   onRemoveImage() {
-    this.setData({ imageUrl: '', shotResult: '', shotError: '', checkinCreated: false });
+    this.setData({ imageUrl: '', shotResult: '', shotError: '', recordId: '', extract: null, canCheckin: false, confirming: false, checkinMsg: '' });
   },
 
   onShareAppMessage() {

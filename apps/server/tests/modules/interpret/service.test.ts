@@ -8,12 +8,16 @@ let mockFitData: unknown = { sessions: [{ total_distance: 5000, total_elapsed_ti
 let mockFitThrow: Error | null = null;
 
 vi.mock('src/infra/prisma.js', () => ({
-  prisma: { interpretRecord: { create: vi.fn() } },
+  prisma: {
+    interpretRecord: { create: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
+    checkin: { findFirst: vi.fn() },
+  },
 }));
 vi.mock('src/modules/interpret/client.js', () => ({
   callMinimax: vi.fn(),
   isMinimaxConfigured: () => true,
   callGlmVision: vi.fn(),
+  callGlm: vi.fn(),
   isGlmVisionConfigured: () => true,
 }));
 vi.mock('src/modules/sport/sport.service.js', () => ({ sportService: { checkin: vi.fn() } }));
@@ -29,16 +33,21 @@ vi.mock('fit-file-parser', () => ({
 }));
 
 import { prisma } from 'src/infra/prisma.js';
-import { callMinimax, callGlmVision } from 'src/modules/interpret/client.js';
+import { callMinimax, callGlmVision, callGlm } from 'src/modules/interpret/client.js';
 import { sportService } from 'src/modules/sport/sport.service.js';
 import { buildUserContext } from 'src/modules/ai-coach/context-builder.js';
-import { interpretGarminFit, interpretScreenshot } from 'src/modules/interpret/service.js';
+import { interpretGarminFit, interpretScreenshot, confirmScreenshotCheckin } from 'src/modules/interpret/service.js';
 
 const mockedPrisma = vi.mocked(prisma);
 const mockedCallMinimax = vi.mocked(callMinimax);
 const mockedCallGlmVision = vi.mocked(callGlmVision);
+const mockedCallGlm = vi.mocked(callGlm);
 const mockedCheckin = vi.mocked(sportService.checkin);
 const mockedBuildUserContext = vi.mocked(buildUserContext);
+const mockedRecordCreate = mockedPrisma.interpretRecord.create as unknown as ReturnType<typeof vi.fn>;
+const mockedRecordFindUnique = mockedPrisma.interpretRecord.findUnique as unknown as ReturnType<typeof vi.fn>;
+const mockedRecordUpdate = mockedPrisma.interpretRecord.update as unknown as ReturnType<typeof vi.fn>;
+const mockedCheckinFindFirst = mockedPrisma.checkin.findFirst as unknown as ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -101,11 +110,12 @@ describe('interpret service (V0.2.33 佳明 FIT 解读)', () => {
   });
 });
 
-// ===== V0.2.57 interpretScreenshot（识图 → checkin → 联动 → AI 分析 → 落表）=====
+// ===== V0.2.60 interpretScreenshot（识图+分析不 auto checkin）+ confirmScreenshotCheckin（确认打卡）=====
 
-describe('interpretScreenshot (V0.2.57 截图闭环)', () => {
+describe('interpretScreenshot (V0.2.60 识图+分析，返 extract 不 auto checkin)', () => {
   const shotExtract = {
     type: 'run',
+    date: '2026-07-20',
     distanceKm: 5,
     durationSec: 1800,
     heartRate: 150,
@@ -115,63 +125,82 @@ describe('interpretScreenshot (V0.2.57 截图闭环)', () => {
     summary: '5km 晨跑',
   };
 
-  it('happy: 识图 run + checkin + 联动画像 + 综合分析 + 落表（token 累加）', async () => {
-    mockedCallGlmVision
-      .mockResolvedValueOnce({ content: JSON.stringify(shotExtract), inputTokens: 10, outputTokens: 20, model: 'glm-4.6v' })
-      .mockResolvedValueOnce({ content: '综合分析建议', inputTokens: 30, outputTokens: 40, model: 'glm-4.6v' });
-    mockedCheckin.mockResolvedValue({});
+  it('happy: 识图 callGlmVision + 分析 callGlm（不传图）+ 联动 + 落表 extract + 返 extract（不 checkin）', async () => {
+    mockedCallGlmVision.mockResolvedValueOnce({ content: JSON.stringify(shotExtract), inputTokens: 10, outputTokens: 20, model: 'glm-4.6v' });
+    mockedCallGlm.mockResolvedValue({ content: '综合分析', inputTokens: 30, outputTokens: 40, model: 'glm-4.7' });
     mockedBuildUserContext.mockResolvedValue('- 本年跑量：100km');
-    (mockedPrisma.interpretRecord.create as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'rec-shot' });
+    mockedRecordCreate.mockResolvedValue({ id: 'rec-shot' });
 
     const r = await interpretScreenshot('u1', { imageUrl: 'https://cdn/x.jpg', inputKey: 'interpret/shot/x.jpg' });
 
-    expect(r.interpretation).toBe('综合分析建议');
+    expect(r.interpretation).toBe('综合分析');
     expect(r.recordId).toBe('rec-shot');
-    expect(r.checkinCreated).toBe(true);
-    // 运动数据入 checkin（dataSource='sport_screenshot' 与 device pipeline 一致）
-    expect(mockedCheckin).toHaveBeenCalledWith('u1', expect.objectContaining({ distance: 5, dataSource: 'sport_screenshot', sportType: 'run' }));
-    // 联动画像被调用
-    expect(mockedBuildUserContext).toHaveBeenCalledWith('u1');
-    // 落表 type=screenshot + 两次 GLM token 累加（10+30 / 20+40）
-    const createArg = (mockedPrisma.interpretRecord.create as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0] as { data: Record<string, unknown> };
+    expect(r.extract.distanceKm).toBe(5);
+    expect(mockedCallGlm).toHaveBeenCalled(); // 第二次 callGlm 文本（不传图）
+    expect(mockedCheckin).not.toHaveBeenCalled(); // V0.2.60 不 auto checkin
+    const createArg = mockedRecordCreate.mock.calls[0][0] as { data: Record<string, unknown> };
     expect(createArg.data.type).toBe('screenshot');
-    expect(createArg.data.inputKey).toBe('interpret/shot/x.jpg');
-    expect(createArg.data.result).toBe('综合分析建议');
-    expect(createArg.data.inputTokens).toBe(40);
-    expect(createArg.data.outputTokens).toBe(60);
+    expect(createArg.data.extract).toEqual(shotExtract); // extract 落表供确认查回
   });
 
-  it('type=other（非运动）→ 不 checkin，仍落表 + 返解读', async () => {
-    mockedCallGlmVision
-      .mockResolvedValueOnce({ content: JSON.stringify({ type: 'other', distanceKm: null, durationSec: null, heartRate: null, paceSecPerKm: null, calorie: null, metrics: [], summary: '风景照' }), inputTokens: 5, outputTokens: 5, model: 'glm-4.6v' })
-      .mockResolvedValueOnce({ content: '这是风景照解读', inputTokens: 5, outputTokens: 5, model: 'glm-4.6v' });
+  it('type=other → 返 extract.type=other，不 checkin', async () => {
+    mockedCallGlmVision.mockResolvedValueOnce({
+      content: JSON.stringify({ type: 'other', date: null, distanceKm: null, durationSec: null, heartRate: null, paceSecPerKm: null, calorie: null, metrics: [], summary: '风景照' }),
+      inputTokens: 5, outputTokens: 5, model: 'glm-4.6v',
+    });
+    mockedCallGlm.mockResolvedValue({ content: '风景照解读', inputTokens: 5, outputTokens: 5, model: 'glm-4.7' });
     mockedBuildUserContext.mockResolvedValue('画像');
-    (mockedPrisma.interpretRecord.create as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'rec2' });
-
+    mockedRecordCreate.mockResolvedValue({ id: 'rec2' });
     const r = await interpretScreenshot('u1', { imageUrl: 'u', inputKey: 'k' });
-    expect(r.checkinCreated).toBe(false);
+    expect(r.extract.type).toBe('other');
     expect(mockedCheckin).not.toHaveBeenCalled();
-    expect(r.interpretation).toBe('这是风景照解读');
-  });
-
-  it('checkin 失败不阻塞（仍落表 + 返解读，checkinCreated=false）', async () => {
-    mockedCallGlmVision
-      .mockResolvedValueOnce({ content: JSON.stringify(shotExtract), inputTokens: 10, outputTokens: 20, model: 'glm-4.6v' })
-      .mockResolvedValueOnce({ content: '分析', inputTokens: 10, outputTokens: 10, model: 'glm-4.6v' });
-    mockedCheckin.mockRejectedValue(new Error('checkin 校验失败：重复打卡'));
-    mockedBuildUserContext.mockResolvedValue('画像');
-    (mockedPrisma.interpretRecord.create as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'rec3' });
-
-    const r = await interpretScreenshot('u1', { imageUrl: 'u', inputKey: 'k' });
-    expect(r.checkinCreated).toBe(false);
-    expect(r.interpretation).toBe('分析');
-    expect(mockedPrisma.interpretRecord.create).toHaveBeenCalled();
   });
 
   it('GLM 识图失败抛错传播（不落表）', async () => {
     mockedCallGlmVision.mockRejectedValue(new Error('GLM-4.6V API 500: down'));
     await expect(interpretScreenshot('u1', { imageUrl: 'u', inputKey: 'k' })).rejects.toThrow(/GLM-4.6V API 500/);
-    expect(mockedPrisma.interpretRecord.create).not.toHaveBeenCalled();
+    expect(mockedRecordCreate).not.toHaveBeenCalled();
+    expect(mockedCheckin).not.toHaveBeenCalled();
+  });
+});
+
+describe('confirmScreenshotCheckin (V0.2.60 用户确认 + 去重 + 防重复)', () => {
+  const shotExtract = { type: 'run', date: '2026-07-20', distanceKm: 5, durationSec: 1800, heartRate: 150, paceSecPerKm: 360, calorie: 300, metrics: [] as Array<{ name: string; value: string }>, summary: '5km' };
+
+  it('happy: 查 extract + 无重复 → checkin + 标 checkinConfirmedAt', async () => {
+    mockedRecordFindUnique.mockResolvedValue({ id: 'rec1', userId: 'u1', type: 'screenshot', extract: shotExtract, checkinConfirmedAt: null });
+    mockedCheckinFindFirst.mockResolvedValue(null);
+    mockedCheckin.mockResolvedValue({});
+    mockedRecordUpdate.mockResolvedValue({});
+    const r = await confirmScreenshotCheckin('u1', { recordId: 'rec1' });
+    expect(r.checkinCreated).toBe(true);
+    expect(mockedCheckin).toHaveBeenCalledWith('u1', expect.objectContaining({ distance: 5, date: '2026-07-20', dataSource: 'sport_screenshot', sportType: 'run' }));
+    expect(mockedRecordUpdate).toHaveBeenCalledWith({ where: { id: 'rec1' }, data: { checkinConfirmedAt: expect.any(Date) } });
+  });
+
+  it('已确认过（checkinConfirmedAt 非空）→ checkinCreated false + reason', async () => {
+    mockedRecordFindUnique.mockResolvedValue({ id: 'rec1', userId: 'u1', type: 'screenshot', extract: shotExtract, checkinConfirmedAt: new Date() });
+    const r = await confirmScreenshotCheckin('u1', { recordId: 'rec1' });
+    expect(r.checkinCreated).toBe(false);
+    expect(r.reason).toMatch(/已确认/);
+    expect(mockedCheckin).not.toHaveBeenCalled();
+  });
+
+  it('去重：同 userId+date+distance 已存在 → checkinCreated false', async () => {
+    mockedRecordFindUnique.mockResolvedValue({ id: 'rec1', userId: 'u1', type: 'screenshot', extract: shotExtract, checkinConfirmedAt: null });
+    mockedCheckinFindFirst.mockResolvedValue({ id: 'dup' });
+    const r = await confirmScreenshotCheckin('u1', { recordId: 'rec1' });
+    expect(r.checkinCreated).toBe(false);
+    expect(r.reason).toMatch(/已存在/);
+    expect(mockedCheckin).not.toHaveBeenCalled();
+  });
+
+  it('extract 无运动数据（type=other / distanceKm<=0）→ badRequest', async () => {
+    mockedRecordFindUnique.mockResolvedValue({
+      id: 'rec1', userId: 'u1', type: 'screenshot', checkinConfirmedAt: null,
+      extract: { type: 'other', date: null, distanceKm: null, durationSec: null, heartRate: null, paceSecPerKm: null, calorie: null, metrics: [], summary: '风景' },
+    });
+    await expect(confirmScreenshotCheckin('u1', { recordId: 'rec1' })).rejects.toThrow(/未识别|不可打卡|无效/);
     expect(mockedCheckin).not.toHaveBeenCalled();
   });
 });

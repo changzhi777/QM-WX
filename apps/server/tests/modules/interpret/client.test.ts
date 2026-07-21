@@ -12,7 +12,7 @@ vi.mock('src/config/env.js', () => ({
   },
 }));
 
-import { callMinimax, isMinimaxConfigured, callGlmVision, isGlmVisionConfigured } from 'src/modules/interpret/client.js';
+import { callMinimax, isMinimaxConfigured, callGlmVision, callGlm, isGlmVisionConfigured } from 'src/modules/interpret/client.js';
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -159,5 +159,42 @@ describe('GLM-4.6V vision client (V0.2.57 screenshot)', () => {
     vi.stubEnv('LLM_API_KEY', 'glm-key');
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response('err', { status: 500 }));
     await expect(callGlmVision('s', 't', 'url')).rejects.toThrow(/500/);
+  });
+});
+
+// ===== V0.2.60 callGlm 文本版（screenshot 综合分析，无图）=====
+
+describe('GLM 文本 client (V0.2.60 callGlm)', () => {
+  it('callGlm: 纯文本协议（glm-4.7，无 image_url，Bearer，usage 解析）', async () => {
+    vi.stubEnv('LLM_API_KEY', 'glm-key');
+    vi.stubEnv('LLM_BASE_URL', 'https://open.bigmodel.cn/api/paas/v4');
+    vi.stubEnv('LLM_MODEL', 'glm-4.7');
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [{ message: { content: '综合分析文本' } }],
+          usage: { prompt_tokens: 80, completion_tokens: 120 },
+        }),
+        { status: 200 },
+      ),
+    );
+    const r = await callGlm('sys', '识图数据+画像');
+    expect(r.content).toBe('综合分析文本');
+    expect(r.inputTokens).toBe(80);
+    expect(r.outputTokens).toBe(120);
+    expect(r.model).toBe('glm-4.7');
+    const [url, init] = fetchSpy.mock.calls[0];
+    expect(url).toBe('https://open.bigmodel.cn/api/paas/v4/chat/completions');
+    const body = JSON.parse((init as RequestInit).body as string);
+    expect(body.model).toBe('glm-4.7');
+    // 纯文本：user content 是 string（非 ContentPart[]，无 image_url）
+    const userMsg = body.messages.find((m: { role: string }) => m.role === 'user');
+    expect(typeof userMsg.content).toBe('string');
+    expect(userMsg.content).toBe('识图数据+画像');
+  });
+
+  it('callGlm: 未配 LLM_API_KEY 抛错', async () => {
+    vi.stubEnv('LLM_API_KEY', '');
+    await expect(callGlm('s', 't')).rejects.toThrow(/LLM_API_KEY 未配置/);
   });
 });

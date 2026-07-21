@@ -10,13 +10,24 @@
     <view class="upload-icon">{{shotLoading ? '⏳' : '📷'}}</view>
     <view class="upload-text">{{shotLoading ? '识别分析中…' : '上传截图'}}</view>
     <view class="upload-hint">跑步成绩 / 体脂秤 / 体检报告 / 手环数据 等</view>
+    <view class="privacy-hint">🔒 截图仅用于 AI 分析，请勿上传含身份证号 / 病历号等敏感信息的图片</view>
   </view>
 
   <view class="shot-preview" wx:if="{{imageUrl}}">
     <image src="{{imageUrl}}" mode="aspectFit" class="shot-img" />
     <view class="shot-remove" catchtap="onRemoveImage">✕ 移除重选</view>
   </view>
-  <view class="shot-checkin" wx:if="{{checkinCreated && shotResult}}">✅ 识别到运动数据，已自动加入个人记录</view>
+
+  <!-- V0.2.60 识别运动数据 + 用户确认打卡（防误识别污染跑量）-->
+  <view class="extract-card" wx:if="{{canCheckin && extract}}">
+    <view class="extract-title">📋 识别到运动数据（请核对）</view>
+    <view class="extract-row">{{extract.type}} · {{extract.distanceKm}}km<text wx:if="{{extract.date}}"> · {{extract.date}}</text></view>
+    <view class="extract-row" wx:if="{{extract.durationSec}}">时长约 {{extract.durationSec}} 秒</view>
+    <view class="extract-row" wx:if="{{extract.heartRate}}">心率 {{extract.heartRate}} bpm</view>
+    <view class="extract-tip">确认后加入运动记录（同日同距离不可重复）</view>
+    <button class="confirm-btn" bindtap="onConfirmCheckin" disabled="{{confirming}}" loading="{{confirming}}">{{confirming ? '提交中…' : '确认加入运动记录'}}</button>
+  </view>
+  <view class="shot-checkin" wx:if="{{checkinMsg}}">{{checkinMsg}}</view>
   <view class="error" wx:if="{{shotError}}">⚠️ {{shotError}}</view>
   <view class="result-card" wx:if="{{shotResult}}">
     <view class="result-title">✨ AI 综合分析</view>
