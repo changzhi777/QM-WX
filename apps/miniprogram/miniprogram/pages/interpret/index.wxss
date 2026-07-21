@@ -63,4 +63,5 @@
 .history-meta { display: flex; justify-content: space-between; font-size: 26rpx; color: #2D9D78; font-weight: 600; margin-bottom: 12rpx; }
 .history-date { color: #aaa; font-weight: 400; }
 .history-result { font-size: 26rpx; color: #333; line-height: 1.7; white-space: pre-line; }
+.history-img { width: 100%; max-height: 240rpx; border-radius: 10rpx; margin: 10rpx 0; background: #f5f5f5; }
 .history-checkin { margin-top: 12rpx; font-size: 24rpx; color: #2D9D78; background: #f0faf7; padding: 10rpx 16rpx; border-radius: 8rpx; }

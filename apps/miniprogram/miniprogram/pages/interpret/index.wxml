@@ -57,6 +57,7 @@
       <text>{{item.extract.distanceKm}}km · {{item.extract.summary}}</text>
       <text class="history-date">{{item.createdAt}}</text>
     </view>
+    <image wx:if="{{item.imageUrl}}" src="{{item.imageUrl}}" mode="aspectFill" class="history-img" />
     <view class="history-result">{{item.result}}</view>
     <view class="history-checkin" wx:if="{{item.checkinConfirmedAt}}">✅ 已加入运动记录</view>
     <button wx:elif="{{item.extract.type !== 'other' && item.extract.distanceKm > 0}}" class="confirm-btn" data-record-id="{{item.id}}" bindtap="onConfirmHistoryCheckin">确认加入运动记录</button>

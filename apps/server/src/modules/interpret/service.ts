@@ -289,5 +289,16 @@ export async function myInterpretHistory(
     }),
     prisma.interpretRecord.count({ where: { userId, type: 'screenshot' } }),
   ]);
-  return { list, total, page, pageSize };
+  const cdnBase = process.env.COS_CDN_DOMAIN || '';
+  return {
+    list: list.map((r) => ({
+      ...r,
+      imageUrl: cdnBase && r.inputKey ? `${cdnBase}/${r.inputKey}` : null,
+      createdAt: r.createdAt.toISOString(),
+      checkinConfirmedAt: r.checkinConfirmedAt ? r.checkinConfirmedAt.toISOString() : null,
+    })),
+    total,
+    page,
+    pageSize,
+  };
 }
