@@ -85,7 +85,18 @@ vi.mock('src/common/logger.js', () => ({
 
 import {
   weeklyReportQueue,
+  closeOrderQueue,
+  refreshCertsQueue,
+  garminImportQueue,
+  ludongSyncQueue,
+  uploadParseQueue,
   enqueueWeeklyReport,
+  enqueueCloseOrder,
+  enqueueRefreshCerts,
+  enqueueGarminImport,
+  enqueueLudongSync,
+  enqueueUploadParse,
+  CLOSE_ORDER_DELAY_MS,
   startJobs,
   stopJobs,
 } from '../../src/jobs/queue.js';
@@ -213,5 +224,58 @@ describe('startJobs / stopJobs 生命周期', () => {
     const w = state.workers[beforeWorkers];
     expect(w.on).toHaveBeenCalledWith('completed', expect.any(Function));
     expect(w.on).toHaveBeenCalledWith('failed', expect.any(Function));
+  });
+});
+
+// ===== V0.2.54 补：5 个未测 enqueue 函数（funcs 57→90%+）=====
+
+describe('enqueueCloseOrder / enqueueRefreshCerts / enqueueGarminImport / enqueueLudongSync / enqueueUploadParse', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('enqueueCloseOrder → close-order queue add close + delay + jobId 幂等', async () => {
+    await enqueueCloseOrder('order-1', 60_000);
+    expect(closeOrderQueue.add).toHaveBeenCalledWith(
+      'close',
+      { orderId: 'order-1' },
+      { delay: 60_000, jobId: 'close-order-1' },
+    );
+  });
+
+  it('enqueueCloseOrder 默认 delay = CLOSE_ORDER_DELAY_MS（30min）', async () => {
+    await enqueueCloseOrder('order-2');
+    const call = (closeOrderQueue.add as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(call[2].delay).toBe(CLOSE_ORDER_DELAY_MS);
+    expect(call[2].jobId).toBe('close-order-2');
+  });
+
+  it('enqueueRefreshCerts → refresh-now', async () => {
+    await enqueueRefreshCerts();
+    expect(refreshCertsQueue.add).toHaveBeenCalledWith('refresh-now', {});
+  });
+
+  it('enqueueGarminImport → jobId 含 userId + activityIds 排序 + 5min 桶去重', async () => {
+    const fixedNow = 1_700_000_000_000;
+    vi.spyOn(Date, 'now').mockReturnValue(fixedNow);
+    const window = Math.floor(fixedNow / 300_000);
+    await enqueueGarminImport({ userId: 'u1', activityIds: ['a2', 'a1'] } as never);
+    expect(garminImportQueue.add).toHaveBeenCalledWith(
+      'import',
+      { userId: 'u1', activityIds: ['a2', 'a1'] },
+      { jobId: `u1-a1,a2-${window}` }, // slice().sort() → a1,a2
+    );
+  });
+
+  it('enqueueLudongSync → sync-now', async () => {
+    await enqueueLudongSync();
+    expect(ludongSyncQueue.add).toHaveBeenCalledWith('sync-now', {});
+  });
+
+  it('enqueueUploadParse → parse + recordId jobId 幂等', async () => {
+    await enqueueUploadParse('rec-1');
+    expect(uploadParseQueue.add).toHaveBeenCalledWith(
+      'parse',
+      { recordId: 'rec-1' },
+      { jobId: 'parse-rec-1' },
+    );
   });
 });
