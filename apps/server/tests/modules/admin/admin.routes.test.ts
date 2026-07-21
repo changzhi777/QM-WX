@@ -19,7 +19,7 @@ const mockPrisma = vi.hoisted(() => ({
   user: { findMany: vi.fn(), count: vi.fn() },
   checkin: { count: vi.fn() },
   // V0.2.8 admin RBAC：Admin 表 + 账号体系 — 替代 V0.1.18 白名单 openid 鉴权
-  admin: { findUnique: vi.fn(), findMany: vi.fn() },
+  admin: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn() },
   adminLoginLog: { create: vi.fn() }, // V0.2.8 adminLogin 审计落库（可选）
   // V0.2.6 邀请裂变 admin 调试接口可能用到
   wallet: { findUnique: vi.fn() },
@@ -514,5 +514,52 @@ describe('POST /api/admin', () => {
     });
     expect(res.statusCode).toBe(400);
     expect(res.json().msg).toMatch(/unknown action/);
+  });
+});
+
+// ===== V0.2.49 补：createAdmin dispatch + RBAC operator 越权拦截 =====
+
+describe('admin.routes · V0.2.8 createAdmin + RBAC 守卫', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('super-admin createAdmin → dispatch service.createAdmin 返新账号', async () => {
+    // findUnique 调用序列：① routes line 81 鉴权(by id) → super-admin；② service createAdmin 查重(by username) → null
+    mockPrisma.admin.findUnique
+      .mockResolvedValueOnce({ id: 'admin-1', role: 'super-admin', disabled: false })
+      .mockResolvedValueOnce(null);
+    mockPrisma.admin.create.mockResolvedValue({ id: 'a2', username: 'op1', role: 'operator' });
+    const app = await buildApp(); // 默认 super-admin
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin',
+      payload: {
+        action: 'createAdmin',
+        payload: { username: 'op1', password: 'secret', role: 'operator', nickname: 'Op' },
+      },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json().data).toEqual({ id: 'a2', username: 'op1', role: 'operator' });
+    expect(mockPrisma.admin.create).toHaveBeenCalled();
+  });
+
+  it('operator createAdmin → 403（SUPER_ONLY RBAC 拦截，越权防线）', async () => {
+    mockPrisma.admin.findUnique.mockResolvedValue({ id: 'admin-1', role: 'operator', disabled: false });
+    const app = await buildApp({ admin: { role: 'operator' } });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin',
+      payload: {
+        action: 'createAdmin',
+        payload: { username: 'hack', password: 'x', role: 'super-admin' },
+      },
+    });
+
+    expect(res.statusCode).toBe(403);
+    expect(res.json().msg).toMatch(/权限不足/);
+    // 关键：operator 越权尝试提权（role:super-admin）也被 RBAC 在 switch 前拦截
+    expect(mockPrisma.admin.create).not.toHaveBeenCalled();
   });
 });

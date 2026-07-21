@@ -24,6 +24,9 @@ const mockPrisma = vi.hoisted(() => ({
   raceResult: { upsert: vi.fn(), findMany: vi.fn() }, // V0.1.134 admin.submitRaceResult + listEnrollmentsByContent
   appConfig: { findUnique: vi.fn() }, // V0.1.134 isAdmin 缓存
   uploadRecord: { findMany: vi.fn(), count: vi.fn(), findUnique: vi.fn(), update: vi.fn() }, // V0.1.150 上传记录
+  admin: { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() }, // V0.2.49 createAdmin/updateAdmin
+  adminLoginLog: { findMany: vi.fn(), count: vi.fn(), create: vi.fn() }, // V0.2.49 adminLoginLogs/adminLogin
+  team: { groupBy: vi.fn() }, // V0.2.49 listInviteStats
   $transaction: vi.fn(), // V0.1.105 提现审核用
 }));
 
@@ -56,12 +59,32 @@ import {
   listEnrollmentsByContent,
   listUploads,
   retryParse,
+  adjustPoints,
+  grantMember,
+  listInviteStats,
+  createAdmin,
+  updateAdmin,
+  adminLoginLogs,
 } from '../../../src/modules/admin/admin.service.js';
 import { BusinessError } from '../../../src/common/errors.js';
+// V0.2.49 adjustPoints/grantMember 断言用（mock 版，vi.mock hoisted 生效）
+import { userRepo } from '../../../src/modules/user/user.repository.js';
+import { Cache } from '../../../src/infra/cache.js';
 
 // V0.1.105 GAP-6: mock walletRepo（admin.service 引入了 ensureWalletInTx）
 vi.mock('src/modules/wallet/wallet.repo.js', () => ({
   walletRepo: { ensureWalletInTx: vi.fn().mockResolvedValue({ id: 'w1', balance: 1000 }) },
+}));
+
+// V0.2.49 adjustPoints/grantMember 用 userRepo（addPoints/extendMember）+ Cache.del
+vi.mock('src/modules/user/user.repository.js', () => ({
+  userRepo: {
+    addPoints: vi.fn().mockResolvedValue(undefined),
+    extendMember: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+vi.mock('src/infra/cache.js', () => ({
+  Cache: { del: vi.fn().mockResolvedValue(undefined), get: vi.fn(), set: vi.fn(), wrap: vi.fn() },
 }));
 
 describe('admin.service · banUser', () => {
@@ -699,5 +722,160 @@ describe('listUploads / retryParse (V0.1.150)', () => {
       expect.objectContaining({ where: { id: 'r1' }, data: { status: 'pending', errorMsg: null } }),
     );
     expect(mockEnqueueUploadParse).toHaveBeenCalledWith('r1');
+  });
+});
+
+// ===== V0.2.49 补测：6 个未测函数（1196-1323 段，V0.2.6/V0.2.8 后加 action）=====
+
+describe('admin.service · adjustPoints（V0.2.6 手动调积分）', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('事务调 addPoints + recordAudit + Cache.del user:me + 返 points', async () => {
+    mockPrisma.$transaction.mockImplementation(async (cb) => cb(mockPrisma));
+    mockPrisma.auditLog.create.mockResolvedValue({ id: 1n });
+    mockPrisma.user.findUnique.mockResolvedValue({ points: 200 });
+
+    const res = await adjustPoints({ userId: 'u1', change: 50, reason: '活动奖励' }, 'admin1', '1.2.3.4');
+
+    expect(userRepo.addPoints).toHaveBeenCalledWith(mockPrisma, 'u1', 50, 'admin_adjust');
+    expect(mockPrisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ action: 'admin.adjustPoints', target: 'u1', actorOpenid: 'admin1' }),
+      }),
+    );
+    expect(Cache.del).toHaveBeenCalledWith('user:me:u1');
+    expect(res).toEqual({ ok: true, userId: 'u1', points: 200 });
+  });
+});
+
+describe('admin.service · grantMember（V0.2.6 赠送会员）', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('事务调 extendMember + recordAudit + 返 memberExpireAt ISO', async () => {
+    mockPrisma.$transaction.mockImplementation(async (cb) => cb(mockPrisma));
+    mockPrisma.auditLog.create.mockResolvedValue({ id: 1n });
+    const expire = new Date('2026-12-31T00:00:00Z');
+    mockPrisma.user.findUnique.mockResolvedValue({ memberExpireAt: expire });
+
+    const res = await grantMember({ userId: 'u1', days: 30 }, 'admin1');
+
+    expect(userRepo.extendMember).toHaveBeenCalledWith(mockPrisma, 'u1', 30);
+    expect(Cache.del).toHaveBeenCalledWith('user:me:u1');
+    expect(res).toEqual({ ok: true, userId: 'u1', memberExpireAt: expire.toISOString() });
+  });
+});
+
+describe('admin.service · listInviteStats（V0.2.6 邀请统计）', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('team.groupBy 2 次（分页+总数）+ user 关联 + 分页结构', async () => {
+    mockPrisma.team.groupBy
+      .mockResolvedValueOnce([{ inviterId: 'u1', _count: { _all: 5, inviterId: 5 } }])
+      .mockResolvedValueOnce([{ inviterId: 'u1' }, { inviterId: 'u2' }]); // 总数 = 2 个邀请人
+    mockPrisma.user.findMany.mockResolvedValue([
+      { id: 'u1', nickname: 'A', avatarUrl: null, inviteCode: 'C1', distributorLevel: 'V1' },
+    ]);
+
+    const res = await listInviteStats({ page: 1, pageSize: 10 });
+
+    expect(mockPrisma.team.groupBy).toHaveBeenCalledTimes(2);
+    expect(res.total).toBe(2);
+    expect(res.page).toBe(1);
+    expect(res.list[0]).toEqual(
+      expect.objectContaining({ id: 'u1', nickname: 'A', inviteCount: 5 }),
+    );
+  });
+
+  it('未关联 user 的邀请人 → 兜底默认值（nickname null / distributorLevel V0）', async () => {
+    mockPrisma.team.groupBy
+      .mockResolvedValueOnce([{ inviterId: 'ghost', _count: { _all: 1, inviterId: 1 } }])
+      .mockResolvedValueOnce([{ inviterId: 'ghost' }]);
+    mockPrisma.user.findMany.mockResolvedValue([]); // 无关联用户
+
+    const res = await listInviteStats({ page: 1, pageSize: 10 });
+    expect(res.list[0]).toEqual(
+      expect.objectContaining({ id: 'ghost', nickname: null, distributorLevel: 'V0', inviteCount: 1 }),
+    );
+  });
+});
+
+describe('admin.service · createAdmin（V0.2.8）', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('用户名已存在 → badRequest', async () => {
+    mockPrisma.admin.findUnique.mockResolvedValue({ id: 'a1', username: 'root' });
+    await expect(createAdmin({ username: 'root', password: 'x', role: 'admin' })).rejects.toThrow(BusinessError);
+    expect(mockPrisma.admin.create).not.toHaveBeenCalled();
+  });
+
+  it('happy → bcrypt + create 返 id/username/role', async () => {
+    mockPrisma.admin.findUnique.mockResolvedValue(null);
+    mockPrisma.admin.create.mockResolvedValue({ id: 'a2', username: 'op1', role: 'operator' });
+
+    const res = await createAdmin({ username: 'op1', password: 'secret', role: 'operator', nickname: 'Op' });
+
+    expect(res).toEqual({ id: 'a2', username: 'op1', role: 'operator' });
+    expect(mockPrisma.admin.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          username: 'op1', role: 'operator', nickname: 'Op', passwordHash: expect.any(String),
+        }),
+      }),
+    );
+  });
+});
+
+describe('admin.service · updateAdmin（V0.2.8）', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('多字段可选 → update data 含 role/nickname/disabled', async () => {
+    mockPrisma.admin.update.mockResolvedValue({ id: 'a1', username: 'root', role: 'super-admin' });
+    await updateAdmin({ id: 'a1', role: 'admin', nickname: 'Root', disabled: false });
+    expect(mockPrisma.admin.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'a1' },
+        data: expect.objectContaining({ role: 'admin', nickname: 'Root', disabled: false }),
+      }),
+    );
+  });
+
+  it('password → bcrypt passwordHash', async () => {
+    mockPrisma.admin.update.mockResolvedValue({ id: 'a1', username: 'root', role: 'super-admin' });
+    await updateAdmin({ id: 'a1', password: 'newpass' });
+    expect(mockPrisma.admin.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ passwordHash: expect.any(String) }),
+      }),
+    );
+  });
+});
+
+describe('admin.service · adminLoginLogs（V0.2.8）', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('分页 + include admin + createdAt ISO 序列化', async () => {
+    const ts = new Date('2026-07-21T10:00:00Z');
+    mockPrisma.adminLoginLog.findMany.mockResolvedValue([
+      { id: 'l1', adminId: 'a1', ok: true, createdAt: ts, admin: { username: 'root', nickname: 'Root' } },
+    ]);
+    mockPrisma.adminLoginLog.count.mockResolvedValue(1);
+
+    const res = await adminLoginLogs({ page: 1, pageSize: 20 });
+
+    expect(res.total).toBe(1);
+    expect(res.list[0].createdAt).toBe(ts.toISOString());
+    expect(mockPrisma.adminLoginLog.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: { admin: { select: { username: true, nickname: true } } },
+      }),
+    );
+  });
+
+  it('默认 page=1 / pageSize=20', async () => {
+    mockPrisma.adminLoginLog.findMany.mockResolvedValue([]);
+    mockPrisma.adminLoginLog.count.mockResolvedValue(0);
+    const res = await adminLoginLogs();
+    expect(res.page).toBe(1);
+    expect(res.pageSize).toBe(20);
   });
 });
