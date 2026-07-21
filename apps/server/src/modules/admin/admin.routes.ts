@@ -135,6 +135,29 @@ export async function adminRoutes(app: FastifyInstance) {
         return { code: 0, data: await adminService.listInterpret(ListInterpretSchema.parse(payload ?? {})) };
       case 'retryParse':
         return { code: 0, data: await adminService.retryParse(RetryParseSchema.parse(payload)) };
+      // ===== V0.2.65 小程序代码提审（super-admin 独占，SUPER_ONLY_ACTIONS）=====
+      case 'uploadMpMedia': {
+        // base64 上传审核素材（截图）→ media_id（供 submitMpAudit preview_info）
+        const p = (payload ?? {}) as { fileBase64?: string; filename?: string; mime?: string };
+        const b64 = p.fileBase64?.trim();
+        if (!b64) throw Errors.badRequest('fileBase64 必填');
+        return { code: 0, data: await adminService.uploadMpMedia({ buffer: Buffer.from(b64, 'base64'), filename: p.filename, mime: p.mime }) };
+      }
+      case 'submitMpAudit': {
+        // 代码提审（透传 item_list + preview_info + version_desc）
+        const p = (payload ?? {}) as { itemList?: unknown; previewInfo?: unknown; versionDesc?: string; feedbackInfo?: string; privacyInfo?: unknown };
+        if (!Array.isArray(p.itemList) || !p.versionDesc?.trim()) throw Errors.badRequest('itemList + versionDesc 必填');
+        return {
+          code: 0,
+          data: await adminService.submitMpAudit({
+            itemList: p.itemList as Array<Record<string, unknown>>,
+            previewInfo: p.previewInfo as { picIdList?: string[]; videoIdList?: string[] } | undefined,
+            versionDesc: p.versionDesc,
+            feedbackInfo: p.feedbackInfo,
+            privacyInfo: p.privacyInfo as Record<string, unknown> | undefined,
+          }),
+        };
+      }
       // ===== 黑名单 + 审计（V0.1.18 新增）=====
       case 'banUser':
         return {

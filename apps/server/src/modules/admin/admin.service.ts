@@ -6,6 +6,7 @@
  * 新增 4 个管理 action（P1-2：listUsers / listContents / listProducts / stats）。
  */
 import { prisma } from '../../infra/prisma.js';
+import { getMpAccessToken } from '../../infra/wx-token.js';
 import { refundService } from '../mall/refund.service.js';
 import { invalidateProductsCache, invalidateProductDetail } from '../mall/mall.service.js';
 import { invalidateContentsCache, invalidateContentDetail } from '../content/content.service.js';
@@ -68,6 +69,7 @@ export function invalidateAdminCache(): void {
 /** super-admin 独占 action（账号管理 + 全局配置 + 登录日志）*/
 const SUPER_ONLY_ACTIONS = [
   'listAdmins', 'createAdmin', 'updateAdmin', 'disableAdmin', 'setConfig', 'adminLoginLogs',
+  'submitMpAudit', 'uploadMpMedia', // V0.2.65 小程序代码提审（高风险发布，super-admin 独占）
 ];
 /** operator 可用 action（只读 list/stats/export + 轻操作）*/
 const OPERATOR_ACTIONS = [
@@ -1320,4 +1322,61 @@ export async function adminLoginLogs(input: { page?: number; pageSize?: number }
     page,
     pageSize,
   };
+}
+
+// ===== V0.2.65 小程序代码提审 API（mp access_token + submitAudit/uploadMedia）=====
+
+/** 上传审核素材（截图）→ media_id（供 submitAudit 的 preview_info.pic_id_list）*/
+export async function uploadMpMedia(input: {
+  buffer: Buffer;
+  filename?: string;
+  mime?: string;
+}): Promise<{ mediaId: string }> {
+  const token = await getMpAccessToken();
+  const form = new FormData();
+  const blob = new Blob([input.buffer], { type: input.mime || 'image/png' });
+  form.append('media', blob, input.filename || 'screenshot.png');
+  const res = await fetch(
+    `https://api.weixin.qq.com/cgi-bin/media/upload?access_token=${token}&type=image`,
+    { method: 'POST', body: form },
+  );
+  const data = (await res.json()) as { media_id?: string; errcode?: number; errmsg?: string };
+  if (!data.media_id) {
+    throw Errors.badRequest(`uploadMedia 失败: errcode=${data.errcode} ${data.errmsg ?? ''}`);
+  }
+  return { mediaId: data.media_id };
+}
+
+/** 小程序代码提审（透传 item_list + preview_info + version_desc → mp submitAudit）*/
+export async function submitMpAudit(input: {
+  itemList: Array<Record<string, unknown>>;
+  previewInfo?: { picIdList?: string[]; videoIdList?: string[] };
+  versionDesc: string;
+  feedbackInfo?: string;
+  privacyInfo?: Record<string, unknown>;
+}): Promise<{ auditId: number; errcode?: number; errmsg?: string }> {
+  const token = await getMpAccessToken();
+  const body: Record<string, unknown> = {
+    item_list: input.itemList,
+    version_desc: input.versionDesc,
+  };
+  if (input.previewInfo) {
+    body.preview_info = {
+      pic_id_list: input.previewInfo.picIdList,
+      video_id_list: input.previewInfo.videoIdList,
+    };
+  }
+  if (input.feedbackInfo) body.feedback_info = input.feedbackInfo;
+  if (input.privacyInfo) body.privacy_info = input.privacyInfo;
+  const res = await fetch(`https://api.weixin.qq.com/wxa/submit_audit?access_token=${token}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = (await res.json()) as { auditid?: number; errcode?: number; errmsg?: string };
+  // errcode 0 = 成功；非 0 抛（含 auditid 时仍返）
+  if (data.errcode && data.errcode !== 0 && !data.auditid) {
+    throw Errors.badRequest(`submitAudit 失败: errcode=${data.errcode} ${data.errmsg ?? ''}`);
+  }
+  return { auditId: data.auditid ?? 0, errcode: data.errcode, errmsg: data.errmsg };
 }
