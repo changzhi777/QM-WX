@@ -307,31 +307,77 @@ describe('feedService.list 含 shoe (V0.1.136)', () => {
     expect(r.list[0].shoe?.brand).toBe('Nike');
     expect(r.list[0].shoe?.currentKm).toBe(600);
   });
+});
 
-  // V0.2.72 listComments 单测
-  describe('feedService.listComments (V0.2.72)', () => {
-    beforeEach(() => { vi.clearAllMocks(); });
+// ============================================================
+// V0.2.72 listComments（评论列表 + user include + total）
+// ============================================================
+describe('feedService.listComments (V0.2.72)', () => {
+  it('happy: 返评论列表 + total + user include', async () => {
+    mocks.prisma.feedComment.findMany.mockResolvedValue([
+      { id: 'c1', content: '不错', createdAt: new Date('2026-07-01T00:00:00Z'), user: { id: 'u2', nickname: '张三', avatarUrl: null } },
+    ] as never);
+    mocks.prisma.feedComment.count.mockResolvedValue(1 as never);
 
-    it('happy: 返评论列表 + total + user include', async () => {
-      mocks.prisma.feedComment.findMany.mockResolvedValue([
-        { id: 'c1', content: '不错', createdAt: new Date('2026-07-01T00:00:00Z'), user: { id: 'u2', nickname: '张三', avatarUrl: null } },
-      ] as never);
-      mocks.prisma.feedComment.count.mockResolvedValue(1 as never);
+    const r = await feedService.listComments('u1', 'f1');
+    expect(r.total).toBe(1);
+    expect(r.list).toHaveLength(1);
+    expect(r.list[0].content).toBe('不错');
+    expect(r.list[0].user?.nickname).toBe('张三');
+  });
 
-      const r = await feedService.listComments('u1', 'f1');
-      expect(r.total).toBe(1);
-      expect(r.list).toHaveLength(1);
-      expect(r.list[0].content).toBe('不错');
-      expect(r.list[0].user?.nickname).toBe('张三');
-    });
+  it('空评论 → list [] + total 0', async () => {
+    mocks.prisma.feedComment.findMany.mockResolvedValue([] as never);
+    mocks.prisma.feedComment.count.mockResolvedValue(0 as never);
 
-    it('空评论 → list [] + total 0', async () => {
-      mocks.prisma.feedComment.findMany.mockResolvedValue([] as never);
-      mocks.prisma.feedComment.count.mockResolvedValue(0 as never);
+    const r = await feedService.listComments('u1', 'f_empty');
+    expect(r.total).toBe(0);
+    expect(r.list).toEqual([]);
+  });
+});
 
-      const r = await feedService.listComments('u1', 'f_empty');
-      expect(r.total).toBe(0);
-      expect(r.list).toEqual([]);
-    });
+// ============================================================
+// V0.2.73 myFeeds 补测（用户主页动态 tab — 分页 + liked + shoe + hasMore）
+// ============================================================
+describe('feedService.myFeeds (V0.2.73 补测)', () => {
+  it('happy: 返当前用户动态 + liked 判断 + shoe + hasMore=true', async () => {
+    mocks.prisma.feed.findMany.mockResolvedValue([
+      {
+        id: 'f1', content: '我的动态', images: [], distanceKm: 5,
+        topic: '晨跑', videoUrl: null,
+        likeCount: 3, commentCount: 1, createdAt: new Date('2026-07-01'),
+        user: { id: 'u1', nickname: '我', avatarUrl: null },
+        likes: [{ id: 'l1' }], // 自己点过赞 → liked=true
+        shoe: { id: 's1', brand: 'Nike', model: 'Vaporfly', nickname: '战靴', currentKm: 600 },
+      },
+    ] as never);
+    mocks.prisma.feed.count.mockResolvedValue(15 as never);
+
+    const r = await feedService.myFeeds('u1', 1, 10);
+
+    expect(r.total).toBe(15);
+    expect(r.list).toHaveLength(1);
+    expect(r.list[0].content).toBe('我的动态');
+    expect(r.list[0].liked).toBe(true);
+    expect(r.list[0].shoe?.brand).toBe('Nike');
+    expect(r.hasMore).toBe(true); // 1*10 < 15
+    // where 锁当前用户 + 分页 skip/take
+    expect(mocks.prisma.feed.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { userId: 'u1' }, skip: 0, take: 10 }),
+    );
+  });
+
+  it('分页 page=2 pageSize=10 → skip=10 + hasMore=false（total=15 边界）', async () => {
+    mocks.prisma.feed.findMany.mockResolvedValue([] as never);
+    mocks.prisma.feed.count.mockResolvedValue(15 as never);
+
+    const r = await feedService.myFeeds('u1', 2, 10);
+
+    expect(mocks.prisma.feed.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ skip: 10, take: 10 }),
+    );
+    expect(r.hasMore).toBe(false); // 2*10=20 >= 15
+    expect(r.page).toBe(2);
+    expect(r.pageSize).toBe(10);
   });
 });

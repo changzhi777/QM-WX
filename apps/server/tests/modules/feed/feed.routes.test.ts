@@ -1,7 +1,7 @@
 /**
  * feed routes 路由层测试（V0.1.112 GAP-3.5）
  *
- * 覆盖 7 action + 鉴权 + 未知 action 400
+ * 覆盖 9 action + 鉴权 + 未知 action 400（V0.2.73 +listComments +shoesForPicker）
  * 注意：myFeeds 解构 page/pageSize 单独传；comment 取 input.feedId/input.content
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -15,6 +15,8 @@ const mockFeedService = vi.hoisted(() => ({
   like: vi.fn(),
   unlike: vi.fn(),
   comment: vi.fn(),
+  listComments: vi.fn(),
+  shoesForPicker: vi.fn(),
 }));
 
 vi.mock('src/modules/feed/feed.service.js', () => ({ feedService: mockFeedService }));
@@ -142,6 +144,26 @@ describe('feed routes', () => {
       payload: { action: 'comment', payload: { feedId: 'fd1', content: '加油' } },
     });
     expect(mockFeedService.comment).toHaveBeenCalledWith('u1', 'fd1', '加油');
+    await app.close();
+  });
+
+  it('listComments → 取 feedId + page + pageSize 传 service', async () => {
+    mockFeedService.listComments.mockResolvedValue({ list: [], total: 0 });
+    const app = await buildApp({ authed: true });
+    await app.inject({
+      method: 'POST', url: '/',
+      payload: { action: 'listComments', payload: { feedId: 'fd1', page: 2, pageSize: 10 } },
+    });
+    expect(mockFeedService.listComments).toHaveBeenCalledWith('u1', 'fd1', 2, 10);
+    await app.close();
+  });
+
+  it('shoesForPicker → 无参调用（仅 userId）', async () => {
+    mockFeedService.shoesForPicker.mockResolvedValue({ shoes: [] });
+    const app = await buildApp({ authed: true });
+    const r = await app.inject({ method: 'POST', url: '/', payload: { action: 'shoesForPicker' } });
+    expect(r.json().data).toEqual({ shoes: [] });
+    expect(mockFeedService.shoesForPicker).toHaveBeenCalledWith('u1');
     await app.close();
   });
 });

@@ -12,6 +12,10 @@ const mockShoesService = vi.hoisted(() => ({
   update: vi.fn(),
   retire: vi.fn(),
   myStats: vi.fn(),
+  getDetail: vi.fn(),
+  getMileageHistory: vi.fn(),
+  updateThreshold: vi.fn(),
+  compareShoes: vi.fn(),
 }));
 
 vi.mock('src/modules/shoes/shoes.service.js', () => ({ shoesService: mockShoesService }));
@@ -21,6 +25,8 @@ vi.mock('src/modules/shoes/shoes.schema.js', () => {
     AddShoeInputSchema: passthrough,
     UpdateShoeInputSchema: passthrough,
     ShoeIdInputSchema: passthrough,
+    UpdateThresholdInputSchema: passthrough,
+    CompareShoesInputSchema: passthrough,
   };
 });
 vi.mock('src/common/errors.js', () => ({
@@ -113,6 +119,38 @@ describe('shoes routes', () => {
     const app = await buildApp({ authed: true });
     await app.inject({ method: 'POST', url: '/', payload: { action: 'myStats' } });
     expect(mockShoesService.myStats).toHaveBeenCalledWith('u1');
+    await app.close();
+  });
+
+  it('getDetail → 取 id 传 service', async () => {
+    mockShoesService.getDetail.mockResolvedValue({ id: 's1' });
+    const app = await buildApp({ authed: true });
+    await app.inject({ method: 'POST', url: '/', payload: { action: 'getDetail', payload: { id: 's1' } } });
+    expect(mockShoesService.getDetail).toHaveBeenCalledWith('u1', 's1');
+    await app.close();
+  });
+
+  it('getMileageHistory → 取 id 传 service', async () => {
+    mockShoesService.getMileageHistory.mockResolvedValue({ history: [] });
+    const app = await buildApp({ authed: true });
+    await app.inject({ method: 'POST', url: '/', payload: { action: 'getMileageHistory', payload: { id: 's1' } } });
+    expect(mockShoesService.getMileageHistory).toHaveBeenCalledWith('u1', 's1');
+    await app.close();
+  });
+
+  it('updateThreshold → 透传 input', async () => {
+    mockShoesService.updateThreshold.mockResolvedValue({ ok: true });
+    const app = await buildApp({ authed: true });
+    await app.inject({ method: 'POST', url: '/', payload: { action: 'updateThreshold', payload: { id: 's1', thresholdKm: 800 } } });
+    expect(mockShoesService.updateThreshold).toHaveBeenCalledWith('u1', { id: 's1', thresholdKm: 800 });
+    await app.close();
+  });
+
+  it('compareShoes → 取 input.ids 传 service', async () => {
+    mockShoesService.compareShoes.mockResolvedValue({ comparison: [] });
+    const app = await buildApp({ authed: true });
+    await app.inject({ method: 'POST', url: '/', payload: { action: 'compareShoes', payload: { ids: ['s1', 's2'] } } });
+    expect(mockShoesService.compareShoes).toHaveBeenCalledWith('u1', ['s1', 's2']);
     await app.close();
   });
 });

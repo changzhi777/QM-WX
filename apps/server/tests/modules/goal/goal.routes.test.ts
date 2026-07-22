@@ -13,6 +13,10 @@ const mockGoalService = vi.hoisted(() => ({
   myProgress: vi.fn(),
   addFamilyGoal: vi.fn(),
   myFamilyGoals: vi.fn(),
+  addCustomMilestone: vi.fn(),
+  removeCustomMilestone: vi.fn(),
+  listCustomMilestones: vi.fn(),
+  checkMilestoneAchievement: vi.fn(),
 }));
 
 vi.mock('src/modules/goal/goal.service.js', () => ({ goalService: mockGoalService }));
@@ -22,6 +26,9 @@ vi.mock('src/modules/goal/goal.schema.js', () => {
     AddGoalInputSchema: passthrough,
     AddFamilyGoalSchema: passthrough,
     GoalIdInputSchema: passthrough,
+    AddCustomMilestoneInputSchema: passthrough,
+    RemoveCustomMilestoneInputSchema: passthrough,
+    CheckMilestoneAchievementInputSchema: passthrough,
   };
 });
 vi.mock('src/common/errors.js', () => ({
@@ -122,6 +129,38 @@ describe('goal routes', () => {
     const app = await buildApp({ authed: true });
     await app.inject({ method: 'POST', url: '/', payload: { action: 'myFamilyGoals' } });
     expect(mockGoalService.myFamilyGoals).toHaveBeenCalledWith('u1');
+    await app.close();
+  });
+
+  it('addCustomMilestone → 透传 input', async () => {
+    mockGoalService.addCustomMilestone.mockResolvedValue({ id: 'm1' });
+    const app = await buildApp({ authed: true });
+    await app.inject({ method: 'POST', url: '/', payload: { action: 'addCustomMilestone', payload: { title: '首半马', km: 21 } } });
+    expect(mockGoalService.addCustomMilestone).toHaveBeenCalledWith('u1', { title: '首半马', km: 21 });
+    await app.close();
+  });
+
+  it('removeCustomMilestone → 透传 input', async () => {
+    mockGoalService.removeCustomMilestone.mockResolvedValue({ ok: true });
+    const app = await buildApp({ authed: true });
+    await app.inject({ method: 'POST', url: '/', payload: { action: 'removeCustomMilestone', payload: { id: 'm1' } } });
+    expect(mockGoalService.removeCustomMilestone).toHaveBeenCalledWith('u1', { id: 'm1' });
+    await app.close();
+  });
+
+  it('listCustomMilestones → 无参（仅 userId）', async () => {
+    mockGoalService.listCustomMilestones.mockResolvedValue({ milestones: [] });
+    const app = await buildApp({ authed: true });
+    await app.inject({ method: 'POST', url: '/', payload: { action: 'listCustomMilestones' } });
+    expect(mockGoalService.listCustomMilestones).toHaveBeenCalledWith('u1');
+    await app.close();
+  });
+
+  it('checkMilestoneAchievement → 取 input.km 传 service', async () => {
+    mockGoalService.checkMilestoneAchievement.mockResolvedValue({ achieved: [] });
+    const app = await buildApp({ authed: true });
+    await app.inject({ method: 'POST', url: '/', payload: { action: 'checkMilestoneAchievement', payload: { km: 42 } } });
+    expect(mockGoalService.checkMilestoneAchievement).toHaveBeenCalledWith('u1', 42);
     await app.close();
   });
 });
