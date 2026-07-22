@@ -12,6 +12,8 @@ const mockReviewService = vi.hoisted(() => ({
   productStats: vi.fn(),
   myReviews: vi.fn(),
   remove: vi.fn(),
+  listByTarget: vi.fn(),
+  targetStats: vi.fn(),
 }));
 
 vi.mock('src/modules/review/review.service.js', () => ({ reviewService: mockReviewService }));
@@ -23,6 +25,8 @@ vi.mock('src/modules/review/review.schema.js', () => {
     ReviewPageSchema: passthrough,
     ProductIdSchema: passthrough,
     ReviewIdSchema: passthrough,
+    TargetReviewListSchema: passthrough,
+    TargetStatsSchema: passthrough,
   };
 });
 vi.mock('src/common/errors.js', () => ({
@@ -120,6 +124,28 @@ describe('review routes', () => {
       payload: { action: 'remove', payload: { id: 'r1' } },
     });
     expect(mockReviewService.remove).toHaveBeenCalledWith('u1', 'r1');
+    await app.close();
+  });
+
+  it('listByTarget → 取 targetId/targetType 传 service', async () => {
+    mockReviewService.listByTarget.mockResolvedValue({ list: [], total: 0 });
+    const app = await buildApp({ authed: true });
+    await app.inject({
+      method: 'POST', url: '/',
+      payload: { action: 'listByTarget', payload: { targetId: 't1', targetType: 'shoe', page: 1, pageSize: 10 } },
+    });
+    expect(mockReviewService.listByTarget).toHaveBeenCalledWith('t1', 'shoe', { targetId: 't1', targetType: 'shoe', page: 1, pageSize: 10 });
+    await app.close();
+  });
+
+  it('targetStats → 取 targetId/targetType 传 service', async () => {
+    mockReviewService.targetStats.mockResolvedValue({ avg: 0, count: 0 });
+    const app = await buildApp({ authed: true });
+    await app.inject({
+      method: 'POST', url: '/',
+      payload: { action: 'targetStats', payload: { targetId: 't1', targetType: 'shoe' } },
+    });
+    expect(mockReviewService.targetStats).toHaveBeenCalledWith('t1', 'shoe');
     await app.close();
   });
 });
