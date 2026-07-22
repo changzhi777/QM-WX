@@ -12,12 +12,6 @@ import 'profile_controller.dart';
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
-  void _todo(BuildContext context, String name) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$name（Phase 2 后续批上线）')),
-    );
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider).value?.user;
@@ -123,7 +117,7 @@ class ProfilePage extends ConsumerWidget {
                     _Entry(Icons.flag_outlined, '目标', () => context.push('/goals')),
                     _Entry(Icons.dynamic_feed, '动态', () => context.push('/feed')),
                     _Entry(Icons.card_membership, '会员', () => context.push('/membership')),
-                    _Entry(Icons.insights_outlined, '数据', () => _todo(context, '数据解读')),
+                    _Entry(Icons.insights_outlined, '数据', () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请切到底部「数据解读」tab 查看')))),
                     _Entry(Icons.notifications_none, '消息', () => context.push('/notifications')),
                     _Entry(Icons.settings_outlined, '设置', () => context.push('/settings')),
                     _Entry(Icons.info_outline, '关于', () => context.push('/settings')),
