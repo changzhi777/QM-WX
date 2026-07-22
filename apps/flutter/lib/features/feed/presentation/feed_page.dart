@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/design_system/app_card.dart';
 import '../data/feed_models.dart';
@@ -70,9 +71,11 @@ class FeedPage extends ConsumerWidget {
                 child: ListView(
                   padding: const EdgeInsets.all(16),
                   children: feeds
-                      .map((f) => Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: _FeedCard(feed: f)))
+                      .map((f) => GestureDetector(
+                          onTap: () => context.push('/feed/detail', extra: f),
+                          child: Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: _FeedCard(feed: f))))
                       .toList(),
                 ),
               ),

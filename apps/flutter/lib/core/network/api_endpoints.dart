@@ -34,6 +34,8 @@ class ApiEndpoints {
   static const String actionFeedPublish = 'publish';
   static const String actionFeedLike = 'like';
   static const String actionFeedUnlike = 'unlike';
+  static const String actionFeedListComments = 'listComments';
+  static const String actionFeedComment = 'comment';
 
   // ===== distribution module（POST /api/distribution）=====
   static const String distributionBase = '/api/distribution';

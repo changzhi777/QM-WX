@@ -84,3 +84,18 @@ class PublishFeedRequest {
     return m;
   }
 }
+
+class Comment {
+  const Comment({required this.id, required this.content, this.createdAt = '', this.user});
+  final String id;
+  final String content;
+  final String createdAt;
+  final FeedUser? user;
+
+  factory Comment.fromJson(Map<String, dynamic> j) => Comment(
+        id: (j['id'] as String?) ?? '',
+        content: (j['content'] as String?) ?? '',
+        createdAt: (j['createdAt'] as String?) ?? '',
+        user: j['user'] is Map<String, dynamic> ? FeedUser.fromJson(j['user'] as Map<String, dynamic>) : null,
+      );
+}

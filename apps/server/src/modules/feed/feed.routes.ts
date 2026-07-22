@@ -47,6 +47,10 @@ export async function feedRoutes(app: FastifyInstance) {
         const input = CommentInputSchema.parse(payload);
         return { code: 0, data: await feedService.comment(userId, input.feedId, input.content) };
       }
+      case 'listComments': {
+        const input = (payload ?? {}) as { feedId: string; page?: number; pageSize?: number };
+        return { code: 0, data: await feedService.listComments(userId, input.feedId, input.page, input.pageSize) };
+      }
       // V0.1.136 跑鞋 picker
       case 'shoesForPicker':
         return { code: 0, data: await feedService.shoesForPicker(userId) };

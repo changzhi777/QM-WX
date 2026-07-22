@@ -48,4 +48,22 @@ class FeedRemote {
       payload: {'feedId': feedId},
     );
   }
+
+  static Future<List<Comment>> listComments(String feedId) async {
+    final data = await ApiClient.instance.postAction(
+      ApiEndpoints.feedBase,
+      ApiEndpoints.actionFeedListComments,
+      payload: {'feedId': feedId},
+    );
+    final arr = (data['list'] as List?) ?? const [];
+    return arr.map((e) => Comment.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  static Future<void> comment(String feedId, String content) async {
+    await ApiClient.instance.postAction(
+      ApiEndpoints.feedBase,
+      ApiEndpoints.actionFeedComment,
+      payload: {'feedId': feedId, 'content': content},
+    );
+  }
 }

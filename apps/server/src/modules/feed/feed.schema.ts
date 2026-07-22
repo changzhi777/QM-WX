@@ -44,6 +44,6 @@ export const FeedShoeItemSchema = z.object({
 });
 
 export const FeedActionBodySchema = z.object({
-  action: z.enum(['list', 'myFeeds', 'publish', 'like', 'unlike', 'comment', 'hotTopics', 'shoesForPicker']), // V0.1.136
+  action: z.enum(['list', 'myFeeds', 'publish', 'like', 'unlike', 'comment', 'listComments', 'hotTopics', 'shoesForPicker']), // V0.1.136 + V0.2.72 listComments
   payload: z.unknown().optional(),
 });

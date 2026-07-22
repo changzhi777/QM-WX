@@ -218,6 +218,32 @@ export const feedService = {
   },
 
   /**
+   * 评论列表（V0.2.72 feed 详情用）
+   */
+  async listComments(userId: string, feedId: string, page = 1, pageSize = 50) {
+    void userId;
+    const [rows, total] = await Promise.all([
+      prisma.feedComment.findMany({
+        where: { feedId },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: { user: { select: { id: true, nickname: true, avatarUrl: true } } },
+      }),
+      prisma.feedComment.count({ where: { feedId } }),
+    ]);
+    return {
+      list: rows.map((c) => ({
+        id: c.id,
+        content: c.content,
+        createdAt: c.createdAt.toISOString(),
+        user: c.user,
+      })),
+      total,
+    };
+  },
+
+  /**
    * V0.1.36 热门话题（红心广场发现用）
    *
    * groupBy topic（not null）按 feed 数量 desc，take 10

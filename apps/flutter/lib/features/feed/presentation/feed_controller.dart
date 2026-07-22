@@ -51,3 +51,7 @@ class FeedController extends AsyncNotifier<List<Feed>> {
 
 final feedProvider =
     AsyncNotifierProvider<FeedController, List<Feed>>(FeedController.new);
+
+/// 评论列表（family by feedId）
+final feedCommentsProvider = FutureProvider.family<List<Comment>, String>(
+    (ref, feedId) => FeedRemote.listComments(feedId));
