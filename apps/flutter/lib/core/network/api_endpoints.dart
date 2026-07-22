@@ -42,6 +42,13 @@ class ApiEndpoints {
   // user module 补充 action（POST /api/user）
   static const String actionRedeemMember = 'redeemMember';
 
+  // ===== notification module（POST /api/notification）=====
+  static const String notificationBase = '/api/notification';
+  static const String actionNotifList = 'list';
+  static const String actionNotifUnreadCount = 'unreadCount';
+  static const String actionNotifMarkRead = 'markRead';
+  static const String actionNotifMarkAllRead = 'markAllRead';
+
   // ===== sport module（POST /api/sport，body { action, payload }）=====
   static const String sportBase = '/api/sport';
   static const String actionCheckin = 'checkin';

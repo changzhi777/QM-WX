@@ -10,6 +10,7 @@ import '../features/feed/presentation/feed_page.dart';
 import '../features/goal/presentation/goal_page.dart';
 import '../features/gps_track/presentation/track_page.dart';
 import '../features/membership/presentation/membership_page.dart';
+import '../features/notification/presentation/notification_page.dart';
 import '../features/settings/settings_page.dart';
 import '../features/shoes/presentation/shoes_page.dart';
 import 'main_shell.dart';
@@ -52,6 +53,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/membership', builder: (_, _) => const MembershipPage()),
       GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),
       GoRoute(path: '/agreement', builder: (_, _) => const AgreementPage()),
+      GoRoute(path: '/notifications', builder: (_, _) => const NotificationPage()),
     ],
   );
 });

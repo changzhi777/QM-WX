@@ -20,6 +20,9 @@ import 'package:muhehealth/features/insight/presentation/insight_page.dart';
 import 'package:muhehealth/features/membership/data/membership_models.dart';
 import 'package:muhehealth/features/membership/presentation/membership_controller.dart';
 import 'package:muhehealth/features/membership/presentation/membership_page.dart';
+import 'package:muhehealth/features/notification/data/notification_models.dart';
+import 'package:muhehealth/features/notification/presentation/notification_controller.dart';
+import 'package:muhehealth/features/notification/presentation/notification_page.dart';
 import 'package:muhehealth/features/profile/data/runner_stats.dart';
 import 'package:muhehealth/features/profile/presentation/profile_controller.dart';
 import 'package:muhehealth/features/profile/presentation/profile_page.dart';
@@ -52,6 +55,11 @@ class _FakeInsight extends InsightController {
 class _FakeFeed extends FeedController {
   @override
   Future<List<Feed>> build() async => const <Feed>[];
+}
+
+class _FakeNotif extends NotificationController {
+  @override
+  Future<List<AppNotification>> build() async => const <AppNotification>[];
 }
 
 void main() {
@@ -192,5 +200,18 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: AgreementPage()));
     expect(find.text('用户服务协议'), findsOneWidget);
     expect(find.textContaining('1. 关于我们'), findsOneWidget);
+  });
+
+  testWidgets('NotificationPage renders empty state', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [notificationProvider.overrideWith(() => _FakeNotif())],
+        child: const MaterialApp(home: NotificationPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('消息'), findsOneWidget);
+    expect(find.text('暂无消息'), findsOneWidget);
   });
 }

@@ -124,7 +124,7 @@ class ProfilePage extends ConsumerWidget {
                     _Entry(Icons.dynamic_feed, '动态', () => context.push('/feed')),
                     _Entry(Icons.card_membership, '会员', () => context.push('/membership')),
                     _Entry(Icons.insights_outlined, '数据', () => _todo(context, '数据解读')),
-                    _Entry(Icons.notifications_none, '消息', () => _todo(context, '消息')),
+                    _Entry(Icons.notifications_none, '消息', () => context.push('/notifications')),
                     _Entry(Icons.settings_outlined, '设置', () => context.push('/settings')),
                     _Entry(Icons.info_outline, '关于', () => context.push('/settings')),
                   ],
