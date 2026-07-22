@@ -19,6 +19,7 @@ class ApiEndpoints {
   static const String statsBase = '/api/stats';
   static const String actionHealthScore = 'healthScore';
   static const String actionDailyReport = 'dailyReport';
+  static const String actionDailyReportList = 'dailyReportList';
   static const String actionWeather = 'weather';
   static const String actionMyRunnerStats = 'myRunnerStats';
   static const String actionMyAnnualReport = 'myAnnualReport';

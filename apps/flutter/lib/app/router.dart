@@ -17,6 +17,7 @@ import '../features/group/presentation/group_page.dart';
 import '../features/gps_track/presentation/track_page.dart';
 import '../features/membership/presentation/membership_page.dart';
 import '../features/certificates/presentation/certificates_page.dart';
+import '../features/daily_report/presentation/daily_report_page.dart';
 import '../features/notification/presentation/notification_page.dart';
 import '../features/settings/settings_page.dart';
 import '../features/shoes/presentation/shoes_detail_page.dart';
@@ -68,6 +69,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/feed/detail', builder: (_, state) => FeedDetailPage(feed: state.extra as Feed)),
       GoRoute(path: '/membership', builder: (_, _) => const MembershipPage()),
       GoRoute(path: '/certificates', builder: (_, _) => const CertificatesPage()),
+      GoRoute(path: '/daily-reports', builder: (_, _) => const DailyReportPage()),
       GoRoute(path: '/strength', builder: (_, _) => const StrengthPage()),
       GoRoute(path: '/strength/session', builder: (_, _) => const StrengthSessionPage()),
       GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),

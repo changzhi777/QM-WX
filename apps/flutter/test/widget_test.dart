@@ -10,6 +10,7 @@ import 'package:muhehealth/features/ai_coach/presentation/ai_coach_page.dart';
 import 'package:muhehealth/features/checkin/presentation/checkin_page.dart';
 import 'package:muhehealth/features/certificates/data/models.dart';
 import 'package:muhehealth/features/certificates/presentation/certificates_page.dart';
+import 'package:muhehealth/features/daily_report/presentation/daily_report_page.dart';
 import 'package:muhehealth/features/strength/data/models.dart';
 import 'package:muhehealth/features/strength/presentation/strength_page.dart';
 import 'package:muhehealth/features/feed/data/feed_models.dart';
@@ -297,5 +298,20 @@ void main() {
     await tester.pump();
     expect(find.text('饮食记录'), findsOneWidget);
     expect(find.text('还没有饮食记录，点 + 添加'), findsOneWidget);
+  });
+
+  testWidgets('DailyReportPage renders empty state', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          dailyReportsProvider.overrideWith((ref) async => const []),
+        ],
+        child: const MaterialApp(home: DailyReportPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('每日报告'), findsOneWidget);
+    expect(find.text('还没有历史报告，运动后自动生成'), findsOneWidget);
   });
 }
