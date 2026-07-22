@@ -30,6 +30,11 @@ class ApiEndpoints {
   static const String actionStrengthListSessions = 'listSessions';
   static const String actionStrengthMyVolume = 'myVolume';
 
+  // ===== food module（POST /api/food，body { action, payload }）=====
+  static const String foodBase = '/api/food';
+  static const String actionFoodMyMeals = 'myMeals';
+  static const String actionFoodRecordMeal = 'recordMeal';
+
   // ===== ai-coach module（POST /api/ai-coach，body { action, payload }）=====
   static const String aiCoachBase = '/api/ai-coach';
   static const String actionAiChat = 'chat';

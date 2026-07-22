@@ -15,6 +15,8 @@ import 'package:muhehealth/features/strength/presentation/strength_page.dart';
 import 'package:muhehealth/features/feed/data/feed_models.dart';
 import 'package:muhehealth/features/feed/presentation/feed_controller.dart';
 import 'package:muhehealth/features/feed/presentation/feed_page.dart';
+import 'package:muhehealth/features/food/data/models.dart';
+import 'package:muhehealth/features/food/presentation/food_page.dart';
 import 'package:muhehealth/features/goal/data/goal_models.dart';
 import 'package:muhehealth/features/goal/presentation/goal_controller.dart';
 import 'package:muhehealth/features/goal/presentation/goal_page.dart';
@@ -276,5 +278,24 @@ void main() {
     await tester.pump();
     expect(find.text('力量训练'), findsOneWidget);
     expect(find.text('还没有力量训练记录'), findsOneWidget);
+  });
+
+  testWidgets('FoodPage renders empty state', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          foodDayProvider.overrideWith((ref) async => MealDay(
+                date: '2026-07-23',
+                meals: const [],
+                summary: const MealSummary(calorie: 0, protein: 0, fat: 0, carb: 0),
+              )),
+        ],
+        child: const MaterialApp(home: FoodPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('饮食记录'), findsOneWidget);
+    expect(find.text('还没有饮食记录，点 + 添加'), findsOneWidget);
   });
 }
