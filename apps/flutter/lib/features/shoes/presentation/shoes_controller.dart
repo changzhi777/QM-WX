@@ -22,3 +22,11 @@ class ShoesController extends AsyncNotifier<List<Shoe>> {
 
 final shoesProvider =
     AsyncNotifierProvider<ShoesController, List<Shoe>>(ShoesController.new);
+
+/// 跑鞋详情（family by shoeId）
+final shoeDetailProvider = FutureProvider.family<ShoeDetail, String>(
+    (ref, id) => ShoesRemote.getDetail(id));
+
+/// 里程历史（family by shoeId）
+final mileageHistoryProvider = FutureProvider.family<MileageHistory, String>(
+    (ref, id) => ShoesRemote.getMileageHistory(id));

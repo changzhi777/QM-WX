@@ -14,6 +14,7 @@ import '../features/gps_track/presentation/track_page.dart';
 import '../features/membership/presentation/membership_page.dart';
 import '../features/notification/presentation/notification_page.dart';
 import '../features/settings/settings_page.dart';
+import '../features/shoes/presentation/shoes_detail_page.dart';
 import '../features/shoes/presentation/shoes_page.dart';
 import 'main_shell.dart';
 
@@ -50,6 +51,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/checkin', builder: (_, _) => const CheckinPage()),
       GoRoute(path: '/track', builder: (_, _) => const TrackPage()),
       GoRoute(path: '/shoes', builder: (_, _) => const ShoesPage()),
+      GoRoute(path: '/shoes/detail', builder: (_, state) => ShoesDetailPage(shoeId: state.uri.queryParameters['id'] ?? '')),
       GoRoute(path: '/goals', builder: (_, _) => const GoalPage()),
       GoRoute(path: '/groups', builder: (_, _) => const GroupPage()),
       GoRoute(path: '/group-detail', builder: (_, state) => GroupDetailPage(groupId: state.uri.queryParameters['id'] ?? '')),

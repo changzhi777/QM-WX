@@ -24,4 +24,22 @@ class ShoesRemote {
       payload: req.toJson(),
     );
   }
+
+  static Future<ShoeDetail> getDetail(String id) async {
+    final data = await ApiClient.instance.postAction(
+      ApiEndpoints.shoesBase,
+      ApiEndpoints.actionShoesGetDetail,
+      payload: {'id': id},
+    );
+    return ShoeDetail.fromJson(data);
+  }
+
+  static Future<MileageHistory> getMileageHistory(String id) async {
+    final data = await ApiClient.instance.postAction(
+      ApiEndpoints.shoesBase,
+      ApiEndpoints.actionShoesGetMileageHistory,
+      payload: {'id': id},
+    );
+    return MileageHistory.fromJson(data);
+  }
 }

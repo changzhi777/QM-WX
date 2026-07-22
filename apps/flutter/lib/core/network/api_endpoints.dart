@@ -62,6 +62,8 @@ class ApiEndpoints {
   static const String shoesBase = '/api/shoes';
   static const String actionShoesList = 'list';
   static const String actionShoesAdd = 'add';
+  static const String actionShoesGetDetail = 'getDetail';
+  static const String actionShoesGetMileageHistory = 'getMileageHistory';
 
   // ===== goal module（POST /api/goal，body { action, payload }）=====
   static const String goalBase = '/api/goal';

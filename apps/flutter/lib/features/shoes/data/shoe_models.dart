@@ -80,3 +80,85 @@ class AddShoeRequest {
     return m;
   }
 }
+
+/// 跑鞋详情（getDetail，复用 Shoe 字段 + 统计）
+class ShoeDetail {
+  const ShoeDetail({
+    required this.id,
+    required this.brand,
+    required this.model,
+    this.nickname,
+    this.currentKm = 0,
+    this.thresholdKm = 800,
+    this.status = 'active',
+    this.purchasedAt,
+    this.note,
+    this.healthRatio,
+    this.totalCheckins = 0,
+    this.daysSincePurchase,
+    this.latestCheckinAt,
+  });
+
+  final String id;
+  final String brand;
+  final String model;
+  final String? nickname;
+  final double currentKm;
+  final double thresholdKm;
+  final String status;
+  final String? purchasedAt;
+  final String? note;
+  final double? healthRatio;
+  final int totalCheckins;
+  final int? daysSincePurchase;
+  final String? latestCheckinAt;
+
+  factory ShoeDetail.fromJson(Map<String, dynamic> j) => ShoeDetail(
+        id: (j['id'] as String?) ?? '',
+        brand: (j['brand'] as String?) ?? '',
+        model: (j['model'] as String?) ?? '',
+        nickname: j['nickname'] as String?,
+        currentKm: (j['currentKm'] as num?)?.toDouble() ?? 0,
+        thresholdKm: (j['thresholdKm'] as num?)?.toDouble() ?? 800,
+        status: (j['status'] as String?) ?? 'active',
+        purchasedAt: j['purchasedAt'] as String?,
+        note: j['note'] as String?,
+        healthRatio: (j['healthRatio'] as num?)?.toDouble(),
+        totalCheckins: (j['totalCheckins'] as num?)?.toInt() ?? 0,
+        daysSincePurchase: (j['daysSincePurchase'] as num?)?.toInt(),
+        latestCheckinAt: j['latestCheckinAt'] as String?,
+      );
+
+  String get displayName => (nickname ?? '').isNotEmpty ? nickname! : '$brand $model';
+  bool get isRetired => status == 'retired';
+  double get progress => thresholdKm > 0 ? currentKm / thresholdKm : 0.0;
+}
+
+/// 里程曲线点（getMileageHistory weekly/monthly）
+class MileagePoint {
+  const MileagePoint({this.date = '', this.km = 0});
+  final String date;
+  final double km;
+  factory MileagePoint.fromJson(Map<String, dynamic> j) => MileagePoint(
+        date: (j['date'] as String?) ?? '',
+        km: (j['km'] as num?)?.toDouble() ?? (j['distance'] as num?)?.toDouble() ?? 0,
+      );
+}
+
+class MileageHistory {
+  const MileageHistory({this.weekly = const [], this.monthly = const [], this.totalKm = 0});
+  final List<MileagePoint> weekly;
+  final List<MileagePoint> monthly;
+  final double totalKm;
+
+  factory MileageHistory.fromJson(Map<String, dynamic> j) {
+    List<MileagePoint> parse(String key) => ((j[key] as List?) ?? const [])
+        .map((e) => MileagePoint.fromJson(e as Map<String, dynamic>))
+        .toList();
+    return MileageHistory(
+      weekly: parse('weekly'),
+      monthly: parse('monthly'),
+      totalKm: (j['totalKm'] as num?)?.toDouble() ?? 0,
+    );
+  }
+}

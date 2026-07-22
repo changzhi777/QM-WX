@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/design_system/app_card.dart';
 import '../data/shoe_models.dart';
@@ -91,8 +92,10 @@ class ShoesPage extends ConsumerWidget {
             ),
           )
         else
-          ...shoes.map((s) =>
-              Padding(padding: const EdgeInsets.only(bottom: 12), child: _ShoeCard(shoe: s))),
+          ...shoes.map((s) => GestureDetector(
+                onTap: () => context.push('/shoes/detail?id=${s.id}'),
+                child: Padding(padding: const EdgeInsets.only(bottom: 12), child: _ShoeCard(shoe: s)),
+              )),
       ],
     );
   }
