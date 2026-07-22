@@ -8,6 +8,8 @@ import 'package:muhehealth/app/main_shell.dart';
 import 'package:muhehealth/features/agreement/agreement_page.dart';
 import 'package:muhehealth/features/ai_coach/presentation/ai_coach_page.dart';
 import 'package:muhehealth/features/checkin/presentation/checkin_page.dart';
+import 'package:muhehealth/features/certificates/data/models.dart';
+import 'package:muhehealth/features/certificates/presentation/certificates_page.dart';
 import 'package:muhehealth/features/feed/data/feed_models.dart';
 import 'package:muhehealth/features/feed/presentation/feed_controller.dart';
 import 'package:muhehealth/features/feed/presentation/feed_page.dart';
@@ -234,5 +236,26 @@ void main() {
     await tester.pump();
     expect(find.text('消息'), findsOneWidget);
     expect(find.text('暂无消息'), findsOneWidget);
+  });
+
+  testWidgets('CertificatesPage renders', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          certificatesProvider.overrideWith((ref) async => const CertificateBundle(
+                totalDistance: 0,
+                totalCheckins: 0,
+                milestones: [],
+                marathons: [],
+              )),
+        ],
+        child: const MaterialApp(home: CertificatesPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('我的成就'), findsOneWidget);
+    expect(find.text('累计 km'), findsOneWidget);
+    expect(find.text('还没有证书，继续跑起来解锁成就！'), findsOneWidget);
   });
 }

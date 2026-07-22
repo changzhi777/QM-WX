@@ -120,7 +120,7 @@ class ProfilePage extends ConsumerWidget {
                     _Entry(Icons.groups_outlined, '跑群', () => context.push('/groups')),
                     _Entry(Icons.notifications_none, '消息', () => context.push('/notifications')),
                     _Entry(Icons.settings_outlined, '设置', () => context.push('/settings')),
-                    _Entry(Icons.info_outline, '关于', () => context.push('/settings')),
+                    _Entry(Icons.emoji_events, '成就', () => context.push('/certificates')),
                   ],
                 ),
               ],

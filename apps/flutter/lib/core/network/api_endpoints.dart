@@ -23,6 +23,7 @@ class ApiEndpoints {
   static const String actionMyRunnerStats = 'myRunnerStats';
   static const String actionMyAnnualReport = 'myAnnualReport';
   static const String actionUserProfile = 'userProfile';
+  static const String actionMyCertificates = 'myCertificates';
 
   // ===== ai-coach module（POST /api/ai-coach，body { action, payload }）=====
   static const String aiCoachBase = '/api/ai-coach';
