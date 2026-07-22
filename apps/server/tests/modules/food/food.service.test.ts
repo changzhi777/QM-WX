@@ -24,6 +24,9 @@ vi.mock('src/modules/food/client.js', () => ({
   isFatSecretConfigured: vi.fn(() => true),
 }));
 
+const ocrMock = vi.hoisted(() => ({ generalBasic: vi.fn() }));
+vi.mock('src/modules/ocr/ocr.service.js', () => ({ ocrService: ocrMock }));
+
 const { foodService } = await import('src/modules/food/food.service.js');
 
 const USER = 'u1';
@@ -248,5 +251,74 @@ describe('food.service.search 缓存 hitCount 失败降级', () => {
     const res = await foodService.search('鸡蛋');
     expect(res).toEqual(list);
     // update 失败被 catch 吞掉,主流程返 list
+  });
+});
+
+// ============================================================
+// V0.2.79 recognize 补测（拍照识别 — vision 分支，GLM-4.6V 多模态识菜品）
+// ============================================================
+describe('food.service.recognize vision (V0.2.79 补测)', () => {
+  const ORIG_KEY = process.env.LLM_API_KEY;
+  beforeEach(() => {
+    process.env.LLM_API_KEY = 'test-key';
+  });
+  afterEach(() => {
+    process.env.LLM_API_KEY = ORIG_KEY;
+    vi.restoreAllMocks();
+  });
+
+  it('imageUrl 必填 → badRequest', async () => {
+    await expect(foodService.recognize({ imageUrl: '', mode: 'vision' })).rejects.toMatchObject({ statusCode: BAD });
+  });
+
+  it('LLM_API_KEY 缺失 → badRequest', async () => {
+    delete process.env.LLM_API_KEY;
+    await expect(foodService.recognize({ imageUrl: 'http://x/img.png', mode: 'vision' })).rejects.toMatchObject({ statusCode: BAD });
+  });
+
+  it('happy: GLM 返 JSON → MealItem（宏量 Math.round）', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        choices: [{ message: { content: JSON.stringify({ name: '宫保鸡丁', calorie: 300.6, protein: 20.4, fat: 15, carb: 25 }) } }],
+      }), { status: 200 }),
+    );
+    const r = await foodService.recognize({ imageUrl: 'http://x/img.png', mode: 'vision' });
+    expect(r.name).toBe('宫保鸡丁');
+    expect(r.calorie).toBe(301); // Math.round(300.6)
+    expect(r.protein).toBe(20); // Math.round(20.4)
+    expect(r.fat).toBe(15);
+  });
+
+  it('GLM 失败（non-ok）→ throw "GLM-4.6V 识别失败"', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response('server error', { status: 500 }),
+    );
+    await expect(foodService.recognize({ imageUrl: 'http://x/img.png', mode: 'vision' })).rejects.toThrow(/GLM-4.6V 识别失败/);
+  });
+
+  it('GLM 返非法 JSON → badRequest 解析失败', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({
+        choices: [{ message: { content: 'not-json{{{ ' } }],
+      }), { status: 200 }),
+    );
+    await expect(foodService.recognize({ imageUrl: 'http://x/img.png', mode: 'vision' })).rejects.toMatchObject({ statusCode: BAD });
+  });
+
+  it('ocr 未识别文字 → badRequest', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('img', { status: 200 }));
+    ocrMock.generalBasic.mockResolvedValueOnce([]); // 空 lines → text 空
+    await expect(foodService.recognize({ imageUrl: 'http://x/img.png', mode: 'ocr' })).rejects.toMatchObject({ statusCode: BAD });
+  });
+
+  it('ocr happy: 识别 → search → nutrition → MealItem', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(new Response('img', { status: 200 }));
+    ocrMock.generalBasic.mockResolvedValueOnce(['全麦面包', '100g']);
+    vi.spyOn(foodService, 'search').mockResolvedValueOnce([{ id: 'f1', name: '全麦面包' }] as never);
+    vi.spyOn(foodService, 'nutrition').mockResolvedValueOnce({ id: 'f1', name: '全麦面包', calorie: 80, protein: 4, fat: 1, carb: 15 } as never);
+    const r = await foodService.recognize({ imageUrl: 'http://x/img.png', mode: 'ocr' });
+    expect(r.name).toBe('全麦面包');
+    expect(r.calorie).toBe(80);
+    expect(r.foodId).toBe('f1');
   });
 });
