@@ -117,7 +117,7 @@ class ProfilePage extends ConsumerWidget {
                     _Entry(Icons.flag_outlined, '目标', () => context.push('/goals')),
                     _Entry(Icons.dynamic_feed, '动态', () => context.push('/feed')),
                     _Entry(Icons.card_membership, '会员', () => context.push('/membership')),
-                    _Entry(Icons.insights_outlined, '数据', () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('请切到底部「数据解读」tab 查看')))),
+                    _Entry(Icons.groups_outlined, '跑群', () => context.push('/groups')),
                     _Entry(Icons.notifications_none, '消息', () => context.push('/notifications')),
                     _Entry(Icons.settings_outlined, '设置', () => context.push('/settings')),
                     _Entry(Icons.info_outline, '关于', () => context.push('/settings')),

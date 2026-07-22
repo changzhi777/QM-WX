@@ -52,6 +52,11 @@ class ApiEndpoints {
   // ===== sport module（POST /api/sport，body { action, payload }）=====
   static const String sportBase = '/api/sport';
   static const String actionCheckin = 'checkin';
+  static const String actionMyGroups = 'myGroups';
+  static const String actionCreateGroup = 'createGroup';
+  static const String actionJoinGroup = 'joinGroup';
+  static const String actionGroupDetail = 'groupDetail';
+  static const String actionGroupRanking = 'groupRanking';
 
   // ===== shoes module（POST /api/shoes，body { action, payload }）=====
   static const String shoesBase = '/api/shoes';

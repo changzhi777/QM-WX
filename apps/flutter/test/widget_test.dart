@@ -14,6 +14,9 @@ import 'package:muhehealth/features/feed/presentation/feed_page.dart';
 import 'package:muhehealth/features/goal/data/goal_models.dart';
 import 'package:muhehealth/features/goal/presentation/goal_controller.dart';
 import 'package:muhehealth/features/goal/presentation/goal_page.dart';
+import 'package:muhehealth/features/group/data/group_models.dart';
+import 'package:muhehealth/features/group/presentation/group_controller.dart';
+import 'package:muhehealth/features/group/presentation/group_page.dart';
 import 'package:muhehealth/features/gps_track/presentation/track_page.dart';
 import 'package:muhehealth/features/insight/presentation/insight_controller.dart';
 import 'package:muhehealth/features/insight/presentation/insight_page.dart';
@@ -45,6 +48,11 @@ class _FakeShoes extends ShoesController {
 class _FakeGoal extends GoalController {
   @override
   Future<List<Goal>> build() async => const <Goal>[];
+}
+
+class _FakeGroup extends GroupController {
+  @override
+  Future<List<Group>> build() async => const <Group>[];
 }
 
 class _FakeInsight extends InsightController {
@@ -136,6 +144,19 @@ void main() {
     await tester.pump();
     expect(find.text('跑步目标'), findsOneWidget);
     expect(find.text('还没有目标，点 + 添加'), findsOneWidget);
+  });
+
+  testWidgets('GroupPage renders empty state', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [groupProvider.overrideWith(() => _FakeGroup())],
+        child: const MaterialApp(home: GroupPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('跑群'), findsOneWidget);
+    expect(find.text('还没加入跑群，点 + 创建'), findsOneWidget);
   });
 
   testWidgets('InsightPage renders empty state', (tester) async {
