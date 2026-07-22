@@ -20,10 +20,22 @@ class ApiEndpoints {
   static const String actionHealthScore = 'healthScore';
   static const String actionDailyReport = 'dailyReport';
   static const String actionWeather = 'weather';
+  static const String actionMyRunnerStats = 'myRunnerStats';
 
   // ===== sport module（POST /api/sport，body { action, payload }）=====
   static const String sportBase = '/api/sport';
   static const String actionCheckin = 'checkin';
+
+  // ===== shoes module（POST /api/shoes，body { action, payload }）=====
+  static const String shoesBase = '/api/shoes';
+  static const String actionShoesList = 'list';
+  static const String actionShoesAdd = 'add';
+
+  // ===== goal module（POST /api/goal，body { action, payload }）=====
+  static const String goalBase = '/api/goal';
+  static const String actionGoalList = 'list';
+  static const String actionGoalAdd = 'add';
+  static const String actionGoalRemove = 'remove';
 
   /// 判断是否公开路由（不带 Bearer token）
   static bool isPublic(String path) =>

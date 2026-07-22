@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../features/auth/presentation/auth_controller.dart';
+import '../features/profile/presentation/profile_page.dart';
 import '../features/today/presentation/today_page.dart';
 
 /// 4-tab 主壳：今日 / 健康助理 / 数据解读 / 我的。
 ///
-/// 批 2：今日 tab 接入 TodayPage；其余 tab 仍占位（批 4 填 AI/图表）。
+/// Phase 2 批 1：「我的」tab 接入 ProfilePage（替占位 _MineTab）。
+/// 健康助理 / 数据解读 仍占位（后续批填 AI 流式 / 图表）。
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
 
@@ -32,10 +32,10 @@ class _MainShellState extends State<MainShell> {
         children: const [
           TodayPage(),
           _Placeholder(
-              title: '健康助理', emoji: '🤖', hint: 'AI 流式聊天（批 4）'),
+              title: '健康助理', emoji: '🤖', hint: 'AI 流式聊天（后续批）'),
           _Placeholder(
-              title: '数据解读', emoji: '📊', hint: '图表趋势 + 截图解读（批 4）'),
-          _MineTab(),
+              title: '数据解读', emoji: '📊', hint: '图表趋势 + 截图解读（后续批）'),
+          ProfilePage(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -75,56 +75,6 @@ class _Placeholder extends StatelessWidget {
             Text(hint,
                 style: tt.bodyMedium?.copyWith(color: c.outline),
                 textAlign: TextAlign.center),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// 「我的」tab（批 1 最小可用）：用户卡 + 登出。
-class _MineTab extends ConsumerWidget {
-  const _MineTab();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final c = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-    final user = ref.watch(authProvider).value?.user;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CircleAvatar(
-              radius: 40,
-              backgroundColor: c.primaryContainer,
-              backgroundImage: (user?.avatarUrl ?? '').isNotEmpty
-                  ? NetworkImage(user!.avatarUrl!)
-                  : null,
-              child: (user?.avatarUrl ?? '').isEmpty
-                  ? Icon(Icons.person, size: 44, color: c.onPrimaryContainer)
-                  : null,
-            ),
-            const SizedBox(height: 12),
-            Text(user?.displayName ?? '沐禾用户',
-                style: tt.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 4),
-            Text('${user?.growthLevel ?? 'free'} · ${user?.memberLevel ?? 'free'}',
-                style: tt.bodySmall?.copyWith(color: c.outline)),
-            const SizedBox(height: 8),
-            Text('${user?.points ?? 0} 积分',
-                style: tt.bodyMedium?.copyWith(color: c.primary)),
-            const SizedBox(height: 24),
-            OutlinedButton.icon(
-              onPressed: () async {
-                await ref.read(authProvider.notifier).logout();
-              },
-              icon: const Icon(Icons.logout),
-              label: const Text('退出登录'),
-            ),
           ],
         ),
       ),

@@ -5,7 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/auth_controller.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/checkin/presentation/checkin_page.dart';
+import '../features/goal/presentation/goal_page.dart';
 import '../features/gps_track/presentation/track_page.dart';
+import '../features/shoes/presentation/shoes_page.dart';
 import 'main_shell.dart';
 
 /// 把 Riverpod [authProvider] 的变化桥接到 go_router `refreshListenable`。
@@ -40,6 +42,8 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/', builder: (_, _) => const MainShell()),
       GoRoute(path: '/checkin', builder: (_, _) => const CheckinPage()),
       GoRoute(path: '/track', builder: (_, _) => const TrackPage()),
+      GoRoute(path: '/shoes', builder: (_, _) => const ShoesPage()),
+      GoRoute(path: '/goals', builder: (_, _) => const GoalPage()),
     ],
   );
 });
