@@ -83,6 +83,8 @@ class _MembershipPageState extends ConsumerState<MembershipPage> {
                               ?.copyWith(fontWeight: FontWeight.bold)),
                       Text('到期：${_expireLabel(user?.memberExpireAt)}',
                           style: tt.bodySmall?.copyWith(color: c.outline)),
+                      Text('累计积分 ${user?.totalPointsEarned ?? 0}',
+                          style: tt.bodySmall?.copyWith(color: c.outline)),
                     ],
                   ),
                 ),

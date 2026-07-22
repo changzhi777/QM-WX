@@ -47,6 +47,7 @@ class AppUser {
     this.memberLevel = 'free',
     this.memberExpireAt,
     this.points = 0,
+    this.totalPointsEarned = 0,
     this.growthLevel = 'free',
   });
 
@@ -57,6 +58,7 @@ class AppUser {
   final String memberLevel; // free / monthly / quarterly / yearly
   final String? memberExpireAt; // ISO datetime（Phase 2 批 7 会员页用）
   final int points;
+  final int totalPointsEarned; // 累计积分（驱动成长等级，Phase 3 批 2）
   final String growthLevel; // free / bronze / silver / gold / diamond
 
   factory AppUser.fromJson(Map<String, dynamic> j) => AppUser(
@@ -67,6 +69,7 @@ class AppUser {
         memberLevel: (j['memberLevel'] as String?) ?? 'free',
         memberExpireAt: j['memberExpireAt'] as String?,
         points: (j['points'] as num?)?.toInt() ?? 0,
+        totalPointsEarned: (j['totalPointsEarned'] as num?)?.toInt() ?? 0,
         growthLevel: (j['growthLevel'] as String?) ?? 'free',
       );
 
