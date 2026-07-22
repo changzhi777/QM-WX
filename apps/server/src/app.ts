@@ -30,6 +30,7 @@ import { strengthRoutes } from './modules/strength/strength.routes.js';
 import { wxpayRoutes } from './modules/wxpay/wxpay.routes.js';
 import { weeklyReportRoutes } from './modules/weekly-report/weekly-report.routes.js';
 import { deviceRoutes } from './modules/device/device.routes.js';
+import { terraWebhookRoutes } from './modules/device/terra-webhook.routes.js';
 import { recipeRoutes } from './modules/recipe/recipe.routes.js';
 import { ludongRoutes } from './modules/ludong/ludong.routes.js';
 import { statsRoutes } from './modules/stats/stats.routes.js';
@@ -154,6 +155,7 @@ export async function buildApp() {
   await app.register(walletRoutes, { prefix: '/api/wallet' });
   await app.register(weeklyReportRoutes, { prefix: '/api/weekly-report' });
   await app.register(deviceRoutes, { prefix: '/api/device' });
+  await app.register(terraWebhookRoutes, { prefix: '/api/device' }); // V0.2.70 Terra webhook（阶段 3.3）
   await app.register(recipeRoutes, { prefix: '/api/recipe' });
   await app.register(ludongRoutes, { prefix: '/api/ludong' });
   await app.register(statsRoutes, { prefix: '/api/stats' });

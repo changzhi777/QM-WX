@@ -41,6 +41,8 @@ export const authPlugin = fp(async (app: FastifyInstance) => {
     // V0.2.63 静态资源跳过 JWT（@fastify/static 托管的 /h5/ H5 页 + /uploads/ 文件）
     const u = req.url;
     if (u.startsWith('/h5/') || u.startsWith('/uploads/')) return;
+    // V0.2.69 兜底：关键 public 登录路由 url 跳过（防个别环境 routeOptions.config 未注入）
+    if (u === '/api/admin/login' || u === '/api/auth/login' || u === '/api/auth/refresh' || u === '/api/auth/send-sms' || u === '/api/auth/send-mail') return;
     try {
       await req.jwtVerify();
     } catch {
