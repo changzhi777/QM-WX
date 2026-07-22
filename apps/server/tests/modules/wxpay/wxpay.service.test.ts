@@ -9,6 +9,7 @@
  */
 import { describe, it, expect, vi, beforeEach, beforeAll, afterAll } from 'vitest';
 import { createCipheriv, randomBytes, generateKeyPairSync } from 'node:crypto';
+import { gzipSync } from 'node:zlib';
 import { writeFileSync, unlinkSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -21,6 +22,8 @@ import {
   toOutTradeNo,
   fetchPlatformCerts,
   downloadBill,
+  queryBill,
+  unifiedOrder,
 } from '../../../src/modules/wxpay/wxpay.service.js';
 import { env } from '../../../src/config/env.js';
 
@@ -267,6 +270,23 @@ describe('wxpay.service', () => {
       expect(fetchMock).toHaveBeenCalled();
       fetchMock.mockRestore();
     });
+
+    it('gzip body → gunzipSync 解压返 CSV 文本（V0.2.75 补）', async () => {
+      const csv = 'date,amount\n2026-07-23,100';
+      const gz = gzipSync(Buffer.from(csv)); // 0x1f 0x8b 魔数
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(gz, { status: 200 }),
+      );
+      const out = await downloadBill('https://example/bill.csv');
+      expect(out).toBe(csv);
+    });
+
+    it('fetch 非 2xx → 抛"账单下载失败"（V0.2.75 补）', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response('error', { status: 500 }),
+      );
+      await expect(downloadBill('https://example/bill.csv')).rejects.toThrow(/账单下载失败/);
+    });
   });
 
   // ===== fetchPlatformCerts（V0.2.21 补 V0.2.13 K1 留的后续）=====
@@ -365,6 +385,100 @@ XKBW
 
       const serials = await fetchPlatformCerts();
       expect(serials).toEqual(['PLATFORM-SERIAL-1']);
+    });
+  });
+
+  // ===== V0.2.75 queryBill 补测（账单查询，复用 fetchPlatformCerts 私钥范式）=====
+  describe('queryBill (V0.2.75 补测)', () => {
+    let tmpKeyPath: string;
+    beforeAll(() => {
+      const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+      const pem = privateKey.export({ type: 'pkcs8', format: 'pem' }) as string;
+      tmpKeyPath = join(tmpdir(), `wxpay-test-key-${process.pid}-${Date.now()}.pem`);
+      writeFileSync(tmpKeyPath, pem);
+    });
+    afterAll(() => {
+      try { unlinkSync(tmpKeyPath); } catch { /* 临时文件清理失败忽略 */ }
+    });
+    afterEach(() => { vi.restoreAllMocks(); });
+
+    it('WX_MCH_ID 未配置 → 抛错（在签名之前）', async () => {
+      const orig = env.WX_MCH_ID;
+      (env as Record<string, unknown>).WX_MCH_ID = '';
+      try {
+        await expect(queryBill({ billDate: '2026-07-23' })).rejects.toThrow(/WX_MCH_ID 未配置/);
+      } finally {
+        (env as Record<string, unknown>).WX_MCH_ID = orig;
+      }
+    });
+
+    it('happy: 返 downloadUrl + hashValue + hashType', async () => {
+      (env as Record<string, unknown>).WX_MCH_PRIVATE_KEY_PATH = tmpKeyPath;
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(JSON.stringify({
+          download_url: 'https://download/bill.csv',
+          hash_value: 'abc123',
+          hash_type: 'SHA1',
+        }), { status: 200 }),
+      );
+      const r = await queryBill({ billDate: '2026-07-23', billType: 'ALL' });
+      expect(r.downloadUrl).toBe('https://download/bill.csv');
+      expect(r.hashValue).toBe('abc123');
+      expect(r.hashType).toBe('SHA1');
+    });
+
+    it('fetch 非 2xx → 抛"账单查询失败"', async () => {
+      (env as Record<string, unknown>).WX_MCH_PRIVATE_KEY_PATH = tmpKeyPath;
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(JSON.stringify({ code: 'SYSTEM_ERROR', message: '系统错误' }), { status: 500 }),
+      );
+      await expect(queryBill({ billDate: '2026-07-23' })).rejects.toThrow(/账单查询失败/);
+    });
+  });
+
+  // ===== V0.2.75 unifiedOrder 补测（统一下单 + 二次签名 paySign）=====
+  describe('unifiedOrder (V0.2.75 补测)', () => {
+    let tmpKeyPath: string;
+    beforeAll(() => {
+      const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+      const pem = privateKey.export({ type: 'pkcs8', format: 'pem' }) as string;
+      tmpKeyPath = join(tmpdir(), `wxpay-test-key-${process.pid}-${Date.now()}.pem`);
+      writeFileSync(tmpKeyPath, pem);
+    });
+    afterAll(() => {
+      try { unlinkSync(tmpKeyPath); } catch { /* 临时文件清理失败忽略 */ }
+    });
+    afterEach(() => { vi.restoreAllMocks(); });
+
+    it('配置缺失（WX_MCH_ID 清空）→ 抛"配置缺失"', async () => {
+      const orig = env.WX_MCH_ID;
+      (env as Record<string, unknown>).WX_MCH_ID = '';
+      try {
+        await expect(unifiedOrder({ outTradeNo: 'o1', description: 'x', totalFen: 100, openid: 'opid' })).rejects.toThrow(/配置缺失/);
+      } finally {
+        (env as Record<string, unknown>).WX_MCH_ID = orig;
+      }
+    });
+
+    it('happy: mock fetch 返 prepay_id → 二次签名返 UnifiedOrderResp', async () => {
+      (env as Record<string, unknown>).WX_MCH_PRIVATE_KEY_PATH = tmpKeyPath;
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(JSON.stringify({ prepay_id: 'wx-prepay-001' }), { status: 200 }),
+      );
+      const r = await unifiedOrder({ outTradeNo: 'order-001', description: '测试订单', totalFen: 100, openid: 'oOpenid1' });
+      expect(r.prepayId).toBe('wx-prepay-001');
+      expect(r.nonceStr).toHaveLength(32); // 16 bytes → 32 hex
+      expect(r.packageStr).toBe('prepay_id=wx-prepay-001');
+      expect(typeof r.sign).toBe('string');
+      expect(r.sign.length).toBeGreaterThan(0);
+    });
+
+    it('fetch 返无 prepay_id → 抛"统一下单失败"', async () => {
+      (env as Record<string, unknown>).WX_MCH_PRIVATE_KEY_PATH = tmpKeyPath;
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(JSON.stringify({ error: 'PARAM_ERROR', message: '参数错误' }), { status: 400 }),
+      );
+      await expect(unifiedOrder({ outTradeNo: 'order-002', description: 'x', totalFen: 100, openid: 'opid' })).rejects.toThrow(/统一下单失败/);
     });
   });
 });
