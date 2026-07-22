@@ -45,6 +45,10 @@ class ApiEndpoints {
   static const String actionFollowMyFollowers = 'myFollowers';
   static const String actionFollowMyCounts = 'myCounts';
 
+  // ===== favorite module（POST /api/favorite，body { action, payload }）=====
+  static const String favoriteBase = '/api/favorite';
+  static const String actionFavoriteList = 'list';
+
   // ===== ai-coach module（POST /api/ai-coach，body { action, payload }）=====
   static const String aiCoachBase = '/api/ai-coach';
   static const String actionAiChat = 'chat';

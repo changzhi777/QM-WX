@@ -15,6 +15,7 @@ import 'package:muhehealth/features/strength/data/models.dart';
 import 'package:muhehealth/features/strength/presentation/strength_page.dart';
 import 'package:muhehealth/features/feed/data/feed_models.dart';
 import 'package:muhehealth/features/feed/presentation/feed_controller.dart';
+import 'package:muhehealth/features/favorite/presentation/favorite_page.dart';
 import 'package:muhehealth/features/feed/presentation/feed_page.dart';
 import 'package:muhehealth/features/follow/presentation/follow_page.dart';
 import 'package:muhehealth/features/food/data/models.dart';
@@ -330,5 +331,18 @@ void main() {
     await tester.pump();
     expect(find.text('关注'), findsWidgets);
     expect(find.text('还没有关注的人'), findsOneWidget);
+  });
+
+  testWidgets('FavoritePage renders empty', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [favoritesProvider.overrideWith((ref) async => const [])],
+        child: const MaterialApp(home: FavoritePage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('我的收藏'), findsOneWidget);
+    expect(find.text('还没有收藏'), findsOneWidget);
   });
 }

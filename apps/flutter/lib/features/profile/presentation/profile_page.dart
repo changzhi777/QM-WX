@@ -125,6 +125,7 @@ class ProfilePage extends ConsumerWidget {
                     _Entry(Icons.restaurant, '饮食', () => context.push('/food')),
                     _Entry(Icons.insights, '报告', () => context.push('/daily-reports')),
                     _Entry(Icons.people_alt_outlined, '关注', () => context.push('/follow')),
+                    _Entry(Icons.bookmark_border, '收藏', () => context.push('/favorites')),
                   ],
                 ),
               ],
