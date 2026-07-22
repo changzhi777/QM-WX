@@ -561,3 +561,59 @@ describe('sportService.announceGroup (V0.1.42)', () => {
     await expect(sportService.announceGroup('u1', { groupId: 'g1', announce: 'x' })).rejects.toThrow('仅群主可发公告');
   });
 });
+
+// ============================================================
+// V0.2.77 joinGroup / quitGroup 补测（群组加入/退出 — 校验 + 事务 + opengid 绑定）
+// ============================================================
+describe('sportService.joinGroup (V0.2.77 补测)', () => {
+  it('群不存在 → notFound', async () => {
+    mockedPrisma.group.findUnique.mockResolvedValue(null); // findGroup
+    await expect(sportService.joinGroup('u1', { groupId: 'g1' }, '昵称', null)).rejects.toThrow('群不存在');
+  });
+
+  it('已在群 → conflict', async () => {
+    mockedPrisma.group.findUnique.mockResolvedValue({ id: 'g1', opengid: 'og1' } as never);
+    mockedPrisma.groupMember.findUnique.mockResolvedValue({ id: 'm1' } as never); // isMember truthy
+    await expect(sportService.joinGroup('u1', { groupId: 'g1' }, '昵称', null)).rejects.toThrow('你已在该群中');
+  });
+
+  it('成功加入 → 事务 create member + update group memberCount + opengid 绑定', async () => {
+    mockedPrisma.group.findUnique.mockResolvedValue({ id: 'g1', opengid: null } as never);
+    mockedPrisma.groupMember.findUnique.mockResolvedValue(null); // 不在群
+    mockedPrisma.groupMember.count.mockResolvedValue(1); // < maxGroups(2)
+    mockedPrisma.user.findUnique.mockResolvedValue({ id: 'u1', memberLevel: 'free' } as never);
+
+    const r = await sportService.joinGroup('u1', { groupId: 'g1', opengid: 'og1' }, '昵称', 'avatar.png');
+    expect(r.ok).toBe(true);
+    // 事务内 create member（role=member）
+    expect(mockedPrisma.groupMember.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ groupId: 'g1', userId: 'u1', role: 'member' }) }),
+    );
+    // group.update 被调（memberCount increment + opengid 首次绑定）
+    expect(mockedPrisma.group.update).toHaveBeenCalled();
+  });
+});
+
+describe('sportService.quitGroup (V0.2.77 补测)', () => {
+  it('不在群 → notFound', async () => {
+    mockedPrisma.groupMember.findUnique.mockResolvedValue(null); // isMember null
+    await expect(sportService.quitGroup('u1', { groupId: 'g1' })).rejects.toThrow('你不在该群中');
+  });
+
+  it('群主 → forbidden（须先转让）', async () => {
+    mockedPrisma.groupMember.findUnique.mockResolvedValue({ groupId: 'g1', userId: 'u1', role: 'owner' } as never);
+    await expect(sportService.quitGroup('u1', { groupId: 'g1' })).rejects.toThrow('群主不可退出');
+  });
+
+  it('成功退出 → 事务 delete member + update group memberCount decrement', async () => {
+    mockedPrisma.groupMember.findUnique.mockResolvedValue({ groupId: 'g1', userId: 'u1', role: 'member' } as never);
+    const r = await sportService.quitGroup('u1', { groupId: 'g1' });
+    expect(r.ok).toBe(true);
+    expect(mockedPrisma.groupMember.delete).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { groupId_userId: { groupId: 'g1', userId: 'u1' } } }),
+    );
+    expect(mockedPrisma.group.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { memberCount: { decrement: 1 } } }),
+    );
+  });
+});

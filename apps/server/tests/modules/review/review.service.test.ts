@@ -238,3 +238,39 @@ describe('reviewService.targetStats 鞋评 (V0.1.137)', () => {
     );
   });
 });
+
+// ============================================================
+// V0.2.77 listByTarget 补测（通用目标列表 — 鞋评/商品评，syntheticId + 前缀剥除）
+// ============================================================
+describe('reviewService.listByTarget (V0.2.77 补测)', () => {
+  it('targetType=shoe → 合成 shoe:id + 剥 [shoe-review] 前缀', async () => {
+    mockedPrisma.review.findMany.mockResolvedValue([
+      { id: 'r1', content: '[shoe-review] 战靴好评', rating: 5, createdAt: new Date('2026-07-01'), repliedAt: null, user: { id: 'u1', nickname: '张三', avatarUrl: null } },
+    ] as never);
+    mockedPrisma.review.count.mockResolvedValue(1 as never);
+
+    const r = await reviewService.listByTarget('s1', 'shoe', { page: 1, pageSize: 10 });
+    expect(r.list).toHaveLength(1);
+    expect(r.list[0].content).toBe('战靴好评'); // [shoe-review] 前缀剥除
+    expect(r.list[0].repliedAt).toBeNull();
+    expect(r.total).toBe(1);
+    // 查询用合成 id
+    expect(mockedPrisma.review.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { productId: 'shoe:s1' } }),
+    );
+  });
+
+  it('targetType=product → 用 targetId 直接 + 无前缀不动 + repliedAt 序列化', async () => {
+    mockedPrisma.review.findMany.mockResolvedValue([
+      { id: 'r2', content: '商品不错', rating: 4, createdAt: new Date('2026-07-01'), repliedAt: new Date('2026-07-02T00:00:00Z'), user: { id: 'u2', nickname: '李四', avatarUrl: 'x' } },
+    ] as never);
+    mockedPrisma.review.count.mockResolvedValue(1 as never);
+
+    const r = await reviewService.listByTarget('p1', 'product', { page: 1, pageSize: 10 });
+    expect(r.list[0].content).toBe('商品不错'); // 无前缀不动
+    expect(r.list[0].repliedAt).toBe('2026-07-02T00:00:00.000Z'); // Date → toISOString
+    expect(mockedPrisma.review.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { productId: 'p1' } }),
+    );
+  });
+});
