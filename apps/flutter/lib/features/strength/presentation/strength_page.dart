@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/design_system/app_card.dart';
 import '../data/models.dart';
@@ -102,6 +103,15 @@ class StrengthPage extends ConsumerWidget {
                   ),
           ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        tooltip: '开始训练',
+        onPressed: () async {
+          await context.push('/strength/session');
+          ref.invalidate(strengthSessionsProvider);
+          ref.invalidate(strengthVolumeProvider);
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }

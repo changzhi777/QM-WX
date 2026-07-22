@@ -29,6 +29,9 @@ class ApiEndpoints {
   static const String strengthBase = '/api/strength';
   static const String actionStrengthListSessions = 'listSessions';
   static const String actionStrengthMyVolume = 'myVolume';
+  static const String actionStrengthStartSession = 'startSession';
+  static const String actionStrengthAddSet = 'addSet';
+  static const String actionStrengthFinishSession = 'finishSession';
 
   // ===== food module（POST /api/food，body { action, payload }）=====
   static const String foodBase = '/api/food';

@@ -46,3 +46,14 @@ class VolumeSummary {
         days: (j['days'] as num?)?.toInt() ?? 30,
       );
 }
+
+/// 一组训练记录（训练流中本地累加显示）。
+class StrengthSet {
+  const StrengthSet({required this.exerciseName, required this.reps, required this.weight, required this.setIndex});
+  final String exerciseName;
+  final int reps;
+  final double weight;
+  final int setIndex;
+
+  double get volume => reps * weight;
+}
