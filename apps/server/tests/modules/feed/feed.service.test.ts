@@ -307,4 +307,31 @@ describe('feedService.list 含 shoe (V0.1.136)', () => {
     expect(r.list[0].shoe?.brand).toBe('Nike');
     expect(r.list[0].shoe?.currentKm).toBe(600);
   });
+
+  // V0.2.72 listComments 单测
+  describe('feedService.listComments (V0.2.72)', () => {
+    beforeEach(() => { vi.clearAllMocks(); });
+
+    it('happy: 返评论列表 + total + user include', async () => {
+      mocks.prisma.feedComment.findMany.mockResolvedValue([
+        { id: 'c1', content: '不错', createdAt: new Date('2026-07-01T00:00:00Z'), user: { id: 'u2', nickname: '张三', avatarUrl: null } },
+      ] as never);
+      mocks.prisma.feedComment.count.mockResolvedValue(1 as never);
+
+      const r = await feedService.listComments('u1', 'f1');
+      expect(r.total).toBe(1);
+      expect(r.list).toHaveLength(1);
+      expect(r.list[0].content).toBe('不错');
+      expect(r.list[0].user?.nickname).toBe('张三');
+    });
+
+    it('空评论 → list [] + total 0', async () => {
+      mocks.prisma.feedComment.findMany.mockResolvedValue([] as never);
+      mocks.prisma.feedComment.count.mockResolvedValue(0 as never);
+
+      const r = await feedService.listComments('u1', 'f_empty');
+      expect(r.total).toBe(0);
+      expect(r.list).toEqual([]);
+    });
+  });
 });
