@@ -1,16 +1,25 @@
-// Smoke tests：MainShell + Checkin + Track + Profile + Shoes + Goal。
-// override todayProvider/profileStatsProvider/shoesProvider/goalProvider 避免真实网络。
+// Smoke tests：MainShell + Checkin + Track + Profile + Shoes + Goal + Insight + AiCoach + Feed。
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:muhehealth/app/main_shell.dart';
+import 'package:muhehealth/features/agreement/agreement_page.dart';
+import 'package:muhehealth/features/ai_coach/presentation/ai_coach_page.dart';
 import 'package:muhehealth/features/checkin/presentation/checkin_page.dart';
+import 'package:muhehealth/features/feed/data/feed_models.dart';
+import 'package:muhehealth/features/feed/presentation/feed_controller.dart';
+import 'package:muhehealth/features/feed/presentation/feed_page.dart';
 import 'package:muhehealth/features/goal/data/goal_models.dart';
 import 'package:muhehealth/features/goal/presentation/goal_controller.dart';
 import 'package:muhehealth/features/goal/presentation/goal_page.dart';
 import 'package:muhehealth/features/gps_track/presentation/track_page.dart';
+import 'package:muhehealth/features/insight/presentation/insight_controller.dart';
+import 'package:muhehealth/features/insight/presentation/insight_page.dart';
+import 'package:muhehealth/features/membership/data/membership_models.dart';
+import 'package:muhehealth/features/membership/presentation/membership_controller.dart';
+import 'package:muhehealth/features/membership/presentation/membership_page.dart';
 import 'package:muhehealth/features/profile/data/runner_stats.dart';
 import 'package:muhehealth/features/profile/presentation/profile_controller.dart';
 import 'package:muhehealth/features/profile/presentation/profile_page.dart';
@@ -18,6 +27,7 @@ import 'package:muhehealth/features/shoes/data/shoe_models.dart';
 import 'package:muhehealth/features/shoes/presentation/shoes_controller.dart';
 import 'package:muhehealth/features/shoes/presentation/shoes_page.dart';
 import 'package:muhehealth/features/today/presentation/today_controller.dart';
+import 'package:muhehealth/features/settings/settings_page.dart';
 
 class _FakeToday extends TodayController {
   @override
@@ -34,6 +44,16 @@ class _FakeGoal extends GoalController {
   Future<List<Goal>> build() async => const <Goal>[];
 }
 
+class _FakeInsight extends InsightController {
+  @override
+  Future<InsightData> build() async => const InsightData();
+}
+
+class _FakeFeed extends FeedController {
+  @override
+  Future<List<Feed>> build() async => const <Feed>[];
+}
+
 void main() {
   testWidgets('MainShell renders 4 tabs', (tester) async {
     await tester.pumpWidget(
@@ -41,6 +61,7 @@ void main() {
         overrides: [
           todayProvider.overrideWith(() => _FakeToday()),
           profileStatsProvider.overrideWith((ref) async => const RunnerStats()),
+          insightProvider.overrideWith(() => _FakeInsight()),
         ],
         child: const MaterialApp(home: MainShell()),
       ),
@@ -107,5 +128,69 @@ void main() {
     await tester.pump();
     expect(find.text('跑步目标'), findsOneWidget);
     expect(find.text('还没有目标，点 + 添加'), findsOneWidget);
+  });
+
+  testWidgets('InsightPage renders empty state', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [insightProvider.overrideWith(() => _FakeInsight())],
+        child: const MaterialApp(home: InsightPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('数据解读'), findsOneWidget);
+    expect(find.text('暂无数据，去运动生成解读'), findsOneWidget);
+  });
+
+  testWidgets('AiCoachPage renders empty state', (tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: AiCoachPage())),
+    );
+    expect(find.text('健康助理'), findsOneWidget);
+    expect(find.text('问问 AI 私教'), findsOneWidget);
+  });
+
+  testWidgets('FeedPage renders empty state', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [feedProvider.overrideWith(() => _FakeFeed())],
+        child: const MaterialApp(home: FeedPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('运动动态'), findsOneWidget);
+    expect(find.text('还没有动态，点 + 发布'), findsOneWidget);
+  });
+
+  testWidgets('MembershipPage renders', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          inviteProvider.overrideWith((ref) async => const InviteInfo()),
+        ],
+        child: const MaterialApp(home: MembershipPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('会员中心'), findsOneWidget);
+    expect(find.text('积分兑换会员'), findsOneWidget);
+  });
+
+  testWidgets('SettingsPage renders entries', (tester) async {
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: SettingsPage())),
+    );
+    expect(find.text('设置'), findsOneWidget);
+    expect(find.text('用户服务协议'), findsOneWidget);
+    expect(find.text('退出登录'), findsOneWidget);
+  });
+
+  testWidgets('AgreementPage renders protocol', (tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AgreementPage()));
+    expect(find.text('用户服务协议'), findsOneWidget);
+    expect(find.textContaining('1. 关于我们'), findsOneWidget);
   });
 }

@@ -36,7 +36,7 @@ class LoginResponse {
 
 /// 用户模型（核心字段；与后端 toUserOutput 对齐）。
 ///
-/// 后端返更多字段（phone/email/certified/stats/...），这里只取批 1 所需，
+/// 后端返更多字段（phone/email/certified/stats/...），这里只取所需，
 /// 其余忽略——新增字段不破坏解析（向前兼容）。
 class AppUser {
   const AppUser({
@@ -45,6 +45,7 @@ class AppUser {
     this.avatarUrl,
     this.username,
     this.memberLevel = 'free',
+    this.memberExpireAt,
     this.points = 0,
     this.growthLevel = 'free',
   });
@@ -54,6 +55,7 @@ class AppUser {
   final String? avatarUrl;
   final String? username;
   final String memberLevel; // free / monthly / quarterly / yearly
+  final String? memberExpireAt; // ISO datetime（Phase 2 批 7 会员页用）
   final int points;
   final String growthLevel; // free / bronze / silver / gold / diamond
 
@@ -63,6 +65,7 @@ class AppUser {
         avatarUrl: j['avatarUrl'] as String?,
         username: j['username'] as String?,
         memberLevel: (j['memberLevel'] as String?) ?? 'free',
+        memberExpireAt: j['memberExpireAt'] as String?,
         points: (j['points'] as num?)?.toInt() ?? 0,
         growthLevel: (j['growthLevel'] as String?) ?? 'free',
       );
@@ -73,5 +76,4 @@ class AppUser {
     if ((username ?? '').isNotEmpty) return username!;
     return '沐禾用户';
   }
-
 }

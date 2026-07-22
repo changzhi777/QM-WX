@@ -21,6 +21,26 @@ class ApiEndpoints {
   static const String actionDailyReport = 'dailyReport';
   static const String actionWeather = 'weather';
   static const String actionMyRunnerStats = 'myRunnerStats';
+  static const String actionMyAnnualReport = 'myAnnualReport';
+  static const String actionUserProfile = 'userProfile';
+
+  // ===== ai-coach module（POST /api/ai-coach，body { action, payload }）=====
+  static const String aiCoachBase = '/api/ai-coach';
+  static const String actionAiChat = 'chat';
+
+  // ===== feed module（POST /api/feed，body { action, payload }）=====
+  static const String feedBase = '/api/feed';
+  static const String actionFeedList = 'list';
+  static const String actionFeedPublish = 'publish';
+  static const String actionFeedLike = 'like';
+  static const String actionFeedUnlike = 'unlike';
+
+  // ===== distribution module（POST /api/distribution）=====
+  static const String distributionBase = '/api/distribution';
+  static const String actionInviteInfo = 'inviteInfo';
+
+  // user module 补充 action（POST /api/user）
+  static const String actionRedeemMember = 'redeemMember';
 
   // ===== sport module（POST /api/sport，body { action, payload }）=====
   static const String sportBase = '/api/sport';

@@ -2,11 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../features/agreement/agreement_page.dart';
 import '../features/auth/presentation/auth_controller.dart';
 import '../features/auth/presentation/login_page.dart';
 import '../features/checkin/presentation/checkin_page.dart';
+import '../features/feed/presentation/feed_page.dart';
 import '../features/goal/presentation/goal_page.dart';
 import '../features/gps_track/presentation/track_page.dart';
+import '../features/membership/presentation/membership_page.dart';
+import '../features/settings/settings_page.dart';
 import '../features/shoes/presentation/shoes_page.dart';
 import 'main_shell.dart';
 
@@ -44,6 +48,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/track', builder: (_, _) => const TrackPage()),
       GoRoute(path: '/shoes', builder: (_, _) => const ShoesPage()),
       GoRoute(path: '/goals', builder: (_, _) => const GoalPage()),
+      GoRoute(path: '/feed', builder: (_, _) => const FeedPage()),
+      GoRoute(path: '/membership', builder: (_, _) => const MembershipPage()),
+      GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),
+      GoRoute(path: '/agreement', builder: (_, _) => const AgreementPage()),
     ],
   );
 });
