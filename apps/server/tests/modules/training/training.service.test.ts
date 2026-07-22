@@ -226,3 +226,42 @@ describe('trainingService 缓存（V0.2.3）', () => {
     expect(_redisMockState.cacheStore.has('qmwx:cache:training:myActivePlan:u1')).toBe(true);
   });
 });
+
+// ============================================================
+// V0.2.78 compute* 显式测（V0.2.3 Cache 范式的 compute 内部纯函数，绕过 Cache 直接调确保 funcs 覆盖）
+// ============================================================
+describe('trainingService.computeMyPlans (V0.2.78 补测)', () => {
+  it('返 active 计划列表 + map 字段', async () => {
+    mockedPrisma.trainingPlan.findMany.mockResolvedValue([
+      { id: 'p1', key: '5k', name: '5公里入门', weeks: 8, level: 'beginner', goal: '完成5公里', desc: 'd', weeklyMileage: 20, targetKm: 60 },
+    ] as never);
+    const r = await trainingService.computeMyPlans();
+    expect(r.plans).toHaveLength(1);
+    expect(r.plans[0].key).toBe('5k');
+    expect(r.plans[0].level).toBe('beginner');
+    expect(r.plans[0].targetKm).toBe(60);
+  });
+});
+
+describe('trainingService.computeMyActivePlan (V0.2.78 补测)', () => {
+  it('无加入记录 → { plan: null }', async () => {
+    mockedPrisma.userPlanEnrollment.findUnique.mockResolvedValue(null);
+    const r = await trainingService.computeMyActivePlan('u1');
+    expect(r.plan).toBeNull();
+  });
+
+  it('有加入 + 进度 → plan + daysJoined + progress', async () => {
+    const joinedAt = new Date('2026-07-01');
+    mockedPrisma.userPlanEnrollment.findUnique.mockResolvedValue({
+      userId: 'u1', joinedAt,
+      plan: { id: 'p1', key: '10k', name: '10公里', weeks: 12, level: 'intermediate', goal: 'g', desc: 'd', weeklyMileage: 30, targetKm: 120 },
+    } as never);
+    mockedPrisma.checkin.aggregate.mockResolvedValue({ _sum: { distance: 60 } } as never);
+
+    const r = await trainingService.computeMyActivePlan('u1');
+    expect(r.plan).toMatchObject({ key: '10k', targetKm: 120 });
+    expect(r.currentDistance).toBe(60);
+    expect(r.percent).toBe(50); // 60/120
+    expect(typeof r.daysJoined).toBe('number');
+  });
+});
