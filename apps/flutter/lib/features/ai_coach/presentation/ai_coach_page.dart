@@ -37,7 +37,7 @@ class _AiCoachPageState extends ConsumerState<AiCoachPage> {
     final text = _input.text;
     if (text.trim().isEmpty) return;
     _input.clear();
-    await ref.read(aiCoachProvider.notifier).send(text);
+    await ref.read(aiCoachProvider.notifier).sendStream(text);
     _scrollToBottom();
   }
 
