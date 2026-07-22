@@ -30,4 +30,22 @@ class GoalRemote {
       payload: {'id': id},
     );
   }
+
+  /// 自定义里程碑列表（用户全局）
+  static Future<List<CustomMilestone>> listCustomMilestones() async {
+    final data = await ApiClient.instance.postAction(
+      ApiEndpoints.goalBase,
+      ApiEndpoints.actionListCustomMilestones,
+    );
+    final arr = (data['milestones'] as List?) ?? const [];
+    return arr.map((e) => CustomMilestone.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  static Future<void> addCustomMilestone(double km, String title) async {
+    await ApiClient.instance.postAction(
+      ApiEndpoints.goalBase,
+      ApiEndpoints.actionAddCustomMilestone,
+      payload: {'km': km, 'title': title},
+    );
+  }
 }

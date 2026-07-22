@@ -8,6 +8,7 @@ import '../features/auth/presentation/login_page.dart';
 import '../features/checkin/presentation/checkin_page.dart';
 import '../features/feed/presentation/feed_page.dart';
 import '../features/goal/presentation/goal_page.dart';
+import '../features/goal/presentation/milestones_page.dart';
 import '../features/group/presentation/group_detail_page.dart';
 import '../features/group/presentation/group_page.dart';
 import '../features/gps_track/presentation/track_page.dart';
@@ -53,6 +54,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/shoes', builder: (_, _) => const ShoesPage()),
       GoRoute(path: '/shoes/detail', builder: (_, state) => ShoesDetailPage(shoeId: state.uri.queryParameters['id'] ?? '')),
       GoRoute(path: '/goals', builder: (_, _) => const GoalPage()),
+      GoRoute(path: '/milestones', builder: (_, _) => const MilestonesPage()),
       GoRoute(path: '/groups', builder: (_, _) => const GroupPage()),
       GoRoute(path: '/group-detail', builder: (_, state) => GroupDetailPage(groupId: state.uri.queryParameters['id'] ?? '')),
       GoRoute(path: '/feed', builder: (_, _) => const FeedPage()),

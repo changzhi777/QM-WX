@@ -28,3 +28,23 @@ class GoalController extends AsyncNotifier<List<Goal>> {
 
 final goalProvider =
     AsyncNotifierProvider<GoalController, List<Goal>>(GoalController.new);
+
+/// 自定义里程碑列表（用户全局，add 后刷新）
+class MilestoneController extends AsyncNotifier<List<CustomMilestone>> {
+  @override
+  Future<List<CustomMilestone>> build() => GoalRemote.listCustomMilestones();
+
+  Future<void> add(double km, String title) async {
+    await GoalRemote.addCustomMilestone(km, title);
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(GoalRemote.listCustomMilestones);
+  }
+
+  Future<void> refresh() async {
+    state = const AsyncValue.loading();
+    state = await AsyncValue.guard(GoalRemote.listCustomMilestones);
+  }
+}
+
+final milestoneProvider =
+    AsyncNotifierProvider<MilestoneController, List<CustomMilestone>>(MilestoneController.new);

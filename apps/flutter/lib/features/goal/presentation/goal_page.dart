@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/design_system/app_card.dart';
 import '../data/goal_models.dart';
@@ -34,6 +35,7 @@ class GoalPage extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('跑步目标'),
         actions: [
+          IconButton(tooltip: '里程碑', icon: const Icon(Icons.flag_outlined), onPressed: () => context.push('/milestones')),
           IconButton(
               tooltip: '刷新',
               icon: const Icon(Icons.refresh),

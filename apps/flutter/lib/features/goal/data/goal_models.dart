@@ -84,3 +84,24 @@ class AddGoalRequest {
     return m;
   }
 }
+
+/// 自定义里程碑（User.customMilestones，全局非 goal 子）
+class CustomMilestone {
+  const CustomMilestone({required this.km, required this.title, this.icon});
+  final double km;
+  final String title;
+  final String? icon;
+
+  factory CustomMilestone.fromJson(Map<String, dynamic> j) => CustomMilestone(
+        km: (j['km'] as num?)?.toDouble() ?? 0,
+        title: (j['title'] as String?) ?? '',
+        icon: j['icon'] as String?,
+      );
+}
+
+class AddCustomMilestoneRequest {
+  const AddCustomMilestoneRequest({required this.km, required this.title});
+  final double km;
+  final String title;
+  Map<String, dynamic> toJson() => {'km': km, 'title': title};
+}

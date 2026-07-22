@@ -70,6 +70,9 @@ class ApiEndpoints {
   static const String actionGoalList = 'list';
   static const String actionGoalAdd = 'add';
   static const String actionGoalRemove = 'remove';
+  static const String actionListCustomMilestones = 'listCustomMilestones';
+  static const String actionAddCustomMilestone = 'addCustomMilestone';
+  static const String actionRemoveCustomMilestone = 'removeCustomMilestone';
 
   /// 判断是否公开路由（不带 Bearer token）
   static bool isPublic(String path) =>
