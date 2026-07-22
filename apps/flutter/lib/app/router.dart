@@ -10,6 +10,7 @@ import '../features/feed/data/feed_models.dart';
 import '../features/feed/presentation/feed_detail_page.dart';
 import '../features/feed/presentation/feed_page.dart';
 import '../features/food/presentation/food_page.dart';
+import '../features/follow/presentation/follow_page.dart';
 import '../features/goal/presentation/goal_page.dart';
 import '../features/goal/presentation/milestones_page.dart';
 import '../features/group/presentation/group_detail_page.dart';
@@ -66,6 +67,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/group-detail', builder: (_, state) => GroupDetailPage(groupId: state.uri.queryParameters['id'] ?? '')),
       GoRoute(path: '/feed', builder: (_, _) => const FeedPage()),
       GoRoute(path: '/food', builder: (_, _) => const FoodPage()),
+      GoRoute(path: '/follow', builder: (_, state) => FollowPage(initialTab: int.tryParse(state.uri.queryParameters['tab'] ?? '0') ?? 0)),
       GoRoute(path: '/feed/detail', builder: (_, state) => FeedDetailPage(feed: state.extra as Feed)),
       GoRoute(path: '/membership', builder: (_, _) => const MembershipPage()),
       GoRoute(path: '/certificates', builder: (_, _) => const CertificatesPage()),

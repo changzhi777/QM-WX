@@ -16,6 +16,7 @@ import 'package:muhehealth/features/strength/presentation/strength_page.dart';
 import 'package:muhehealth/features/feed/data/feed_models.dart';
 import 'package:muhehealth/features/feed/presentation/feed_controller.dart';
 import 'package:muhehealth/features/feed/presentation/feed_page.dart';
+import 'package:muhehealth/features/follow/presentation/follow_page.dart';
 import 'package:muhehealth/features/food/data/models.dart';
 import 'package:muhehealth/features/food/presentation/food_page.dart';
 import 'package:muhehealth/features/goal/data/goal_models.dart';
@@ -313,5 +314,21 @@ void main() {
     await tester.pump();
     expect(find.text('每日报告'), findsOneWidget);
     expect(find.text('还没有历史报告，运动后自动生成'), findsOneWidget);
+  });
+
+  testWidgets('FollowPage renders empty following', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          followingProvider.overrideWith((ref) async => const []),
+          followersProvider.overrideWith((ref) async => const []),
+        ],
+        child: const MaterialApp(home: FollowPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('关注'), findsWidgets);
+    expect(find.text('还没有关注的人'), findsOneWidget);
   });
 }

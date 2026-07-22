@@ -124,6 +124,7 @@ class ProfilePage extends ConsumerWidget {
                     _Entry(Icons.fitness_center, '力量', () => context.push('/strength')),
                     _Entry(Icons.restaurant, '饮食', () => context.push('/food')),
                     _Entry(Icons.insights, '报告', () => context.push('/daily-reports')),
+                    _Entry(Icons.people_alt_outlined, '关注', () => context.push('/follow')),
                   ],
                 ),
               ],

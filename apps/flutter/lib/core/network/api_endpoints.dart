@@ -39,6 +39,12 @@ class ApiEndpoints {
   static const String actionFoodMyMeals = 'myMeals';
   static const String actionFoodRecordMeal = 'recordMeal';
 
+  // ===== follow module（POST /api/follow，body { action, payload }）=====
+  static const String followBase = '/api/follow';
+  static const String actionFollowMyFollowing = 'myFollowing';
+  static const String actionFollowMyFollowers = 'myFollowers';
+  static const String actionFollowMyCounts = 'myCounts';
+
   // ===== ai-coach module（POST /api/ai-coach，body { action, payload }）=====
   static const String aiCoachBase = '/api/ai-coach';
   static const String actionAiChat = 'chat';
