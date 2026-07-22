@@ -136,3 +136,50 @@ describe('pointsService.awardShare（V0.2.6 分享得积分日限3）', () => {
     expect(mockedPrisma.$transaction).not.toHaveBeenCalled();
   });
 });
+
+// ============================================================
+// V0.2.74 myPoints 补测（积分余额 + 签到连续天数 3 分支）
+// ============================================================
+describe('pointsService.myPoints (V0.2.74 补测)', () => {
+  it('今日已签 → todaySigned=true + continuousDays 来自今日记录', async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue({ points: 100 } as never);
+    mockedPrisma.pointsRecord.findMany.mockResolvedValue([
+      { type: 'signin', change: 10, balance: 100, createdAt: new Date('2026-07-23') },
+    ] as never);
+    mockedPrisma.signinRecord.findUnique.mockResolvedValue({ continuousDays: 5 } as never); // 今日已签
+
+    const r = await pointsService.myBalance('u1');
+    expect(r.balance).toBe(100);
+    expect(r.todaySigned).toBe(true);
+    expect(r.continuousDays).toBe(5);
+    expect(r.records).toHaveLength(1);
+    expect(r.records[0].change).toBe(10);
+    // 今日已签 → 不查昨日（signinRecord.findUnique 只调 1 次）
+    expect(mockedPrisma.signinRecord.findUnique).toHaveBeenCalledTimes(1);
+  });
+
+  it('今日未签 + 昨日有 → continuousDays 来自昨日', async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue({ points: 50 } as never);
+    mockedPrisma.pointsRecord.findMany.mockResolvedValue([] as never);
+    mockedPrisma.signinRecord.findUnique
+      .mockResolvedValueOnce(null) // 今日无
+      .mockResolvedValueOnce({ continuousDays: 3 } as never); // 昨日有
+
+    const r = await pointsService.myBalance('u1');
+    expect(r.todaySigned).toBe(false);
+    expect(r.continuousDays).toBe(3);
+  });
+
+  it('今日未签 + 昨日也无 → continuousDays=0', async () => {
+    mockedPrisma.user.findUnique.mockResolvedValue({ points: 0 } as never);
+    mockedPrisma.pointsRecord.findMany.mockResolvedValue([] as never);
+    mockedPrisma.signinRecord.findUnique
+      .mockResolvedValueOnce(null) // 今日无
+      .mockResolvedValueOnce(null); // 昨日无
+
+    const r = await pointsService.myBalance('u1');
+    expect(r.todaySigned).toBe(false);
+    expect(r.continuousDays).toBe(0);
+    expect(r.balance).toBe(0);
+  });
+});

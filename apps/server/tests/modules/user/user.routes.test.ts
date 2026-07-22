@@ -1,11 +1,8 @@
 /**
  * user routes 冒烟测试
  *
- * 4 个 action：
- * - login (public)
- * - updateProfile (需 auth)
- * - bindApps (需 auth)
- * - me (需 auth)
+ * 9 个 action：login + updateProfile + bindApps + me（V0.1）
+ *   + completeOnboarding/resetOnboarding/bindInviter/checkReportQuota/redeemMember（V0.2.73 补 5）
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
@@ -17,6 +14,11 @@ const mockService = vi.hoisted(() => ({
   updateProfile: vi.fn(),
   bindApps: vi.fn(),
   getById: vi.fn(),
+  completeOnboarding: vi.fn(),
+  resetOnboarding: vi.fn(),
+  bindInviter: vi.fn(),
+  checkReportQuota: vi.fn(),
+  redeemMember: vi.fn(),
 }));
 
 const mockGetLoginConfig = vi.fn();
@@ -139,6 +141,56 @@ describe('POST /api/user', () => {
     expect(res.json().data.user).toEqual({ id: 'u1', nickname: '张三' });
     expect(res.json().data.config).toEqual({ wechatLogin: true });
     expect(mockGetLoginConfig).toHaveBeenCalled();
+  });
+
+  it('completeOnboarding → 无参（需登录）', async () => {
+    mockService.completeOnboarding.mockResolvedValue({ ok: true });
+    const app = await buildApp({ authed: true });
+    await app.ready();
+    const res = await app.inject({ method: 'POST', url: '/api/user', payload: { action: 'completeOnboarding' } });
+    expect(res.statusCode).toBe(200);
+    expect(mockService.completeOnboarding).toHaveBeenCalledWith('u1');
+    await app.close();
+  });
+
+  it('resetOnboarding → 无参（需登录）', async () => {
+    mockService.resetOnboarding.mockResolvedValue({ ok: true });
+    const app = await buildApp({ authed: true });
+    await app.ready();
+    const res = await app.inject({ method: 'POST', url: '/api/user', payload: { action: 'resetOnboarding' } });
+    expect(res.statusCode).toBe(200);
+    expect(mockService.resetOnboarding).toHaveBeenCalledWith('u1');
+    await app.close();
+  });
+
+  it('bindInviter → 取 inviterCode（需登录）', async () => {
+    mockService.bindInviter.mockResolvedValue({ ok: true });
+    const app = await buildApp({ authed: true });
+    await app.ready();
+    const res = await app.inject({ method: 'POST', url: '/api/user', payload: { action: 'bindInviter', payload: { inviterCode: 'INV001' } } });
+    expect(res.statusCode).toBe(200);
+    expect(mockService.bindInviter).toHaveBeenCalledWith('u1', 'INV001');
+    await app.close();
+  });
+
+  it('checkReportQuota → 无参（需登录）', async () => {
+    mockService.checkReportQuota.mockResolvedValue({ quota: 1 });
+    const app = await buildApp({ authed: true });
+    await app.ready();
+    const res = await app.inject({ method: 'POST', url: '/api/user', payload: { action: 'checkReportQuota' } });
+    expect(res.statusCode).toBe(200);
+    expect(mockService.checkReportQuota).toHaveBeenCalledWith('u1');
+    await app.close();
+  });
+
+  it('redeemMember → 取 input.days（需登录）', async () => {
+    mockService.redeemMember.mockResolvedValue({ ok: true });
+    const app = await buildApp({ authed: true });
+    await app.ready();
+    const res = await app.inject({ method: 'POST', url: '/api/user', payload: { action: 'redeemMember', payload: { days: 30 } } });
+    expect(res.statusCode).toBe(200);
+    expect(mockService.redeemMember).toHaveBeenCalledWith('u1', 30);
+    await app.close();
   });
 
   it('缺 action 字段 → 500（ActionBodySchema 拒绝，ZodError 未被 route 捕获）', async () => {
