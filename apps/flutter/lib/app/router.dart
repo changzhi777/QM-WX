@@ -20,6 +20,7 @@ import '../features/notification/presentation/notification_page.dart';
 import '../features/settings/settings_page.dart';
 import '../features/shoes/presentation/shoes_detail_page.dart';
 import '../features/shoes/presentation/shoes_page.dart';
+import '../features/strength/presentation/strength_page.dart';
 import 'main_shell.dart';
 
 /// 把 Riverpod [authProvider] 的变化桥接到 go_router `refreshListenable`。
@@ -64,6 +65,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/feed/detail', builder: (_, state) => FeedDetailPage(feed: state.extra as Feed)),
       GoRoute(path: '/membership', builder: (_, _) => const MembershipPage()),
       GoRoute(path: '/certificates', builder: (_, _) => const CertificatesPage()),
+      GoRoute(path: '/strength', builder: (_, _) => const StrengthPage()),
       GoRoute(path: '/settings', builder: (_, _) => const SettingsPage()),
       GoRoute(path: '/agreement', builder: (_, _) => const AgreementPage()),
       GoRoute(path: '/notifications', builder: (_, _) => const NotificationPage()),

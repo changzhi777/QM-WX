@@ -121,6 +121,7 @@ class ProfilePage extends ConsumerWidget {
                     _Entry(Icons.notifications_none, '消息', () => context.push('/notifications')),
                     _Entry(Icons.settings_outlined, '设置', () => context.push('/settings')),
                     _Entry(Icons.emoji_events, '成就', () => context.push('/certificates')),
+                    _Entry(Icons.fitness_center, '力量', () => context.push('/strength')),
                   ],
                 ),
               ],

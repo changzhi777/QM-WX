@@ -10,6 +10,8 @@ import 'package:muhehealth/features/ai_coach/presentation/ai_coach_page.dart';
 import 'package:muhehealth/features/checkin/presentation/checkin_page.dart';
 import 'package:muhehealth/features/certificates/data/models.dart';
 import 'package:muhehealth/features/certificates/presentation/certificates_page.dart';
+import 'package:muhehealth/features/strength/data/models.dart';
+import 'package:muhehealth/features/strength/presentation/strength_page.dart';
 import 'package:muhehealth/features/feed/data/feed_models.dart';
 import 'package:muhehealth/features/feed/presentation/feed_controller.dart';
 import 'package:muhehealth/features/feed/presentation/feed_page.dart';
@@ -257,5 +259,22 @@ void main() {
     expect(find.text('我的成就'), findsOneWidget);
     expect(find.text('累计 km'), findsOneWidget);
     expect(find.text('还没有证书，继续跑起来解锁成就！'), findsOneWidget);
+  });
+
+  testWidgets('StrengthPage renders empty state', (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          strengthSessionsProvider.overrideWith((ref) async => const []),
+          strengthVolumeProvider.overrideWith(
+              (ref) async => const VolumeSummary(totalSessions: 0, totalVolume: 0, days: 30)),
+        ],
+        child: const MaterialApp(home: StrengthPage()),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('力量训练'), findsOneWidget);
+    expect(find.text('还没有力量训练记录'), findsOneWidget);
   });
 }

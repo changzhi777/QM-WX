@@ -25,6 +25,11 @@ class ApiEndpoints {
   static const String actionUserProfile = 'userProfile';
   static const String actionMyCertificates = 'myCertificates';
 
+  // ===== strength module（POST /api/strength，body { action, payload }）=====
+  static const String strengthBase = '/api/strength';
+  static const String actionStrengthListSessions = 'listSessions';
+  static const String actionStrengthMyVolume = 'myVolume';
+
   // ===== ai-coach module（POST /api/ai-coach，body { action, payload }）=====
   static const String aiCoachBase = '/api/ai-coach';
   static const String actionAiChat = 'chat';
