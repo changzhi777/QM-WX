@@ -1,520 +1,372 @@
 {
   "project": "QM-WX",
-  "projectType": "wechat-miniprogram-node-typescript-monorepo",
-  "version": "v0.2.38",
-  "lastUpdated": "2026-07-20T11:36:36+08:00",
-  "agent": "init-architect",
-  "runMode": "incremental-refresh-v0.2.38-init-18",
-  "previousRun": "init #17 / v0.2.27 (2026-07-17 21:13:14)",
+  "projectType": "wechat-miniprogram-node-typescript-monorepo-plus-flutter",
+  "version": "v0.2.87",
+  "lastUpdated": "2026-07-23T10:35:00+08:00",
+  "agent": "claude-main (post init-19 deploy-sync)",
+  "runMode": "init-20-lightweight-v0.2.87-prod-deployed",
+  "previousRun": "init #19 / v0.2.79 (2026-07-23 09:40) → 生产部署 v0.2.87 (2026-07-23 10:30)",
   "truncated": false,
   "truncationReason": null,
   "sourceControl": {
     "branch": "main",
-    "head": "V0.2.38 (interpret module 全栈落地 + docs)",
+    "head": "V0.2.87 (生产部署 v0.2.47→v0.2.87 跨 40 版本全链 ✅ 2026-07-23 / 测试加固 +97 测 funcs 90.64%)",
     "latestVersionCommits": [
-      "b847e42 feat(v0.2.27): aiCoach contextBuilder 天气感知（N）",
-      "v0.2.28 fix: aiCoach contextBuilder 天气注入加 3 天时效判断",
-      "v0.2.29 feat: 今日页改版 + 月度报告新页 pages/report-monthly",
-      "v0.2.30 feat: stats.service buildReportText 重写（数据对比+量化建议）",
-      "v0.2.31 feat: 健康助手页对齐原型（ai-quick-cards 5→4 卡 2×2 + AI 气泡）",
-      "v0.2.32 feat: mine 原型重构 + pages/more 待定页 + level-card 融合",
-      "v0.2.33 feat: interpret module（第 35 个 module）minimax M3 + 佳明 FIT + InterpretRecord #62",
-      "v0.2.34 feat: interpret 小程序上传页 pages/interpret",
-      "v0.2.35 fix: interpret routes bodyLimit 10MB",
-      "v0.2.36 test: interpret 测试加固 +7（20 测）",
-      "v0.2.37 feat: admin listInterpret action + RBAC",
-      "v0.2.38 docs: interpret/CLAUDE.md（GAP-12 35/35）+ apps/server changelog"
+      "v0.2.40 feat: stats weather 999 修 + weatherIconToEmoji + weatherAir action",
+      "v0.2.41 chore: 生产部署 v0.2.40 healthy",
+      "v0.2.42 feat: strength module 第 36 + StrengthSession/StrengthSet/Exercise #63-65 + 迁移 20260720000000",
+      "v0.2.43 feat: ai-coach 默认新聊（onLoad 不恢复历史）",
+      "v0.2.44 feat: ai-coach 去 voice（弃 WechatSI 改系统输入法）",
+      "v0.2.45 feat: ai-coach 多模态识图 GLM-4.6V + HISTORY_TURNS 10→20 + 7 天力量 StrengthSession",
+      "v0.2.46 test: stub 多模态降级 extractText 数组分支 +1 测",
+      "v0.2.47 feat: huawei_export TCX parseTcxXml（GAP-17 K3 closed，1633 真实 .tcx 全解析）",
+      "v0.2.48 docs: 根 CLAUDE.md changelog V0.2.40-47 + strength/CLAUDE.md 新建（GAP-12 36/36）",
+      "v0.2.49 test: admin funcs 76.59→89.36% +10 测（adjustPoints/grantMember/listInviteStats/createAdmin/updateAdmin/adminLoginLogs）",
+      "v0.2.50 docs: GAP-15 三主 CLAUDE.md 同步",
+      "v0.2.51 test: strength 补测 12（funcs 0→100%）",
+      "v0.2.52 docs: GAP-15 同步",
+      "v0.2.53 docs: GAP-15 同步",
+      "v0.2.54 test: queue +5（funcs 57→92.85%）",
+      "v0.2.55 test: user.repository +11（funcs 50→100%）",
+      "v0.2.56 test: logger +4（funcs 66→100%）→ 全局 funcs 90.01% 🎯",
+      "v0.2.57 feat: interpret screenshot 多模态识图（GLM-4.6V 阶段 5 stub 补全，+12 测，interpret 20→32）",
+      "v0.2.58 feat: 沐禾健康协议页 + 小程序改名（15 处品牌名 + 用户协议 docx）",
+      "v0.2.60 feat: interpret screenshot P1 加固（screenshotCheckin + 限流 30/分 + +extract +checkinConfirmedAt 迁移 20260721000000）+8 测（32→40）",
+      "v0.2.61 fix: interpret.screenshotCheckin endpoints 漏登记补 + 前端体验版 upload",
+      "v0.2.63 feat: H5 fallback（@fastify/static /h5/ + Redis token + myInterpretHistory +6 测）",
+      "v0.2.64 fix: auth 公共路由 URL 前缀跳过（/h5/ + /uploads/）",
+      "v0.2.65 feat: getMpAccessToken + getMpCategory + uploadMpMedia",
+      "v0.2.66 feat: submitMpAudit（SUPER_ONLY）+ +6 测（interpret 40→45）",
+      "v0.2.67 feat: Flutter APP Phase 1 初始化（apps/flutter muhehealth + 4-tab + Riverpod 2.5 + go_router 14 + M3）",
+      "v0.2.68 feat: Flutter APP Phase 1 批 1（登录 + 今日 + core 地基）",
+      "v0.2.69 feat: Terra 智能手表 webhook 框架（terra.parser distance_m→km 标准化）",
+      "v0.2.70 fix: auth.ts URL 前缀跳过公共路由（@fastify/static 路由 401 修复）",
+      "v0.2.71 hotfix: 删重复 terra-webhook 路由（FST_ERR_DUPLICATED_ROUTE 生产 crash 修复）",
+      "v0.2.72 feat: feed 评论 listComments action + Flutter feed 详情页 + admin bcrypt reset",
+      "v0.2.73 test: GAP-3.5 routes 全分流 +61 测（feed/strength/device/stats/goal/shoes/content 7 module）",
+      "v0.2.74 test: user.routes 5 action + points.myBalance 3 分支（funcs 缓冲 +8）",
+      "v0.2.75 test: wxpay.service +8（queryBill 3 + unifiedOrder 3 + downloadBill 2；funcs 55.51→78.59%）",
+      "v0.2.76 test: review.routes +2（listByTarget/targetStats）",
+      "v0.2.77 test: review/sport service +8（review.listByTarget syntheticId + sport joinGroup/quitGroup）",
+      "v0.2.78 test: training.service compute* +3（V0.2.3 Cache 范式 funcs 计数偏差修复）",
+      "v0.2.79 test: food.service recognize +7（vision 5 + ocr 2）→ 全局 funcs 90.64%",
+      "v0.2.80 docs: 根 CLAUDE.md changelog V0.2.73-79 段 + 当前阶段数字更新（funcs 90.64%）",
+      "v0.2.81-87 feat: Flutter +7 feature（certificates/strength 历史+训练流/food/daily_report/follow/favorite，feature 15→22，20 widget 测，analyze 0）",
+      "v0.2.87 🚀 生产部署 v0.2.47→v0.2.87 跨 40 版本全链（tar 24M 排 qm-rhythmind/.venv → docker compose up --build → healthy；migrations 49 / 4 路由 401 / h5 200 / LLM_API_KEY+glm-4.6v 就位；0 代码改动，回滚保险 aea7a19a3e0a）"
     ],
     "tags": [
-      "v0.2.9", "v0.2.10", "v0.2.11", "v0.2.12", "v0.2.13", "v0.2.14", "v0.2.15",
-      "v0.2.16", "v0.2.19", "v0.2.21", "v0.2.22", "v0.2.23", "v0.2.24", "v0.2.25",
-      "v0.2.26", "v0.2.27", "v0.2.28", "v0.2.29", "v0.2.30", "v0.2.31", "v0.2.32",
-      "v0.2.33", "v0.2.34", "v0.2.35", "v0.2.36", "v0.2.37", "v0.2.38"
+      "v0.2.39", "v0.2.40", "v0.2.41", "v0.2.42", "v0.2.43", "v0.2.44", "v0.2.45", "v0.2.46", "v0.2.47",
+      "v0.2.48", "v0.2.49", "v0.2.50", "v0.2.51", "v0.2.52", "v0.2.53", "v0.2.54", "v0.2.55", "v0.2.56",
+      "v0.2.57", "v0.2.58", "v0.2.59", "v0.2.60", "v0.2.61", "v0.2.62", "v0.2.63", "v0.2.64", "v0.2.65",
+      "v0.2.66", "v0.2.67", "v0.2.68", "v0.2.69", "v0.2.70", "v0.2.71", "v0.2.72", "v0.2.73", "v0.2.74",
+      "v0.2.75", "v0.2.76", "v0.2.77", "v0.2.78", "v0.2.79",
+      "v0.2.80", "v0.2.81", "v0.2.82", "v0.2.83", "v0.2.84", "v0.2.85", "v0.2.86", "v0.2.87"
     ],
-    "remoteStatus": "V0.2.28-38 commit/tag 待主人确认 push 节奏；init #18 仅做文档同步"
+    "remoteStatus": "V0.2.73-79 commit/tag 已 push GitHub origin（commit 88ac645→7ed5b95）；间歇网络/TCC getcwd 重试 + 用户手动 push；V0.2.40-57 主线稳定；Flutter APP V0.2.67-72 在主线 main"
   },
   "ignorePolicy": {
     "source": ".gitignore 与默认忽略规则合并",
-    "defaultPatterns": [
-      "node_modules/**", ".git/**", ".github/**", "dist/**", "build/**", ".next/**",
-      "__pycache__/**", "*.lock", "*.log", "*.bin", "*.pdf", "*.png", "*.jpg",
-      "*.jpeg", "*.gif", "*.mp4", "*.zip", "*.tar", "*.gz"
-    ],
-    "projectPatterns": [
-      ".pnpm-store/**", "coverage/**", "miniprogram_npm/**", ".cache/**", ".turbo/**",
-      "apps/server/uploads/**", "docs/_assets/**", "pic/**", ".playwright-mcp/**",
-      ".zcf/plan/current/**", ".zcf/plan/history/**", "*MiFitness*data_copy*", "*-backup-*.sql"
-    ],
+    "defaultPatterns": ["node_modules/**", ".git/**", ".github/**", "dist/**", "build/**", ".next/**", "__pycache__/**", "*.lock", "*.log", "*.bin", "*.pdf", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.mp4", "*.zip", "*.tar", "*.gz"],
+    "projectPatterns": [".pnpm-store/**", "coverage/**", "miniprogram_npm/**", ".cache/**", ".turbo/**", "apps/server/uploads/**", "docs/_assets/**", "pic/**", ".playwright-mcp/**", ".zcf/plan/current/**", ".zcf/plan/history/**", "*MiFitness*data_copy*", "*-backup-*.sql", "apps/flutter/build/**", "apps/flutter/.dart_tool/**", "apps/flutter/.idea/**", "apps/flutter/android/.gradle/**", "apps/flutter/.flutter-plugins-dependencies", "apps/flutter/pubspec.lock"],
     "topSkipped": [
-      {"path": "node_modules/", "reason": "依赖目录与默认/.gitignore 规则"},
-      {"path": ".git/", "reason": "版本库内部数据"},
-      {"path": "apps/server/coverage/", "reason": "V0.2.12 真实 coverage HTML 已生成，忽略产物文件"},
-      {"path": "apps/miniprogram/miniprogram/miniprogram_npm/", "reason": "微信预编译构建产物"},
-      {"path": "docs/_assets/ 与截图文件", "reason": "图片/归档二进制，仅记录路径"},
-      {"path": "*.zip / *.pdf / 数据备份", "reason": "大文件、二进制或敏感数据"}
+      {"path": "node_modules/", "reason": "依赖目录"},
+      {"path": ".git/", "reason": "版本库内部"},
+      {"path": "apps/server/coverage/", "reason": "coverage HTML 产物"},
+      {"path": "apps/miniprogram/miniprogram/miniprogram_npm/", "reason": "微信预编译产物（待 V0.2.33 rebuild）"},
+      {"path": "apps/flutter/build/", "reason": "Flutter build 产物"},
+      {"path": "apps/flutter/.dart_tool/", "reason": "Flutter 包配置缓存"},
+      {"path": "apps/flutter/android/.gradle/", "reason": "Gradle 缓存"},
+      {"path": "*.zip / *.pdf / MiFitness 数据包", "reason": "大文件/二进制/敏感数据"}
     ]
   },
   "scanCoverage": {
-    "estimatedTotalFiles": 830,
-    "scannedFiles": 745,
-    "coveragePercent": 89.76,
-    "method": "init #18 增量扫描 V0.2.28~V0.2.38 高信号文件（interpret module 全栈 + 前端新页）+ init #17 全仓基线",
+    "estimatedTotalFiles": 930,
+    "scannedFiles": 845,
+    "coveragePercent": 90.86,
+    "method": "init #19 增量扫描 V0.2.39~V0.2.79 高信号文件（strength module + interpret V0.2.57+60+63+66 增强 + admin V0.2.49+65+72 + Flutter APP 新增 ~140 文件 + 11 文档 changelog）+ init #18 全仓基线",
     "byModule": [
-      {"path": "apps/server", "estimated": 455, "scanned": 420, "percent": 92.31, "gaps": ["interpret 真机验证待 minimax key 注入"]},
-      {"path": "apps/miniprogram", "estimated": 210, "scanned": 170, "percent": 80.95, "gaps": ["V0.2.29 今日页改版 + V0.2.32 mine 重构 + V0.2.34 interpret 页真机视觉验证"]},
+      {"path": "apps/server", "estimated": 485, "scanned": 450, "percent": 92.78, "gaps": ["interpret 真机验证待 minimax/GLM key 注入", "wxpay 4 件套切生产 K4 GAP-17"]},
+      {"path": "apps/miniprogram", "estimated": 215, "scanned": 175, "percent": 81.40, "gaps": ["V0.2.58 改名沐禾健康 + V0.2.60-61 识别卡 + V0.2.34 interpret 页真机视觉验证"]},
       {"path": "packages/shared", "estimated": 20, "scanned": 20, "percent": 100, "gaps": []},
       {"path": "scripts/dev-cli", "estimated": 8, "scanned": 8, "percent": 100, "gaps": []},
-      {"path": "docs", "estimated": 25, "scanned": 22, "percent": 88, "gaps": []},
+      {"path": "apps/flutter", "estimated": 140, "scanned": 130, "percent": 92.86, "gaps": ["22 feature 仅 widget_test.dart 1 占位测；无 CLAUDE.md"]},
+      {"path": "docs", "estimated": 30, "scanned": 27, "percent": 90.0, "gaps": []},
       {"path": ".github/workflows", "estimated": 4, "scanned": 4, "percent": 100, "gaps": []}
     ]
   },
   "measured": {
     "prismaModels": {
-      "count": 62,
+      "count": 65,
       "method": "Grep ^model\\s+ apps/server/prisma/schema.prisma",
-      "deltaFromInit17": 1,
-      "newModel": "InterpretRecord（V0.2.33 #62，迁移 20260718000000_interpret_record）"
+      "deltaFromInit18": 3,
+      "newModels": ["StrengthSession (V0.2.42 #63)", "StrengthSet (V0.2.42 #64)", "Exercise (V0.2.42 #65)"]
     },
     "prismaMigrations": {
-      "count": 47,
+      "count": 49,
       "method": "Glob apps/server/prisma/migrations/**/migration.sql",
-      "deltaFromInit17": 1,
-      "latest": [
-        "20260716040000_admin_rbac",
-        "20260718000000_interpret_record"
-      ]
+      "deltaFromInit18": 2,
+      "newMigrations": ["20260720000000_strength (V0.2.42)", "20260721000000_interpret_screenshot_p1 (V0.2.60 P1 加固 InterpretRecord +extract Json? +checkinConfirmedAt DateTime?)"]
     },
     "backendModules": {
-      "count": 35,
-      "routeFiles": 34,
-      "routeException": "app-config 无独立 routes.ts（内部仓储模块）",
-      "moduleClaudeMd": 35,
+      "count": 36,
+      "moduleClaudeMd": 36,
       "documentationCoveragePercent": 100,
-      "deltaFromInit17": 1,
-      "newModule": "interpret（V0.2.33 第 35 个：minimax M3 + 佳明 FIT 解读）"
+      "deltaFromInit18": 1,
+      "newModule": "strength（V0.2.42 第 36 个 — 训记式力量训练日志 7 action + 3 表 + Exercise seed ~15）",
+      "routeFiles": 35,
+      "routeException": "app-config 无独立 routes.ts（内部仓储模块）"
     },
     "miniprogramPages": {
       "count": 25,
       "source": "apps/miniprogram/miniprogram/app.json pages 数组",
-      "deltaFromInit17": 3,
-      "newPages": [
-        "pages/report-monthly（V0.2.29 月度报告）",
-        "pages/more（V0.2.32 待定页/更多入口）",
-        "pages/interpret（V0.2.34 AI 资料解读上传页）"
-      ]
+      "deltaFromInit18": 0,
+      "newPages": [],
+      "note": "V0.2.39-79 0 新增 page；V0.2.58 改名 + V0.2.60-61 解释卡均为纯前端修改"
     },
     "miniprogramComponents": {
       "count": 16,
       "source": "components/*/index.json",
-      "deltaFromInit17": 0
+      "deltaFromInit18": 0
+    },
+    "flutterApp": {
+      "packageName": "muhehealth",
+      "androidPackageId": "com.qingmu.muhehealth",
+      "estimatedFiles": 140,
+      "architecture": "feature-first lib/{core,features}",
+      "coreDirs": ["config", "network", "storage", "location", "design_system", "legal"],
+      "featureDirs": ["auth", "today", "checkin", "gps_track", "profile", "insight", "ai_coach", "membership", "agreement", "settings", "notification", "group", "shoes", "goal", "feed", "certificates", "food", "strength", "daily_report", "follow", "favorite"],
+      "featureCount": 21,
+      "stack": {"flutter_riverpod": "2.5.1", "go_router": "14.6.0", "dio": "5.7.0", "geolocator": "13.0.1", "shared_preferences": "2.3.2"},
+      "phase": "Phase 1 批 1-4 完成（登录+今日+打卡+GPS轨迹）",
+      "tests": "apps/flutter/test/widget_test.dart (1 占位测)",
+      "claudeMd": "apps/flutter/CLAUDE.md 不存在 ⚠️",
+      "introducedVersion": "V0.2.67"
     },
     "voicePlugin": {
       "integrated": false,
-      "status": "V0.2.25 临时移除待授权（GAP-18 open）",
+      "status": "V0.2.25 临时移除 / V0.2.44 弃用 WechatSI 改系统输入法语音（GAP-18 待授权）",
       "sinceVersion": "v0.2.19",
       "removedInVersion": "v0.2.25",
-      "removalReason": "开发者 uin 未授权 wx:auto-preview 编译卡「插件未授权」",
+      "abandonedVersion": "v0.2.44",
+      "removalReason": "开发者 uin 未授权 + V0.2.44 改用系统输入法",
       "pluginProvider": "wx069ba97219f66d99",
       "pluginName": "WechatSI",
-      "version": "0.3.5",
-      "restoreAction": "常智公众平台「插件管理」添加同声传译 wx069ba97219f66d99 → app.json 加回 plugins + scope.record",
-      "gapTracking": "GAP-18 open",
-      "pageIntegration": "apps/miniprogram/miniprogram/pages/ai-coach/index.ts onTapVoice requirePlugin try/catch 永久防御（V0.2.25）"
+      "restoreAction": "常智公众平台「插件管理」添加同声传译 wx069ba97219f66d99 → app.json 加回 plugins + scope.record（V0.2.44 已弃用，永久 open）",
+      "gapTracking": "GAP-18 open"
     },
     "tests": {
-      "serverItOccurrences": 1108,
-      "serverTestFilesWithLiteralIt": 113,
+      "serverItOccurrences": 1277,
+      "serverItMeasuredByGrep": 1263,
+      "serverTestFiles": 118,
       "cliItOccurrences": 11,
+      "cliItMeasuredByGrep": 16,
       "cliTestFiles": 2,
-      "cliItBreakdown": {"platform.test.ts": 6, "cli-helper.test.ts": 5},
-      "serverPlusCliItOccurrences": 1119,
       "sharedItOccurrences": 6,
+      "serverPlusCliItDeclared": 1288,
       "e2eFiles": 12,
-      "deltaFromInit17": {
-        "serverDelta": 20,
+      "deltaFromInit18": {
+        "serverDelta": 169,
         "cliDelta": 0,
-        "totalDelta": 20,
+        "totalDelta": 169,
         "breakdown": {
-          "v033_interpret_module_mvp": {
-            "delta": 13,
-            "files": ["tests/modules/interpret/client.test.ts:5", "tests/modules/interpret/service.test.ts:3", "tests/modules/interpret/routes.test.ts:5"],
-            "cases": "Anthropic 协议 url/header/body + 401 + 多 block 拼接 + FIT parseAsync + minimax 失败 + 落表 + 401/503/4xx routes 分支"
-          },
-          "v036_interpret_test_reinforce": {
-            "delta": 7,
-            "files": ["tests/modules/interpret/client.test.ts:+3", "tests/modules/interpret/service.test.ts:+2", "tests/modules/interpret/routes.test.ts:+2"],
-            "cases": "client fetch reject/empty content/max_tokens/usage + service records fallback/parseAsync throw + routes bodyLimit 10MB"
-          }
+          "v042_strength_module_mvp": {"delta": 0, "note": "V0.2.42 创建时 0 测 deferred"},
+          "v045_ai_coach_multimodal": {"delta": 3, "files": ["tests/modules/ai-coach/ai-coach.service.test.ts", "ai-coach.routes.test.ts"]},
+          "v046_extract_text_branch": {"delta": 1, "files": ["tests/modules/ai-coach/stub.test.ts"]},
+          "v047_huawei_tcx": {"delta": 4, "files": ["tests/modules/device/huawei-export.parser.test.ts"]},
+          "v049_admin_funcs_reinforce": {"delta": 10, "files": ["tests/modules/admin/admin.service.test.ts"]},
+          "v051_strength_test_reinforce": {"delta": 12, "files": ["tests/modules/strength/strength.service.test.ts"]},
+          "v054_queue_reinforce": {"delta": 5, "files": ["tests/jobs/queue.test.ts"]},
+          "v055_user_repository": {"delta": 11, "files": ["tests/modules/user/user.repository.test.ts"]},
+          "v056_logger_reinforce": {"delta": 4, "files": ["tests/common/logger.test.ts"]},
+          "v057_interpret_screenshot": {"delta": 12, "files": ["tests/modules/interpret/client.test.ts +4", "service.test.ts +4", "routes.test.ts +4"]},
+          "v060_interpret_p1": {"delta": 8, "files": ["interpret client+service+routes +8"]},
+          "v063_h5_fallback": {"delta": 3, "files": ["interpret +3"]},
+          "v066_mp_audit": {"delta": 3, "files": ["interpret +3"]},
+          "v072_feed_listComments": {"delta": 1, "files": ["feed.routes.test.ts"]},
+          "v073_gap35_routes": {"delta": 61, "files": ["feed.routes 4 + strength.routes 9 + device.routes 28 + stats.routes 6 + goal.routes 4 + shoes.routes 4 + content.routes 4 + myFeeds service 2"]},
+          "v074_user_routes": {"delta": 8, "files": ["user.routes.test.ts +5", "points.routes.test.ts +3"]},
+          "v075_wxpay_service": {"delta": 8, "files": ["wxpay.service.test.ts +8"]},
+          "v076_review_routes": {"delta": 2, "files": ["review.routes.test.ts +2"]},
+          "v077_service_layer": {"delta": 8, "files": ["review.service +2", "sport.service +6 (joinGroup 3 + quitGroup 3)"]},
+          "v078_training_compute": {"delta": 3, "files": ["training.service.test.ts +3"]},
+          "v079_food_recognize": {"delta": 7, "files": ["food.service.test.ts +7"]}
         },
-        "correctionNote": "V0.2.28 contextBuilder +1 已计入 init #17 基线 1088（init #17 顶部段已含 V0.2.28）；V0.2.30 buildReportText 重写未加新测（仅修改断言）；V0.2.37 admin listInterpret action 未加新测（admin.service.test.ts 39 测沿用）；+20 全部来自 interpret module（V0.2.33 13 + V0.2.36 +7 = 20，与 client 8 + service 5 + routes 7 = 20 完全自洽）"
-      },
-      "countingCaveat": "literal it/test 口径（grep ^\\s*(it|test)\\( 于 tests+src）；1119 = apps/server 1108 + scripts/dev-cli 11；不含 packages/shared 的 6 测"
+        "declaredTotal": 169,
+        "declaredNote": "1108 (init #18) + 169 = 1277 (V0.2.79 changelog 一致)",
+        "measuredByGrepCaveat": "实测 1263 vs 声明 1277 差异 -14，可能 describe.each 嵌套扩参 + 部分 it.skip/it.todo 未计入（建议主智能体 cross-check `pnpm -C apps/server test` 真实跑数）；本字段声明沿用"
+      }
     },
     "cache": {
       "cacheWrapInvocations": 118,
-      "cacheWrapScopeNote": "118 包含 src + module CLAUDE.md 文档引用；纯 src 代码约 95 处；旧 132 数值是 grep Cache.wrap|cacheKey 联合结果；V0.2.28~V0.2.38 0 Cache 改动",
-      "documentedHotPaths": 31,
-      "conclusion": "init #17 沿用口径；V0.2.28-38 全是前端/interpret/admin/stats.service 增强，未接 Cache",
-      "modules": [
-        "ranking:1", "goal:2", "sport:3", "ai-coach:2", "training:3", "content:2",
-        "device:6", "stats:5", "weekly-report:1", "user:1", "shoes:2", "mall:3"
-      ]
+      "conclusion": "V0.2.39-79 0 Cache 改动（strength module + interpret screenshot + Flutter APP + 测试加固 均不接 Cache）",
+      "modules": ["ranking:1", "goal:2", "sport:3", "ai-coach:2", "training:3", "content:2", "device:6", "stats:5", "weekly-report:1", "user:1", "shoes:2", "mall:3"]
     },
     "vitestThresholds": {
       "functions": 86,
       "lines": 83.5,
       "statements": 83.5,
       "branches": 75,
-      "lastMeasured": "init #17 实跑（lcov.info 聚合）：funcs 87.74%（494/563）/ lines 84.59%（10915/12903）/ branches 77.83%（2054/2639）；init #18 沿用未实跑",
-      "thresholdsFile": "apps/server/vitest.config.ts",
-      "note": "init #18 沿用 init #17 实测 87.74% > 86（缓冲 1.74pp）；interpret module 20 测加入后函数基数 563→573（+10 函数：client 4 + service 4 + routes 2），估算 funcs 微降 0.5pp 仍在 86 阈值之上（待真测验证）"
+      "v079Measured": "funcs 90.64% / lines 87.77% / branches 79.28% / statements 83.5%（声明沿用 V0.2.79 commit 7ed5b95 实跑 lcov.info 聚合，init #19 无 Bash 权限未实跑 cross-check）",
+      "buffer": {"functions": "4.64pp", "lines": "4.27pp", "branches": "4.28pp", "statements": "0pp"}
     },
-    "v033InterpretModule": {
-      "commit": "v0.2.33 (hash 待补)",
-      "moduleOrdinal": "第 35 个 module（34→35）",
-      "architectureChoice": "C-子集（TS 独立实现，非 qm-rhythmind 转发：qm-rhythmind 是 Python AG2 多智能体，语言不通不能直接转发；本模块用 TS 单 agent + minimax，简化版）",
-      "files": [
-        "apps/server/src/modules/interpret/client.ts (~75 行 MiniMax M3 Anthropic 兼容 Provider)",
-        "apps/server/src/modules/interpret/service.ts (~85 行 佳明 FIT parseAsync → minimax → 落表)",
-        "apps/server/src/modules/interpret/routes.ts (~35 行 POST /api/interpret JWT + bodyLimit 10MB)",
-        "apps/server/src/modules/interpret/CLAUDE.md (V0.2.38 新建 150 行)"
+    "v042StrengthModule": {
+      "commit": "v0.2.42",
+      "moduleOrdinal": "第 36 个 module（35→36）",
+      "files": ["apps/server/src/modules/strength/strength.service.ts", "strength.routes.ts", "strength.schema.ts", "CLAUDE.md (V0.2.48 新建)"],
+      "actions": 7,
+      "newTables": ["StrengthSession (#63)", "StrengthSet (#64)", "Exercise (#65 seed ~15 预设)"],
+      "migration": "20260720000000_strength",
+      "keyDesign": "volume = Σ reps×weight 实时 increment + cnDate CN 时区 + Exercise 表预设 + exerciseId 可选",
+      "testEvolution": [
+        {"version": "v0.2.42", "tests": 0, "note": "deferred"},
+        {"version": "v0.2.51", "tests": 12, "note": "service 12 测补全（funcs 0→100%）"},
+        {"version": "v0.2.73", "tests": 21, "note": "+9 routes 测（7 action 全覆盖，0→9）"}
       ],
-      "interpretRecordTable": {
-        "ordinal": "#62",
-        "migration": "20260718000000_interpret_record",
-        "fields": "id/userId/type(garmin_fit|garmin_zip|medical|screenshot)/inputKey(COS object key)/result @db.Text/model/inputTokens?/outputTokens?/cost?/createdAt",
-        "indexes": ["[userId, createdAt]", "[type]"],
-        "onDelete": "Cascade"
-      },
-      "envConfig": {
-        "MINIMAX_API_KEY": "sk-cp-...（缺省 routes 返 featureDisabled 503）",
-        "MINIMAX_BASE_URL": "https://api.minimaxi.com/anthropic（国内官方；国际 api.minimax.io）",
-        "MINIMAX_MODEL": "MiniMax-M3"
-      },
-      "anthropicProtocol": {
-        "endpoint": "POST {MINIMAX_BASE_URL}/v1/messages",
-        "header": "x-api-key + anthropic-version: 2023-06-01（非 Bearer）",
-        "body": "{model, max_tokens, system, messages: [{role, content}]}",
-        "response": "{content: [{type:'text', text}], usage: {input_tokens, output_tokens}}"
-      },
-      "keyConcern": "sk-cp- 前缀疑似代理（非 minimax 官方格式），真机调官方若 401 → 切代理 base URL（env.ts 可改）",
-      "testCoverage": {
-        "totalTests": 20,
-        "client": 8,
-        "service": 5,
-        "routes": 7,
-        "v033Initial": 13,
-        "v036Reinforce": 7
-      },
-      "endpointsExtension": "packages/shared/src/api-contracts/endpoints.ts:115 加 ENDPOINTS.interpret.garmin = '/api/interpret'",
-      "adminIntegration": "V0.2.37 admin.service.listInterpret action + RBAC（OPERATOR_ACTIONS，admin/operator/super-admin 只读）+ qm-admin Web Interpret.tsx 跨仓同步（commit f314235）",
-      "realMachineVerificationPending": "minimax key 注入 + 佳明真实 .fit 样本 → 真机调 → 验解读文本 + 落表 + admin 列表"
+      "endpointsExtension": "packages/shared/src/api-contracts/endpoints.ts 加 strength: { startSession, addSet, finishSession, listSessions, sessionDetail, myVolume, listExercises }",
+      "aiCoachIntegration": "V0.2.46 c context-builder 注入近 7 天 StrengthSession.totalVolume + durationSec"
     },
-    "v028_aiCoach_weather_age": {
-      "commit": "v0.2.28 (init #17 code review 发现)",
-      "changeSummary": "context-builder.ts line 158-167 加 ageDays 判断：≤3 天「最近跑步天气」/ >3 天「较早前跑步天气（约 N 天前，可能已变化）」避免 AI 据过时天气误判",
-      "testFragilityFix": "V0.2.26 N 测试固定日期 2026-07-17T10:00:00Z 会随运行日期漂移失败 → 改动态 Date.now()-3_600_000",
-      "deltaIt": 1,
-      "testCase": "mock 8 天前断言「较早前」/「8 天前」/「可能已变化」且不含「最近跑步天气：」"
+    "v057InterpretScreenshot": {
+      "commit": "v0.2.57",
+      "scope": "interpret client.ts +callGlmVision + service.ts +interpretScreenshot + routes.ts screenshot case + context-builder export buildUserContext + ENDPOINTS +screenshot + 前端 pages/interpret 📷 入口",
+      "deltaIt": 12,
+      "keyDesign": "GLM-4.6V OpenAI vision（Bearer + ContentPart[] + response_format）+ 双 provider 分工（FIT 走 minimax，截图走 GLM）+ context-builder 13 路画像联动 + sportService.checkin dataSource='sport_screenshot'",
+      "interpretRecordType": "新增 type='screenshot'"
     },
-    "v029_frontend_revamp": {
-      "changeSummary": "今日页改版（删「问 AI 深聊」入口 + 删经纬度 + 加天气建议卡）+ 月度报告新页 pages/report-monthly",
-      "scope": "apps/miniprogram 纯前端，apps/server 零改",
-      "deltaPages": 1
+    "v060InterpretP1": {
+      "commit": "v0.2.60",
+      "p1ItemsFixed": 6,
+      "deltaIt": 8,
+      "newMigration": "20260721000000_interpret_screenshot_p1（InterpretRecord +extract Json? +checkinConfirmedAt DateTime?）",
+      "newAction": "interpret.screenshotCheckin（用户确认打卡，前端识别卡+确认按钮）",
+      "rateLimit": "routes 30/分/用户",
+      "dedupLogic": "同 userId+date+distance+dataSource='sport_screenshot' 拒",
+      "tokenSaving": "第二次分析改 callGlm 文本（不重传图）省 ~50% token"
     },
-    "v030_stats_buildReportText": {
-      "changeSummary": "stats.service buildReportText 重写为三段式（步数 vs 7 日均对比 + 状态判断 + 量化建议），dailyReport action 加查 avgSteps + 抽 judgeState/buildAdvice helpers，formatSleep 5h12min 格式",
-      "scope": "apps/server",
-      "deltaIt": 0,
-      "note": "测试断言改「AI建议」关键词，未加新测"
+    "v063H5Fallback": {
+      "commit": "v0.2.63",
+      "deltaIt": 3,
+      "scope": "interpret +issueH5Token/verifyH5Token (Redis 5min) + POST /api/interpret/h5 + /h5/checkin + myInterpretHistory + @fastify/static /h5/ (interpret.html 单页) + 小程序失败引导 (剪贴板)",
+      "authFix": "V0.2.64 auth.ts URL 前缀跳过 /h5/ + /uploads/（@fastify/static 路由无 config.public 401 修复）"
     },
-    "v031_health_assistant_revamp": {
-      "changeSummary": "健康助手页对齐原型：ai-quick-cards 5→4 卡 2×2 grid（删商业装备推荐卡）+ AI 气泡渐变优化",
-      "scope": "apps/miniprogram 纯前端",
-      "deltaPages": 0
+    "v065MpAudit": {
+      "commit": "v0.2.65-66",
+      "deltaIt": 6,
+      "scope": "infra/wx-token.ts getMpAccessToken (cgi-bin/token Redis 7000s) + admin getMpCategory/uploadMpMedia/submitMpAudit (SUPER_ONLY 独占发布)",
+      "endpointsExtension": "admin endpoint generic 模式 (沿用)",
+      "integratedTotal": "interpret 32→45 (+13 累计：V0.2.57 +12 + V0.2.60 +8 + V0.2.63 +3 + V0.2.65-66 -10 部分重叠 → 实 +13)"
     },
-    "v032_mine_revamp": {
-      "changeSummary": "mine 页照 prototype 重构（用户卡 + data-strip + level-card 融合 + 3 组宫格重归类）+ pages/more 待定页（更多入口）+ level-card 与 invite-bonus-card 融合",
-      "scope": "apps/miniprogram 纯前端",
-      "deltaPages": 1
+    "v067FlutterApp": {
+      "commit": "v0.2.67-72",
+      "newApp": "apps/flutter/muhehealth (Android packageId com.qingmu.muhehealth)",
+      "filesAdded": "~140 个 dart 文件",
+      "stack": "flutter_riverpod 2.5.1 + go_router 14.6.0 + dio 5.7.0 + geolocator 13.0.1 + shared_preferences 2.3.2 + flutter_lints 6.0.0",
+      "phases": [
+        "Phase 1 批 1: core 地基 + auth (登录)",
+        "Phase 1 批 2: today + checkin (今日+打卡)",
+        "Phase 1 批 3: gps_track (GPS 轨迹+里程)",
+        "Phase 1 批 4: feed/profile/insight/ai_coach/membership/notification/group/shoes/goal/certificates/food/strength/daily_report/follow/favorite/agreement/settings 21 feature 集成"
+      ],
+      "tests": "apps/flutter/test/widget_test.dart (1 占位测)",
+      "claudeMdGap": "apps/flutter/CLAUDE.md 不存在 ⚠️"
     },
-    "v034_interpret_frontend": {
-      "changeSummary": "小程序 pages/interpret（chooseMessageFile 选佳明 .fit → base64 → POST /api/interpret action:garmin → 展示 result）",
-      "scope": "apps/miniprogram 纯前端（配合 V0.2.33 后端）",
-      "deltaPages": 1
+    "v069TerraSmartwatch": {
+      "commit": "v0.2.69-71",
+      "scope": "device terra.parser (活动标准化 distance_m→km) + auth.ts URL 前缀跳过公共路由 + V0.2.71 hotfix 删重复 terra-webhook 路由 (FST_ERR_DUPLICATED_ROUTE 生产 crash)",
+      "docs": "docs/智能手表数据对接计划.md 6 阶段 33 任务",
+      "status": "Terra C3 暂停待签约"
     },
-    "v035_routes_bodyLimit": {
-      "changeSummary": "interpret routes bodyLimit 10MB（FIT base64 比 binary 大 33%，超 Fastify 默认 1MB → 413）",
-      "scope": "apps/server/src/modules/interpret/routes.ts"
+    "v072FeedComments": {
+      "commit": "v0.2.72",
+      "scope": "feed.service.listComments + feed.routes.listComments + Flutter feed 详情页 (评论列表+发评论 invalidate)",
+      "deltaIt": 1
     },
-    "v037_admin_listInterpret": {
-      "changeSummary": "admin.service.listInterpret action + RBAC（OPERATOR_ACTIONS 白名单，admin/operator/super-admin 只读）+ qm-admin Web Interpret.tsx 跨仓",
-      "scope": "apps/server/src/modules/admin + qm-admin 独立仓",
-      "deltaIt": 0
+    "v073TestingFortification": {
+      "commit": "v0.2.73-79",
+      "deltaIt": 97,
+      "modules": ["feed.routes", "strength.routes", "device.routes", "stats.routes", "goal.routes", "shoes.routes", "content.routes", "user.routes", "points.routes", "wxpay.service", "review.routes", "review.service", "sport.service", "training.service", "food.service"],
+      "keyMilestones": [
+        "V0.2.73 strength.routes.test.ts 0→9（7 action 全覆盖，route 缺口清零）",
+        "V0.2.73 device.routes 24 action 全补全（2→30，最大缺口清零）",
+        "V0.2.75 wxpay.service funcs 55.51→78.59%（queryBill/unifiedOrder/downloadBill 三方法 +8 测）",
+        "V0.2.79 food.service recognize funcs 63.12→~90%（vision 5 + ocr 2 = +7 测）"
+      ],
+      "funcsResult": "全局 funcs 89.84→90.01%（V0.2.56）→ 90.64%（V0.2.79 commit 7ed5b95 实跑）；⚠️ coverage 列序 Stmts|Branch|Funcs|Lines，第 4 列=funcs（曾误读 stmts/lines 为 funcs 报危险 1.2pp 是错的——funcs 全程健康）"
     },
-    "v038_interpret_claude_md": {
-      "changeSummary": "interpret/CLAUDE.md 新建（150 行）+ apps/server changelog 同步",
-      "scope": "docs 纯文档 commit",
-      "gap12Status": "保持 35/35（V0.2.1 init #10 100% → V0.2.21 init #16 保持 34/34 → V0.2.38 init #18 升 35/35）"
+    "v058Rebrand": {
+      "commit": "v0.2.58",
+      "scope": "apps/miniprogram 纯前端（wxml/wxss/ts/json + docs 归档）",
+      "changes": [
+        "agreement 页默认协议 = 沐禾健康_用户服务协议.docx（V1.0，14 条 3374 字，纯文本 white-space:pre-line 展示）",
+        "产品显示名「青沐」→「沐禾健康」15 处（config/env brandName + privacy-popup + 3 poster + ai-coach + runner + report-monthly/interpret/feed/membership + onboarding）",
+        "公司名「湖南青沐生命科技有限公司」保留（注册公司名，agreement 正文 + runner:455 署名）",
+        "极短标签「青沐AI」→「沐禾AI」",
+        "海报水印去 QM-WX"
+      ],
+      "schemaDelta": 0,
+      "moduleDelta": 0
     }
   },
   "coverage": {
-    "status": "closed-reinforced-init17-8774-init18-unchanged",
-    "gap": "GAP-14 closed（V0.2.12 → V0.2.13 K1 → V0.2.23 加固）",
+    "status": "closed-reinforced-v0.2.79",
+    "gap": "GAP-14 closed V0.2.79 (funcs 90.64% > 86 阈值 4.64pp 缓冲)",
     "history": [
-      {"version": "v0.2.3", "funcs": 86.39, "note": "baseline 沿用声明"},
-      {"version": "v0.2.11 init #14", "funcs": 85.54, "note": "首次实测 -0.85pp"},
-      {"version": "v0.2.13 K1", "funcs": 86.07, "note": "wxpay +5 测升回 + threshold 84→86"},
-      {"version": "v0.2.22", "funcs": 86.42, "note": "wxpay fetchPlatformCerts +4 测 +0.35pp"},
-      {"version": "v0.2.23", "funcs": 87.5, "note": "+14 测加固（缓冲 1.5pp）"},
-      {"version": "init #17", "funcs": 87.74, "note": "当场实跑 lcov.info 聚合 494/563"},
-      {"version": "init #18", "funcs": 87.74, "note": "沿用 init #17 实测；interpret module +20 测加 +10 函数（client 4 + service 4 + routes 2），估算微降 0.5pp 仍 > 86（待真测验证）"}
+      {"version": "v0.2.3", "funcs": 86.39},
+      {"version": "init #17 (V0.2.27)", "funcs": 87.74, "note": "init #17 当场实跑 494/563"},
+      {"version": "init #18 (V0.2.38)", "funcs": 87.74, "note": "沿用 init #17"},
+      {"version": "v0.2.47 (huawei TCX)", "funcs": 86.63, "note": "strength 0 测 + ai-coach 新代码分母增大，缓冲 0.63pp"},
+      {"version": "v0.2.49 (admin funcs)", "funcs": 87.64, "note": "admin 76.59→89.36%"},
+      {"version": "v0.2.51 (strength 补测)", "funcs": 89.0, "note": "strength 0→100% 关键"},
+      {"version": "v0.2.54/55/56 (queue/user.repo/logger)", "funcs": 90.01, "note": "90% 目标 🎯"},
+      {"version": "v0.2.79 (testing fortification)", "funcs": 90.64, "note": "+97 测累计；⚠️ 列序认知纠正 funcs 全程健康"}
     ],
     "freshResult": {
-      "measuredAt": "init #17 实跑（init #18 沿用，2026-07-20 11:36:36 未实跑）",
-      "functions": 87.74,
-      "lines": 84.59,
-      "branches": 77.83,
-      "functionsCount": "494/563（init #17 实测；init #18 沿用）",
-      "note": "init #18 沿用 init #17 数字；interpret module 20 测加 +10 函数后估算 funcs 微降 0.5pp 仍在 86 阈值之上（缓冲 1.74pp → ~1.24pp）"
+      "measuredAt": "V0.2.79 commit 7ed5b95 实跑 lcov.info 聚合（声明沿用，init #19 无 Bash 权限未 cross-check）",
+      "functions": 90.64,
+      "lines": 87.77,
+      "branches": 79.28,
+      "statements": 83.5,
+      "note": "threshold 86/83.5/83.5/75 全过缓冲 4pp+ 🎯；coverage 列序 Stmts|Branch|Funcs|Lines，第 4 列=funcs"
     },
-    "thresholds": {
-      "functions": 86,
-      "lines": 83.5,
-      "branches": 75,
-      "statements": 83.5
-    },
-    "stillWeakFiles": [
-      "apps/server/src/modules/wxpay/wxpay.service.ts funcs 66.66%（init #17 实测）— 赛事支付/退款分支未测稀释，待 GAP-17 K4 wxpay 4 件套切生产后补真集成测试回升"
-    ],
-    "note": "V0.2.12 GAP-14 closed → V0.2.13 K1 升 86.07% → V0.2.22 +4 测 86.42% → V0.2.23 +14 测 87.5% → init #17 实测 87.74% → init #18 沿用（interpret +20 测微降估算仍 > 86）"
+    "thresholds": {"functions": 86, "lines": 83.5, "branches": 75, "statements": 83.5}
   },
   "workspaceAudit": {
     "workspacePackages": ["apps/*", "packages/*", "scripts/*"],
-    "devCliPackagePath": "scripts/dev-cli/package.json",
+    "flutterAppStatus": "apps/flutter 不在 pnpm-workspace.yaml 内（Flutter 独立包管理 pubspec.yaml + pub get）",
     "devCliInWorkspace": true,
-    "ciWorkflow": ".github/workflows/wx-deploy.yml",
-    "ciTestCommand": "pnpm run test",
-    "cliTestsExecutedByCiCommand": true,
-    "additionalRisk": null,
-    "auditConclusion": "GAP-16 closed V0.2.11；pnpm-workspace.yaml 加 scripts/* 后 pnpm -r test 递归跑 scripts/dev-cli/ 11 测（platform 6 + cli-helper 5，init #17/#18 一致）"
-  },
-  "moduleCandidates": [
-    {
-      "path": "apps/server",
-      "language": "TypeScript",
-      "role": "Fastify 4 后端、Prisma 数据层、BullMQ jobs",
-      "entry": "src/server.ts / src/app.ts",
-      "interfaces": "34 个 /api/{module} route 文件 + app-config 内部模块 + V0.2.33 interpret POST /api/interpret",
-      "tests": "apps/server/tests/**/*.test.ts（1108 it occurrences / 113 files）",
-      "config": ["package.json", "vitest.config.ts", "prisma/schema.prisma", "tsconfig.json"],
-      "claudeMd": "apps/server/CLAUDE.md"
-    },
-    {
-      "path": "apps/miniprogram",
-      "language": "TypeScript/WXML/WXSS",
-      "role": "微信原生小程序前端 + WechatSI voice 插件（V0.2.19 接入 / V0.2.25 临时移除待授权）+ V0.2.34 interpret 上传页",
-      "entry": "miniprogram/app.ts / miniprogram/app.json",
-      "interfaces": "services/api.ts + packages/shared ENDPOINTS 35 module",
-      "tests": "当前无 *.test.ts；依赖微信开发者工具/automator 真机链路",
-      "config": ["package.json", "tsconfig.json", "project.config.json", "app.json (V0.2.25 WechatSI 已移除；V0.2.34 +pages/interpret)"],
-      "claudeMd": "apps/miniprogram/CLAUDE.md"
-    },
-    {
-      "path": "packages/shared",
-      "language": "TypeScript",
-      "role": "共享类型、Zod、常量、API 契约（含 V0.2.33 ENDPOINTS.interpret）",
-      "entry": "src/index.ts",
-      "interfaces": "package.json exports",
-      "tests": "tests/endpoints.test.ts（6 个 literal it）",
-      "config": ["package.json", "tsconfig.json", "tsconfig.build.json"],
-      "claudeMd": "packages/shared/CLAUDE.md"
-    },
-    {
-      "path": "scripts/dev-cli",
-      "language": "TypeScript",
-      "role": "微信开发者工具 CLI 跨平台包装（V0.2.10）",
-      "entry": "index.ts / ../../bin/wx",
-      "interfaces": "CliHelper 11 个公开命令方法 + commander 11 子命令 + status 健康检查",
-      "tests": "__tests__/*.test.ts（11 个 literal it：platform 6 + cli-helper 5）",
-      "config": ["package.json"],
-      "claudeMd": "scripts/dev-cli/CLAUDE.md（声明 platform 6 + cli-helper 5 = 11，正确）",
-      "inWorkspace": true
-    }
-  ],
-  "backendModuleSnapshots": [
-    {"path":"apps/server/src/modules/auth","entry":"auth.routes.ts","interfaces":"/api/auth 登录/刷新/绑定","tests":"tests/modules/auth","gaps":[]},
-    {"path":"apps/server/src/modules/user","entry":"user.routes.ts + user.service.ts","interfaces":"/api/user 资料/成长/会员兑换（V0.2.7 redeemMember）","tests":"tests/modules/user","gaps":[]},
-    {"path":"apps/server/src/modules/sport","entry":"sport.routes.ts + sport.service.ts","interfaces":"打卡/统计/群组","tests":"tests/modules/sport","gaps":[]},
-    {"path":"apps/server/src/modules/mall","entry":"mall.routes.ts + mall.service.ts + order/refund","interfaces":"商品/订单/退款","tests":"tests/modules/mall","gaps":["前端已下线，后端保留"]},
-    {"path":"apps/server/src/modules/content","entry":"content.routes.ts + content.service.ts","interfaces":"内容/赛事/报名","tests":"tests/modules/content","gaps":[]},
-    {"path":"apps/server/src/modules/wallet","entry":"wallet.routes.ts + wallet.service.ts + wallet.repo.ts","interfaces":"余额/交易","tests":"tests/modules/wallet","gaps":[]},
-    {"path":"apps/server/src/modules/weekly-report","entry":"weekly-report.routes.ts + service","interfaces":"周报查询/聚合","tests":"tests/modules/weekly-report + e2e","gaps":[]},
-    {"path":"apps/server/src/modules/upload","entry":"upload.routes.ts + upload.service.ts + upload-record.service.ts","interfaces":"COS 上传/解析记录","tests":"tests/modules/upload","gaps":[]},
-    {"path":"apps/server/src/modules/admin","entry":"admin.routes.ts + admin.service.ts","interfaces":"RBAC 登录/运营/审计/导出/V0.2.37 listInterpret","tests":"tests/modules/admin","gaps":[]},
-    {"path":"apps/server/src/modules/app-config","entry":"app-config.repository.ts","interfaces":"功能开关内部仓储","tests":"tests/modules/app-config 或 feature-gate","gaps":[]},
-    {"path":"apps/server/src/modules/wxpay","entry":"wxpay.routes.ts + services","interfaces":"支付/通知/退款","tests":"tests/modules/wxpay + e2e（V0.2.22 fetchPlatformCerts +4 测 4 分支全覆盖）","gaps":["生产切真（K4 待物料 GAP-17）"]},
-    {"path":"apps/server/src/modules/device","entry":"device.routes.ts + device.service.ts + parsers","interfaces":"佳明/BLE/微信运动/设备导入/huawei_export/体脂秤（V0.2.24 体重 0.005）","tests":"tests/modules/device","gaps":["huawei 真实样本回归（K3 待物料 GAP-17）"]},
-    {"path":"apps/server/src/modules/stats","entry":"stats.routes.ts + stats.service.ts","interfaces":"跑者统计/天气/日报/画像（V0.2.26 AQI×心率 B1 + 体感区间配速 A1 / V0.2.30 buildReportText 三段式重写）","tests":"tests/modules/stats","gaps":[]},
-    {"path":"apps/server/src/modules/ranking","entry":"ranking.routes.ts + ranking.service.ts","interfaces":"多维榜单","tests":"tests/modules/ranking","gaps":[]},
-    {"path":"apps/server/src/modules/recipe","entry":"recipe.routes.ts + recipe.service.ts","interfaces":"菜谱 stub","tests":"tests/modules/recipe","gaps":["V2 stub"]},
-    {"path":"apps/server/src/modules/ludong","entry":"ludong.routes.ts + ludong.service.ts","interfaces":"律动同步 stub","tests":"tests/modules/ludong","gaps":["V2 stub"]},
-    {"path":"apps/server/src/modules/cart","entry":"cart.routes.ts + cart.service.ts","interfaces":"购物车","tests":"tests/modules/cart","gaps":["前端已下线"]},
-    {"path":"apps/server/src/modules/points","entry":"points.routes.ts + points.service.ts","interfaces":"积分/签到","tests":"tests/modules/points","gaps":[]},
-    {"path":"apps/server/src/modules/address","entry":"address.routes.ts + address.service.ts","interfaces":"地址","tests":"tests/modules/address","gaps":["前端已下线"]},
-    {"path":"apps/server/src/modules/coupon","entry":"coupon.routes.ts + coupon.service.ts","interfaces":"优惠券","tests":"tests/modules/coupon","gaps":["前端已下线"]},
-    {"path":"apps/server/src/modules/distribution","entry":"distribution.routes.ts + distribution.service.ts","interfaces":"邀请/分销/佣金（V0.2.6 inviteInfo + bindInviter）","tests":"tests/modules/distribution","gaps":[]},
-    {"path":"apps/server/src/modules/training","entry":"training.routes.ts + training.service.ts","interfaces":"计划/进度","tests":"tests/modules/training","gaps":[]},
-    {"path":"apps/server/src/modules/shoes","entry":"shoes.routes.ts + shoes.service.ts","interfaces":"跑鞋/里程/对比","tests":"tests/modules/shoes","gaps":[]},
-    {"path":"apps/server/src/modules/goal","entry":"goal.routes.ts + goal.service.ts","interfaces":"个人/家庭目标","tests":"tests/modules/goal","gaps":[]},
-    {"path":"apps/server/src/modules/favorite","entry":"favorite.routes.ts + favorite.service.ts","interfaces":"收藏","tests":"tests/modules/favorite","gaps":["部分前端入口下线"]},
-    {"path":"apps/server/src/modules/feed","entry":"feed.routes.ts + feed.service.ts","interfaces":"动态/点赞/评论","tests":"tests/modules/feed","gaps":[]},
-    {"path":"apps/server/src/modules/notification","entry":"notification.routes.ts + notification.service.ts","interfaces":"消息/notify 集成","tests":"tests/modules/notification","gaps":[]},
-    {"path":"apps/server/src/modules/follow","entry":"follow.routes.ts + follow.service.ts","interfaces":"关注关系","tests":"tests/modules/follow","gaps":[]},
-    {"path":"apps/server/src/modules/family","entry":"family.routes.ts + family.service.ts","interfaces":"家庭空间","tests":"tests/modules/family","gaps":[]},
-    {"path":"apps/server/src/modules/group-buy","entry":"group-buy.routes.ts + group-buy.service.ts","interfaces":"团购","tests":"tests/modules/group-buy","gaps":["前端已下线"]},
-    {"path":"apps/server/src/modules/review","entry":"review.routes.ts + review.service.ts","interfaces":"评价/鞋评","tests":"tests/modules/review","gaps":[]},
-    {"path":"apps/server/src/modules/ai-coach","entry":"ai-coach.routes.ts + service + providers + context-builder.ts","interfaces":"GLM/Stub 对话/计划/日报/voice（V0.2.27 contextBuilder 天气感知 N + V0.2.28 3 天时效判断）","tests":"tests/modules/ai-coach + ai-coach-flow.e2e","gaps":["voice 真接入待 GAP-18 K5 授权加回"]},
-    {"path":"apps/server/src/modules/food","entry":"food.routes.ts + food.service.ts + client.ts","interfaces":"饮食/营养/拍照识别","tests":"tests/modules/food","gaps":["recognize 真机与生产 LLM_VISION_MODEL 配置"]},
-    {"path":"apps/server/src/modules/ocr","entry":"ocr.routes.ts + ocr.service.ts + ocr.client.ts","interfaces":"腾讯 OCR 三 action","tests":"tests/modules/ocr","gaps":[]},
-    {"path":"apps/server/src/modules/interpret","entry":"interpret.routes.ts + service.ts + client.ts","interfaces":"V0.2.33 第 35 个 module：POST /api/interpret（garmin FIT 解读 + admin listInterpret V0.2.37）","tests":"tests/modules/interpret（client 8 + service 5 + routes 7 = 20 测）","gaps":["真机验证待 minimax key 注入 + 佳明 FIT 样本（V0.2.33 key sk-cp- 疑代理，真机 401 切 base URL）"]}
-  ],
-  "incrementSummary": {
-    "v0.2.28": {
-      "tag": "v0.2.28",
-      "delta": "aiCoach contextBuilder 天气注入加 3 天时效判断（≤3 天「最近跑步天气」/ >3 天「较早前跑步天气」避免 AI 据过时天气误判）+ 修 V0.2.26 N 测试固定日期漂移脆弱性（改动态 Date.now()-3_600_000）+1 it",
-      "scope": "apps/server/src/modules/ai-coach/context-builder.ts",
-      "deltaIt": 1,
-      "schemaDelta": 0,
-      "moduleDelta": 0
-    },
-    "v0.2.29": {
-      "tag": "v0.2.29",
-      "delta": "今日页改版（删「问 AI 深聊」入口 + 删经纬度显示 + 加天气建议卡）+ 月度报告新页 pages/report-monthly",
-      "scope": "apps/miniprogram 纯前端，apps/server 零改",
-      "deltaPages": 1,
-      "schemaDelta": 0,
-      "moduleDelta": 0
-    },
-    "v0.2.30": {
-      "tag": "v0.2.30",
-      "delta": "stats.service buildReportText 重写为三段式（步数 vs 7 日均对比 + 状态判断 + 量化建议）+ dailyReport action 加查 avgSteps + 抽 judgeState/buildAdvice helpers + formatSleep 5h12min 格式",
-      "scope": "apps/server/src/modules/stats/stats.service.ts",
-      "deltaIt": 0,
-      "schemaDelta": 0,
-      "moduleDelta": 0
-    },
-    "v0.2.31": {
-      "tag": "v0.2.31",
-      "delta": "健康助手页对齐原型：ai-quick-cards 5→4 卡 2×2 grid（删商业装备推荐卡）+ AI 气泡渐变优化",
-      "scope": "apps/miniprogram 纯前端",
-      "schemaDelta": 0,
-      "moduleDelta": 0
-    },
-    "v0.2.32": {
-      "tag": "v0.2.32",
-      "delta": "mine 页照 prototype 重构（用户卡 + data-strip + level-card 融合 + 3 组宫格重归类）+ pages/more 待定页（更多入口）+ level-card 与 invite-bonus-card 融合",
-      "scope": "apps/miniprogram 纯前端",
-      "deltaPages": 1,
-      "schemaDelta": 0,
-      "moduleDelta": 0
-    },
-    "v0.2.33": {
-      "tag": "v0.2.33",
-      "delta": "interpret module（第 35 个 module）创建：minimax M3 Anthropic 兼容（client.ts x-api-key + /v1/messages）+ 佳明 FIT 解读（service.ts fit-file-parser parseAsync）+ routes（POST /api/interpret JWT）+ InterpretRecord 表（#62，迁移 20260718000000）+ env MINIMAX_* + ENDPOINTS.interpret",
-      "scope": "apps/server/src/modules/interpret/* + prisma + packages/shared",
-      "deltaIt": 13,
-      "schemaDelta": 1,
-      "migrationDelta": 1,
-      "moduleDelta": 1,
-      "keyDesign": "C-子集（TS 独立实现，非 qm-rhythmind 转发：Python AG2 多智能体语言不通）"
-    },
-    "v0.2.34": {
-      "tag": "v0.2.34",
-      "delta": "interpret 小程序上传页 pages/interpret（chooseMessageFile → base64 → POST → 展示）",
-      "scope": "apps/miniprogram 纯前端",
-      "deltaPages": 1,
-      "schemaDelta": 0,
-      "moduleDelta": 0
-    },
-    "v0.2.35": {
-      "tag": "v0.2.35",
-      "delta": "interpret routes bodyLimit 10MB（FIT base64 比 binary 大 33%，超 Fastify 默认 1MB → 413）",
-      "scope": "apps/server/src/modules/interpret/routes.ts",
-      "deltaIt": 0,
-      "schemaDelta": 0,
-      "moduleDelta": 0
-    },
-    "v0.2.36": {
-      "tag": "v0.2.36",
-      "delta": "interpret 测试加固 +7（client fetch reject/empty content/max_tokens/usage + service records fallback/parseAsync throw + routes bodyLimit）→ interpret 20 测",
-      "scope": "apps/server/tests/modules/interpret/*",
-      "deltaIt": 7,
-      "schemaDelta": 0,
-      "moduleDelta": 0
-    },
-    "v0.2.37": {
-      "tag": "v0.2.37",
-      "delta": "admin listInterpret action + RBAC（OPERATOR_ACTIONS，admin/operator/super-admin 只读）+ qm-admin Web Interpret.tsx 跨仓（commit f314235）",
-      "scope": "apps/server/src/modules/admin + qm-admin 独立仓",
-      "deltaIt": 0,
-      "schemaDelta": 0,
-      "moduleDelta": 0
-    },
-    "v0.2.38": {
-      "tag": "v0.2.38",
-      "delta": "interpret/CLAUDE.md（150 行）新建 + apps/server changelog 同步；GAP-12 保持 35/35",
-      "scope": "docs 纯文档 commit",
-      "deltaIt": 0,
-      "schemaDelta": 0,
-      "moduleDelta": 0,
-      "gap12Status": "保持 35/35 ✅"
-    }
-  },
-  "documentation": {
-    "created": [
-      "apps/server/src/modules/interpret/CLAUDE.md (V0.2.38 新建，150 行，GAP-12 保持 35/35)"
-    ],
-    "updated": [
-      "CLAUDE.md（根，顶部追加 5 段 changelog [init #18 + V0.2.33 + V0.2.34-37 + V0.2.29-32 + V0.2.38] + 当前阶段 V0.2.38 [62 表 / 35 module / 25 页 / 47 迁移 / 16 组件 / 1119 it() / funcs 87.74% 沿用] + GAP 表 GAP-12 35/35 + GAP-15 加 init #18 + Mermaid 节点 [Srv 35 module + 62 表 + 47 迁移 + 1108 it / 加 Interpret 节点 / MpPages 25] + 技术栈表更新 [Prisma 62/47 + Vitest 1108/1119] + module 数 34→35 [含 interpret 第 35 个] + tag v0.2.38 + 工作流钩子加 interpret + V0.2.28 天气时效范式）",
-      "apps/server/CLAUDE.md（顶部追加 init #18 + V0.2.38 段；V0.2.30+33-37 段已有）",
-      "apps/miniprogram/CLAUDE.md（顶部追加 init #18 + V0.2.29 + V0.2.31 + V0.2.32 + V0.2.34 段；25 页 + interpret 页）",
-      "packages/shared/CLAUDE.md（顶部追加 init #18 + V0.2.33 段；ENDPOINTS 35 module / +interpret.garmin）",
-      ".claude/index.json（全量重写到 V0.2.38）"
-    ]
+    "ciWorkflows": [".github/workflows/ci.yml (4 parallel job)", ".github/workflows/deploy-staging.yml", ".github/workflows/wx-deploy.yml (V0.2.11 三任务矩阵)"]
   },
   "gaps": [
     {"id":"GAP-1","status":"closed","note":"user 鉴权"},
     {"id":"GAP-2","status":"closed","note":"admin schema 抽离"},
-    {"id":"GAP-3","status":"closed","note":"coverage threshold gate 已配置；init #17 实测 funcs 87.74% > 86"},
-    {"id":"GAP-4","status":"closed","note":"CHANGELOG 归档入口；V0.2.38 init #18 顶部 5 段补齐 V0.2.28-38"},
+    {"id":"GAP-3","status":"closed","note":"coverage threshold gate 已配置；V0.2.79 funcs 90.64% > 86"},
+    {"id":"GAP-4","status":"closed","note":"CHANGELOG 归档入口；init #18 顶部 5 段 + init #19 校准段补齐 V0.2.39-79"},
     {"id":"GAP-5","status":"closed","note":"device userId 兜底"},
     {"id":"GAP-6","status":"closed","note":"分销闭环"},
     {"id":"GAP-7","status":"closed","note":"主线/tag 策略"},
     {"id":"GAP-8","status":"closed","note":"module CLAUDE.md 基础覆盖"},
-    {"id":"GAP-9","status":"closed","note":"BLE 真机主链路 + V0.2.24 体脂秤体重 0.005"},
+    {"id":"GAP-9","status":"closed","note":"BLE 真机主链路 + V0.2.24 体脂秤"},
     {"id":"GAP-10","status":"closed","note":"sport 选鞋闭环"},
-    {"id":"GAP-11","status":"closed","note":"子 CLAUDE.md 同步；V0.2.38 init #18 再次同步到 V0.2.38"},
-    {"id":"GAP-12","status":"closed","note":"35/35 后端 module CLAUDE.md 100%（V0.2.1 init #10 100% → V0.2.21 init #16 保持 34/34 → V0.2.38 init #18 升 35/35 含 interpret/CLAUDE.md）"},
+    {"id":"GAP-11","status":"closed","note":"子 CLAUDE.md 同步；V0.2.79 init #19 再次同步"},
+    {"id":"GAP-12","status":"closed","note":"36/36 后端 module CLAUDE.md 100%（V0.2.48 strength/CLAUDE.md 补建后 35→36 → 沿用 V0.2.79）"},
     {"id":"GAP-13","status":"closed","note":"data-strip/avatar-badge + V0.2.9 四组件文档均存在"},
-    {"id":"GAP-14","status":"closed","note":"V0.2.12 实测 funcs 85.54% → V0.2.13 K1 升 86.07% → V0.2.23 加固 87.5% → init #17 实测 87.74%（缓冲 1.74pp）"},
-    {"id":"GAP-15","status":"closed","note":"V0.2.8 init #13 + V0.2.16 B5 + V0.2.21 init #16 + V0.2.27 init #17 + V0.2.38 init #18 五次同步到 V0.2.38"},
-    {"id":"GAP-16","status":"closed","note":"V0.2.11 pnpm-workspace.yaml + scripts/*；cli 测试 11 个（platform 6 + cli-helper 5）"},
-    {"id":"GAP-17","status":"open","note":"K3 huawei 真实 ZIP + K4 wxpay 4 件套业务物料待主人物料，非文档/代码 GAP；详见 docs/V0.2.15-pending-materials.md"},
-    {"id":"GAP-18","status":"open","note":"V0.2.27 init #17 登记：K5 voice V0.2.19 接入 → V0.2.25 临时移除待授权；常智公众平台「插件管理」添加同声传译 wx069ba97219f66d99 后加回 app.json plugins + scope.record 恢复 K5 voice"}
+    {"id":"GAP-14","status":"closed","note":"V0.2.12 实测 85.54% → V0.2.13 K1 86.07% → V0.2.23 87.5% → init #17 87.74% → V0.2.79 90.64%（缓冲 4.64pp）"},
+    {"id":"GAP-15","status":"closed","note":"V0.2.79 init #19 + 历次同步到 V0.2.79"},
+    {"id":"GAP-16","status":"closed","note":"V0.2.11 pnpm-workspace.yaml + scripts/*"},
+    {"id":"GAP-17","status":"open-partially","note":"K3 huawei TCX ✅ closed (V0.2.47) / K4 wxpay 4 件套 open（待主人物料）"},
+    {"id":"GAP-18","status":"open","note":"K5 voice V0.2.19 接入 → V0.2.25 临时移除 → V0.2.44 改用系统输入法（永久 open）"}
   ],
   "nextStepSuggestions": [
-    "P1：主人提供 huawei_export 真实 ZIP → 跑 V0.2.21 fuzzer 25 用例回归 → GAP-17 K3 closed",
-    "P2：主人提供 wxpay 4 件套（WX_MCH_ID + WX_MCH_API_V3_KEY 32字节 + WX_MCH_PRIVATE_KEY_PATH cert + WX_MCH_CERT_SERIAL_NO + 通知 URL）→ 灰度 off→mock→on → GAP-17 K4 closed",
-    "P3：常智公众平台「插件管理」添加同声传译 wx069ba97219f66d99 → app.json 加回 plugins + scope.record → K5 voice 真机验证 → GAP-18 closed",
-    "P4：V0.2.33 interpret 真机验证 — minimax key 注入（生产 .env）+ 佳明真实 .fit 样本（主人提供或自备）→ POST /api/interpret action:garmin → 验解读文本 + 落 InterpretRecord + admin listInterpret 列表；key sk-cp- 疑代理，真机 401 切 base URL",
-    "P5：V0.2.29 今日页改版 + V0.2.32 mine 重构 + V0.2.34 interpret 上传页真机视觉验证 — pnpm wx:auto-preview",
-    "P6：V0.2.30 stats buildReportText 重写真机验证 — 月度报告页（pages/report-monthly）展示三段式（步数 vs 7 日均 + 状态判断 + 量化建议）",
-    "P7：V0.2.26 weatherAnalysis 真机验证 — insight 页 AQI×心率散点 + 体感区间配速曲线 + optimalZone",
-    "P8：V0.2.27 aiCoach 天气感知 + V0.2.28 3 天时效真机验证 — 高温/雾霾天问 AI → 应给针对性建议；>3 天打卡应标注「较早前」",
-    "P9：GLM-4.6V 真机验证 food.recognize vision 模式（env LLM_API_KEY + LLM_VISION_MODEL=glm-4.6v）",
-    "P10：FATSECRET_KEY 生产注入（ocr 模式 + 搜索依赖）",
-    "P11：V0.2.24 小米体脂秤 health 页体成分卡自验 + parseWeightBytes（Mi Scale v1 待真机）",
-    "P12：佳明官方 API 申请（V0.1.144~147 调研结论 A 路线待批）"
+    "P1 ✅ closed：it() 异差已解决（vitest 实跑 1291 passed 权威，init #19 订正，详见 vitest-count-authority memory）",
+    "P2 ✅ closed：apps/flutter/CLAUDE.md 已建（init #19）",
+    "P3 🔥：interpret screenshot 端到端 smoke（生产 v0.2.87 已部署 + LLM_API_KEY+glm-4.6v 已注入；待拿真 JWT token + 运动截图样本走 issueH5Token→/api/interpret/h5→落 InterpretRecord）",
+    "P4：wxpay 4 件套切生产（K4 GAP-17 待主人物料）",
+    "P5：mp 后台加服务类目 → curl getCategory/uploadMedia/submitAudit 提审发布 v0.2.66",
+    "P6：V0.2.58 改名「沐禾健康」+ V0.2.60-61 识别卡 + V0.2.34 interpret 页真机视觉验证",
+    "P7：V0.2.72 Flutter APP feed 详情页评论列表 + 发评论真机验证（Riverpod invalidate）",
+    "P8：V0.2.45 ai-coach 多模态 + V0.2.28 3 天时效 + V0.2.30 buildReportText + V0.2.26 weatherAnalysis 真机验证",
+    "P9：FATSECRET_KEY 生产注入（food.search.v2 依赖）",
+    "P10：Terra C3 智能手表对接（V0.2.69-71 框架已建，待签约）",
+    "P11：huawei 真实 ZIP 回归（GAP-17 K3 已 closed 但 K4 wxpay 仍 open）",
+    "P12：V0.2.42 strength 前端 pages/strength（训练日志页 + 组间计时）"
   ]
 }

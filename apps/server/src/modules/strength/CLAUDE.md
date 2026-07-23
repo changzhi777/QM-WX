@@ -75,18 +75,14 @@ startSession（创建空 session，前端自动计时）
 
 ## 🧪 测试
 
-⚠️ **0 单测（V0.2.42 deferred）** — strength module 创建时聚焦后端 service/routes 落地，测试待补。
+✅ **21 测（V0.2.51 +12 + V0.2.73 +9 routes 全覆盖）**：
 
-**待补测试**（建议覆盖）：
-- startSession 创建 + dateStr CN 今日
-- addSet 鉴权（非本人 session → forbidden）+ totalVolume 实时累加
-- finishSession 设时长
-- listSessions 分页
-- sessionDetail 含 sets
-- myVolume 按日聚合
-- listExercises 预设 + 自定义
+| 文件 | 测数 | 覆盖 |
+| --- | ---: | --- |
+| `strength.service.test.ts` | 12 | startSession dateStr CN 今日 + addSet 鉴权非本人 + totalVolume 实时累加 + finishSession 设时长 + listSessions 分页 + sessionDetail 含 sets + myVolume 按日聚合 + listExercises 预设/自定义 |
+| `strength.routes.test.ts`（V0.2.73 新建） | 9 | 7 action 全覆盖：startSession / addSet / finishSession / listSessions / sessionDetail / myVolume / listExercises（routes 测从 0 → 9，**最大缺口清零**） |
 
-**funcs 影响**：strength module 0 测会拉低全局 funcs（待补测后稳定）。当前全局 funcs 86.63% > 86 阈值（缓冲 0.63pp，strength 未测代码量小暂可接受）。
+**funcs 影响**：strength module 0→100%（V0.2.51 补测后），全局 funcs 86.63%→89%→90.01%→**90.64%**（V0.2.79 commit 7ed5b95 实跑，threshold 86 缓冲 4.64pp）。
 
 ---
 
@@ -100,3 +96,12 @@ startSession（创建空 session，前端自动计时）
 ---
 
 🤙 改 strength 看 `strength.service.ts`（7 action + cnDate）；前端 pages/strength 待建（训练日志页 + 组间计时）。
+
+---
+
+## 📝 变更记录 (Changelog)
+
+- **2026-07-20** — 🎯 **V0.2.42 strength module 创建（第 36 个 — 训记式力量训练日志）**：`feat(v0.2.42)` commit；3 文件 service/routes/schema + 3 新表 StrengthSession/StrengthSet/Exercise #63-65 + 迁移 `20260720000000_strength` + Exercise seed ~15 预设；7 action：startSession/addSet/finishSession/listSessions/sessionDetail/myVolume/listExercises；volume=Σreps×weight 实时 increment；cnDate CN 时区；**0 测 deferred**（GAP-12 沿用 +strength/CLAUDE.md V0.2.48 补建 36/36）
+- **2026-07-21** — 🎯 **V0.2.51 strength 补测 12（funcs 0→100%）**：`test(v0.2.51)` commit；`tests/modules/strength/strength.service.test.ts` 12 测补全：startSession + addSet 鉴权 + totalVolume 累加 + finishSession + listSessions 分页 + sessionDetail + myVolume 按日聚合 + listExercises 预设/自定义；全局 funcs 87.64→**89%**（strength 0→100% 是关键）
+- **2026-07-23** — 🎯 **V0.2.73 strength.routes.test.ts 新建（0→9，7 action 全覆盖，最大缺口清零）**：`test(v0.2.73)` commit；`tests/modules/strength/strength.routes.test.ts` 9 测覆盖 7 action：startSession/addSet/finishSession/listSessions/sessionDetail/myVolume/listExercises routes 派发 + JWT 鉴权 + Zod 校验；属 V0.2.73 GAP-3.5 routes 全分流 +61 测的 7 module 之一；累计 strength 21 测（service 12 + routes 9）
+- **2026-07-23** — 🎯 **`/zcf:init-project` 增量校准 #19（V0.2.79 收官）**：本文件 changelog 顶部补 V0.2.51 + V0.2.73 共 2 段；测试段从「⚠️ 0 单测 deferred」改为「✅ 21 测（V0.2.51 +12 service + V0.2.73 +9 routes）」；**0 代码改动纯文档增量**
