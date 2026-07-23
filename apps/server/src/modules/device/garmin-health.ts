@@ -166,6 +166,11 @@ export interface GarminPushPayload {
  * ⚠️ userId 映射（Garmin userId → QM-WX userId）需 DeviceBinding.vendorUserId 关联
  * ⚠️ 各 type 的 data schema 待佳明文档核实（字段名/单位/嵌套）
  */
+/** 安全数值转换（Garmin push 字段 → number，非法/缺失返 undefined） */
+function num(v: unknown): number | undefined {
+  return v != null && !isNaN(Number(v)) ? Number(v) : undefined;
+}
+
 /** Garmin activityType → QM-WX RawActivity.type 映射 */
 function mapGarminActivityType(t: unknown): string {
   const s = String(t ?? '').toUpperCase();
@@ -227,11 +232,69 @@ export async function garminHealthWebhook(body: unknown): Promise<{
         });
         saved++;
       } else if (payload.type === 'sleep') {
-        // TODO sleep → GarminSleep（calendarDate / deepSleepDurationInSeconds / lightSleepDurationInSeconds / remSleepInSeconds / awakeDurationInSeconds）待佳明文档核实
-      } else if (payload.type === 'health' || payload.type === 'stress') {
-        // TODO dailies/stress → GarminMetric（metricType 区分 + value，stress 含 averageStressLevel/stressValueArray）待佳明文档
+        // ⚠️ Garmin push schema：calendarDate / deepSleepDurationInSeconds / lightSleepDurationInSeconds / remSleepInSeconds / awakeDurationInSeconds（1B 校准）
+        const dateStr = String(e.calendarDate ?? '');
+        if (!dateStr) continue;
+        await prisma.garminSleep.upsert({
+          where: { userId_calendarDate: { userId: qmUserId, calendarDate: new Date(dateStr) } },
+          create: {
+            userId: qmUserId,
+            calendarDate: new Date(dateStr),
+            deepSleepSeconds: num(e.deepSleepDurationInSeconds) ?? null,
+            lightSleepSeconds: num(e.lightSleepDurationInSeconds) ?? null,
+            remSleepSeconds: num(e.remSleepInSeconds) ?? null,
+            awakeSleepSeconds: num(e.awakeDurationInSeconds) ?? null,
+            unmeasurableSeconds: num(e.unmeasurableSleepDurationInSeconds) ?? null,
+          } as never, // Prisma upsert create 联合类型 cast（运行时 OK，14 测验证）
+          update: {}, // 幂等：已存在不覆盖
+        });
+        saved++;
+      } else if (payload.type === 'health') {
+        // ⚠️ dailies：calendarDate / steps / distanceInMeters / activeKilocalories（1B 校准）
+        const dateStr = String(e.calendarDate ?? '');
+        await prisma.garminMetric.create({
+          data: {
+            userId: qmUserId,
+            metricType: 'dailies',
+            calendarDate: dateStr ? new Date(dateStr) : null,
+            value: num(e.steps) ?? null,
+            raw: e as never,
+          },
+        });
+        saved++;
+      } else if (payload.type === 'stress') {
+        // ⚠️ stress：calendarDate / averageStressLevel / maxStressLevel（1B 校准）
+        const dateStr = String(e.calendarDate ?? '');
+        await prisma.garminMetric.create({
+          data: {
+            userId: qmUserId,
+            metricType: 'stress',
+            calendarDate: dateStr ? new Date(dateStr) : null,
+            value: num(e.averageStressLevel) ?? null,
+            raw: e as never,
+          },
+        });
+        saved++;
       } else if (payload.type === 'body_composition') {
-        // TODO body → BodyCompositionRecord（weightInGrams / bodyFatPercentage / muscleMassInGrams / boneMassInGrams / bodyWaterPercentage / visceralFatPercentage）待佳明文档
+        // ⚠️ body：weightInGrams / bodyFatPercentage / muscleMassInGrams / boneMassInGrams / bodyWaterPercentage（1B 校准）
+        // BodyCompositionRecord 无 @@unique → create（1B 改 findFirst 去重 or 加 @@unique [userId,timestamp,source]）
+        const ts = e.measurementTimeInSeconds != null
+          ? new Date(Number(e.measurementTimeInSeconds) * 1000)
+          : new Date();
+        await prisma.bodyCompositionRecord.create({
+          data: {
+            userId: qmUserId,
+            weight: Number(e.weightInGrams) / 1000, // g → kg
+            bodyFat: num(e.bodyFatPercentage) ?? null,
+            muscle: e.muscleMassInGrams != null ? Number(e.muscleMassInGrams) / 1000 : null,
+            bone: e.boneMassInGrams != null ? Number(e.boneMassInGrams) / 1000 : null,
+            water: num(e.bodyWaterPercentage) ?? null,
+            visceralFat: num(e.visceralFatPercentage) ?? null,
+            source: 'garmin_oauth',
+            timestamp: ts,
+          },
+        });
+        saved++;
       }
     } catch {
       // 单条失败不阻塞整体（继续下一条）
