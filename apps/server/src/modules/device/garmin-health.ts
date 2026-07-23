@@ -19,6 +19,7 @@
  */
 import crypto from 'node:crypto';
 import { env } from '../../config/env.js';
+import { prisma } from '../../infra/prisma.js';
 
 // TODO: 佳明文档确认基础域名（connect.garmin.com/oauth 或 apis.garmin.com）
 const GARMIN_AUTH = 'https://connect.garmin.com/oauth';
@@ -165,25 +166,76 @@ export interface GarminPushPayload {
  * ⚠️ userId 映射（Garmin userId → QM-WX userId）需 DeviceBinding.vendorUserId 关联
  * ⚠️ 各 type 的 data schema 待佳明文档核实（字段名/单位/嵌套）
  */
+/** Garmin activityType → QM-WX RawActivity.type 映射 */
+function mapGarminActivityType(t: unknown): string {
+  const s = String(t ?? '').toUpperCase();
+  if (s.includes('RUN')) return 'running';
+  if (s.includes('CYCL') || s.includes('BIKE')) return 'cycling';
+  if (s.includes('SWIM')) return 'swimming';
+  if (s.includes('WALK') || s.includes('HIKE')) return 'walking';
+  return 'other';
+}
+
 export async function garminHealthWebhook(body: unknown): Promise<{
   ok: boolean;
   received: boolean;
   count?: number;
+  saved?: number;
 }> {
   const payload = body as GarminPushPayload;
   if (!payload?.type || !Array.isArray(payload.data)) {
     return { ok: false, received: false };
   }
 
-  // TODO: 按 type 分发落库（push schema 待佳明文档核实）
-  // - activities → RawActivity（vendor=garmin）：activityId / startTime / duration / distance / avgHr
-  // - sleep → GarminSleep：date / durationSeconds / deepSeconds / lightSeconds / remSeconds / awakeSeconds
-  // - health(dailies) → GarminMetric：steps / distance / calories（按 sport 列）
-  // - stress → GarminMetric：stressValues[]（时间序列）
-  // - body_composition → BodyCompositionRecord：weight / bodyFat / muscle / bone / water / visceralFat
-  //
-  // 落库前需：DeviceBinding.vendor=garmin + vendorUserId=payload.userId 映射 QM-WX userId
+  // userId 映射：Garmin userId → QM-WX userId（via DeviceBinding vendor=garmin_oauth vendorUserId）
+  let qmUserId: string | null = null;
+  if (payload.userId) {
+    const binding = await prisma.deviceBinding.findFirst({
+      where: { vendor: 'garmin_oauth', vendorUserId: payload.userId },
+    });
+    qmUserId = binding?.userId ?? null;
+  }
+  if (!qmUserId) {
+    // 收到但用户未映射（未绑定 / push 未注册）→ 不落库
+    return { ok: false, received: true, count: payload.data.length, saved: 0 };
+  }
 
-  // 骨架：返接收确认（真落库待 push schema + userId 映射确认）
-  return { ok: true, received: true, count: payload.data.length };
+  let saved = 0;
+  for (const item of payload.data) {
+    try {
+      const e = item as Record<string, unknown>;
+      if (payload.type === 'activities') {
+        // ⚠️ Garmin Health API push schema：*InSeconds / *InMeters（SI 单位，待佳明文档核实字段名）
+        const vendorActivityId = String(e.activityId ?? '');
+        if (!vendorActivityId) continue;
+        await prisma.rawActivity.upsert({
+          where: { vendor_vendorActivityId: { vendor: 'garmin', vendorActivityId } },
+          create: {
+            userId: qmUserId,
+            vendor: 'garmin',
+            vendorActivityId,
+            type: mapGarminActivityType(e.activityType),
+            startTime: new Date((Number(e.startTimeInSeconds) || 0) * 1000),
+            durationSec: e.durationInSeconds != null ? Number(e.durationInSeconds) : null,
+            distanceMeters: e.distanceInMeters != null ? Number(e.distanceInMeters) : null,
+            avgHr: e.averageHeartRate != null ? Number(e.averageHeartRate) : null,
+            maxHr: e.maxHeartRate != null ? Number(e.maxHeartRate) : null,
+            raw: e as never, // prisma Json（Record<string,unknown> → InputJsonValue cast）
+            status: 'pending',
+          },
+          update: {}, // 幂等：已存在不覆盖（活动历史不可变）
+        });
+        saved++;
+      } else if (payload.type === 'sleep') {
+        // TODO sleep → GarminSleep（calendarDate / deepSleepDurationInSeconds / lightSleepDurationInSeconds / remSleepInSeconds / awakeDurationInSeconds）待佳明文档核实
+      } else if (payload.type === 'health' || payload.type === 'stress') {
+        // TODO dailies/stress → GarminMetric（metricType 区分 + value，stress 含 averageStressLevel/stressValueArray）待佳明文档
+      } else if (payload.type === 'body_composition') {
+        // TODO body → BodyCompositionRecord（weightInGrams / bodyFatPercentage / muscleMassInGrams / boneMassInGrams / bodyWaterPercentage / visceralFatPercentage）待佳明文档
+      }
+    } catch {
+      // 单条失败不阻塞整体（继续下一条）
+    }
+  }
+  return { ok: true, received: true, count: payload.data.length, saved };
 }

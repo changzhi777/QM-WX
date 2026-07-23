@@ -932,7 +932,15 @@ export const deviceService = {
     // state=userId：Garmin 回调原样带 state → garminHealthCallback 解出 QM-WX userId（OAuth state 防 CSRF）
     const callbackUrl = `https://${host}/api/device/garmin-health-callback?state=${encodeURIComponent(userId)}`;
     const result = await garminHealthRequestToken(callbackUrl);
-    // TODO: result.requestToken/requestTokenSecret 暂存 Redis（key=state=userId，TTL 5min），回调取
+    // 暂存 requestToken/secret 到 Redis（key=userId，TTL 5min），callback 凭 state=userId 取
+    if (result.requestToken && result.requestTokenSecret) {
+      await redis.set(
+        `garmin:oauth:req:${userId}`,
+        JSON.stringify({ rt: result.requestToken, rts: result.requestTokenSecret }),
+        'EX',
+        300,
+      );
+    }
     return { url: result.url, configured: isGarminHealthConfigured() };
   },
 
@@ -947,13 +955,36 @@ export const deviceService = {
     oauthVerifier: string;
     state: string;
   }): Promise<{ ok: boolean; userId?: string }> {
-    // TODO: state 解出 QM-WX userId（startOAuth state 范式 base64url）+ Redis 取 requestTokenSecret
-    const requestSecret = ''; // TODO: Redis 取（garminHealthAuthUrl 暂存的）
+    const userId = input.state; // state=userId（garminHealthAuthUrl callbackUrl 传，OAuth state 防 CSRF）
+    const raw = await redis.get(`garmin:oauth:req:${userId}`);
+    if (!raw) return { ok: false };
+    const { rts: requestSecret } = JSON.parse(raw) as { rt: string; rts: string };
     const result = await garminHealthAccessToken(input.oauthToken, requestSecret, input.oauthVerifier);
     if (!result?.token) return { ok: false };
-    // TODO: state → userId + upsert DeviceBinding（vendor=garmin, accessTokenEnc=encryptToken(token), refreshTokenEnc=encryptToken(secret), vendorUserId=result.userId）
-    void encryptToken; // 占位引用（待 DeviceBinding 落库时用，避免未用 import 报错）
-    return { ok: true };
+    // 落 DeviceBinding（vendor=garmin_oauth 区分 BLE garmin；加密存 OAuth 1.0a token+secret）
+    // TODO: shared DEVICE_BRANDS + myBindings 识别 garmin_oauth（当前 BLE 用 vendor=garmin）
+    await prisma.deviceBinding.upsert({
+      where: { userId_vendor: { userId, vendor: 'garmin_oauth' } },
+      create: {
+        userId,
+        vendor: 'garmin_oauth',
+        accessTokenEnc: encryptToken(result.token),
+        refreshTokenEnc: encryptToken(result.secret),
+        vendorUserId: result.userId ?? null,
+        scopes: ['health_api'],
+        lastSyncAt: new Date(),
+      },
+      update: {
+        accessTokenEnc: encryptToken(result.token),
+        refreshTokenEnc: encryptToken(result.secret),
+        vendorUserId: result.userId ?? null,
+        scopes: ['health_api'],
+        lastSyncAt: new Date(),
+        status: 'active',
+      },
+    });
+    await redis.del(`garmin:oauth:req:${userId}`);
+    return { ok: true, userId };
   },
 
   /**
