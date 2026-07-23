@@ -82,6 +82,7 @@ const EnvSchema = z.object({
   // V0.1.146 A 路线：Garmin Health API 官方（OAuth 1.0a，需申请）
   GARMIN_CONSUMER_KEY: z.string().optional(),
   GARMIN_CONSUMER_SECRET: z.string().optional(),
+  CRYPTO_KEY: z.string().optional(), // V0.2.89 token 加密（infra/crypto.ts AES-256-GCM，存 OAuth token）
 
   // V0.1.148 和风天气 API（qweather.com）
   QWEATHER_KEY: z.string().optional(),

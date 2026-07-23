@@ -25,6 +25,12 @@ import {
   parseTerraActivity,
   fetchTerraActivity,
 } from './terra-client.js';
+import {
+  garminHealthRequestToken,
+  garminHealthAccessToken,
+  isGarminHealthConfigured,
+} from './garmin-health.js';
+import { encryptToken } from '../../infra/crypto.js';
 import { parse as parseCsv } from 'csv-parse/sync';
 import { Errors } from '../../common/errors.js';
 import { prisma } from '../../infra/prisma.js';
@@ -913,6 +919,41 @@ export const deviceService = {
   /** V0.1.146 D 路线：Garmin Terra 授权 URL（复用 COROS 通道，resource=garmin） */
   async garminAuthUrl(userId: string): Promise<{ url: string; configured: boolean }> {
     return { url: generateGarminAuthUrl(userId), configured: isTerraConfigured() };
+  },
+
+  /**
+   * V0.2.89 A 路线：Garmin Health API 直连 OAuth 1.0a 授权 URL（不依赖 Terra，免费）
+   *
+   * Step 1：调 garminHealthRequestToken → 返 authorize URL
+   * ⚠️ requestToken/requestTokenSecret 需暂存 Redis（state=userId 关联，回调取）— TODO 待凭证切流时实装
+   */
+  async garminHealthAuthUrl(userId: string): Promise<{ url: string; configured: boolean }> {
+    const host = env.WX_NOTIFY_URL ? new URL(env.WX_NOTIFY_URL).host : 'localhost';
+    // state=userId：Garmin 回调原样带 state → garminHealthCallback 解出 QM-WX userId（OAuth state 防 CSRF）
+    const callbackUrl = `https://${host}/api/device/garmin-health-callback?state=${encodeURIComponent(userId)}`;
+    const result = await garminHealthRequestToken(callbackUrl);
+    // TODO: result.requestToken/requestTokenSecret 暂存 Redis（key=state=userId，TTL 5min），回调取
+    return { url: result.url, configured: isGarminHealthConfigured() };
+  },
+
+  /**
+   * V0.2.89 A 路线：Garmin OAuth 1.0a 回调（verifier → access_token → 存 DeviceBinding）
+   *
+   * Step 3：garminHealthAccessToken 交换 → 加密存 DeviceBinding.accessTokenEnc
+   * ⚠️ state→userId 映射 + requestTokenSecret 取（Redis）待凭证切流时实装
+   */
+  async garminHealthCallback(input: {
+    oauthToken: string;
+    oauthVerifier: string;
+    state: string;
+  }): Promise<{ ok: boolean; userId?: string }> {
+    // TODO: state 解出 QM-WX userId（startOAuth state 范式 base64url）+ Redis 取 requestTokenSecret
+    const requestSecret = ''; // TODO: Redis 取（garminHealthAuthUrl 暂存的）
+    const result = await garminHealthAccessToken(input.oauthToken, requestSecret, input.oauthVerifier);
+    if (!result?.token) return { ok: false };
+    // TODO: state → userId + upsert DeviceBinding（vendor=garmin, accessTokenEnc=encryptToken(token), refreshTokenEnc=encryptToken(secret), vendorUserId=result.userId）
+    void encryptToken; // 占位引用（待 DeviceBinding 落库时用，避免未用 import 报错）
+    return { ok: true };
   },
 
   /**

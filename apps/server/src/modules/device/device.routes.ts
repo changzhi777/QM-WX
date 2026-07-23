@@ -124,6 +124,10 @@ export async function deviceRoutes(app: FastifyInstance) {
           // V0.1.146 D 路线：Garmin Terra 授权 URL（复用 COROS 通道）
           return { code: 0, data: await deviceService.garminAuthUrl(userId) };
         }
+        case 'garminHealthAuthUrl': {
+          // V0.2.89 A 路线：Garmin Health API 直连 OAuth 1.0a 授权 URL（不依赖 Terra，免费）
+          return { code: 0, data: await deviceService.garminHealthAuthUrl(userId) };
+        }
         case 'syncFromTerra': {
           // V0.1.130 Terra REST 手动拉历史 activity
           const input = (payload ?? {}) as { start: string; end: string };
@@ -176,6 +180,24 @@ export async function deviceRoutes(app: FastifyInstance) {
   app.post('/garmin-health-webhook', async (req) => {
     const { garminHealthWebhook } = await import('./garmin-health.js');
     const result = await garminHealthWebhook(req.body);
+    return { code: 0, data: result };
+  });
+
+  // V0.2.89 A 路线：Garmin OAuth 1.0a 授权回调（public，无 JWT，Garmin redirect 带 oauth_token+oauth_verifier）
+  app.get('/garmin-health-callback', { config: { public: true } }, async (req) => {
+    const { oauth_token, oauth_verifier, state } = (req.query ?? {}) as {
+      oauth_token?: string;
+      oauth_verifier?: string;
+      state?: string;
+    };
+    if (!oauth_token || !oauth_verifier) {
+      return { code: 400, msg: 'missing oauth_token/oauth_verifier' };
+    }
+    const result = await deviceService.garminHealthCallback({
+      oauthToken: oauth_token,
+      oauthVerifier: oauth_verifier,
+      state: state ?? '',
+    });
     return { code: 0, data: result };
   });
 
