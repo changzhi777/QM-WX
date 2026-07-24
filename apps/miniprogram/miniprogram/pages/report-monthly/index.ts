@@ -1,4 +1,4 @@
-// pages/report-monthly — 月度健康报告页（历史 AI 报告按月聚合）
+// pages/report-monthly — 月度健康报告页（历史 健康报告按月聚合）
 // 从今日页「更多」跳入；按月分组：每月天数 + 均健康分/步数/心率/睡眠 + 日列表点跳详情
 import { api } from '../../services/api';
 import { ensureLogin } from '../../utils/auth';

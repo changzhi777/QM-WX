@@ -199,7 +199,7 @@ Page({
   /** V0.2.32 更多功能（待定页，收纳原型没有的功能）*/
   goMore() { wx.navigateTo({ url: '/pages/more/index' }); },
 
-  /** 健康助手（原 AI 私教，V0.2.4 改名）*/
+  /** 健康助手（原 健康教练，V0.2.4 改名）*/
   goAiCoach() { wx.switchTab({ url: '/pages/ai-coach/index' }); },
 
   goAgreement() { wx.navigateTo({ url: '/pages/agreement/index' }); },

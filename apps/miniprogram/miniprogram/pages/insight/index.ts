@@ -129,7 +129,7 @@ Page({
       });
   },
 
-  /** 千人千面：喂画像 + 关联分析给 AI 私教拿个性化建议 */
+  /** 千人千面：喂画像 + 关联分析给 健康教练拿个性化建议 */
   async onTapStrategy() {
     if (this.data.loadingStrategy) return;
     const { profile, analysis } = this.data;
@@ -144,7 +144,7 @@ Page({
       const res = await api.call<{ reply: string }>('aiCoach', 'chat', { message: prompt });
       this.setData({ strategy: res.reply });
     } catch (e) {
-      wx.showToast({ title: (e as Error).message ?? 'AI 建议失败', icon: 'none' });
+      wx.showToast({ title: (e as Error).message ?? '建议计划失败', icon: 'none' });
     } finally {
       this.setData({ loadingStrategy: false });
     }

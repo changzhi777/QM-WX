@@ -26,7 +26,7 @@
   <view class="loading" wx:if="{{loading}}">加载中...</view>
 
   <block wx:elif="{{report}}">
-    <!-- AI 解读卡：摘要 + 查看完整报告 + 解锁 -->
+    <!-- 健康解读卡：摘要 + 查看完整报告 + 解锁 -->
     <view class="ai-card">
       <view class="ai-header">
         <text class="ai-badge">✨ AI解读</text>
@@ -82,9 +82,9 @@
       </view>
     </view>
 
-    <!-- 历史 AI 报告（默认 7 日；更多历史进月度报告页，入口在本周趋势标题）-->
+    <!-- 历史报告（默认 7 日；更多历史进月度报告页，入口在本周趋势标题）-->
     <view class="section-title" wx:if="{{history.length}}">
-      历史 AI 报告
+      历史报告
     </view>
     <view class="history-list" wx:if="{{history.length}}">
       <van-cell-group>

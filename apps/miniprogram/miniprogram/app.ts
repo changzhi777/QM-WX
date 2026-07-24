@@ -33,7 +33,7 @@ App({
       // 部分基础库不支持 → 当作开发版（连本地）
     }
     const isDev = envVersion === 'develop';
-    // ⚠️ 临时：模拟器/预览连生产测 AI 私教（测完改 false 恢复 develop 连本地）
+    // ⚠️ 临时：模拟器/预览连生产测 健康教练（测完改 false 恢复 develop 连本地）
     const FORCE_PROD = true;
     (wx as unknown as { $apiBase: string }).$apiBase = (!FORCE_PROD && isDev) ? API_BASE.dev : API_BASE.prod;
 

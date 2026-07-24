@@ -1,6 +1,6 @@
 <view class="page">
   <view class="header">
-    <view class="title">📊 AI 资料解读</view>
+    <view class="title">📊 健康解读</view>
     <view class="sub">上传运动/健康数据，AI 识图 + 联动个人画像综合分析</view>
   </view>
 
@@ -10,7 +10,7 @@
     <view class="upload-icon">{{shotLoading ? '⏳' : '📷'}}</view>
     <view class="upload-text">{{shotLoading ? '识别分析中…' : '上传截图'}}</view>
     <view class="upload-hint">跑步成绩 / 体脂秤 / 体检报告 / 手环数据 等</view>
-    <view class="privacy-hint">🔒 截图仅用于 AI 分析，请勿上传含身份证号 / 病历号等敏感信息的图片</view>
+    <view class="privacy-hint">🔒 截图仅用于 助手分析，请勿上传含身份证号 / 病历号等敏感信息的图片</view>
   </view>
 
   <view class="shot-preview" wx:if="{{imageUrl}}">
@@ -45,7 +45,7 @@
   <view class="error" wx:if="{{error}}">⚠️ {{error}}</view>
 
   <view class="result-card" wx:if="{{interpretation}}">
-    <view class="result-title">✨ AI 解读</view>
+    <view class="result-title">✨ 健康解读</view>
     <view class="result-text">{{interpretation}}</view>
   </view>
 

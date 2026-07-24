@@ -56,8 +56,8 @@
   <!-- 权益说明 -->
   <view class="card benefit-card">
     <view class="card-title">会员权益</view>
-    <view class="benefit-item">✅ 完整 AI 健康解读（非每周 1 次限制）</view>
-    <view class="benefit-item">✅ AI 健康助手无限问答</view>
+    <view class="benefit-item">✅ 完整 健康解读（非每周 1 次限制）</view>
+    <view class="benefit-item">✅ 健康助手无限问答</view>
     <view class="benefit-item">✅ 每日健康简报全文</view>
     <view class="benefit-hint">免费用户每周可看 1 次完整解读，邀请好友解锁更多</view>
   </view>

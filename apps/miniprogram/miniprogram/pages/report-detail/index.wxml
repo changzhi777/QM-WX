@@ -39,7 +39,7 @@
       <!-- 锁定遮罩 + 升级入口 -->
       <view class="rd-lock-mask" wx:if="{{locked}}">
         <view class="rd-lock-icon">🔒</view>
-        <view class="rd-lock-text">完整 AI 解读为会员专享内容</view>
+        <view class="rd-lock-text">完整 健康解读为会员专享内容</view>
         <view class="rd-upgrade" bindtap="goMembership">升级会员解锁完整版 ›</view>
       </view>
     </view>

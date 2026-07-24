@@ -1,5 +1,5 @@
 // pages/index/index.ts — 今日 tab（V0.1.144 原型图 + V0.2.4 健康中心改版 + 批 1 趋势带日期）
-// 健康分数环 + AI 摘要卡（查看完整报告/解锁）+ 3 数据卡 + 本周趋势（数值+日期）+ 历史 AI 报告（7日+更多）
+// 健康分数环 + AI 摘要卡（查看完整报告/解锁）+ 3 数据卡 + 本周趋势（数值+日期）+ 历史 健康报告（7日+更多）
 import { api } from '../../services/api';
 import { ensureLogin } from '../../utils/auth';
 import { syncWeRunIfFirstToday } from '../../utils/werun';
@@ -52,7 +52,7 @@ Page({
     dateStr: '',
     weekday: '',
     isMember: false,
-    reportSummary: '',                     // AI 建议：reportText 前 2 句摘要
+    reportSummary: '',                     // 建议计划：reportText 前 2 句摘要
     weather: null as { city: string; text: string; temperature: number; feelsLike: number; icon: string } | null,
     altitude: null as number | null,
     latitude: null as number | null,
@@ -116,7 +116,7 @@ Page({
     return '晚上好';
   },
 
-  /** reportText 摘要：取前 N 句作为 AI 建议展示 */
+  /** reportText 摘要：取前 N 句作为 建议计划展示 */
   summarizeReport(text: string): string {
     if (!text) return '';
     const sentences = text.split(/[。！？\n]/).map((s) => s.trim()).filter(Boolean);

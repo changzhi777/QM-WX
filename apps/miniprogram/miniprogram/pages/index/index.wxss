@@ -34,7 +34,7 @@
 
 .loading { text-align: center; color: #999; padding: 80rpx; font-size: 28rpx; }
 
-/* AI 解读卡 */
+/* 健康解读卡 */
 .ai-card {
   background: #fff;
   margin: -40rpx 24rpx 24rpx;
@@ -124,7 +124,7 @@
 .bar { width: 100%; flex: 1; background: linear-gradient(180deg, #2D9D78, #1a7a5a); border-radius: 8rpx 8rpx 0 0; min-height: 8rpx; }
 .bar-date { font-size: 18rpx; color: #999; height: 32rpx; line-height: 32rpx; }
 
-/* 历史 AI 报告 */
+/* 历史 健康报告 */
 .history-list { padding: 0 24rpx; }
 
 /* 空态 */

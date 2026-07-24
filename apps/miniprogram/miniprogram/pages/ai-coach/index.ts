@@ -1,4 +1,4 @@
-// AI 私教聊天页（V0.1.140 — 人设可切换 + 建议卡片 + 分享 + 语音占位 + 会话管理）
+// 健康教练聊天页（V0.1.140 — 人设可切换 + 建议卡片 + 分享 + 语音占位 + 会话管理）
 //
 // 流式：wx.request enableChunked + onChunkReceived → abToAscii → 按 \n\n 分帧 → JSON.parse
 // 人设（A）：本地缓存 + setPersona 同步 DB；4 人设 scientist/coach/buddy/strict
@@ -35,7 +35,7 @@ const PERSONAS = [
 const QUICK_QUESTIONS = ['今天该怎么练？', '跑步后膝盖酸怎么办？', '在家放松/恢复建议', '最近睡不好怎么调？', '减脂期吃什么？'];
 
 const WELCOME =
-  '你好，我是沐禾健康 AI 私教 🏃。点上方人设切换风格，问我训练/恢复/营养/伤病，或点「计划」定制训练计划。';
+  '你好，我是沐禾健康教练 🏃。点上方人设切换风格，问我训练/恢复/营养/伤病，或点「计划」定制训练计划。';
 
 Page({
   data: {
@@ -45,9 +45,9 @@ Page({
     sending: false,
     scrollTop: 0,
     quickQuestions: QUICK_QUESTIONS,
-    alert: null as string | null, // V0.1.144 AI 主动提醒
+    alert: null as string | null, // V0.1.144 计划提醒
     todayData: null as { steps: number; restingHr: number | null; sleepHours: number | null; healthScore: number } | null,
-    reportAdvice: '', // V0.2.30 AI 建议气泡（今日 dailyReport reportText）
+    reportAdvice: '', // V0.2.30 建议计划气泡（今日 dailyReport reportText）
     hasHistory: false,
     showConversations: false,
     conversationList: [] as Array<{ conversationId: string; lastMessage: string; lastTime: string; messageCount: number }>,
@@ -72,10 +72,10 @@ Page({
     // V0.2.43 默认新聊：进页不恢复历史（hasHistory=false → 显 quick cards + AI 气泡 + 快速提问）
     // 用户点「历史」按钮（onShowConversations）才看历史会话
     this.warmup(); // V0.1.141 B 预热 system prompt Cache（首问快）
-    this.loadAlert(); // V0.1.144 AI 主动提醒 + 今日数据条
+    this.loadAlert(); // V0.1.144 计划提醒 + 今日数据条
   },
 
-  /** V0.1.144 AI 主动提醒（基于今日数据）+ 头部数据条 + V0.2.30 AI 建议气泡（dailyReport reportText）*/
+  /** V0.1.144 计划提醒（基于今日数据）+ 头部数据条 + V0.2.30 建议计划气泡（dailyReport reportText）*/
   async loadAlert() {
     try {
       const [res, reportRes] = await Promise.all([
@@ -462,7 +462,7 @@ Page({
     const text = last?.role === 'assistant' && last.content ? last.content.replace(/📋建议：[^\n]+/g, '').trim() : '';
     const code = (getApp().globalData as { inviteCode?: string }).inviteCode;
     return {
-      title: text ? `AI 私教：${text.slice(0, 40)}…` : '沐禾健康 AI 私教 — 你的私人跑步教练 🏃',
+      title: text ? `健康教练：${text.slice(0, 40)}…` : '沐禾健康教练 — 你的私人跑步教练 🏃',
       path: '/pages/ai-coach/index' + (code ? `?inviterCode=${code}` : ''),
       success: () => {
         api.call('points', 'awardShare').catch(() => {});
