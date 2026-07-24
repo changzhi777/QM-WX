@@ -55,6 +55,11 @@
   box-shadow: 0 4rpx 12rpx rgba(45,157,120,0.2);
 }
 .gps-btn::after { border: none; }
+.gps-bar .photo-btn {
+  width: 100%; background: #fff; color: #2D9D78; font-size: 28rpx; font-weight: 600;
+  border-radius: 12rpx; padding: 22rpx 0; border: 2rpx solid #2D9D78; margin-top: 16rpx;
+}
+.gps-bar .photo-btn::after { border: none; }
 .gps-running {
   background: #e8f5e9; border-radius: 12rpx; padding: 24rpx; margin-bottom: 20rpx; text-align: center;
 }

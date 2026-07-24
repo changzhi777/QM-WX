@@ -479,6 +479,11 @@ Page({
       fail: () => wx.showToast({ title: '保存失败（检查授权）', icon: 'none' }),
     });
   },
+
+  /** 拍照打卡 → interpret 截图识别页（V0.2.57 GLM-4.6V 识图 + V0.2.60 用户确认 checkin）*/
+  goInterpret() {
+    wx.navigateTo({ url: '/pages/interpret/index' });
+  },
 });
 
 // 避免 lint 警告

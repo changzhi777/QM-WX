@@ -34,6 +34,7 @@
       <!-- V0.3 GPS 跑步记录 -->
       <view class="gps-bar" wx:if="{{!gpsRunning}}">
         <button class="gps-btn" bindtap="startGpsRun">📍 GPS 跑步记录（自动算距离）</button>
+        <button class="photo-btn" bindtap="goInterpret">📷 拍照打卡（截图识别）</button>
       </view>
       <view class="gps-running" wx:if="{{gpsRunning}}">
         <view class="gps-live">
