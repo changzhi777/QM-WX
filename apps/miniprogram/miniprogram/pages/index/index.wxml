@@ -61,6 +61,17 @@
       </block>
     </view>
 
+    <!-- P3 饮食摘要卡（food.myMeals 今日宏量）-->
+    <view class="diet-card" wx:if="{{dietRes}}" bindtap="onTapDiet">
+      <text class="diet-icon">🍎</text>
+      <view class="diet-info">
+        <view class="diet-title">今日饮食</view>
+        <view class="diet-sub" wx:if="{{dietRes.meals.length > 0}}">{{dietRes.summary.calorie}} kcal · 蛋白 {{dietRes.summary.protein}}g · 碳水 {{dietRes.summary.carb}}g</view>
+        <view class="diet-sub" wx:else>点击记录今日饮食</view>
+      </view>
+      <text class="diet-arrow">›</text>
+    </view>
+
     <!-- 运动与天气建议（stats.weatherAnalysis insights）-->
     <view class="weather-advice-card" wx:if="{{weatherAdvice.length}}">
       <view class="advice-title">🌡️ 运动与天气建议</view>
