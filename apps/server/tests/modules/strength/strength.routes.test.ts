@@ -19,6 +19,9 @@ const mockService = vi.hoisted(() => ({
   sessionDetail: vi.fn(),
   myVolume: vi.fn(),
   listExercises: vi.fn(),
+  addUserExercise: vi.fn(),
+  listUserExercises: vi.fn(),
+  removeUserExercise: vi.fn(),
 }));
 
 vi.mock('src/modules/strength/strength.service.js', () => mockService);
@@ -31,6 +34,8 @@ vi.mock('src/modules/strength/strength.schema.js', () => {
     ListSessionsSchema: passthrough,
     MyVolumeSchema: passthrough,
     ListExercisesSchema: passthrough,
+    AddUserExerciseSchema: passthrough, // V0.2.132
+    RemoveUserExerciseSchema: passthrough, // V0.2.132
   };
 });
 vi.mock('src/common/errors.js', () => ({
@@ -133,16 +138,28 @@ describe('strength routes', () => {
     await app.close();
   });
 
-  it('listExercises → 不传 userId（全局动作库）', async () => {
+  it('listExercises → 传 userId（V0.2.132 合并全局+用户自定义）', async () => {
     mockService.listExercises.mockResolvedValue({ list: [] });
-    const app = await buildApp({ authed: true });
+    const app = await buildApp({ authed: true, userId: 'u1' });
     const r = await app.inject({
       method: 'POST', url: '/',
       payload: { action: 'listExercises', payload: { category: 'chest' } },
     });
     expect(r.json().data).toEqual({ list: [] });
-    // 关键：listExercises 只传 parse 后 input，不含 userId（全局动作库）
-    expect(mockService.listExercises).toHaveBeenCalledWith({ category: 'chest' });
+    // V0.2.132: listExercises(userId, input) — userId 从 req.user 透传
+    expect(mockService.listExercises).toHaveBeenCalledWith('u1', { category: 'chest' });
+    await app.close();
+  });
+
+  it('addUserExercise → V0.2.132 新增自定义动作', async () => {
+    mockService.addUserExercise.mockResolvedValue({ id: 'e1', name: '壶铃摇摆', category: '核心' });
+    const app = await buildApp({ authed: true, userId: 'u1' });
+    const r = await app.inject({
+      method: 'POST', url: '/',
+      payload: { action: 'addUserExercise', payload: { name: '壶铃摇摆', category: '核心' } },
+    });
+    expect(r.json().data).toEqual({ id: 'e1', name: '壶铃摇摆', category: '核心' });
+    expect(mockService.addUserExercise).toHaveBeenCalledWith('u1', { name: '壶铃摇摆', category: '核心' });
     await app.close();
   });
 });

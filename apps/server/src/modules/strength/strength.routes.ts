@@ -1,5 +1,5 @@
 /**
- * strength module routes — V0.2.42 力量训练记录（训记式 + V0.2.126 动作统计）
+ * strength module routes — V0.2.42 力量训练记录（训记式 + V0.2.126 动作统计 + V0.2.132 自定义动作）
  *
  * POST /api/strength { action, payload }（JWT）
  *   - startSession     开始训练（创建空 session + 自动计时由前端管）
@@ -8,8 +8,11 @@
  *   - listSessions     训练历史（分页）
  *   - sessionDetail    单次训练详情（所有组）
  *   - myVolume         容量统计（最近 N 天趋势）
- *   - listExercises    动作库（预设 + 自定义，category/search 过滤）
+ *   - listExercises    动作库（预设 + 当前用户自定义，category/search 过滤）— V0.2.132 合并
  *   - getExerciseStats 动作统计（PB + 容量分布）— V0.2.126
+ *   - addUserExercise  新增自定义动作 — V0.2.132
+ *   - listUserExercises 列出我的自定义动作 — V0.2.132
+ *   - removeUserExercise 删除我的自定义动作 — V0.2.132
  */
 import type { FastifyInstance } from 'fastify';
 import { Errors } from '../../common/errors.js';
@@ -22,6 +25,8 @@ import {
   MyVolumeSchema,
   ListExercisesSchema,
   GetExerciseStatsSchema,
+  AddUserExerciseSchema,
+  RemoveUserExerciseSchema,
 } from './strength.schema.js';
 
 export async function strengthRoutes(app: FastifyInstance) {
@@ -46,11 +51,20 @@ export async function strengthRoutes(app: FastifyInstance) {
       case 'myVolume':
         return { code: 0, data: await strengthService.myVolume(userId, MyVolumeSchema.parse(payload ?? {})) };
       case 'listExercises':
-        return { code: 0, data: await strengthService.listExercises(ListExercisesSchema.parse(payload ?? {})) };
+        return { code: 0, data: await strengthService.listExercises(userId, ListExercisesSchema.parse(payload ?? {})) };
       case 'getExerciseStats':
-        // V0.2.126 无入参，body 任意 JSON 均通过
         GetExerciseStatsSchema.parse(payload ?? {});
         return { code: 0, data: await strengthService.getExerciseStats(userId) };
+      case 'addUserExercise': {
+        const input = AddUserExerciseSchema.parse(payload);
+        return { code: 0, data: await strengthService.addUserExercise(userId, input) };
+      }
+      case 'listUserExercises':
+        return { code: 0, data: await strengthService.listUserExercises(userId) };
+      case 'removeUserExercise': {
+        const { id } = RemoveUserExerciseSchema.parse(payload);
+        return { code: 0, data: await strengthService.removeUserExercise(userId, id) };
+      }
       default:
         throw Errors.badRequest(`unknown action: ${action}`);
     }

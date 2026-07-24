@@ -271,3 +271,18 @@
   font-size: 24rpx;
   font-weight: 600;
 }
+
+/* V0.2.132 保存为我的动作入口 */
+.save-custom {
+  margin-top: 12rpx;
+  padding: 16rpx 24rpx;
+  background: #E6F7F2;
+  border-radius: 8rpx;
+  text-align: center;
+}
+
+.save-custom__text {
+  color: #2D9D78;
+  font-size: 24rpx;
+  font-weight: 500;
+}

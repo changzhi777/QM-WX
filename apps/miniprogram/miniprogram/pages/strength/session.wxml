@@ -37,6 +37,10 @@
       <text class="form-row__label">自定义</text>
       <input class="form-row__input" placeholder="未在上方可选自定义输入" value="{{customName}}" bindinput="onInputCustom" />
     </view>
+    <!-- V0.2.132 保存为我的动作（仅在 customName 非空时显示） -->
+    <view class="save-custom" wx:if="{{customName && !exerciseIndex >= 0}}" bindtap="onSaveAsCustom">
+      <text class="save-custom__text">+ 保存「{{customName}}」到我的动作库</text>
+    </view>
     <view class="form-row form-row--grid">
       <view class="form-col">
         <text class="form-row__label">次数</text>

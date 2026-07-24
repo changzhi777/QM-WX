@@ -122,6 +122,30 @@ Page({
     this.setData({ customName: v, exerciseIndex: -1, exerciseName: v ? v : '' });
   },
 
+  /** V0.2.132 保存 customName 到我的动作库 */
+  async onSaveAsCustom() {
+    const name = this.data.customName.trim();
+    if (!name) return;
+    wx.showLoading({ title: '保存中...', mask: true });
+    try {
+      // 默认 category=其他（前端简化；用户后续可调）
+      await api.call('strength', 'addUserExercise', { name, category: '其他' });
+      // 重新加载动作库（让新动作出现在 picker）
+      this.setData({ customName: '' });
+      await this.loadExercises();
+      wx.showToast({ title: '已保存到我的动作', icon: 'success' });
+    } catch (e) {
+      const msg = (e as Error).message || '保存失败';
+      if (msg.includes('已存在')) {
+        wx.showToast({ title: '动作名已存在', icon: 'none' });
+      } else {
+        wx.showToast({ title: msg, icon: 'none' });
+      }
+    } finally {
+      wx.hideLoading();
+    }
+  },
+
   onInputReps(e: WechatMiniprogram.Input) { this.setData({ reps: e.detail.value }); },
   onInputWeight(e: WechatMiniprogram.Input) { this.setData({ weight: e.detail.value }); },
   onInputSetIndex(e: WechatMiniprogram.Input) { this.setData({ setIndex: e.detail.value }); },

@@ -183,12 +183,64 @@ export async function myVolume(userId: string, input: { days?: number } = {}) {
   };
 }
 
-/** 动作库列表（预设 + 自定义，category/search 过滤）*/
-export async function listExercises(input: { category?: string; search?: string } = {}) {
-  const where: Record<string, unknown> = {};
+/** 动作库列表（预设 + 用户自定义，category/search 过滤）*/
+export async function listExercises(
+  userId: string,
+  input: { category?: string; search?: string } = {},
+) {
+  // V0.2.132 合并：全局预设（userId=null）+ 用户自定义（userId=userId）；OR 条件
+  const where: Record<string, unknown> = {
+    OR: [{ userId: null }, { userId }],
+  };
   if (input.category) where.category = input.category;
   if (input.search) where.name = { contains: input.search };
-  return prisma.exercise.findMany({ where, orderBy: [{ category: 'asc' }, { name: 'asc' }] });
+  return prisma.exercise.findMany({
+    where,
+    orderBy: [{ category: 'asc' }, { name: 'asc' }],
+  });
+}
+
+/**
+ * V0.2.132 用户添加自定义动作
+ *
+ * - 同用户不能重名（@@unique[userId, name]）
+ * - userId 强制是当前用户（前端不可改）
+ * - 重复添加 → conflict
+ */
+export async function addUserExercise(
+  userId: string,
+  input: { name: string; category: string; muscleGroup?: string },
+) {
+  const exists = await prisma.exercise.findFirst({
+    where: { userId, name: input.name },
+  });
+  if (exists) throw new Error('动作名已存在');
+  const ex = await prisma.exercise.create({
+    data: {
+      userId,
+      name: input.name,
+      category: input.category,
+      muscleGroup: input.muscleGroup ?? null,
+      isCustom: true,
+    },
+  });
+  return { id: ex.id, name: ex.name, category: ex.category };
+}
+
+/** V0.2.132 列出我的自定义动作（仅 userId=自己，不含全局预设） */
+export async function listUserExercises(userId: string) {
+  return prisma.exercise.findMany({
+    where: { userId },
+    orderBy: [{ category: 'asc' }, { name: 'asc' }],
+  });
+}
+
+/** V0.2.132 删除我的自定义动作（鉴权：仅 userId=自己 可删） */
+export async function removeUserExercise(userId: string, id: string) {
+  const ex = await prisma.exercise.findUnique({ where: { id } });
+  if (!ex || ex.userId !== userId) throw new Error('无权删除或动作不存在');
+  await prisma.exercise.delete({ where: { id } });
+  return { ok: true };
 }
 
 /**

@@ -37,3 +37,15 @@ export const ListExercisesSchema = z.object({
 
 /** V0.2.126 动作统计（PB + 容量分布）— 无入参 */
 export const GetExerciseStatsSchema = z.object({}).optional();
+
+/** V0.2.132 用户添加自定义动作 */
+export const AddUserExerciseSchema = z.object({
+  name: z.string().min(1).max(50),
+  category: z.string().min(1).max(20), // 胸/背/腿/肩/手臂/核心
+  muscleGroup: z.string().max(20).optional(),
+});
+export type AddUserExerciseInput = z.infer<typeof AddUserExerciseSchema>;
+
+export const RemoveUserExerciseSchema = z.object({
+  id: z.string().min(1),
+});

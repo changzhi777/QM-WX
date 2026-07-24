@@ -16,7 +16,7 @@ const mockPrisma = vi.hoisted(() => ({
     update: vi.fn(),
   },
   strengthSet: { findFirst: vi.fn(), create: vi.fn(), findMany: vi.fn() },
-  exercise: { findMany: vi.fn() },
+  exercise: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn(), findUnique: vi.fn(), delete: vi.fn() },
 }));
 
 vi.mock('src/infra/prisma.js', () => ({ prisma: mockPrisma }));
@@ -32,6 +32,7 @@ import {
   myVolume,
   listExercises,
   getExerciseStats,
+  addUserExercise,
 } from '../../../src/modules/strength/strength.service.js';
 import { notifyStrengthDone } from 'src/modules/notification/notification.service.js';
 
@@ -244,19 +245,47 @@ describe('strength.service · myVolume', () => {
 });
 
 describe('strength.service · listExercises', () => {
-  it('category + search 过滤 + 排序', async () => {
+  it('V0.2.132 category + search + 合并全局(userId=null) + 当前用户(userId=me) 过滤 + 排序', async () => {
     mockPrisma.exercise.findMany.mockResolvedValue([
-      { id: 'e1', name: '深蹲', category: '腿' },
+      { id: 'e1', name: '深蹲', category: '腿', userId: null },
+      { id: 'e2', name: '我的壶铃', category: '核心', userId: 'u1' },
     ]);
 
-    await listExercises({ category: '腿', search: '深' });
+    await listExercises('u1', { category: '腿', search: '深' });
 
     expect(mockPrisma.exercise.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { category: '腿', name: { contains: '深' } },
+        where: {
+          OR: [{ userId: null }, { userId: 'u1' }],
+          category: '腿',
+          name: { contains: '深' },
+        },
         orderBy: [{ category: 'asc' }, { name: 'asc' }],
       }),
     );
+  });
+});
+
+describe('strength.service · addUserExercise (V0.2.132)', () => {
+  it('用户加自定义动作（无重名）→ 落库并标 isCustom=true', async () => {
+    mockPrisma.exercise.findFirst.mockResolvedValue(null as never);
+    mockPrisma.exercise.create.mockResolvedValue({
+      id: 'e10', name: '壶铃摇摆', category: '核心', userId: 'u1', isCustom: true,
+    } as never);
+
+    const r = await addUserExercise('u1', { name: '壶铃摇摆', category: '核心' });
+
+    expect(r.id).toBe('e10');
+    expect(r.name).toBe('壶铃摇摆');
+    const data = mockPrisma.exercise.create.mock.calls[0][0].data;
+    expect(data.userId).toBe('u1');
+    expect(data.isCustom).toBe(true);
+  });
+
+  it('同用户重名 → 抛错', async () => {
+    mockPrisma.exercise.findFirst.mockResolvedValue({ id: 'e10', name: '壶铃摇摆' } as never);
+    await expect(addUserExercise('u1', { name: '壶铃摇摆', category: '核心' })).rejects.toThrow();
+    expect(mockPrisma.exercise.create).not.toHaveBeenCalled();
   });
 });
 

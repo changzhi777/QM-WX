@@ -81,6 +81,7 @@ model User {
   bodyCompositionRecords BodyCompositionRecord[] // V0.1.124 体脂秤数据（BLE 小米体脂秤）
   interpretRecords       InterpretRecord[] // V0.2.33 资料解读（minimax M3）
   strengthSessions       StrengthSession[] // V0.2.42 力量训练（训记式）
+  exercises              Exercise[] // V0.2.132 用户自定义动作库
   corosRawEvents         CorosRawEvent[] // V0.1.130 COROS Terra webhook 原始数据
   conversationTurns      ConversationTurn[] // V0.1.139 AI 私教对话（多轮记忆）
   dailyReports           DailyReport[] // V0.1.144 每日 AI 健康简报（健康分数+AI 解读）
@@ -1258,13 +1259,19 @@ model StrengthSet {
 
 model Exercise {
   id          String   @id @default(cuid())
-  name        String   @unique
+  name        String
   category    String // 胸/背/腿/肩/手臂/核心
   muscleGroup String? // 具体肌群（如 股四头肌）
   isCustom    Boolean  @default(false) // 用户自定义 vs 预设
+  userId      String? // V0.2.132 用户自定义动作（null=全局预设；有值=某用户私有）
   createdAt   DateTime @default(now())
 
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
   sets StrengthSet[]
+
+  // V0.2.132 解除全局 @unique 改组合唯一：同用户不能重名；不同用户可同名；全局（userId=null）name 唯一
+  @@unique([userId, name])
+  @@index([userId, category])
 
   @@index([category])
 }
