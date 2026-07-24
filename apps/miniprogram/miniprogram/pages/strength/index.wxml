@@ -22,6 +22,32 @@
     <view class="volume-card__empty" wx:else>暂无训练记录，开始第一次吧！</view>
   </view>
 
+  <!-- V0.2.127 训练日历热图（最近 26 周 GitHub 风格） -->
+  <view class="heatmap-card">
+    <view class="heatmap-card__head">
+      <text class="heatmap-card__title">📅 训练日历</text>
+      <view class="heatmap-card__legend">
+        <text class="legend-text">少</text>
+        <view class="legend-cell legend-cell--0"></view>
+        <view class="legend-cell legend-cell--1"></view>
+        <view class="legend-cell legend-cell--2"></view>
+        <view class="legend-cell legend-cell--3"></view>
+        <view class="legend-cell legend-cell--4"></view>
+        <text class="legend-text">多</text>
+      </view>
+    </view>
+    <scroll-view scroll-x class="heatmap-scroll">
+      <view class="heatmap-grid">
+        <view wx:for="{{heatmap.weeks}}" wx:key="weekStart" wx:for-item="week" class="heatmap-week">
+          <view wx:for="{{week.days}}" wx:key="date" wx:for-item="day" class="heatmap-day heatmap-day--{{day.level}}" data-date="{{day.date}}" data-volume="{{day.volume}}" bindtap="onTapHeatmapDay"></view>
+        </view>
+      </view>
+    </scroll-view>
+    <view class="heatmap-meta">
+      共 {{heatmap.totalTrainings}} 次训练 · 最高单日 {{heatmap.maxVolumeText}} kg·次
+    </view>
+  </view>
+
   <!-- 开始训练 -->
   <view class="start-btn {{starting ? 'start-btn--loading' : ''}}" bindtap="onStart">
     <text wx:if="{{!starting}}">+ 开始训练</text>

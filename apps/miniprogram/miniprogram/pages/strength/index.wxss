@@ -93,6 +93,90 @@
   font-weight: 600;
 }
 
+/* V0.2.127 训练日历热图 */
+.heatmap-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-top: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+
+.heatmap-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.heatmap-card__title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.heatmap-card__legend {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+}
+
+.legend-text {
+  font-size: 20rpx;
+  color: #999;
+}
+
+.legend-cell {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 4rpx;
+  border: 1rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.legend-cell--0 { background: #ebedf0; }
+.legend-cell--1 { background: #c6e48b; }
+.legend-cell--2 { background: #7bc96f; }
+.legend-cell--3 { background: #239a3b; }
+.legend-cell--4 { background: #196127; }
+
+.heatmap-scroll {
+  white-space: nowrap;
+  margin: 0 -8rpx;
+}
+
+.heatmap-grid {
+  display: flex;
+  gap: 4rpx;
+  padding: 8rpx;
+}
+
+.heatmap-week {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+
+.heatmap-day {
+  width: 18rpx;
+  height: 18rpx;
+  border-radius: 4rpx;
+  background: #ebedf0;
+  border: 1rpx solid rgba(0, 0, 0, 0.05);
+}
+
+.heatmap-day--0 { background: #ebedf0; }
+.heatmap-day--1 { background: #c6e48b; }
+.heatmap-day--2 { background: #7bc96f; }
+.heatmap-day--3 { background: #239a3b; }
+.heatmap-day--4 { background: #196127; }
+
+.heatmap-meta {
+  margin-top: 16rpx;
+  font-size: 22rpx;
+  color: #999;
+  text-align: center;
+}
+
 .start-btn--loading {
   opacity: 0.5;
 }

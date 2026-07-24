@@ -1,4 +1,4 @@
-// pages/strength/index.ts — 力量训练主页（V0.2.120 训记式：容量概览 + 历史列表 + 开始训练）
+// pages/strength/index.ts — 力量训练主页（V0.2.120 训记式 + V0.2.127 训练日历热图）
 import { api } from '../../services/api';
 
 interface SessionItem {
@@ -19,6 +19,24 @@ interface VolumeTrendItem {
   heightPct: number;
 }
 
+interface HeatmapDay {
+  date: string;
+  volume: number;
+  level: 0 | 1 | 2 | 3 | 4;
+}
+
+interface HeatmapWeek {
+  weekStart: string;
+  days: HeatmapDay[];
+}
+
+interface HeatmapData {
+  weeks: HeatmapWeek[];
+  totalTrainings: number;
+  maxVolume: number;
+  maxVolumeText: string;
+}
+
 function formatDuration(sec: number): string {
   if (!sec || sec <= 0) return '0 分钟';
   const m = Math.floor(sec / 60);
@@ -33,12 +51,60 @@ function formatVolume(v: number): string {
   return `${Math.round(v)} kg·次`;
 }
 
+function formatYmd(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+/** V0.2.127 把后端 trend 转 26 周 × 7 天热图（GitHub 风格 5 级颜色） */
+function buildHeatmap(trend: Array<{ date: string; volume: number }>, now = new Date()): HeatmapData {
+  const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endDayOfWeek = end.getDay(); // 0=Sun
+  const start = new Date(end);
+  start.setDate(end.getDate() - (26 * 7 - 1 + endDayOfWeek));
+  start.setDate(start.getDate() - start.getDay());
+
+  const map = new Map<string, number>();
+  for (const t of trend) map.set(t.date, t.volume);
+  let maxVolume = 0;
+  for (const v of map.values()) if (v > maxVolume) maxVolume = v;
+  const maxV = Math.max(1, maxVolume);
+  const levelOf = (v: number): 0 | 1 | 2 | 3 | 4 => {
+    if (v <= 0) return 0;
+    const pct = v / maxV;
+    if (pct < 0.25) return 1;
+    if (pct < 0.5) return 2;
+    if (pct < 0.75) return 3;
+    return 4;
+  };
+
+  const weeks: HeatmapWeek[] = [];
+  let totalTrainings = 0;
+  const cursor = new Date(start);
+  for (let w = 0; w < 26; w++) {
+    const days: HeatmapDay[] = [];
+    const weekStart = formatYmd(cursor);
+    for (let d = 0; d < 7; d++) {
+      const dateStr = formatYmd(cursor);
+      const v = map.get(dateStr) ?? 0;
+      if (v > 0) totalTrainings += 1;
+      days.push({ date: dateStr, volume: v, level: levelOf(v) });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    weeks.push({ weekStart, days });
+  }
+  return { weeks, totalTrainings, maxVolume, maxVolumeText: formatVolume(maxVolume) };
+}
+
 Page({
   data: {
     totalVolume: '0',  // V0.2.120 格式化后字符串（用于 UI 直接展示）
     totalSessions: 0,
     trend: [] as VolumeTrendItem[],
     sessions: [] as SessionItem[],
+    heatmap: { weeks: [], totalTrainings: 0, maxVolume: 0, maxVolumeText: '0' } as HeatmapData,
     loading: false,
     starting: false,
   },
@@ -53,25 +119,27 @@ Page({
     this.setData({ loading: false });
   },
 
-  /** V0.2.120 容量概览（近 30 天 + 简易柱状） */
+  /** V0.2.120 容量概览（近 30 天柱状 + V0.2.127 26 周热图） */
   async loadVolume() {
     try {
+      // 26 周 ≈ 182 天，一次拿够（热图 + 末尾 7 天柱状都从同一份数据切）
       const res = await api.call<{ totalVolume: number; totalSessions: number; trend: Array<{ date: string; volume: number }> }>(
-        'strength', 'myVolume', { days: 30 },
+        'strength', 'myVolume', { days: 180 },
       );
-      // 简易柱状：取 trend 末尾 7 天，最大值映射 100% 高度
       const last7 = (res.trend ?? []).slice(-7);
       const maxV = Math.max(1, ...last7.map((t) => t.volume));
       const trend: VolumeTrendItem[] = last7.map((t) => ({
         date: t.date,
-        dateLabel: t.date.slice(5), // MM-DD
+        dateLabel: t.date.slice(5),
         volume: t.volume,
         heightPct: Math.max(4, Math.round((t.volume / maxV) * 100)),
       }));
+      const heatmap = buildHeatmap(res.trend ?? []);
       this.setData({
         totalVolume: formatVolume(res.totalVolume ?? 0),
         totalSessions: res.totalSessions ?? 0,
         trend,
+        heatmap,
       });
     } catch {
       // 失败不阻塞主页
@@ -119,5 +187,18 @@ Page({
   onTapSession(e: WechatMiniprogram.TouchEvent) {
     const id = e.currentTarget.dataset.id as string;
     if (id) wx.navigateTo({ url: `/pages/strength/detail?sessionId=${id}` });
+  },
+
+  /** V0.2.127 点热图某天 → 跳当天第一个 session 详情 */
+  onTapHeatmapDay(e: WechatMiniprogram.TouchEvent) {
+    const date = e.currentTarget.dataset.date as string;
+    const volume = Number(e.currentTarget.dataset.volume || 0);
+    if (!date) return;
+    const found = this.data.sessions.find((s) => s.dateStr === date);
+    if (found) {
+      wx.navigateTo({ url: `/pages/strength/detail?sessionId=${found.id}` });
+    } else {
+      wx.showToast({ title: `${date} ${volume} kg·次`, icon: 'none' });
+    }
   },
 });
