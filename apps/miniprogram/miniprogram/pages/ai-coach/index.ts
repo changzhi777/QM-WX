@@ -51,7 +51,7 @@ Page({
     hasHistory: false,
     showConversations: false,
     conversationList: [] as Array<{ conversationId: string; lastMessage: string; lastTime: string; messageCount: number }>,
-    persona: 'buddy' as string,
+    persona: 'coach' as string,  // P3 3.3 默认教练人设（Q5 用户要求）
     personaList: PERSONAS,
     recording: false, // V0.2.44 已弃用（去 voice 按钮，保留字段防 wxml 残留引用报错）
     curImageUrl: '', // V0.2.45 多模态：当前待发送的图片 URL（COS），发送后清空
@@ -63,7 +63,7 @@ Page({
 
   async onLoad() {
     const cached = wx.getStorageSync('aiCoachPersona') as string | '';
-    this.setData({ persona: cached || 'buddy' });
+    this.setData({ persona: cached || 'coach' });  // P3 3.3 默认教练（无缓存时）
     try {
       await ensureLogin(); // V0.1.142 tab 首次进先登录
     } catch {
