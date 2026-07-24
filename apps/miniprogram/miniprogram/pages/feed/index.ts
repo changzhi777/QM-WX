@@ -1,5 +1,6 @@
-// pages/feed/index.ts — 运动动态（V0.1.30 + V0.1.32 onTapUser + V0.1.36 topic/video/share）
+// pages/feed/index.ts — 运动动态（V0.1.30 + V0.1.32 onTapUser + V0.1.36 topic/video/share + V0.2.119 realtime notification）
 import { api } from '../../services/api';
+import { connectRealtime, onRealtime, clearRealtime } from '../../services/realtime';
 
 interface FeedItem {
   id: string;
@@ -46,6 +47,22 @@ Page({
   onShow() {
     this.setData({ feeds: [], page: 1 });
     this.loadFeeds();
+    // V0.2.119 realtime：订阅 notification 事件，feed 页是用户最常待的地方，新消息 toast 提醒
+    connectRealtime();
+    onRealtime('notification', (data) => this.onRealtimeNotification(data as { type?: string }));
+  },
+
+  onUnload() {
+    clearRealtime('notification');
+  },
+
+  /** V0.2.119 realtime 通知回调：toast 提示（feed 页不维护未读数，由 mine 页负责）*/
+  onRealtimeNotification(data: { type?: string }) {
+    const tip = data?.type === 'like' ? '有人赞了你的动态'
+      : data?.type === 'comment' ? '有人评论了你的动态'
+      : data?.type === 'follow' ? '有人关注了你'
+      : '收到一条新消息';
+    wx.showToast({ title: tip, icon: 'none' });
   },
 
   /** V0.1.36 转发微信群（button open-type="share" 触发）*/

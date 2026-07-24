@@ -13,6 +13,7 @@
  */
 import { prisma } from '../../infra/prisma.js';
 import { Errors } from '../../common/errors.js';
+import { publishToUser } from '../../infra/realtime.js';
 import type { NotifPageInput, NotifIdInput, NotifyInput } from './notification.schema.js';
 
 export const notificationService = {
@@ -81,15 +82,29 @@ export const notificationService = {
 };
 
 /**
- * 发通知集成函数（被 feed.like / feed.comment 复用，DRY）
+ * 发通知集成函数（被 feed.like / feed.comment / follow.follow 复用，DRY）
  *
  * 设计：
  * - 自己触发自己跳过（自己赞自己 / 自己评论自己 → 不发通知）
+ * - **V0.2.119** 写库后顺手通过 realtime 推一条 `notification` 事件给接收方，覆盖 feed/follow/goal 全部触发点
  * - 不在这里 try/catch：调用方决定容错策略（feed 集成时 try/catch 吞错，避免通知失败拖累点赞/评论主链路）
+ * - realtime 推送失败不影响 DB 写入（内部 try/catch 静默）
  *
- * 扩展点：后续 follow / goal_complete / 系统公告 都可复用此函数
+ * 扩展点：后续 goal_complete / 系统公告 都可复用此函数
  */
 export async function notify(input: NotifyInput) {
   if (input.userId === input.actorId) return; // 自己触发自己，跳过
   await prisma.notification.create({ data: input });
+  // V0.2.119 realtime 推送：单点集成 feed.like / comment / follow 全部实时通知
+  try {
+    await publishToUser(input.userId, 'notification', {
+      type: input.type,
+      targetType: input.targetType ?? null,
+      targetId: input.targetId ?? null,
+      content: input.content ?? null,
+      actorId: input.actorId,
+    });
+  } catch {
+    /* realtime 推送失败静默，DB 已是权威源，下次轮询仍可见 */
+  }
 }

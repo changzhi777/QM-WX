@@ -1,6 +1,7 @@
-// pages/mine/index.ts（V0.1.35 精简 + V0.1.152 卡片化 + V0.2.4 健康中心改版：数据概览条 + 3 组宫格）
+// pages/mine/index.ts（V0.1.35 精简 + V0.1.152 卡片化 + V0.2.4 健康中心改版：数据概览条 + 3 组宫格 + V0.2.119 realtime notification）
 import { api } from '../../services/api';
 import { ensureLogin } from '../../utils/auth';
+import { connectRealtime, onRealtime, clearRealtime } from '../../services/realtime';
 import type { User, FeatureFlagsConfig } from '@qm-wx/shared';
 
 const app = getApp();
@@ -79,6 +80,24 @@ Page({
 
   onShow() {
     this.refresh();
+    // V0.2.119 realtime：订阅 notification 事件，新消息进来时未读 +1 + toast
+    connectRealtime();
+    onRealtime('notification', (data) => this.onRealtimeNotification(data as { type?: string; actorId?: string }));
+  },
+
+  onUnload() {
+    // V0.2.119 页面卸载清订阅；disconnect 在 app 退出/登出时统一调
+    clearRealtime('notification');
+  },
+
+  /** V0.2.119 realtime 通知回调：未读 +1 + toast */
+  onRealtimeNotification(data: { type?: string; actorId?: string }) {
+    this.setData({ notifUnread: (this.data.notifUnread ?? 0) + 1 });
+    const tip = data?.type === 'like' ? '有人赞了你的动态'
+      : data?.type === 'comment' ? '有人评论了你的动态'
+      : data?.type === 'follow' ? '有人关注了你'
+      : '收到一条新消息';
+    wx.showToast({ title: tip, icon: 'none' });
   },
 
   async refresh() {

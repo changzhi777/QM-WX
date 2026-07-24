@@ -15,8 +15,12 @@ const mocks = vi.hoisted(() => {
     txModels: [],
   });
 });
+const realtimeMocks = vi.hoisted(() => ({
+  publishToUser: vi.fn().mockResolvedValue(undefined),
+}));
 vi.mock('src/infra/prisma.js', () => ({ prisma: mocks.prisma }));
 vi.mock('src/common/errors.js', () => ({ Errors: mockErrors }));
+vi.mock('src/infra/realtime.js', () => ({ publishToUser: realtimeMocks.publishToUser }));
 
 import { notificationService, notify } from 'src/modules/notification/notification.service.js';
 
@@ -143,5 +147,49 @@ describe('notify (V0.1.31 集成函数 — feed 复用)', () => {
         }),
       }),
     );
+  });
+});
+
+describe('notify V0.2.119 realtime 推送', () => {
+  it('他人触发 → 写库后顺手 publishToUser 推 notification 事件', async () => {
+    mocks.prisma.notification.create.mockResolvedValue({ id: 'n2' } as never);
+
+    await notify({
+      userId: 'u2',
+      actorId: 'u1',
+      type: 'like',
+      targetType: 'feed',
+      targetId: 'f9',
+    });
+
+    expect(realtimeMocks.publishToUser).toHaveBeenCalledWith('u2', 'notification', {
+      type: 'like',
+      targetType: 'feed',
+      targetId: 'f9',
+      content: null,
+      actorId: 'u1',
+    });
+  });
+
+  it('自己触发自己 → 不推送 realtime', async () => {
+    await notify({
+      userId: 'u1',
+      actorId: 'u1',
+      type: 'like',
+      targetType: 'feed',
+      targetId: 'f1',
+    });
+    expect(mocks.prisma.notification.create).not.toHaveBeenCalled();
+    expect(realtimeMocks.publishToUser).not.toHaveBeenCalled();
+  });
+
+  it('realtime 推送失败 → 不影响 DB 写入结果（静默吞错）', async () => {
+    realtimeMocks.publishToUser.mockRejectedValueOnce(new Error('redis down'));
+    mocks.prisma.notification.create.mockResolvedValue({ id: 'n3' } as never);
+
+    await expect(
+      notify({ userId: 'u2', actorId: 'u1', type: 'follow' }),
+    ).resolves.toBeUndefined();
+    expect(mocks.prisma.notification.create).toHaveBeenCalled();
   });
 });
