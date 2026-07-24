@@ -9,7 +9,7 @@
  */
 import { z } from 'zod';
 
-export const NOTIF_TYPES = ['like', 'comment', 'follow', 'system', 'goal_achieved', 'strength_done', 'new_post'] as const;
+export const NOTIF_TYPES = ['like', 'comment', 'follow', 'system', 'goal_achieved', 'strength_done', 'new_post', 'plan_completed'] as const;
 export type NotifType = (typeof NOTIF_TYPES)[number];
 
 /** 分页 */

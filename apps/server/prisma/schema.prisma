@@ -967,19 +967,20 @@ model GarminMetric {
 // TrainingPlan：admin 维护的计划模板（替 V0.1.25 硬编码常量）；key @unique 幂等
 // UserPlanEnrollment：用户加入记录，userId @unique 强制 1 人 1 活跃计划（切换=替换）
 model TrainingPlan {
-  id            String   @id @default(cuid())
-  key           String   @unique // '5k' / '10k' / 'half' / 'full' / 自定义（admin CRUD 幂等 + seed 安全复跑）
-  name          String
-  weeks         Int
-  level         String // beginner | intermediate | challenge | extreme（英文 key，wxss 中文 selector 坑）
-  goal          String
-  desc          String
-  weeklyMileage String
-  targetKm      Float // 计划总目标跑量（进度计算分母）
-  kind          String   @default("running") // V0.2.128 running | strength
-  status        String   @default("active") // active | archived
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String   @id @default(cuid())
+  key             String   @unique // '5k' / '10k' / 'half' / 'full' / 自定义（admin CRUD 幂等 + seed 安全复跑）
+  name            String
+  weeks           Int
+  level           String // beginner | intermediate | challenge | extreme（英文 key，wxss 中文 selector 坑）
+  goal            String
+  desc            String
+  weeklyMileage   String
+  targetKm        Float // 计划总目标跑量（进度计算分母）
+  kind            String   @default("running") // V0.2.128 running | strength
+  targetSessions  Int? // V0.2.129 力量计划目标训练场次（= weeks × perWeek；null=未设，仅 running 计划不用）
+  status          String   @default("active") // active | archived
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   enrollments UserPlanEnrollment[]
 

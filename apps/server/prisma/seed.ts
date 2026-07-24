@@ -53,9 +53,9 @@ const SEED_TRAINING_PLANS = [
   { key: '10k', name: '10公里进阶', weeks: 10, level: 'intermediate', goal: '完赛 10 公里', desc: '提升耐力与配速，掌握节奏跑与间歇训练', weeklyMileage: '15-25 km/周', targetKm: 200, kind: 'running' },
   { key: 'half', name: '半程马拉松 21K', weeks: 12, level: 'challenge', goal: '完赛半马 21.0975 km', desc: '系统训练长距离，挑战半马完赛', weeklyMileage: '25-40 km/周', targetKm: 400, kind: 'running' },
   { key: 'full', name: '全程马拉松 42K', weeks: 16, level: 'extreme', goal: '完赛全马 42.195 km', desc: '科学备战全马，含 LSD + tempo + recovery', weeklyMileage: '40-60 km/周', targetKm: 800, kind: 'running' },
-  // V0.2.128 力量训练计划
-  { key: 'strength_beginner', name: '力量入门 12 周', weeks: 12, level: 'beginner', goal: '塑形入门', desc: '全身基础动作 3×10，卧推/深蹲/硬拉/划船循环，每周 3 次', weeklyMileage: '3 次/周', targetKm: 0, kind: 'strength' },
-  { key: 'strength_intermediate', name: '力量进阶 16 周', weeks: 16, level: 'intermediate', goal: '增肌强化', desc: '分化训练（胸/背/腿/肩手臂），5×5 复合动作 + 3×12 孤立动作', weeklyMileage: '4 次/周', targetKm: 0, kind: 'strength' },
+  // V0.2.128 力量训练计划 + V0.2.129 targetSessions（weeks × 每周场次）
+  { key: 'strength_beginner', name: '力量入门 12 周', weeks: 12, level: 'beginner', goal: '塑形入门', desc: '全身基础动作 3×10，卧推/深蹲/硬拉/划船循环，每周 3 次', weeklyMileage: '3 次/周', targetKm: 0, kind: 'strength', targetSessions: 12 * 3 },
+  { key: 'strength_intermediate', name: '力量进阶 16 周', weeks: 16, level: 'intermediate', goal: '增肌强化', desc: '分化训练（胸/背/腿/肩手臂），5×5 复合动作 + 3×12 孤立动作', weeklyMileage: '4 次/周', targetKm: 0, kind: 'strength', targetSessions: 16 * 4 },
 ];
 
 async function main() {

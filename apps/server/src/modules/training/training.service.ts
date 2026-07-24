@@ -93,8 +93,14 @@ export const trainingService = {
     if (!enrollment) return { plan: null };
 
     const { plan } = enrollment;
-    // V0.2.128 kind-aware 进度：running 走 Checkin 跑量；strength 走 StrengthSession 容量
-    const progress = await calcPlanProgress(userId, enrollment.joinedAt, plan.targetKm, plan.kind);
+    // V0.2.128 kind-aware 进度 + V0.2.129 targetSessions
+    const progress = await calcPlanProgress(
+      userId,
+      enrollment.joinedAt,
+      plan.targetKm,
+      plan.kind,
+      plan.targetSessions,
+    );
     return {
       plan: {
         id: plan.id,
@@ -106,12 +112,50 @@ export const trainingService = {
         desc: plan.desc,
         weeklyMileage: plan.weeklyMileage,
         targetKm: plan.targetKm,
+        targetSessions: plan.targetSessions ?? 0, // V0.2.129
         kind: plan.kind, // V0.2.128
       },
       joinedAt: enrollment.joinedAt.toISOString(),
       daysJoined: Math.max(0, Math.floor((Date.now() - enrollment.joinedAt.getTime()) / 86_400_000)),
       ...progress,
     };
+  },
+
+  /**
+   * V0.2.129 检测"刚刚完成"的训练计划（strength.finishSession 完成后调用）
+   *
+   * 复用 V0.2.121 goal 跨阈值检测范式：
+   *  - 仅考虑 kind=strength 的 active enrollment 且 targetSessions != null
+   *  - before = sessionCount - todayAdded（=减本次后的累计）
+   *  - after = sessionCount
+   *  - justCompleted = (before < target) && (after >= target)
+   *
+   * 副作用：标 enrollment 状态为 'completed'（无字段可用，暂用 status=enrollment 标记为已离开？YAGNI 不标）
+   * 简化：返已达成列表给调用方，由调用方决定通知文案（realtime 复用 V0.2.119 publishToUser）
+   *
+   * @returns 刚刚达成的计划列表
+   */
+  async detectAndMarkPlanCompleted(userId: string): Promise<Array<{ id: string; name: string; targetSessions: number }>> {
+    const enrollment = await prisma.userPlanEnrollment.findUnique({
+      where: { userId },
+      include: { plan: true },
+    });
+    if (!enrollment || enrollment.plan.kind !== 'strength' || !enrollment.plan.targetSessions) {
+      return [];
+    }
+    // 计算当前累计场次
+    const sessionCount = await prisma.strengthSession.count({
+      where: { userId, createdAt: { gte: enrollment.joinedAt } },
+    });
+    // 注意：本次 strength.finishSession 已写库，所以 sessionCount 包含本次
+    // "before" = sessionCount - 1（减本次）"after" = sessionCount
+    const after = sessionCount;
+    const before = sessionCount - 1;
+    const target = enrollment.plan.targetSessions;
+    if (before < target && after >= target) {
+      return [{ id: enrollment.plan.id, name: enrollment.plan.name, targetSessions: target }];
+    }
+    return [];
   },
 
   /**
@@ -212,9 +256,9 @@ export const trainingService = {
  * - kind=strength：自 joinedAt 起 StrengthSession 累计容量；targetKm=0 时 percent=0，只返 sessionCount
  * 不复用 goal.calcGoalProgress（goal 固定周期 periodStart-End；plan 从 joinedAt 动态起算，KISS 不耦合）
  */
-async function calcPlanProgress(userId: string, joinedAt: Date, targetKm: number, kind: string = 'running') {
+async function calcPlanProgress(userId: string, joinedAt: Date, targetKm: number, kind: string = 'running', targetSessions: number | null = null) {
   if (kind === 'strength') {
-    // V0.2.128 力量计划进度：累计容量 + sessionCount（targetKm=0 时 percent 永远 0，UI 改用"X 次训练"展示）
+    // V0.2.128 力量计划进度：累计容量 + sessionCount；V0.2.129 targetSessions 加 percent
     const [agg, sessionCount] = await Promise.all([
       prisma.strengthSession.aggregate({
         where: { userId, createdAt: { gte: joinedAt } },
@@ -223,7 +267,17 @@ async function calcPlanProgress(userId: string, joinedAt: Date, targetKm: number
       prisma.strengthSession.count({ where: { userId, createdAt: { gte: joinedAt } } }),
     ]);
     const currentVolume = round2(agg._sum.totalVolume ?? 0);
-    return { currentVolume, sessionCount, targetKm: 0, percent: 0, completed: false };
+    const percent = targetSessions && targetSessions > 0
+      ? Math.min(100, Math.round((sessionCount / targetSessions) * 100))
+      : 0;
+    return {
+      currentVolume,
+      sessionCount,
+      targetSessions: targetSessions ?? 0,
+      targetKm: 0,
+      percent,
+      completed: targetSessions ? sessionCount >= targetSessions : false,
+    };
   }
   // running（原 V0.1.41 行为）
   const agg = await prisma.checkin.aggregate({

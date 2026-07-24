@@ -14,6 +14,7 @@ vi.mock('src/infra/prisma.js', () => ({
     rawActivity: { findMany: vi.fn() },
     trainingPlan: { findMany: vi.fn(), findUnique: vi.fn() },
     userPlanEnrollment: { upsert: vi.fn(), findUnique: vi.fn(), deleteMany: vi.fn() },
+    strengthSession: { count: vi.fn(), aggregate: vi.fn() }, // V0.2.129 力量计划进度
   },
 }));
 
@@ -275,5 +276,53 @@ describe('trainingService.computeMyActivePlan (V0.2.78 补测)', () => {
     expect(r.currentDistance).toBe(60);
     expect(r.percent).toBe(50); // 60/120
     expect(typeof r.daysJoined).toBe('number');
+  });
+});
+
+describe('trainingService.detectAndMarkPlanCompleted (V0.2.129)', () => {
+  beforeEach(() => {
+    _redisMockState.cacheStore.clear();
+    vi.clearAllMocks();
+  });
+
+  it('本次训练刚好让 strength 计划 sessionCount 跨 targetSessions → 返回', async () => {
+    mockedPrisma.userPlanEnrollment.findUnique.mockResolvedValue({
+      id: 'e1',
+      userId: 'u1',
+      joinedAt: new Date('2026-07-01'),
+      plan: { id: 'p1', kind: 'strength', name: '力量入门 12 周', targetSessions: 36 },
+    } as never);
+    // 已累计 36 场（本次是第 36 场；before = 35, after = 36，刚好达标）
+    mockedPrisma.strengthSession.count.mockResolvedValue(36 as never);
+
+    const result = await trainingService.detectAndMarkPlanCompleted('u1');
+
+    expect(result).toEqual([{ id: 'p1', name: '力量入门 12 周', targetSessions: 36 }]);
+  });
+
+  it('未达 target → 不返回', async () => {
+    mockedPrisma.userPlanEnrollment.findUnique.mockResolvedValue({
+      plan: { kind: 'strength', targetSessions: 36 },
+    } as never);
+    mockedPrisma.strengthSession.count.mockResolvedValue(20 as never); // before 19, after 20, < 36
+    const result = await trainingService.detectAndMarkPlanCompleted('u1');
+    expect(result).toEqual([]);
+  });
+
+  it('running 计划（kind=running）→ 跳过', async () => {
+    mockedPrisma.userPlanEnrollment.findUnique.mockResolvedValue({
+      plan: { kind: 'running', targetSessions: null },
+    } as never);
+    const result = await trainingService.detectAndMarkPlanCompleted('u1');
+    expect(result).toEqual([]);
+    expect(mockedPrisma.strengthSession.count).not.toHaveBeenCalled();
+  });
+
+  it('targetSessions=null → 跳过（仅 strength 计划有 targetSessions）', async () => {
+    mockedPrisma.userPlanEnrollment.findUnique.mockResolvedValue({
+      plan: { kind: 'strength', targetSessions: null },
+    } as never);
+    const result = await trainingService.detectAndMarkPlanCompleted('u1');
+    expect(result).toEqual([]);
   });
 });

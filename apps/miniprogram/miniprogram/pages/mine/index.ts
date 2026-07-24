@@ -28,6 +28,7 @@ const NOTIF_TYPE_TEXT: Record<string, string> = {
   goal_achieved: '🎯 目标已达成',
   strength_done: '💪 训练完成',
   new_post: '关注的人发布了新动态',
+  plan_completed: '🎉 训练计划已全部完成',
 };
 
 function formatNotifTime(iso: string): string {
@@ -102,6 +103,7 @@ Page({
       : data?.type === 'goal_achieved' ? '目标已达成 🎯'
       : data?.type === 'strength_done' ? '训练完成 💪'
       : data?.type === 'new_post' ? '关注的人发了新动态'
+      : data?.type === 'plan_completed' ? '训练计划已完成 🎉'
       : '收到一条新消息';
     wx.showToast({ title: tip, icon: 'none' });
   },

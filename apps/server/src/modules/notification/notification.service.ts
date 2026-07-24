@@ -186,3 +186,37 @@ export async function notifyStrengthDone(
     /* realtime 推送失败静默 */
   }
 }
+
+/**
+ * 力量计划完成通知（V0.2.129 — strength.finishSession 触发）
+ *
+ * @param userId - 接收者（计划完成者）
+ * @param plan - { id, name, targetSessions } 计划信息
+ */
+export async function notifyPlanCompleted(
+  userId: string,
+  plan: { id: string; name: string; targetSessions: number },
+) {
+  const content = `🎉 力量计划「${plan.name}」已全部完成！共 ${plan.targetSessions} 次训练`;
+  await prisma.notification.create({
+    data: {
+      userId,
+      actorId: userId,
+      type: 'plan_completed',
+      targetType: 'training_plan',
+      targetId: plan.id,
+      content,
+    },
+  });
+  try {
+    await publishToUser(userId, 'notification', {
+      type: 'plan_completed',
+      targetType: 'training_plan',
+      targetId: plan.id,
+      content,
+      actorId: userId,
+    });
+  } catch {
+    /* realtime 推送失败静默 */
+  }
+}
