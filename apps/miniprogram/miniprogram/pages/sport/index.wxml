@@ -13,7 +13,12 @@
     <block wx:if="{{todayDone}}">
       <view class="done">
         <view class="check-icon">✓</view>
-        <view>已打卡 +{{todayPoints}} 积分</view>
+        <view class="done-title">今日已打卡</view>
+        <view class="done-stats" wx:if="{{todayCheckin}}">
+          <view class="stat"><text class="stat-val">{{todayCheckin.distance}}</text><text class="stat-unit">km</text></view>
+          <view class="stat"><text class="stat-val">{{todayCheckin.pace}}</text><text class="stat-unit">配速</text></view>
+          <view class="stat"><text class="stat-val">+{{todayCheckin.points}}</text><text class="stat-unit">积分</text></view>
+        </view>
         <view class="tip">明天再来吧！</view>
       </view>
     </block>

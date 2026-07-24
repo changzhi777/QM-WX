@@ -15,6 +15,7 @@ Page({
     today: new Date().toISOString().slice(0, 10),
     todayDone: false,
     todayPoints: 0,
+    todayCheckin: null as { distance?: number; durationSec?: number; pace?: string; points: number } | null,
 
     form: {
       distance: '',
@@ -106,7 +107,7 @@ Page({
       }
 
       // 今日状态
-      const today = await api.call<{ date: string; done: boolean; checkin: null | { points: number } }>(
+      const today = await api.call<{ date: string; done: boolean; checkin: null | { distance?: number; durationSec?: number; pace?: string; points: number } }>(
         'sport',
         'today',
       );
@@ -114,6 +115,7 @@ Page({
         today: today.date,
         todayDone: today.done,
         todayPoints: today.checkin?.points ?? 0,
+        todayCheckin: today.checkin,
       });
     } catch (e) {
       this.setData({
