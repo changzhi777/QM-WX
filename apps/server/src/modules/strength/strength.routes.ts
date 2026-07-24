@@ -27,6 +27,7 @@ import {
   GetExerciseStatsSchema,
   AddUserExerciseSchema,
   RemoveUserExerciseSchema,
+  ToggleFavoriteExerciseSchema,
 } from './strength.schema.js';
 
 export async function strengthRoutes(app: FastifyInstance) {
@@ -65,6 +66,14 @@ export async function strengthRoutes(app: FastifyInstance) {
         const { id } = RemoveUserExerciseSchema.parse(payload);
         return { code: 0, data: await strengthService.removeUserExercise(userId, id) };
       }
+      case 'toggleFavoriteExercise': {
+        // V0.2.134 切换收藏（1 端点覆盖 add/remove；toggle 模型 UX 友好）
+        const { exerciseId } = ToggleFavoriteExerciseSchema.parse(payload);
+        return { code: 0, data: await strengthService.toggleFavoriteExercise(userId, exerciseId) };
+      }
+      case 'listFavoriteExercises':
+        // V0.2.134 列出我的收藏动作
+        return { code: 0, data: await strengthService.listFavoriteExercises(userId) };
       default:
         throw Errors.badRequest(`unknown action: ${action}`);
     }

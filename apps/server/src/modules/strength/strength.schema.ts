@@ -49,3 +49,8 @@ export type AddUserExerciseInput = z.infer<typeof AddUserExerciseSchema>;
 export const RemoveUserExerciseSchema = z.object({
   id: z.string().min(1),
 });
+
+/** V0.2.134 切换收藏动作 */
+export const ToggleFavoriteExerciseSchema = z.object({
+  exerciseId: z.string().min(1),
+});

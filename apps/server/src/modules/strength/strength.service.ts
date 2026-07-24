@@ -244,6 +244,50 @@ export async function removeUserExercise(userId: string, id: string) {
 }
 
 /**
+ * V0.2.134 切换收藏动作（有则取消，无则添加；返新状态）
+ *
+ * 存储：User.favoriteExerciseIds String[]（Postgres 数组，单列；has array 运算符 O(1) 包含查询）
+ * 设计：toggle 而非 add/remove 双方法，UX 友好（前端 1 按钮 + 1 接口）；幂等
+ */
+export async function toggleFavoriteExercise(userId: string, exerciseId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { favoriteExerciseIds: true },
+  });
+  if (!user) throw new Error('用户不存在');
+  const current = user.favoriteExerciseIds ?? [];
+  const isFavorited = current.includes(exerciseId);
+  const next = isFavorited
+    ? current.filter((id) => id !== exerciseId)
+    : [...current, exerciseId];
+  await prisma.user.update({
+    where: { id: userId },
+    data: { favoriteExerciseIds: next },
+  });
+  return { favorited: !isFavorited, count: next.length };
+}
+
+/**
+ * V0.2.134 列出我的收藏动作（关联 Exercise 表拿详情）
+ *
+ * 只返仍存在的动作（已被管理员删除的自动过滤）
+ */
+export async function listFavoriteExercises(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { favoriteExerciseIds: true },
+  });
+  const ids = user?.favoriteExerciseIds ?? [];
+  if (ids.length === 0) return { list: [] };
+  // 包含全局预设 + 用户自定义
+  const exercises = await prisma.exercise.findMany({
+    where: { id: { in: ids }, OR: [{ userId: null }, { userId }] },
+    orderBy: [{ category: 'asc' }, { name: 'asc' }],
+  });
+  return { list: exercises };
+}
+
+/**
  * V0.2.126 动作统计：个人最佳 PB + 容量分布（详情页增强）
  *
  * - PB: 每个动作最大重量（weight）；并列时取 reps 多的；返 achievedAt + setCount

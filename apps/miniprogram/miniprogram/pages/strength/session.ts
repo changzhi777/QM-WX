@@ -146,6 +146,29 @@ Page({
     }
   },
 
+  /** V0.2.134 切换收藏动作（⭐ 按钮；toggle 模式） */
+  async onToggleFavorite() {
+    const name = (this.data.exerciseName || this.data.customName).trim();
+    if (!name) {
+      wx.showToast({ title: '请先选或输入动作', icon: 'none' });
+      return;
+    }
+    // 用 exerciseName 作为伪 id（无名动作无法收藏 — 限制给已选动作）
+    if (!this.data.exerciseIndex || this.data.exerciseIndex < 0) {
+      wx.showToast({ title: '请从动作库选择动作再收藏', icon: 'none' });
+      return;
+    }
+    const ex = this.data.exercises[this.data.exerciseIndex];
+    try {
+      await api.call('strength', 'toggleFavoriteExercise', { exerciseId: ex.id });
+      // 重新加载动作库（更新 ⭐ 状态）
+      await this.loadExercises();
+      wx.showToast({ title: '已切换收藏', icon: 'success' });
+    } catch (e) {
+      wx.showToast({ title: (e as Error).message || '操作失败', icon: 'none' });
+    }
+  },
+
   onInputReps(e: WechatMiniprogram.Input) { this.setData({ reps: e.detail.value }); },
   onInputWeight(e: WechatMiniprogram.Input) { this.setData({ weight: e.detail.value }); },
   onInputSetIndex(e: WechatMiniprogram.Input) { this.setData({ setIndex: e.detail.value }); },

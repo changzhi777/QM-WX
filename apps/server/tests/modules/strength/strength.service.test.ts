@@ -17,6 +17,7 @@ const mockPrisma = vi.hoisted(() => ({
   },
   strengthSet: { findFirst: vi.fn(), create: vi.fn(), findMany: vi.fn() },
   exercise: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn(), findUnique: vi.fn(), delete: vi.fn() },
+  user: { findUnique: vi.fn(), update: vi.fn() }, // V0.2.134 收藏动作
 }));
 
 vi.mock('src/infra/prisma.js', () => ({ prisma: mockPrisma }));
@@ -33,6 +34,8 @@ import {
   listExercises,
   getExerciseStats,
   addUserExercise,
+  toggleFavoriteExercise,
+  listFavoriteExercises,
 } from '../../../src/modules/strength/strength.service.js';
 import { notifyStrengthDone } from 'src/modules/notification/notification.service.js';
 
@@ -331,5 +334,44 @@ describe('strength.service · getExerciseStats (V0.2.126)', () => {
     expect(r.distribution[0].percent).toBeCloseTo(68.8, 1);
     expect(r.totalExercises).toBe(2);
     expect(r.totalSets).toBe(5);
+  });
+});
+
+describe('toggleFavoriteExercise / listFavoriteExercises (V0.2.134)', () => {
+  it('无 → 加（返回 favorited=true）', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ favoriteExerciseIds: [] } as never);
+    mockPrisma.user.update.mockResolvedValue({} as never);
+    const r = await toggleFavoriteExercise('u1', 'e1');
+    expect(r).toEqual({ favorited: true, count: 1 });
+    expect(mockPrisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { favoriteExerciseIds: ['e1'] } }),
+    );
+  });
+
+  it('有 → 取消（返回 favorited=false）', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ favoriteExerciseIds: ['e1', 'e2'] } as never);
+    mockPrisma.user.update.mockResolvedValue({} as never);
+    const r = await toggleFavoriteExercise('u1', 'e1');
+    expect(r).toEqual({ favorited: false, count: 1 });
+    expect(mockPrisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { favoriteExerciseIds: ['e2'] } }),
+    );
+  });
+
+  it('listFavoriteExercises 返已存在动作的详情（自动过滤已删 ID）', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ favoriteExerciseIds: ['e1', 'e-deleted'] } as never);
+    mockPrisma.exercise.findMany.mockResolvedValue([
+      { id: 'e1', name: '深蹲', category: '腿' },
+    ] as never);
+    const r = await listFavoriteExercises('u1');
+    expect(r.list).toHaveLength(1);
+    expect(r.list[0].id).toBe('e1');
+  });
+
+  it('listFavoriteExercises 收藏为空 → 返空 list', async () => {
+    mockPrisma.user.findUnique.mockResolvedValue({ favoriteExerciseIds: [] } as never);
+    const r = await listFavoriteExercises('u1');
+    expect(r.list).toEqual([]);
+    expect(mockPrisma.exercise.findMany).not.toHaveBeenCalled();
   });
 });

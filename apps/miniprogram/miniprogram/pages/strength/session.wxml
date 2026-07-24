@@ -32,6 +32,9 @@
           <text wx:else class="form-row__placeholder">选择动作</text>
         </view>
       </picker>
+      <view class="fav-btn" wx:if="{{exerciseIndex >= 0}}" bindtap="onToggleFavorite">
+        <text class="fav-btn__icon">⭐</text>
+      </view>
     </view>
     <view class="form-row">
       <text class="form-row__label">自定义</text>
