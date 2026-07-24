@@ -55,6 +55,7 @@ Page({
     gpsDistance: 0,     // km（实时）
     gpsDuration: 0,     // sec（实时）
     gpsPace: '—',       // V0.3 实时配速 M'SS"
+    gpsPaused: false,   // V0.3 暂停状态（不计时长/距离）
     gpsPoints: [] as GpsPoint[],  // 轨迹点
     gpsPolyline: [] as Array<{ points: Array<{ latitude: number; longitude: number }>; color: string; width: number }>,
     gpsMarkers: [] as Array<{ id: number; latitude: number; longitude: number; callout: object }>,
@@ -82,6 +83,7 @@ Page({
   // V0.3 GPS 跑步（非响应式属性）
   _gpsTimer: null as number | null,
   _gpsStartTime: 0,
+  _gpsPauseStart: 0,  // V0.3 暂停开始时间戳
 
   onShow() {
     this.loadAll();
@@ -320,6 +322,7 @@ Page({
       const first = await this.getLocationOnce();
       wx.hideLoading();
       this._gpsStartTime = Date.now();
+      this._gpsPauseStart = 0;
       const startPoints: GpsPoint[] = [{ latitude: first.latitude, longitude: first.longitude, timestamp: Date.now() }];
       this.setData({
         gpsRunning: true,
@@ -363,6 +366,7 @@ Page({
     const pace = calcPace(dist, dur);
     this.setData({
       gpsRunning: false,
+      gpsPaused: false,
       'form.distance': dist > 0 ? dist.toFixed(2) : '',
       'form.durationMin': dur > 0 ? String(Math.round(dur / 60)) : '',
       'form.pace': pace ? formatPaceStr(pace) : '',
@@ -404,6 +408,25 @@ Page({
       title: '来沐禾健康，记录每一次跑步 🏃',
       path: '/pages/sport/index',
     };
+  },
+
+  /** V0.3 GPS 暂停（红绿灯等，停止 setInterval，不计时长/距离）*/
+  onPauseGps() {
+    if (!this.data.gpsRunning || this.data.gpsPaused) return;
+    if (this._gpsTimer) { clearInterval(this._gpsTimer); this._gpsTimer = null; }
+    this._gpsPauseStart = Date.now();
+    this.setData({ gpsPaused: true });
+  },
+
+  /** V0.3 GPS 继续（_gpsStartTime 后移暂停期，时长扣暂停）*/
+  onResumeGps() {
+    if (!this.data.gpsPaused) return;
+    if (this._gpsPauseStart > 0) {
+      this._gpsStartTime += Date.now() - this._gpsPauseStart;
+      this._gpsPauseStart = 0;
+    }
+    this.setData({ gpsPaused: false });
+    this._gpsTimer = setInterval(() => { void this.onGpsTick(); }, 5000) as unknown as number;
   },
 
   /** V0.3 GPS 阶段 C：Canvas 生成打卡海报 */

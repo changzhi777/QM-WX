@@ -41,7 +41,11 @@
           <view class="gps-stat"><text class="gps-val">{{gpsPace}}</text><text class="gps-unit">配速</text></view>
           <view class="gps-stat"><text class="gps-val">{{gpsDuration}}</text><text class="gps-unit">秒</text></view>
         </view>
-        <button class="gps-stop-btn" bindtap="stopGpsRun">⏹ 停止并填入表单</button>
+        <view class="gps-controls">
+          <button class="gps-pause-btn" wx:if="{{!gpsPaused}}" bindtap="onPauseGps">⏸ 暂停</button>
+          <button class="gps-pause-btn" wx:if="{{gpsPaused}}" bindtap="onResumeGps">▶ 继续</button>
+          <button class="gps-stop-btn" bindtap="stopGpsRun">⏹ 停止</button>
+        </view>
       </view>
 
       <!-- V0.3 GPS 轨迹地图（运行中 + 停止后，轨迹点 > 1 显示）-->
