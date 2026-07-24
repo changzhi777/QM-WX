@@ -24,15 +24,16 @@ export const trainingService = {
    * 我的训练计划（V0.1.41：改读 DB active 计划，替原硬编码常量）
    *
    * admin 通过 upsertTrainingPlan 维护；status=archived 不返
+   * V0.2.128 加 kind 过滤（running | strength），前端可按 kind 分段展示
    */
-  async myPlans() {
-    const cacheKey = 'training:myPlans';
-    return Cache.wrap(cacheKey, 120, async () => this.computeMyPlans());
+  async myPlans(input: { kind?: 'running' | 'strength' } = {}) {
+    const cacheKey = `training:myPlans${input.kind ? ':' + input.kind : ''}`;
+    return Cache.wrap(cacheKey, 120, async () => this.computeMyPlans(input));
   },
-  async computeMyPlans() {
+  async computeMyPlans(input: { kind?: 'running' | 'strength' } = {}) {
     const plans = await prisma.trainingPlan.findMany({
-      where: { status: 'active' },
-      orderBy: [{ weeks: 'asc' }, { createdAt: 'desc' }],
+      where: { status: 'active', ...(input.kind ? { kind: input.kind } : {}) },
+      orderBy: [{ kind: 'asc' }, { weeks: 'asc' }, { createdAt: 'desc' }],
     });
     return {
       plans: plans.map((p) => ({
@@ -45,6 +46,7 @@ export const trainingService = {
         desc: p.desc,
         weeklyMileage: p.weeklyMileage,
         targetKm: p.targetKm,
+        kind: p.kind, // V0.2.128
       })),
     };
   },
@@ -91,7 +93,8 @@ export const trainingService = {
     if (!enrollment) return { plan: null };
 
     const { plan } = enrollment;
-    const progress = await calcPlanProgress(userId, enrollment.joinedAt, plan.targetKm);
+    // V0.2.128 kind-aware 进度：running 走 Checkin 跑量；strength 走 StrengthSession 容量
+    const progress = await calcPlanProgress(userId, enrollment.joinedAt, plan.targetKm, plan.kind);
     return {
       plan: {
         id: plan.id,
@@ -103,6 +106,7 @@ export const trainingService = {
         desc: plan.desc,
         weeklyMileage: plan.weeklyMileage,
         targetKm: plan.targetKm,
+        kind: plan.kind, // V0.2.128
       },
       joinedAt: enrollment.joinedAt.toISOString(),
       daysJoined: Math.max(0, Math.floor((Date.now() - enrollment.joinedAt.getTime()) / 86_400_000)),
@@ -202,12 +206,26 @@ export const trainingService = {
 };
 
 /**
- * 训练计划进度（V0.1.41）
+ * 训练计划进度（V0.1.41 + V0.2.128 kind-aware）
  *
- * 自 joinedAt 起 Checkin(run) 累计跑量 / plan.targetKm → percent + completed
+ * - kind=running：自 joinedAt 起 Checkin(run) 累计跑量 / plan.targetKm → percent
+ * - kind=strength：自 joinedAt 起 StrengthSession 累计容量；targetKm=0 时 percent=0，只返 sessionCount
  * 不复用 goal.calcGoalProgress（goal 固定周期 periodStart-End；plan 从 joinedAt 动态起算，KISS 不耦合）
  */
-async function calcPlanProgress(userId: string, joinedAt: Date, targetKm: number) {
+async function calcPlanProgress(userId: string, joinedAt: Date, targetKm: number, kind: string = 'running') {
+  if (kind === 'strength') {
+    // V0.2.128 力量计划进度：累计容量 + sessionCount（targetKm=0 时 percent 永远 0，UI 改用"X 次训练"展示）
+    const [agg, sessionCount] = await Promise.all([
+      prisma.strengthSession.aggregate({
+        where: { userId, createdAt: { gte: joinedAt } },
+        _sum: { totalVolume: true },
+      }),
+      prisma.strengthSession.count({ where: { userId, createdAt: { gte: joinedAt } } }),
+    ]);
+    const currentVolume = round2(agg._sum.totalVolume ?? 0);
+    return { currentVolume, sessionCount, targetKm: 0, percent: 0, completed: false };
+  }
+  // running（原 V0.1.41 行为）
   const agg = await prisma.checkin.aggregate({
     where: { userId, sportType: 'run', createdAt: { gte: joinedAt } },
     _sum: { distance: true },

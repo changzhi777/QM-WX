@@ -16,8 +16,8 @@ export async function trainingRoutes(app: FastifyInstance) {
 
     switch (action) {
       case 'myPlans': {
-        MyPlansQuerySchema.parse(payload ?? {});
-        return { code: 0, data: await trainingService.myPlans() };
+        const input = MyPlansQuerySchema.parse(payload ?? {}); // V0.2.128 可选 kind 过滤
+        return { code: 0, data: await trainingService.myPlans(input) };
       }
       case 'mySportRecords': {
         const input = MySportRecordsQuerySchema.parse(payload ?? {});

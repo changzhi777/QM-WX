@@ -53,12 +53,13 @@
     </view>
   </view>
 
-  <!-- 智能训练计划 -->
+  <!-- 智能训练计划（V0.2.128 跑步 + 力量分段：kind 标记） -->
   <view class="section">
     <view class="section-title">智能训练计划</view>
     <scroll-view scroll-x class="plan-scroll">
-      <view class="plan-card {{plan.level}}" wx:for="{{plans}}" wx:for-item="plan" wx:key="key" data-key="{{plan.key}}" bindtap="onTapPlan">
+      <view class="plan-card {{plan.level}} {{plan.kind === 'strength' ? 'plan-card--strength' : ''}}" wx:for="{{plans}}" wx:for-item="plan" wx:key="key" data-key="{{plan.key}}" bindtap="onTapPlan">
         <view class="plan-joined" wx:if="{{activePlan && activePlan.plan.id === plan.id}}">✓ 已加入</view>
+        <view class="plan-kind" wx:if="{{plan.kind === 'strength'}}">💪 力量</view>
         <view class="plan-level">{{plan.levelLabel}}</view>
         <view class="plan-name">{{plan.name}}</view>
         <view class="plan-weeks">{{plan.weeks}} 周</view>

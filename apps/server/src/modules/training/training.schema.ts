@@ -1,12 +1,15 @@
 /**
  * training module Zod schemas（V0.1.25，参考图 2775）
  *
- * 锻炼/训练中心：训练计划模板（硬编码）+ 跑步记录聚合
+ * 锻炼/训练中心：训练计划模板 + 跑步记录聚合
+ * V0.2.128 加 kind=running|strength 力量训练计划
  */
 import { z } from 'zod';
 
-/** 训练计划查询（无入参，返 active 计划列表） */
-export const MyPlansQuerySchema = z.object({}).optional();
+/** V0.2.128 myPlans 过滤：按 kind 分段展示（running/strength；不传返全部） */
+export const MyPlansQuerySchema = z.object({
+  kind: z.enum(['running', 'strength']).optional(),
+});
 export type MyPlansQuery = z.infer<typeof MyPlansQuerySchema>;
 
 /** 跑步记录查询（limit 控制返回条数，默认 10） */

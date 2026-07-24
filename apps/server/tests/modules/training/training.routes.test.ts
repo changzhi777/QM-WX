@@ -66,12 +66,21 @@ describe('training routes', () => {
     await app.close();
   });
 
-  it('myPlans → 无参调用', async () => {
+  it('myPlans → 无参调用（默认无 kind 过滤）', async () => {
     mockTrainingService.myPlans.mockResolvedValue({ plans: [] });
     const app = await buildApp({ authed: true });
     const r = await app.inject({ method: 'POST', url: '/', payload: { action: 'myPlans' } });
     expect(r.json().data).toEqual({ plans: [] });
-    expect(mockTrainingService.myPlans).toHaveBeenCalledWith();
+    expect(mockTrainingService.myPlans).toHaveBeenCalledWith({}); // V0.2.128 默认空对象
+    await app.close();
+  });
+
+  it('myPlans V0.2.128 kind=strength 过滤', async () => {
+    mockTrainingService.myPlans.mockResolvedValue({ plans: [{ key: 'strength_beginner' }] });
+    const app = await buildApp({ authed: true });
+    const r = await app.inject({ method: 'POST', url: '/', payload: { action: 'myPlans', payload: { kind: 'strength' } } });
+    expect(r.json().data.plans).toHaveLength(1);
+    expect(mockTrainingService.myPlans).toHaveBeenCalledWith({ kind: 'strength' });
     await app.close();
   });
 

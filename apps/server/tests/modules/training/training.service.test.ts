@@ -49,18 +49,30 @@ beforeEach(() => {
 describe('trainingService.myPlans (V0.1.41 改读 DB)', () => {
   it('返回 DB active 计划列表（按 weeks 升序）', async () => {
     mockedPrisma.trainingPlan.findMany.mockResolvedValue([
-      { id: 'p1', key: '5k', name: '5公里入门', weeks: 8, level: 'beginner', goal: '完成 5 公里', desc: '...', weeklyMileage: '8-15 km/周', targetKm: 80 },
-      { id: 'p2', key: 'full', name: '全程马拉松 42K', weeks: 16, level: 'extreme', goal: '完赛全马', desc: '...', weeklyMileage: '40-60 km/周', targetKm: 800 },
+      { id: 'p1', key: '5k', name: '5公里入门', weeks: 8, level: 'beginner', goal: '完成 5 公里', desc: '...', weeklyMileage: '8-15 km/周', targetKm: 80, kind: 'running' },
+      { id: 'p2', key: 'full', name: '全程马拉松 42K', weeks: 16, level: 'extreme', goal: '完赛全马', desc: '...', weeklyMileage: '40-60 km/周', targetKm: 800, kind: 'running' },
     ] as never);
 
     const r = await trainingService.myPlans();
     expect(r.plans).toHaveLength(2);
-    expect(r.plans[0]).toMatchObject({ key: '5k', level: 'beginner' });
-    expect(r.plans[1]).toMatchObject({ key: 'full', level: 'extreme' });
+    expect(r.plans[0]).toMatchObject({ key: '5k', level: 'beginner', kind: 'running' });
+    expect(r.plans[1]).toMatchObject({ key: 'full', level: 'extreme', kind: 'running' });
     expect(mockedPrisma.trainingPlan.findMany).toHaveBeenCalledWith({
       where: { status: 'active' },
-      orderBy: [{ weeks: 'asc' }, { createdAt: 'desc' }],
+      orderBy: [{ kind: 'asc' }, { weeks: 'asc' }, { createdAt: 'desc' }],
     });
+  });
+
+  it('V0.2.128 kind=strength 过滤 → 只返力量计划', async () => {
+    mockedPrisma.trainingPlan.findMany.mockResolvedValue([
+      { id: 'p3', key: 'strength_beginner', name: '力量入门 12 周', weeks: 12, level: 'beginner', goal: '塑形入门', desc: '...', weeklyMileage: '3 次/周', targetKm: 0, kind: 'strength' },
+    ] as never);
+    const r = await trainingService.myPlans({ kind: 'strength' });
+    expect(r.plans).toHaveLength(1);
+    expect(r.plans[0].kind).toBe('strength');
+    expect(mockedPrisma.trainingPlan.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { status: 'active', kind: 'strength' } }),
+    );
   });
 });
 

@@ -47,11 +47,15 @@ const SEED_PRODUCTS = [
 ];
 
 // V0.1.41 训练计划模板（替 training.service 原硬编码常量；按 key 幂等）
+// V0.2.128 +kind=running|strength（默认 running；新增 2 个 strength 力量训练计划）
 const SEED_TRAINING_PLANS = [
-  { key: '5k', name: '5公里入门', weeks: 8, level: 'beginner', goal: '完成 5 公里', desc: '从跑走结合到连续跑完 5 公里，适合零基础跑者', weeklyMileage: '8-15 km/周', targetKm: 80 },
-  { key: '10k', name: '10公里进阶', weeks: 10, level: 'intermediate', goal: '完赛 10 公里', desc: '提升耐力与配速，掌握节奏跑与间歇训练', weeklyMileage: '15-25 km/周', targetKm: 200 },
-  { key: 'half', name: '半程马拉松 21K', weeks: 12, level: 'challenge', goal: '完赛半马 21.0975 km', desc: '系统训练长距离，挑战半马完赛', weeklyMileage: '25-40 km/周', targetKm: 400 },
-  { key: 'full', name: '全程马拉松 42K', weeks: 16, level: 'extreme', goal: '完赛全马 42.195 km', desc: '科学备战全马，含 LSD + tempo + recovery', weeklyMileage: '40-60 km/周', targetKm: 800 },
+  { key: '5k', name: '5公里入门', weeks: 8, level: 'beginner', goal: '完成 5 公里', desc: '从跑走结合到连续跑完 5 公里，适合零基础跑者', weeklyMileage: '8-15 km/周', targetKm: 80, kind: 'running' },
+  { key: '10k', name: '10公里进阶', weeks: 10, level: 'intermediate', goal: '完赛 10 公里', desc: '提升耐力与配速，掌握节奏跑与间歇训练', weeklyMileage: '15-25 km/周', targetKm: 200, kind: 'running' },
+  { key: 'half', name: '半程马拉松 21K', weeks: 12, level: 'challenge', goal: '完赛半马 21.0975 km', desc: '系统训练长距离，挑战半马完赛', weeklyMileage: '25-40 km/周', targetKm: 400, kind: 'running' },
+  { key: 'full', name: '全程马拉松 42K', weeks: 16, level: 'extreme', goal: '完赛全马 42.195 km', desc: '科学备战全马，含 LSD + tempo + recovery', weeklyMileage: '40-60 km/周', targetKm: 800, kind: 'running' },
+  // V0.2.128 力量训练计划
+  { key: 'strength_beginner', name: '力量入门 12 周', weeks: 12, level: 'beginner', goal: '塑形入门', desc: '全身基础动作 3×10，卧推/深蹲/硬拉/划船循环，每周 3 次', weeklyMileage: '3 次/周', targetKm: 0, kind: 'strength' },
+  { key: 'strength_intermediate', name: '力量进阶 16 周', weeks: 16, level: 'intermediate', goal: '增肌强化', desc: '分化训练（胸/背/腿/肩手臂），5×5 复合动作 + 3×12 孤立动作', weeklyMileage: '4 次/周', targetKm: 0, kind: 'strength' },
 ];
 
 async function main() {
@@ -89,6 +93,7 @@ async function main() {
   console.log(`✅ Products seed done（新增 ${productInserted}，定义 ${SEED_PRODUCTS.length}）`);
 
   // 训练计划 seed：按 key 幂等（只补缺失，不覆盖 admin 改动 — 同商品范式）
+  // V0.2.128 老计划无 kind 字段，迁移后 schema 默认 'running'；seed 只补缺失（含新 strength 计划）
   let planInserted = 0;
   for (const p of SEED_TRAINING_PLANS) {
     const exists = await prisma.trainingPlan.findUnique({ where: { key: p.key } });

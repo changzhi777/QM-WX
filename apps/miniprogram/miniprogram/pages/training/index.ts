@@ -72,15 +72,20 @@ Page({
     this.loadMyActivePlan(); // V0.1.41
   },
 
-  /** 训练计划模板（training.myPlans，V0.1.41 改读 DB active 计划） */
+  /** 训练计划模板（V0.1.41 改读 DB + V0.2.128 kind 分段：running + strength） */
   async loadPlans() {
     this.setData({ loadingPlans: true });
     try {
-      const res = await api.call<{ plans: TrainingPlan[] }>('training', 'myPlans', {});
-      this.setData({
-        plans: res.plans.map((p) => ({ ...p, levelLabel: LEVEL_LABEL_MAP[p.level] || p.level })),
-        loadingPlans: false,
-      });
+      // V0.2.128 并行拉跑步 + 力量（前端分段展示）
+      const [running, strength] = await Promise.all([
+        api.call<{ plans: TrainingPlan[] }>('training', 'myPlans', { kind: 'running' }),
+        api.call<{ plans: TrainingPlan[] }>('training', 'myPlans', { kind: 'strength' }),
+      ]);
+      const plans = [
+        ...(running.plans ?? []).map((p) => ({ ...p, levelLabel: LEVEL_LABEL_MAP[p.level] || p.level })),
+        ...(strength.plans ?? []).map((p) => ({ ...p, levelLabel: LEVEL_LABEL_MAP[p.level] || p.level })),
+      ];
+      this.setData({ plans, loadingPlans: false });
     } catch {
       this.setData({ loadingPlans: false });
     }

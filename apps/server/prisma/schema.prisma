@@ -976,6 +976,7 @@ model TrainingPlan {
   desc          String
   weeklyMileage String
   targetKm      Float // 计划总目标跑量（进度计算分母）
+  kind          String   @default("running") // V0.2.128 running | strength
   status        String   @default("active") // active | archived
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
