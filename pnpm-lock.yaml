@@ -84,6 +84,9 @@ importers:
       '@fastify/static':
         specifier: ^7.0.0
         version: 7.0.4
+      '@fastify/websocket':
+        specifier: ^8
+        version: 8.3.1
       '@gooin/garmin-connect':
         specifier: ^1.8.7
         version: 1.8.7
@@ -197,6 +200,8 @@ importers:
       vitest:
         specifier: ^3.2.6
         version: 3.2.6(@types/node@20.19.43)
+
+  scripts/dev-cli: {}
 
 packages:
 
@@ -586,6 +591,9 @@ packages:
 
   '@fastify/static@7.0.4':
     resolution: {integrity: sha512-p2uKtaf8BMOZWLs6wu+Ihg7bWNBdjNgCwDza4MJtTqg+5ovKmcbgbR9Xs5/smZ1YISfzKOCNYmZV8LaCj+eJ1Q==}
+
+  '@fastify/websocket@8.3.1':
+    resolution: {integrity: sha512-hsQYHHJme/kvP3ZS4v/WMUznPBVeeQHHwAoMy1LiN6m/HuPfbdXq1MBJ4Nt8qX1YI+eVbog4MnOsU7MTozkwYA==}
 
   '@gooin/garmin-connect@1.8.7':
     resolution: {integrity: sha512-sjX4kK8F8lFDDNQ7vHTdmQjLz7CgFCDwO4TXWD02Zh8nIP620rpWgL16GL+KT6Q+7KL00e4jY8cBB9bQpg3+tQ==}
@@ -3551,6 +3559,14 @@ snapshots:
       fastify-plugin: 4.5.1
       fastq: 1.20.1
       glob: 10.4.5
+
+  '@fastify/websocket@8.3.1':
+    dependencies:
+      fastify-plugin: 4.5.1
+      ws: 8.21.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   '@gooin/garmin-connect@1.8.7':
     dependencies:

@@ -9,7 +9,7 @@
 import { prisma } from '../../infra/prisma.js';
 import { Cache } from '../../infra/cache.js';
 import { env } from '../../config/env.js';
-import { publishDailyReport } from '../../infra/mqtt.js';
+import { publishDailyReport } from '../../infra/realtime.js';
 import type { MyRunnerStatsQuery, MyAnnualReportQuery, HealthScoreQuery, DailyReportQuery, DailyReportListQuery } from './stats.schema.js';
 
 const RUNNER_STATS_CACHE_TTL_SEC = 120;

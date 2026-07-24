@@ -3,7 +3,7 @@
 import { api } from '../../services/api';
 import { ensureLogin } from '../../utils/auth';
 import { syncWeRunIfFirstToday } from '../../utils/werun';
-import { subscribeDailyReport, unsubscribeDailyReport } from '../../utils/mqtt';
+import { connectRealtime, onRealtime, clearRealtime, disconnectRealtime } from '../../services/realtime';
 
 interface DailyReport {
   id: string;
@@ -131,7 +131,11 @@ Page({
       await ensureLogin();
       // V0.1.144 MQTT 订阅每日简报推送（ensureLogin 后 user 有 id；收到推送自动更新）
       const u = getApp().globalData.user as ({ id?: string; memberLevel?: string } | null);
-      if (u?.id) subscribeDailyReport(u.id, (r) => this.onMqttMessage(r));
+      if (u?.id) {
+        connectRealtime();
+        clearRealtime('dailyReport');
+        onRealtime('dailyReport', (r) => this.onMqttMessage(r));
+      }
       const isMember = !!u && !!u.memberLevel && u.memberLevel !== 'free';
       const lat = this.data.latitude;
       const lon = this.data.longitude;
@@ -235,6 +239,7 @@ Page({
   },
 
   onUnload() {
-    unsubscribeDailyReport();
+    clearRealtime('dailyReport');
+    disconnectRealtime();
   },
 });

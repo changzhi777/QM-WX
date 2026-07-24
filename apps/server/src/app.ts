@@ -9,6 +9,8 @@ import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
 import multipart from '@fastify/multipart';
 import staticFiles from '@fastify/static';
+import websocket from '@fastify/websocket';
+import { subscribeUser } from './infra/realtime.js';
 import rateLimit from '@fastify/rate-limit';
 import { join } from 'node:path';
 import { env } from './config/env.js';
@@ -89,6 +91,7 @@ export async function buildApp() {
     credentials: true,
   });
   await app.register(rateLimit, { max: 200, timeWindow: '1 minute' });
+  await app.register(websocket); // V0.2.116 实时 WebSocket（替 MQTT）
   await app.register(multipart, { limits: { fileSize: 5 * 1024 * 1024 } });
   await app.register(staticFiles, {
     root: join(process.cwd(), 'uploads'),
@@ -120,6 +123,24 @@ export async function buildApp() {
     env: env.NODE_ENV,
     timestamp: new Date().toISOString(),
   }));
+
+  // V0.2.116 实时 WebSocket（替 MQTT）：wx.connectSocket + JWT(query token) + Redis subscribe user:{userId}
+  app.get('/ws', { websocket: true, config: { public: true } }, async (connection: { socket: { send: (m: string) => void; on: (e: string, cb: () => void) => void; close: () => void } }, req) => {
+    const token = (req.query as { token?: string }).token;
+    if (!token) { connection.socket.close(); return; }
+    let userId: string;
+    try {
+      const payload = app.jwt.verify(token) as { sub: string };
+      userId = payload.sub;
+    } catch {
+      connection.socket.close();
+      return;
+    }
+    const unsub = await subscribeUser(userId, (msg) => {
+      try { connection.socket.send(msg); } catch { /* 客户端断开，忽略 */ }
+    });
+    connection.socket.on('close', () => { unsub(); });
+  });
 
   // ===== 统一错误处理（必须在 route 注册前，Fastify 4 才会对 hook/route 抛错生效）=====
   app.setErrorHandler((err, req, reply) => {
