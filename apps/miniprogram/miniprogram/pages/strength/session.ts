@@ -1,4 +1,4 @@
-// pages/strength/session.ts — 力量训练中（V0.2.120 训记式：自动计时 + 实时容量累加 + 动作 picker）
+// pages/strength/session.ts — 力量训练中（V0.2.120 训记式 + V0.2.123 组间休息倒计时）
 import { api } from '../../services/api';
 
 interface SetItem {
@@ -26,6 +26,9 @@ function formatDuration(sec: number): string {
   return `${pad(m)}:${pad(s)}`;
 }
 
+// V0.2.123 默认组间休息（用户可 ±15 调整）
+const DEFAULT_REST_SEC = 90;
+
 Page({
   data: {
     sessionId: '',
@@ -45,12 +48,19 @@ Page({
     setIndex: '1',
     // 已添加组
     sets: [] as SetItem[],
+    // V0.2.123 组间休息倒计时
+    restActive: false,
+    restReady: false,
+    restRemaining: 0,
+    restRemainingText: '00:00',
     // 完成
     notes: '',
     submitting: false,
   },
 
   timer: null as number | null,
+  restTimer: null as number | null,
+  restEndAt: 0,
 
   onLoad(query: Record<string, string | undefined>) {
     const sid = query.sessionId || '';
@@ -66,6 +76,10 @@ Page({
     if (this.timer) {
       clearInterval(this.timer);
       this.timer = null;
+    }
+    if (this.restTimer) {
+      clearInterval(this.restTimer);
+      this.restTimer = null;
     }
   },
 
@@ -113,7 +127,7 @@ Page({
   onInputSetIndex(e: WechatMiniprogram.Input) { this.setData({ setIndex: e.detail.value }); },
   onInputNotes(e: WechatMiniprogram.Input) { this.setData({ notes: e.detail.value }); },
 
-  /** 添加一组：调 addSet → 累加容量 + 列表追加 */
+  /** 添加一组：调 addSet → 累加容量 + 列表追加 + V0.2.123 启动休息倒计时 */
   async onAddSet() {
     const name = (this.data.exerciseName || this.data.customName).trim();
     if (!name) {
@@ -131,6 +145,10 @@ Page({
       wx.showToast({ title: '请输入重量', icon: 'none' });
       return;
     }
+    // V0.2.123 计算本次实际休息时长（上一组到现在的秒数；第一组 0）
+    const restSec = this.data.restActive
+      ? Math.max(0, Math.floor((DEFAULT_REST_SEC - this.data.restRemaining)))
+      : 0;
     try {
       const res = await api.call<{ set: { order: number }; session: { totalVolume: number } }>(
         'strength', 'addSet', {
@@ -139,6 +157,7 @@ Page({
           reps,
           weight,
           setIndex,
+          restSec, // V0.2.123 透传
         },
       );
       const newSet: SetItem = {
@@ -156,8 +175,60 @@ Page({
         weight: '',
         setIndex: String(setIndex + 1),
       });
+      // V0.2.123 启动休息倒计时
+      this.startRestTimer(DEFAULT_REST_SEC);
     } catch (e) {
       wx.showToast({ title: (e as Error).message || '添加失败', icon: 'none' });
+    }
+  },
+
+  /** V0.2.123 启动休息倒计时 */
+  startRestTimer(seconds: number) {
+    this.stopRestTimer();
+    this.restEndAt = Date.now() + seconds * 1000;
+    this.setData({
+      restActive: true,
+      restReady: false,
+      restRemaining: seconds,
+      restRemainingText: formatDuration(seconds),
+    });
+    this.restTimer = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((this.restEndAt - Date.now()) / 1000));
+      this.setData({
+        restRemaining: remaining,
+        restRemainingText: formatDuration(remaining),
+      });
+      if (remaining <= 0) {
+        this.onRestComplete();
+      }
+    }, 250) as unknown as number; // 250ms 让秒数跳变更顺
+  },
+
+  /** 休息结束：振动 + toast + 切换 ready 态 */
+  onRestComplete() {
+    this.stopRestTimer();
+    this.setData({ restActive: true, restReady: true, restRemaining: 0, restRemainingText: '00:00' });
+    try { wx.vibrateShort({ type: 'medium' }); } catch { /* 老版本 wx 不支持 type */ }
+    wx.showToast({ title: '休息结束，开始下一组 💪', icon: 'none', duration: 2000 });
+  },
+
+  /** 跳过休息（清空倒计时但不计入 restSec） */
+  onSkipRest() {
+    this.stopRestTimer();
+    this.setData({ restActive: false, restReady: false, restRemaining: 0, restRemainingText: '00:00' });
+  },
+
+  /** 调整休息时长 ±15s */
+  onAdjustRest(e: WechatMiniprogram.TouchEvent) {
+    const delta = Number(e.currentTarget.dataset.delta);
+    const newSeconds = Math.max(15, this.data.restRemaining + delta);
+    this.startRestTimer(newSeconds);
+  },
+
+  stopRestTimer() {
+    if (this.restTimer) {
+      clearInterval(this.restTimer);
+      this.restTimer = null;
     }
   },
 
@@ -177,6 +248,7 @@ Page({
 
   async doFinish() {
     this.setData({ submitting: true });
+    this.stopRestTimer();
     try {
       await api.call('strength', 'finishSession', {
         sessionId: this.data.sessionId,

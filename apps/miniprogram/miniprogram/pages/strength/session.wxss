@@ -185,3 +185,89 @@
   font-size: 30rpx;
   font-weight: 600;
 }
+
+/* V0.2.123 组间休息倒计时卡 */
+.rest-card {
+  margin-top: 24rpx;
+  background: #fff;
+  border: 2rpx solid #2D9D78;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  text-align: center;
+  box-shadow: 0 2rpx 8rpx rgba(45, 157, 120, 0.08);
+}
+
+.rest-card--ready {
+  background: linear-gradient(135deg, #2D9D78 0%, #4FB68F 100%);
+  color: #fff;
+  border-color: #2D9D78;
+  animation: restPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes restPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+.rest-card__label {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 8rpx;
+}
+
+.rest-card--ready .rest-card__label {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.rest-card__timer {
+  font-size: 72rpx;
+  font-weight: 700;
+  color: #2D9D78;
+  font-family: monospace;
+  letter-spacing: 4rpx;
+  line-height: 1.2;
+}
+
+.rest-card--ready .rest-card__timer {
+  color: #fff;
+}
+
+.rest-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  margin-top: 16rpx;
+}
+
+.rest-card__adjust {
+  background: #f5f6f8;
+  color: #666;
+  padding: 8rpx 20rpx;
+  border-radius: 8rpx;
+  font-size: 24rpx;
+  font-weight: 500;
+}
+
+.rest-card--ready .rest-card__adjust {
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+}
+
+.rest-card__skip {
+  background: #2D9D78;
+  color: #fff;
+  padding: 8rpx 24rpx;
+  border-radius: 8rpx;
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.rest-card--ready .rest-card__skip {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.rest-card__hint {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  font-weight: 600;
+}

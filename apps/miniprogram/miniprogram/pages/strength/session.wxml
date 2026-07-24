@@ -9,6 +9,18 @@
     <view class="hero__hint">实时累加容量</view>
   </view>
 
+  <!-- V0.2.123 组间休息倒计时（添加 set 后自动启动） -->
+  <view wx:if="{{restActive}}" class="rest-card {{restReady ? 'rest-card--ready' : ''}}">
+    <view class="rest-card__label">组间休息</view>
+    <view class="rest-card__timer">{{restRemainingText}}</view>
+    <view class="rest-card__actions">
+      <view class="rest-card__adjust" bindtap="onAdjustRest" data-delta="-15">-15s</view>
+      <view class="rest-card__skip" bindtap="onSkipRest">跳过休息</view>
+      <view class="rest-card__adjust" bindtap="onAdjustRest" data-delta="15">+15s</view>
+    </view>
+    <view class="rest-card__hint" wx:if="{{restReady}}">💪 休息结束，开始下一组</view>
+  </view>
+
   <!-- 动作选择 + 添加组 -->
   <view class="form-card">
     <view class="form-card__title">添加一组</view>
