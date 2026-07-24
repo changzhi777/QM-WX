@@ -41,6 +41,26 @@
       </view>
     </view>
 
+    <!-- P1 打卡快捷卡（sport.today 状态）-->
+    <view class="checkin-card" wx:if="{{sportToday}}" bindtap="onTapStartSport">
+      <block wx:if="{{sportToday.done && sportToday.checkin}}">
+        <text class="checkin-icon">✅</text>
+        <view class="checkin-info">
+          <view class="checkin-title">今日已打卡</view>
+          <view class="checkin-sub">{{sportToday.checkin.distance}}km · {{sportToday.checkin.pace}}</view>
+        </view>
+        <text class="checkin-arrow">再跑一次 →</text>
+      </block>
+      <block wx:else>
+        <text class="checkin-icon">🏃</text>
+        <view class="checkin-info">
+          <view class="checkin-title">开始运动</view>
+          <view class="checkin-sub">记录今日跑步 · 赚积分</view>
+        </view>
+        <text class="checkin-arrow">开始 →</text>
+      </block>
+    </view>
+
     <!-- 运动与天气建议（stats.weatherAnalysis insights）-->
     <view class="weather-advice-card" wx:if="{{weatherAdvice.length}}">
       <view class="advice-title">🌡️ 运动与天气建议</view>
@@ -82,24 +102,23 @@
       </view>
     </view>
 
-    <!-- 历史报告（默认 7 日；更多历史进月度报告页，入口在本周趋势标题）-->
-    <view class="section-title" wx:if="{{history.length}}">
-      历史报告
-    </view>
-    <view class="history-list" wx:if="{{history.length}}">
-      <van-cell-group>
-        <van-cell
-          wx:for="{{history}}"
-          wx:key="id"
-          title="{{item.date}}"
-          label="{{item.reportText}}"
-          value="{{item.healthScore}} 分"
-          data-date="{{item.date}}"
-          bindtap="onTapHistory"
-          is-link
-        />
-      </van-cell-group>
-    </view>
+    <!-- 历史报告（折叠，默认收起 — P1 collapsible 接入）-->
+    <collapsible wx:if="{{history.length}}" title="历史报告" open="{{false}}">
+      <view class="history-list">
+        <van-cell-group>
+          <van-cell
+            wx:for="{{history}}"
+            wx:key="id"
+            title="{{item.date}}"
+            label="{{item.reportText}}"
+            value="{{item.healthScore}} 分"
+            data-date="{{item.date}}"
+            bindtap="onTapHistory"
+            is-link
+          />
+        </van-cell-group>
+      </view>
+    </collapsible>
   </block>
 
   <view class="empty" wx:else>

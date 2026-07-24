@@ -60,6 +60,7 @@ Page({
     uv: 0,                          // V0.2.9 UV 指数（来自 stats.weatherAir）
     uvShow: true,                   // V0.2.9 UV 提示条显示开关
     weatherAdvice: [] as string[],  // 运动与天气建议（stats.weatherAnalysis insights）
+    sportToday: null as { done: boolean; checkin: { distance: number; pace?: string } | null } | null,  // P1 打卡快捷卡（sport.today）
   },
 
   onLoad() {
@@ -134,13 +135,14 @@ Page({
       const lat = this.data.latitude;
       const lon = this.data.longitude;
       const coord = lat != null ? { lat, lon } : {};
-      const [reportRes, scoreRes, historyRes, weatherRes, airRes, analysisRes] = await Promise.all([
+      const [reportRes, scoreRes, historyRes, weatherRes, airRes, analysisRes, sportTodayRes] = await Promise.all([
         api.call<DailyReport>('stats', 'dailyReport', {}),
         api.call<HealthScoreRes>('stats', 'healthScore', {}),
         api.call<{ list: HistoryItem[]; total: number }>('stats', 'dailyReportList', { page: 1, pageSize: 7 }),
         api.call<{ city: string; text: string; temperature: number; feelsLike: number; icon: string }>('stats', 'weather', coord),
         api.call<{ uv?: number }>('stats', 'weatherAir', coord).catch(() => null),  // V0.2.9 UV 提示：失败静默（不阻塞首页）
         api.call<{ sufficient?: boolean; insights?: string[] }>('stats', 'weatherAnalysis', {}).catch(() => null),  // 运动与天气建议：失败静默
+        api.call<{ done: boolean; checkin: { distance: number; pace?: string } | null }>('sport', 'today', {}).catch(() => null),  // P1 打卡卡：失败静默
       ]);
       // V0.2.9 短期 banner 持久化：单日关了就关，不存盘
       const rawUv = (airRes && typeof airRes.uv === 'number') ? airRes.uv : 0;
@@ -161,12 +163,18 @@ Page({
         isMember,
         reportSummary: this.summarizeReport(reportRes.reportText),
         weatherAdvice: (analysisRes && analysisRes.insights) ? analysisRes.insights : [],
+        sportToday: sportTodayRes,
         loading: false,
       });
     } catch (e) {
       this.setData({ loading: false });
       console.error('[index] loadData failed', e);
     }
+  },
+
+  /** P1 打卡快捷卡 → 运动打卡页 */
+  onTapStartSport() {
+    wx.navigateTo({ url: '/pages/sport/index' });
   },
 
   /** 「更多」→ 月度健康报告页（按月聚合展示历史）*/

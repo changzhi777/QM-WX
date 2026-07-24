@@ -131,3 +131,20 @@
 .empty { text-align: center; padding: 120rpx 40rpx; color: #999; font-size: 28rpx; }
 .empty-icon { font-size: 80rpx; margin-bottom: 16rpx; }
 .empty-tip { font-size: 22rpx; color: #bbb; margin-top: 12rpx; }
+
+/* P1 打卡快捷卡（sport.today 状态）*/
+.checkin-card {
+  margin: 0 24rpx 24rpx;
+  background: linear-gradient(135deg, #2D9D78 0%, #1a7a5a 100%);
+  border-radius: 20rpx;
+  padding: 28rpx;
+  box-shadow: 0 4rpx 16rpx rgba(45,157,120,0.25);
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.checkin-card .checkin-icon { font-size: 40rpx; }
+.checkin-card .checkin-info { flex: 1; }
+.checkin-card .checkin-title { font-size: 30rpx; font-weight: 600; color: #fff; }
+.checkin-card .checkin-sub { font-size: 24rpx; color: rgba(255,255,255,0.85); margin-top: 4rpx; }
+.checkin-card .checkin-arrow { font-size: 24rpx; color: #fff; }
