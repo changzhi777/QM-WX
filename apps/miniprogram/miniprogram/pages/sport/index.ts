@@ -44,6 +44,8 @@ Page({
     gpsDistance: 0,     // km（实时）
     gpsDuration: 0,     // sec（实时）
     gpsPoints: [] as GpsPoint[],  // 轨迹点
+    gpsPolyline: [] as Array<{ points: Array<{ latitude: number; longitude: number }>; color: string; width: number }>,
+    gpsMarkers: [] as Array<{ id: number; latitude: number; longitude: number; callout: object }>,
 
     // V0.1.35 运动入口网格（14 项分 4 段，entry-grid 组件渲染，从 mine 分散到运动 tab）
     sportTools: [
@@ -305,11 +307,13 @@ Page({
       const first = await this.getLocationOnce();
       wx.hideLoading();
       this._gpsStartTime = Date.now();
+      const startPoints: GpsPoint[] = [{ latitude: first.latitude, longitude: first.longitude, timestamp: Date.now() }];
       this.setData({
         gpsRunning: true,
-        gpsPoints: [{ latitude: first.latitude, longitude: first.longitude, timestamp: Date.now() }],
+        gpsPoints: startPoints,
         gpsDistance: 0,
         gpsDuration: 0,
+        ...this.computeGpsOverlay(startPoints),
       });
       this._gpsTimer = setInterval(() => { void this.onGpsTick(); }, 5000) as unknown as number;
     } catch {
@@ -326,6 +330,7 @@ Page({
         gpsPoints: points,
         gpsDistance: totalDistance(points),
         gpsDuration: Math.floor((Date.now() - this._gpsStartTime) / 1000),
+        ...this.computeGpsOverlay(points),
       });
     } catch {
       // 单次定位失败静默（继续记录后续点）
@@ -351,6 +356,21 @@ Page({
     return new Promise((resolve, reject) => {
       wx.getLocation({ type: 'gcj02', success: resolve, fail: reject } as WechatMiniprogram.GetLocationOption);
     });
+  },
+
+  /** V0.3 GPS 轨迹地图 overlay（polyline 连线 + 起点终点 markers）*/
+  computeGpsOverlay(points: GpsPoint[]) {
+    if (points.length === 0) return { gpsPolyline: [], gpsMarkers: [] };
+    const coords = points.map((p) => ({ latitude: p.latitude, longitude: p.longitude }));
+    const polyline = coords.length > 1 ? [{ points: coords, color: '#2D9D78', width: 6 }] : [];
+    const markers: Array<{ id: number; latitude: number; longitude: number; callout: object }> = [
+      { id: 0, latitude: points[0].latitude, longitude: points[0].longitude, callout: { content: '起', padding: 6, borderRadius: 6, display: 'ALWAYS' } },
+    ];
+    if (points.length > 1) {
+      const last = points[points.length - 1];
+      markers.push({ id: 1, latitude: last.latitude, longitude: last.longitude, callout: { content: '当前', padding: 6, borderRadius: 6, display: 'ALWAYS' } });
+    }
+    return { gpsPolyline: polyline, gpsMarkers: markers };
   },
 
   /** P3 打卡成就分享（2.7 分享子项，Canvas 海报留 v0.3）*/

@@ -37,6 +37,16 @@
         <button class="gps-stop-btn" bindtap="stopGpsRun">⏹ 停止并填入表单</button>
       </view>
 
+      <!-- V0.3 GPS 轨迹地图（运行中 + 停止后，轨迹点 > 1 显示）-->
+      <map class="gps-map" wx:if="{{gpsPoints.length > 1}}"
+        latitude="{{gpsPoints[0].latitude}}"
+        longitude="{{gpsPoints[0].longitude}}"
+        polyline="{{gpsPolyline}}"
+        markers="{{gpsMarkers}}"
+        scale="15"
+        show-location
+      />
+
       <view class="form">
         <view class="field">
           <text class="label">距离 (km) *</text>
