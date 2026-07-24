@@ -17,7 +17,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: qmwx_dev
+      POSTGRES_DB: qmwx # V0.2.138 修正：实际 postgres 容器 DB 名（pre-existing bug 写错 qmwx_dev）
     ports:
       - "5432:5432"
     volumes:
@@ -57,7 +57,7 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOST: 0.0.0.0
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/qmwx_dev
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/qmwx # V0.2.138 修正：DB=qmwx（pre-existing bug）
       REDIS_URL: redis://redis:6379
       # JWT_SECRET 强制显式（不允许弱默认被部署到 staging/prod）
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required, use 'openssl rand -hex 32'}
