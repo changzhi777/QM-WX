@@ -21,6 +21,12 @@
         </view>
         <view class="tip">明天再来吧！</view>
         <button class="share-btn" open-type="share">分享成就 📤</button>
+        <button class="poster-btn" bindtap="onGeneratePoster">生成海报 🖼️</button>
+        <view class="poster-preview" wx:if="{{posterImagePath}}">
+          <image src="{{posterImagePath}}" mode="widthFix" class="poster-img" show-menu-by-longpress />
+          <button class="poster-save-btn" bindtap="onSavePoster">保存到相册</button>
+        </view>
+        <canvas type="2d" id="posterCanvas" class="poster-canvas-hidden"></canvas>
       </view>
     </block>
 

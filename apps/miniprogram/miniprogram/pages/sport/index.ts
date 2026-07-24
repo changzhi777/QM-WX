@@ -5,6 +5,17 @@ import { formatPace, formatDistance } from '../../utils/format';
 import { totalDistance, calcPace, formatPaceStr } from '../../utils/gps';
 import type { GpsPoint } from '../../utils/gps';
 
+/** Canvas 海报绘制上下文（小程序无 DOM lib，自定义绘制操作类型）*/
+interface PosterCtx {
+  fillStyle: string | { addColorStop: (offset: number, color: string) => void };
+  font: string;
+  textAlign: string;
+  scale: (x: number, y: number) => void;
+  createLinearGradient: (x0: number, y0: number, x1: number, y1: number) => { addColorStop: (offset: number, color: string) => void };
+  fillRect: (x: number, y: number, w: number, h: number) => void;
+  fillText: (text: string, x: number, y: number) => void;
+}
+
 interface Group {
   id: string;
   name: string;
@@ -46,6 +57,7 @@ Page({
     gpsPoints: [] as GpsPoint[],  // 轨迹点
     gpsPolyline: [] as Array<{ points: Array<{ latitude: number; longitude: number }>; color: string; width: number }>,
     gpsMarkers: [] as Array<{ id: number; latitude: number; longitude: number; callout: object }>,
+    posterImagePath: '',  // V0.3 阶段 C Canvas 海报路径
 
     // V0.1.35 运动入口网格（14 项分 4 段，entry-grid 组件渲染，从 mine 分散到运动 tab）
     sportTools: [
@@ -386,6 +398,57 @@ Page({
       title: '来沐禾健康，记录每一次跑步 🏃',
       path: '/pages/sport/index',
     };
+  },
+
+  /** V0.3 GPS 阶段 C：Canvas 生成打卡海报 */
+  onGeneratePoster() {
+    const c = this.data.todayCheckin;
+    if (!c) { wx.showToast({ title: '请先打卡', icon: 'none' }); return; }
+    wx.showLoading({ title: '生成中...' });
+    const query = wx.createSelectorQuery();
+    query.select('#posterCanvas').fields({ node: true, size: true }).exec((res) => {
+      const canvas = res[0].node as { width: number; height: number; getContext: (t: string) => PosterCtx };
+      const ctx = canvas.getContext('2d');
+      const dpr = wx.getWindowInfo().pixelRatio;
+      const W = 300, H = 420;
+      canvas.width = W * dpr;
+      canvas.height = H * dpr;
+      ctx.scale(dpr, dpr);
+      const grad = ctx.createLinearGradient(0, 0, W, H);
+      grad.addColorStop(0, '#2D9D78');
+      grad.addColorStop(1, '#1a7a5a');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillText('沐禾健康 · 跑步打卡', W / 2, 50);
+      ctx.font = 'bold 60px sans-serif';
+      ctx.fillText(`${c.distance}`, W / 2, 145);
+      ctx.font = '18px sans-serif';
+      ctx.fillText('km', W / 2, 172);
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillText(`配速 ${c.pace}`, W / 2, 225);
+      ctx.fillText(`+${c.points} 积分`, W / 2, 262);
+      ctx.font = '14px sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.8)';
+      ctx.fillText(this.data.today, W / 2, 395);
+      wx.canvasToTempFilePath({
+        canvas: canvas as never,
+        success: (r) => { wx.hideLoading(); this.setData({ posterImagePath: r.tempFilePath }); },
+        fail: () => { wx.hideLoading(); wx.showToast({ title: '生成失败', icon: 'none' }); },
+      });
+    });
+  },
+
+  /** V0.3 保存海报到相册 */
+  onSavePoster() {
+    if (!this.data.posterImagePath) return;
+    wx.saveImageToPhotosAlbum({
+      filePath: this.data.posterImagePath,
+      success: () => wx.showToast({ title: '已保存相册', icon: 'success' }),
+      fail: () => wx.showToast({ title: '保存失败（检查授权）', icon: 'none' }),
+    });
   },
 });
 

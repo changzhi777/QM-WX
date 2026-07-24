@@ -71,6 +71,21 @@
 /* V0.3 GPS 轨迹地图 */
 .gps-map { width: 100%; height: 400rpx; border-radius: 12rpx; margin-bottom: 20rpx; }
 
+/* V0.3 GPS 阶段 C Canvas 海报 */
+.poster-canvas-hidden { position: fixed; left: -9999rpx; top: -9999rpx; width: 300px; height: 420px; }
+.poster-btn {
+  margin-top: 16rpx; background: #fff; color: #2D9D78; font-size: 26rpx; font-weight: 600;
+  border-radius: 24rpx; padding: 16rpx 0; border: 2rpx solid #2D9D78;
+}
+.poster-btn::after { border: none; }
+.poster-preview { margin-top: 20rpx; }
+.poster-img { width: 100%; border-radius: 16rpx; box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.12); }
+.poster-save-btn {
+  margin-top: 16rpx; background: linear-gradient(135deg, #2D9D78, #1a7a5a); color: #fff;
+  font-size: 26rpx; font-weight: 600; border-radius: 24rpx; padding: 16rpx 0; border: none;
+}
+.poster-save-btn::after { border: none; }
+
 .form .field { margin: 20rpx 0; }
 .form .row { display: flex; gap: 16rpx; }
 .form .field-half { flex: 1; }
