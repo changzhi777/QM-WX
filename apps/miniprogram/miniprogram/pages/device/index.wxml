@@ -2,7 +2,7 @@
   <!-- tab 头 -->
   <view class="tab-bar">
     <view class="tab {{tab === 'bind' ? 'active' : ''}}" data-tab="bind" bindtap="onSwitchTab">绑定</view>
-    <view class="tab {{tab === 'garmin' ? 'active' : ''}}" data-tab="garmin" bindtap="onSwitchTab">佳明数据</view>
+    <view class="tab {{tab === 'garmin' ? 'active' : ''}}" data-tab="garmin" bindtap="onSwitchTab">设备数据</view>
     <view class="tab {{tab === 'import' ? 'active' : ''}}" data-tab="import" bindtap="onSwitchTab">导入指南</view>
   </view>
 
@@ -21,7 +21,7 @@
 
       <!-- 已绑设备 -->
       <view class="section" wx:if="{{bindings.length > 0}}">
-        <view class="section-title">已绑设备</view>
+        <view class="section-title">多设备（可同时绑定多个）</view>
         <view class="binding-row" wx:for="{{bindings}}" wx:key="id">
           <view class="binding-info">
             <view class="binding-name">{{item.deviceName}}</view>
@@ -54,13 +54,13 @@
 
       <!-- 微信运动卡 -->
       <view class="section">
-        <view class="section-title">微信运动（30 天）</view>
+        <view class="section-title">VIVO手环（功能开发中）</view>
         <view class="werun-stats">
           <view class="w-stat"><text class="w-v">{{werunSummary.totalSteps}}</text><text class="w-l">总步数</text></view>
           <view class="w-stat"><text class="w-v">{{werunSummary.totalKm}}</text><text class="w-l">总里程km</text></view>
           <view class="w-stat"><text class="w-v">{{werunSummary.days}}</text><text class="w-l">活跃天</text></view>
         </view>
-        <button class="btn-submit" bindtap="onSyncWeRun">同步微信运动</button>
+        <button class="btn-submit" bindtap="onSyncWeRun">VIVO手环（开发中）</button>
       </view>
 
       <!-- 调试面板 -->

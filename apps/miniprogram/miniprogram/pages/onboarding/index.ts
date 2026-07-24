@@ -105,6 +105,8 @@ Page({
    * 首次触发 scope.werun 系统授权弹窗；拒绝则引导 openSetting
    */
   async onSyncWeRun() {
+    wx.showToast({ title: 'VIVO手环功能开发中', icon: 'none' });
+    return;
     if (this.data.werunSyncing) return;
     this.setData({ werunSyncing: true });
     try {

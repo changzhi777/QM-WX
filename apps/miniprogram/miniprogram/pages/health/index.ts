@@ -308,6 +308,8 @@ Page({
   },
 
   async onSync() {
+    wx.showToast({ title: 'VIVO手环功能开发中', icon: 'none' });
+    return;
     if (this.data.syncing) return;
     this.setData({ syncing: true });
     try {
