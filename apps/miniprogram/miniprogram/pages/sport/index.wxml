@@ -20,6 +20,7 @@
           <view class="stat"><text class="stat-val">+{{todayCheckin.points}}</text><text class="stat-unit">积分</text></view>
         </view>
         <view class="tip">明天再来吧！</view>
+        <button class="share-btn" open-type="share">分享成就 📤</button>
       </view>
     </block>
 

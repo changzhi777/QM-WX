@@ -33,6 +33,20 @@
 .done-stats .stat-val { display: block; font-size: 36rpx; font-weight: 700; color: #2D9D78; }
 .done-stats .stat-unit { font-size: 22rpx; color: #999; }
 
+/* P3 打卡成就分享按钮（2.7 分享子项）*/
+.share-btn {
+  margin-top: 20rpx;
+  background: linear-gradient(135deg, #2D9D78, #1a7a5a);
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 600;
+  border-radius: 24rpx;
+  padding: 16rpx 40rpx;
+  line-height: 1.5;
+  border: none;
+}
+.share-btn::after { border: none; }
+
 .form .field { margin: 20rpx 0; }
 .form .row { display: flex; gap: 16rpx; }
 .form .field-half { flex: 1; }

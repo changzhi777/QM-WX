@@ -286,6 +286,21 @@ Page({
       },
     });
   },
+
+  /** P3 打卡成就分享（2.7 分享子项，Canvas 海报留 v0.3）*/
+  onShareAppMessage() {
+    const c = this.data.todayCheckin;
+    if (c) {
+      return {
+        title: `我刚跑步 ${c.distance} km，配速 ${c.pace}，+${c.points} 积分！来沐禾健康一起跑 🏃`,
+        path: '/pages/sport/index',
+      };
+    }
+    return {
+      title: '来沐禾健康，记录每一次跑步 🏃',
+      path: '/pages/sport/index',
+    };
+  },
 });
 
 // 避免 lint 警告
