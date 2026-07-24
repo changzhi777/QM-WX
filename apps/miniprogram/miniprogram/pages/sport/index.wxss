@@ -47,6 +47,27 @@
 }
 .share-btn::after { border: none; }
 
+/* V0.3 GPS 跑步记录 */
+.gps-bar { margin-bottom: 20rpx; }
+.gps-btn {
+  width: 100%; background: linear-gradient(135deg, #2D9D78, #1a7a5a); color: #fff;
+  font-size: 28rpx; font-weight: 600; border-radius: 12rpx; padding: 22rpx 0; border: none;
+  box-shadow: 0 4rpx 12rpx rgba(45,157,120,0.2);
+}
+.gps-btn::after { border: none; }
+.gps-running {
+  background: #e8f5e9; border-radius: 12rpx; padding: 24rpx; margin-bottom: 20rpx; text-align: center;
+}
+.gps-live { display: flex; justify-content: center; gap: 60rpx; margin-bottom: 16rpx; }
+.gps-stat { text-align: center; }
+.gps-val { display: block; font-size: 44rpx; font-weight: 700; color: #2D9D78; }
+.gps-unit { font-size: 22rpx; color: #999; }
+.gps-stop-btn {
+  background: #fff; color: #2D9D78; font-size: 26rpx; font-weight: 600; border-radius: 12rpx;
+  padding: 16rpx 0; border: 2rpx solid #2D9D78;
+}
+.gps-stop-btn::after { border: none; }
+
 .form .field { margin: 20rpx 0; }
 .form .row { display: flex; gap: 16rpx; }
 .form .field-half { flex: 1; }

@@ -25,6 +25,18 @@
     </block>
 
     <block wx:else>
+      <!-- V0.3 GPS 跑步记录 -->
+      <view class="gps-bar" wx:if="{{!gpsRunning}}">
+        <button class="gps-btn" bindtap="startGpsRun">📍 GPS 跑步记录（自动算距离）</button>
+      </view>
+      <view class="gps-running" wx:if="{{gpsRunning}}">
+        <view class="gps-live">
+          <view class="gps-stat"><text class="gps-val">{{gpsDistance}}</text><text class="gps-unit">km</text></view>
+          <view class="gps-stat"><text class="gps-val">{{gpsDuration}}</text><text class="gps-unit">秒</text></view>
+        </view>
+        <button class="gps-stop-btn" bindtap="stopGpsRun">⏹ 停止并填入表单</button>
+      </view>
+
       <view class="form">
         <view class="field">
           <text class="label">距离 (km) *</text>

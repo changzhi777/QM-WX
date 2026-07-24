@@ -2,6 +2,8 @@
 import { api } from '../../services/api';
 import { ensureLogin } from '../../utils/auth';
 import { formatPace, formatDistance } from '../../utils/format';
+import { totalDistance, calcPace, formatPaceStr } from '../../utils/gps';
+import type { GpsPoint } from '../../utils/gps';
 
 interface Group {
   id: string;
@@ -38,6 +40,10 @@ Page({
 
     error: false,
     errorMsg: '',
+    gpsRunning: false,  // V0.3 GPS 跑步中
+    gpsDistance: 0,     // km（实时）
+    gpsDuration: 0,     // sec（实时）
+    gpsPoints: [] as GpsPoint[],  // 轨迹点
 
     // V0.1.35 运动入口网格（14 项分 4 段，entry-grid 组件渲染，从 mine 分散到运动 tab）
     sportTools: [
@@ -57,6 +63,10 @@ Page({
       { icon: '📍', label: '赛事·本地', url: '/pages/content-list/index' },
     ],
   },
+
+  // V0.3 GPS 跑步（非响应式属性）
+  _gpsTimer: null as number | null,
+  _gpsStartTime: 0,
 
   onShow() {
     this.loadAll();
@@ -284,6 +294,62 @@ Page({
           wx.showToast({ title: (err as Error).message ?? '加入失败', icon: 'none' });
         }
       },
+    });
+  },
+
+  /** V0.3 GPS 跑步：开始记录轨迹（前台每 5s 定位一次）*/
+  async startGpsRun() {
+    if (this.data.gpsRunning || this.data.todayDone) return;
+    wx.showLoading({ title: '定位中...' });
+    try {
+      const first = await this.getLocationOnce();
+      wx.hideLoading();
+      this._gpsStartTime = Date.now();
+      this.setData({
+        gpsRunning: true,
+        gpsPoints: [{ latitude: first.latitude, longitude: first.longitude, timestamp: Date.now() }],
+        gpsDistance: 0,
+        gpsDuration: 0,
+      });
+      this._gpsTimer = setInterval(() => { void this.onGpsTick(); }, 5000) as unknown as number;
+    } catch {
+      wx.hideLoading();
+      wx.showToast({ title: 'GPS 定位失败，检查授权', icon: 'none' });
+    }
+  },
+
+  async onGpsTick() {
+    try {
+      const loc = await this.getLocationOnce();
+      const points: GpsPoint[] = [...this.data.gpsPoints, { latitude: loc.latitude, longitude: loc.longitude, timestamp: Date.now() }];
+      this.setData({
+        gpsPoints: points,
+        gpsDistance: totalDistance(points),
+        gpsDuration: Math.floor((Date.now() - this._gpsStartTime) / 1000),
+      });
+    } catch {
+      // 单次定位失败静默（继续记录后续点）
+    }
+  },
+
+  /** V0.3 GPS 停止：算总距离 + 时长 + 配速，填入表单 */
+  stopGpsRun() {
+    if (this._gpsTimer) { clearInterval(this._gpsTimer); this._gpsTimer = null; }
+    const dist = this.data.gpsDistance;
+    const dur = this.data.gpsDuration;
+    const pace = calcPace(dist, dur);
+    this.setData({
+      gpsRunning: false,
+      'form.distance': dist > 0 ? dist.toFixed(2) : '',
+      'form.durationMin': dur > 0 ? String(Math.round(dur / 60)) : '',
+      'form.pace': pace ? formatPaceStr(pace) : '',
+    });
+    if (dist > 0) wx.showToast({ title: `GPS 记录 ${dist.toFixed(2)}km`, icon: 'success' });
+  },
+
+  getLocationOnce(): Promise<WechatMiniprogram.GetLocationSuccessCallbackResult> {
+    return new Promise((resolve, reject) => {
+      wx.getLocation({ type: 'gcj02', success: resolve, fail: reject } as WechatMiniprogram.GetLocationOption);
     });
   },
 
