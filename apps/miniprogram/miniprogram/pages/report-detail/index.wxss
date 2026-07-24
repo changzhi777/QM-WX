@@ -46,6 +46,13 @@
 .rd-lock-tag { font-size: 22rpx; color: #b8860b; background: #fff8e1; padding: 4rpx 14rpx; border-radius: 12rpx; }
 .rd-body { font-size: 28rpx; color: #444; line-height: 1.8; }
 .rd-body.blurred { color: #aaa; }
+
+/* V0.2.117 健康分数评分标准 + 公式 */
+.formula-item { padding: 12rpx 0; border-bottom: 1rpx solid #f0f0f0; }
+.formula-item:last-child { border-bottom: none; }
+.formula-label { font-size: 28rpx; font-weight: 600; color: #2D9D78; margin-bottom: 6rpx; }
+.formula-desc { font-size: 24rpx; color: #666; line-height: 1.6; }
+.formula-total { margin-top: 16rpx; padding: 16rpx; background: #e8f5e9; border-radius: 12rpx; font-size: 26rpx; color: #2D9D78; font-weight: 600; text-align: center; }
 .rd-alert {
   margin-top: 16rpx; background: #fff8e1; border-radius: 12rpx;
   padding: 16rpx; font-size: 24rpx; color: #795548; line-height: 1.5;

@@ -581,7 +581,7 @@ function buildReportText(steps: number, hr: number | null, sleep: number | null,
   const dataSeg = [stepPart, sleepPart, state].filter(Boolean).join('，');
   // ② AI 建议段（量化、可执行）
   const advice = buildAdvice(lowSteps, sleep, hr);
-  return `${dataSeg}。\n\n💡 AI建议：${advice}`;
+  return `${dataSeg}。\n\n💡 健康助手建议：${advice}`;
 }
 
 /** 睡眠小时 → "5h12min" 格式 */

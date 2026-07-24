@@ -3,7 +3,7 @@
   <view class="tab-bar">
     <view class="tab {{tab === 'today' ? 'active' : ''}}" data-tab="today" bindtap="onSwitchTab">今日</view>
     <view class="tab {{tab === 'history' ? 'active' : ''}}" data-tab="history" bindtap="onSwitchTab">历史</view>
-    <view class="tab {{tab === 'werun' ? 'active' : ''}}" data-tab="werun" bindtap="onSwitchTab">VIVO手环</view>
+    <view class="tab {{tab === 'werun' ? 'active' : ''}}" data-tab="werun" bindtap="onSwitchTab">数据</view>
   </view>
 
   <!-- ===== 今日 tab ===== -->

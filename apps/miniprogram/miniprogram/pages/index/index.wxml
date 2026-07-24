@@ -30,14 +30,13 @@
     <view class="ai-card">
       <view class="ai-header">
         <text class="ai-badge">✨ AI解读</text>
-        <text class="ai-title">今日身体简报</text>
+        <text class="ai-title">健康提示</text>
         <text class="free-tag" wx:if="{{!isMember}}">免费用户</text>
       </view>
       <view class="ai-body">{{reportSummary}}</view>
-      <view class="ai-alert" wx:if="{{report.alertText}}">⚠️ {{report.alertText}}</view>
       <view class="ai-footer">
         <view class="ai-action-btn primary" bindtap="goReportDetail">查看完整报告 →</view>
-        <view class="ai-action-btn unlock" wx:if="{{!isMember}}" bindtap="goMembership">解锁完整版 👑</view>
+        <view class="ai-action-btn unlock" bindtap="goMonthlyReport">查看月报 📊</view>
       </view>
     </view>
 
@@ -79,7 +78,7 @@
     </view>
 
     <!-- 3 数据卡（P3 可点击跳 health 页看详情）-->
-    <view class="data-row" wx:if="{{score}}" bindtap="onTapHealth" hover-class="data-row-hover" hover-stay-time="100">
+    <view class="data-row" wx:if="{{score}}">
       <view class="data-card">
         <view class="icon">👟</view>
         <view class="value">{{score.steps}}</view>

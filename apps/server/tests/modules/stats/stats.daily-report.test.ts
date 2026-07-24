@@ -47,7 +47,7 @@ describe('statsService.dailyReport (V0.1.144)', () => {
     const r = await statsService.dailyReport('u1', {});
 
     expect(r.healthScore).toBeGreaterThan(0);
-    expect(r.reportText).toContain('AI建议');
+    expect(r.reportText).toContain('健康助手建议');
     expect(r.reportText).toContain('步数');
     expect(r.steps).toBe(5000);
     expect(mockedPrisma.dailyReport.create).toHaveBeenCalled();

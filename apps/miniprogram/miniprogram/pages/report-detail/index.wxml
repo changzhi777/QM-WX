@@ -28,6 +28,26 @@
       class="rd-strip"
     />
 
+    <!-- 健康分数评分标准 + 计算公式（V0.2.117）-->
+    <view class="rd-card">
+      <view class="rd-card-head">
+        <text class="rd-badge">📊 评分标准与计算公式</text>
+      </view>
+      <view class="formula-item">
+        <view class="formula-label">步数（满分 40）</view>
+        <view class="formula-desc">8000 步得满分。公式：min(步数 ÷ 8000, 1) × 40</view>
+      </view>
+      <view class="formula-item">
+        <view class="formula-label">静息心率（满分 30）</view>
+        <view class="formula-desc">60-80 bpm 得满分。低于 60：心率 ÷ 60 × 30；高于 80：max(0, 1 - (心率-80) ÷ 40) × 30</view>
+      </view>
+      <view class="formula-item">
+        <view class="formula-label">睡眠时长（满分 30）</view>
+        <view class="formula-desc">7 小时得满分。公式：min(睡眠小时 ÷ 7, 1) × 30</view>
+      </view>
+      <view class="formula-total">健康分数 = 步数分 + 心率分 + 睡眠分（满分 100，四舍五入）</view>
+    </view>
+
     <!-- AI 完整解读卡 -->
     <view class="rd-card">
       <view class="rd-card-head">

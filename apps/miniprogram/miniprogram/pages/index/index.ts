@@ -155,9 +155,10 @@ Page({
       // UV 正常 0-11，异常值（如 999 qweather 错误码）当 0 → uv-alert 不显示
       const uv = rawUv > 0 && rawUv <= 11 ? rawUv : 0;
       // 批 1：本周趋势带日期（history 日期 'YYYY-MM-DD' → 'MM-DD'）
+      const today = this.data.dateStr;
       const weekTrend = historyRes.list.slice(0, 7).reverse().map((h) => ({
         date: (h.date || '').slice(5),
-        score: h.healthScore,
+        score: (h.date === today && scoreRes?.score != null) ? scoreRes.score : h.healthScore,
       }));
       this.setData({
         report: reportRes,
