@@ -1,0 +1,10 @@
+<!-- components/collapsible — 折叠容器（V0.2.94 阶段 2.1：今日页智能折叠）-->
+<view class="collapsible">
+  <view class="collapse-trigger" bindtap="toggle">
+    <text class="collapse-title">{{title}}</text>
+    <text class="collapse-arrow {{open ? 'is-open' : ''}}">▾</text>
+  </view>
+  <view class="collapse-content" wx:if="{{open}}">
+    <slot></slot>
+  </view>
+</view>

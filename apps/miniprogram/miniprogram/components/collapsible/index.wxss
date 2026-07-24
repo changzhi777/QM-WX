@@ -1,0 +1,33 @@
+/* components/collapsible — 折叠容器（V0.2.94 阶段 2.1）*/
+.collapsible {
+  margin: 0 0 24rpx;
+}
+.collapse-trigger {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20rpx 32rpx;
+  background: rgba(45, 157, 120, 0.08);
+  border-radius: 16rpx;
+  font-size: 26rpx;
+  color: #2D9D78;
+}
+.collapse-title {
+  margin-right: 12rpx;
+}
+.collapse-arrow {
+  display: inline-block;
+  transition: transform 0.2s ease;
+  font-size: 22rpx;
+}
+.collapse-arrow.is-open {
+  transform: rotate(180deg);
+}
+.collapse-content {
+  padding: 8rpx 0 0;
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-8rpx); }
+  to { opacity: 1; transform: translateY(0); }
+}
