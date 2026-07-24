@@ -54,6 +54,7 @@ Page({
     gpsRunning: false,  // V0.3 GPS 跑步中
     gpsDistance: 0,     // km（实时）
     gpsDuration: 0,     // sec（实时）
+    gpsPace: '—',       // V0.3 实时配速 M'SS"
     gpsPoints: [] as GpsPoint[],  // 轨迹点
     gpsPolyline: [] as Array<{ points: Array<{ latitude: number; longitude: number }>; color: string; width: number }>,
     gpsMarkers: [] as Array<{ id: number; latitude: number; longitude: number; callout: object }>,
@@ -325,6 +326,7 @@ Page({
         gpsPoints: startPoints,
         gpsDistance: 0,
         gpsDuration: 0,
+        gpsPace: '—',
         ...this.computeGpsOverlay(startPoints),
       });
       this._gpsTimer = setInterval(() => { void this.onGpsTick(); }, 5000) as unknown as number;
@@ -338,10 +340,14 @@ Page({
     try {
       const loc = await this.getLocationOnce();
       const points: GpsPoint[] = [...this.data.gpsPoints, { latitude: loc.latitude, longitude: loc.longitude, timestamp: Date.now() }];
+      const dist = totalDistance(points);
+      const dur = Math.floor((Date.now() - this._gpsStartTime) / 1000);
+      const pace = calcPace(dist, dur);
       this.setData({
         gpsPoints: points,
-        gpsDistance: totalDistance(points),
-        gpsDuration: Math.floor((Date.now() - this._gpsStartTime) / 1000),
+        gpsDistance: dist,
+        gpsDuration: dur,
+        gpsPace: pace ? formatPaceStr(pace) : '—',
         ...this.computeGpsOverlay(points),
       });
     } catch {

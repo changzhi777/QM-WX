@@ -38,6 +38,7 @@
       <view class="gps-running" wx:if="{{gpsRunning}}">
         <view class="gps-live">
           <view class="gps-stat"><text class="gps-val">{{gpsDistance}}</text><text class="gps-unit">km</text></view>
+          <view class="gps-stat"><text class="gps-val">{{gpsPace}}</text><text class="gps-unit">配速</text></view>
           <view class="gps-stat"><text class="gps-val">{{gpsDuration}}</text><text class="gps-unit">秒</text></view>
         </view>
         <button class="gps-stop-btn" bindtap="stopGpsRun">⏹ 停止并填入表单</button>
