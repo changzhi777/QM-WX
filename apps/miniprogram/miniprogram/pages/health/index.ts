@@ -1,7 +1,7 @@
 // pages/health/index.ts — 健康中心（V0.1.143 合并 health + health-history + werun）
 // 3 tab：今日 / 历史 / 微信运动（懒加载，切 tab 才请求）
 import { api } from '../../services/api';
-import { getWeRunHistory, syncWeRunToday, cnMonthRange } from '../../utils/werun';
+import { getWeRunHistory, cnMonthRange } from '../../utils/werun';
 
 // === 今日 tab ===
 interface BodyComposition {
@@ -308,27 +308,7 @@ Page({
   },
 
   async onSync() {
+    // VIVO手环功能开发中（原微信运动 syncWeRun 逻辑暂禁用，待 VIVO 手环对接）
     wx.showToast({ title: 'VIVO手环功能开发中', icon: 'none' });
-    return;
-    if (this.data.syncing) return;
-    this.setData({ syncing: true });
-    try {
-      const result = await syncWeRunToday();
-      if (result) {
-        wx.showToast({ title: `已同步 ${result.days} 天`, icon: 'success' });
-        this.loadWeRun();
-      } else {
-        wx.showModal({
-          title: '需要授权',
-          content: '同步微信运动需要授权「微信运动数据」，是否前往设置开启？',
-          confirmText: '去设置',
-          success: (r) => { if (r.confirm) wx.openSetting({}); },
-        });
-      }
-    } catch {
-      wx.showToast({ title: '同步失败', icon: 'none' });
-    } finally {
-      this.setData({ syncing: false });
-    }
   },
 });
