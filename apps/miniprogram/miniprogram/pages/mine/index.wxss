@@ -60,7 +60,7 @@
 .bg-pink { background: #fce4ec; }
 .bg-cyan { background: #e0f7fa; }
 .bg-gray { background: #f5f5f5; }
-.bg-more { background: linear-gradient(135deg, #8a5cf0, #5d6cd8); color: #fff; }
+.bg-more { background: linear-gradient(135deg, #2D9D78, #1a7a5a); color: #fff; }
 
 .mi-sub { font-size: 22rpx; color: #999; margin-top: 4rpx; font-weight: normal; }
 

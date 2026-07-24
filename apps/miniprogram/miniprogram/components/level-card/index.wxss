@@ -1,10 +1,10 @@
 .level-card {
-  background: linear-gradient(135deg, #8a5cf0 0%, #5d6cd8 100%);
+  background: linear-gradient(135deg, #2D9D78 0%, #1a7a5a 100%);
   border-radius: 20rpx;
   padding: 28rpx 32rpx;
   margin: 16rpx 24rpx;
   color: #fff;
-  box-shadow: 0 6rpx 20rpx rgba(138, 92, 240, 0.18);
+  box-shadow: 0 6rpx 20rpx rgba(45, 157, 120, 0.25);
 }
 
 .row {

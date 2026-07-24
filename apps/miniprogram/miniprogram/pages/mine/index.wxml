@@ -37,7 +37,7 @@
 
     <!-- AI服务 -->
     <view class="section">
-      <view class="section-title">AI服务</view>
+      <view class="section-title">健康服务</view>
       <view class="menu-section">
         <view class="menu-item" bindtap="goAiCoach">
           <view class="mi-icon bg-purple">🤖</view>
