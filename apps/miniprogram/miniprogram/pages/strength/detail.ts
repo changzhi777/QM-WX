@@ -123,4 +123,56 @@ Page({
       this.setData({ loading: false });
     }
   },
+
+  /** V0.2.135 点动作名 → 拉趋势 + 打开 modal */
+  async onTapExerciseTrend(e: WechatMiniprogram.TouchEvent) {
+    const name = e.currentTarget.dataset.name as string;
+    if (!name) return;
+    this.setData({ trendVisible: true, 'trend.exerciseName': name, 'trend.loading': true, 'trend.points': [] });
+    try {
+      const res = await api.call<{ points: Array<{ dateStr: string; maxWeight: number; totalVolume: number; setCount: number }>; totalSessions: number; maxWeightAllTime: number }>(
+        'strength', 'getExerciseTrend', { exerciseName: name, days: 90 },
+      );
+      const svg = buildTrendSvg(res.points ?? []);
+      this.setData({ 'trend.loading': false, 'trend.points': res.points ?? [], 'trend.totalSessions': res.totalSessions ?? 0, 'trend.maxWeightAllTime': res.maxWeightAllTime ?? 0, 'trend.svg': svg });
+    } catch (err) {
+      this.setData({ 'trend.loading': false });
+      wx.showToast({ title: (err as Error).message || '加载失败', icon: 'none' });
+    }
+  },
+
+  onCloseTrendModal() {
+    this.setData({ trendVisible: false });
+  },
 });
+
+/** V0.2.135 折线图 SVG 计算（不依赖外部库） */
+function buildTrendSvg(points: Array<{ dateStr: string; maxWeight: number }>) {
+  const w = 600;
+  const h = 240;
+  const padL = 40;
+  const padR = 20;
+  const padT = 20;
+  const padB = 30;
+  if (points.length === 0) return { w, h, points: '', dots: [], minW: 0, maxW: 0, firstDate: '', lastDate: '' };
+  const weights = points.map((p) => p.maxWeight);
+  const minW = Math.min(...weights);
+  const maxW = Math.max(...weights);
+  const xStep = (w - padL - padR) / Math.max(1, points.length - 1);
+  const yRange = Math.max(1, maxW - minW);
+  const xy: Array<{ x: number; y: number }> = points.map((p, i) => {
+    const x = padL + i * xStep;
+    const y = padT + (1 - (p.maxWeight - minW) / yRange) * (h - padT - padB);
+    return { x: Math.round(x), y: Math.round(y) };
+  });
+  return {
+    w,
+    h,
+    points: xy.map((p) => `${p.x},${p.y}`).join(' '),
+    dots: xy,
+    minW,
+    maxW,
+    firstDate: points[0].dateStr.slice(5),
+    lastDate: points[points.length - 1].dateStr.slice(5),
+  };
+}

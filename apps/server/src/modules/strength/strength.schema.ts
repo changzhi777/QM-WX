@@ -54,3 +54,9 @@ export const RemoveUserExerciseSchema = z.object({
 export const ToggleFavoriteExerciseSchema = z.object({
   exerciseId: z.string().min(1),
 });
+
+/** V0.2.135 单一动作趋势 */
+export const GetExerciseTrendSchema = z.object({
+  exerciseName: z.string().min(1),
+  days: z.coerce.number().int().min(7).max(365).default(90),
+});

@@ -56,7 +56,11 @@
     <view class="section-title">动作明细</view>
     <view class="group-list">
       <view wx:for="{{groupedSets}}" wx:key="exerciseName" wx:for-item="grp" class="group">
-        <view class="group__name">{{grp.exerciseName}} <text class="group__count">{{grp.sets.length}} 组</text></view>
+        <view class="group__name" data-name="{{grp.exerciseName}}" bindtap="onTapExerciseTrend">
+          {{grp.exerciseName}}
+          <text class="group__count">{{grp.sets.length}} 组</text>
+          <text class="group__trend">📈 趋势</text>
+        </view>
         <view class="group__list">
           <view wx:for="{{grp.sets}}" wx:for-item="s" wx:key="order" class="set-row">
             <view class="set-row__idx">#{{s.setIndex}}</view>
@@ -67,4 +71,39 @@
       </view>
     </view>
   </block>
+
+  <!-- V0.2.135 动作趋势 modal（点动作名打开） -->
+  <view class="trend-modal" wx:if="{{trendVisible}}" bindtap="onCloseTrendModal">
+    <view class="trend-modal__panel" catchtap="">
+      <view class="trend-modal__title">{{trend.exerciseName || ''}} · 90 天趋势</view>
+      <view wx:if="{{trend.loading}}" class="trend-modal__hint">加载中…</view>
+      <block wx:elif="{{trend.points.length === 0}}">
+        <view class="trend-modal__hint">暂无训练记录</view>
+      </block>
+      <block wx:else>
+        <!-- V0.2.135 简易 SVG 折线图：maxWeight 随时间 -->
+        <view class="trend-svg-wrap">
+          <svg viewBox="0 0 {{trend.svg.w}} {{trend.svg.h}}" class="trend-svg">
+            <!-- 网格线 -->
+            <line x1="40" y1="20" x2="40" y2="{{trend.svg.h - 30}}" stroke="#eee" stroke-width="1" />
+            <line x1="40" y1="{{trend.svg.h - 30}}" x2="{{trend.svg.w - 20}}" y2="{{trend.svg.h - 30}}" stroke="#eee" stroke-width="1" />
+            <!-- Y 轴 labels（min/max） -->
+            <text x="4" y="24" font-size="20" fill="#999">{{trend.svg.maxW}}</text>
+            <text x="4" y="{{trend.svg.h - 30}}" font-size="20" fill="#999">{{trend.svg.minW}}</text>
+            <!-- X 轴 labels（首/末日期） -->
+            <text x="40" y="{{trend.svg.h - 10}}" font-size="18" fill="#999">{{trend.svg.firstDate}}</text>
+            <text x="{{trend.svg.w - 100}}" y="{{trend.svg.h - 10}}" font-size="18" fill="#999">{{trend.svg.lastDate}}</text>
+            <!-- 折线 path -->
+            <polyline points="{{trend.svg.points}}" stroke="#2D9D78" stroke-width="3" fill="none" />
+            <!-- 圆点 -->
+            <circle wx:for="{{trend.svg.dots}}" wx:key="i" wx:for-item="dot" cx="{{dot.x}}" cy="{{dot.y}}" r="4" fill="#2D9D78" />
+          </svg>
+        </view>
+        <view class="trend-modal__stats">
+          共 {{trend.totalSessions}} 次训练 · 最高 {{trend.maxWeightAllTime}} kg
+        </view>
+      </block>
+      <view class="trend-modal__close" bindtap="onCloseTrendModal">关闭</view>
+    </view>
+  </view>
 </view>

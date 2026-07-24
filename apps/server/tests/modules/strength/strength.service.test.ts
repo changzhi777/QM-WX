@@ -15,7 +15,7 @@ const mockPrisma = vi.hoisted(() => ({
     count: vi.fn(),
     update: vi.fn(),
   },
-  strengthSet: { findFirst: vi.fn(), create: vi.fn(), findMany: vi.fn() },
+  strengthSet: { findFirst: vi.fn(), create: vi.fn(), findMany: vi.fn() }, // V0.2.135 trend 用 findMany with include
   exercise: { findMany: vi.fn(), findFirst: vi.fn(), create: vi.fn(), findUnique: vi.fn(), delete: vi.fn() },
   user: { findUnique: vi.fn(), update: vi.fn() }, // V0.2.134 收藏动作
 }));
@@ -36,6 +36,7 @@ import {
   addUserExercise,
   toggleFavoriteExercise,
   listFavoriteExercises,
+  getExerciseTrend,
 } from '../../../src/modules/strength/strength.service.js';
 import { notifyStrengthDone } from 'src/modules/notification/notification.service.js';
 
@@ -373,5 +374,26 @@ describe('toggleFavoriteExercise / listFavoriteExercises (V0.2.134)', () => {
     const r = await listFavoriteExercises('u1');
     expect(r.list).toEqual([]);
     expect(mockPrisma.exercise.findMany).not.toHaveBeenCalled();
+  });
+});
+
+describe('getExerciseTrend (V0.2.135)', () => {
+  it('按 session 聚合：2 场训练同一动作 → 2 个点（maxWeight/totalVolume/avgReps 各算各的）', async () => {
+    mockPrisma.strengthSet.findMany.mockResolvedValue([
+      // 7/10 训练：3 组（100×8=800, 100×8=800, 105×6=630 → maxWeight=105, total=2230, avgReps=7.3）
+      { sessionId: 's1', exerciseName: '深蹲', reps: 8, weight: 100, session: { createdAt: new Date('2026-07-10T10:00:00Z'), dateStr: '2026-07-10' } },
+      { sessionId: 's1', exerciseName: '深蹲', reps: 8, weight: 100, session: { createdAt: new Date('2026-07-10T10:00:00Z'), dateStr: '2026-07-10' } },
+      { sessionId: 's1', exerciseName: '深蹲', reps: 6, weight: 105, session: { createdAt: new Date('2026-07-10T10:00:00Z'), dateStr: '2026-07-10' } },
+      // 7/17 训练：2 组（110×8=880, 110×6=660 → maxWeight=110, total=1540, avgReps=7）
+      { sessionId: 's2', exerciseName: '深蹲', reps: 8, weight: 110, session: { createdAt: new Date('2026-07-17T10:00:00Z'), dateStr: '2026-07-17' } },
+      { sessionId: 's2', exerciseName: '深蹲', reps: 6, weight: 110, session: { createdAt: new Date('2026-07-17T10:00:00Z'), dateStr: '2026-07-17' } },
+    ] as never);
+
+    const r = await getExerciseTrend('u1', { exerciseName: '深蹲' });
+
+    expect(r.totalSessions).toBe(2);
+    expect(r.maxWeightAllTime).toBe(110);
+    expect(r.points[0]).toMatchObject({ dateStr: '2026-07-10', maxWeight: 105, setCount: 3, totalVolume: 2230, avgReps: 7.3 });
+    expect(r.points[1]).toMatchObject({ dateStr: '2026-07-17', maxWeight: 110, setCount: 2, totalVolume: 1540, avgReps: 7 });
   });
 });

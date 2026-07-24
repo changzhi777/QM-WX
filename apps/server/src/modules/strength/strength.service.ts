@@ -358,3 +358,64 @@ export async function getExerciseStats(userId: string) {
     totalSets: sets.length,
   };
 }
+
+/**
+ * V0.2.135 单一动作的趋势（按 session 聚合）
+ *
+ * - 输入：userId + exerciseName + 可选 days（默认 90）
+ * - 聚合：按 session 维度（一 session 一点），返 { date, maxWeight, totalVolume, setCount, avgReps }
+ * - 用于详情页「动作趋势」折线图（weight × reps × volume 时间序列）
+ */
+export async function getExerciseTrend(userId: string, input: { exerciseName: string; days?: number }) {
+  const days = input.days ?? 90;
+  const since = new Date(Date.now() - days * 86_400_000);
+
+  const sets = await prisma.strengthSet.findMany({
+    where: {
+      exerciseName: input.exerciseName,
+      session: { userId, createdAt: { gte: since } },
+    },
+    orderBy: { session: { createdAt: 'asc' } },
+    include: { session: { select: { createdAt: true, dateStr: true } } },
+  });
+
+  // 按 session 聚合（sessionId 为 group key）
+  const bySession = new Map<string, { date: string; dateStr: string; maxWeight: number; totalVolume: number; setCount: number; totalReps: number }>();
+  for (const s of sets) {
+    const cur = bySession.get(s.sessionId);
+    if (!cur) {
+      bySession.set(s.sessionId, {
+        date: s.session.createdAt.toISOString(),
+        dateStr: s.session.dateStr,
+        maxWeight: s.weight,
+        totalVolume: s.reps * s.weight,
+        setCount: 1,
+        totalReps: s.reps,
+      });
+    } else {
+      cur.setCount += 1;
+      cur.totalVolume += s.reps * s.weight;
+      cur.totalReps += s.reps;
+      if (s.weight > cur.maxWeight) cur.maxWeight = s.weight;
+    }
+  }
+
+  const points = Array.from(bySession.values())
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .map((p) => ({
+      date: p.date,
+      dateStr: p.dateStr,
+      maxWeight: p.maxWeight,
+      totalVolume: Math.round(p.totalVolume * 10) / 10,
+      setCount: p.setCount,
+      avgReps: Math.round((p.totalReps / p.setCount) * 10) / 10,
+    }));
+
+  return {
+    exerciseName: input.exerciseName,
+    days,
+    points,
+    totalSessions: points.length,
+    maxWeightAllTime: points.reduce((m, p) => Math.max(m, p.maxWeight), 0),
+  };
+}

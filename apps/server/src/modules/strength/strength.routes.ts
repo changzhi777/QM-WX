@@ -28,6 +28,7 @@ import {
   AddUserExerciseSchema,
   RemoveUserExerciseSchema,
   ToggleFavoriteExerciseSchema,
+  GetExerciseTrendSchema,
 } from './strength.schema.js';
 
 export async function strengthRoutes(app: FastifyInstance) {
@@ -74,6 +75,11 @@ export async function strengthRoutes(app: FastifyInstance) {
       case 'listFavoriteExercises':
         // V0.2.134 列出我的收藏动作
         return { code: 0, data: await strengthService.listFavoriteExercises(userId) };
+      case 'getExerciseTrend': {
+        // V0.2.135 单一动作趋势（按 session 聚合 maxWeight + totalVolume）
+        const input = GetExerciseTrendSchema.parse(payload);
+        return { code: 0, data: await strengthService.getExerciseTrend(userId, input) };
+      }
       default:
         throw Errors.badRequest(`unknown action: ${action}`);
     }
