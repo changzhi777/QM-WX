@@ -782,13 +782,21 @@ export const deviceService = {
    * 故基于 RawActivity 计数自动判定"已连接（数据已导入）"。
    */
   async myBindings(userId: string) {
-    const [bindings, garminActivityCount] = await Promise.all([
+    const [bindings, garminActivityCount, lastHr] = await Promise.all([
       prisma.deviceBinding.findMany({
         where: { userId },
         orderBy: { createdAt: 'desc' },
       }),
       prisma.rawActivity.count({ where: { userId, vendor: 'garmin' } }),
+      prisma.heartRateRecord.findFirst({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true },
+      }),
     ]);
+    // 离线判断：最后心率时间 > 1 小时 → offline（BLE 心率维度；OAuth 设备无实时心率会显示离线）
+    const lastDataAt = lastHr?.createdAt ?? null;
+    const online = !!(lastDataAt && Date.now() - lastDataAt.getTime() < 3600_000);
 
     return {
       brands: DEVICE_BRANDS,
@@ -800,7 +808,8 @@ export const deviceService = {
           b.vendor === 'ble' || b.vendor === 'garmin' || b.vendor === 'xiaomi' || b.vendor === 'coros'
             ? b.accessTokenEnc ?? '蓝牙设备'
             : b.vendorUserId ?? b.vendor,
-        status: b.status,
+        status: online ? 'online' : 'offline',
+        lastDataAt: lastDataAt?.toISOString() ?? null,
         lastSyncAt: b.lastSyncAt?.toISOString() ?? null,
         createdAt: b.createdAt.toISOString(),
       })),

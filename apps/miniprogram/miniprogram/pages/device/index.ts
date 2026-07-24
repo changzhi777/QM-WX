@@ -25,7 +25,7 @@ interface FoundDevice extends BleDevice {
 const BRAND_LABEL: Record<string, string> = { garmin: '佳明', xiaomi: '小米', coros: '高驰', ble: '通用' };
 
 interface Binding {
-  id: string; vendor: string; deviceName: string; status: string;
+  id: string; vendor: string; deviceName: string; status: string; lastDataAt?: string | null;
   lastSyncAt: string | null; createdAt: string;
 }
 

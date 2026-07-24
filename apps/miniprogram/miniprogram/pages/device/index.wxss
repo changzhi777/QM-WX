@@ -26,6 +26,9 @@
 .binding-row:last-child { border-bottom: none; }
 .binding-name { font-size: 28rpx; color: #333; }
 .binding-vendor { font-size: 22rpx; color: #999; margin-top: 4rpx; }
+.status-badge { font-size: 20rpx; padding: 2rpx 12rpx; border-radius: 10rpx; margin-left: 8rpx; font-weight: 600; }
+.status-badge.online { background: #e8f5e9; color: #2D9D78; }
+.status-badge.offline { background: #f5f5f5; color: #999; }
 .binding-unbind { font-size: 24rpx; color: #e64340; padding: 8rpx 20rpx; border: 1rpx solid #e64340; border-radius: 8rpx; }
 
 /* 实时卡 */

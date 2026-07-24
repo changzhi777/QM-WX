@@ -24,22 +24,14 @@
         <view class="section-title">多设备（可同时绑定多个）</view>
         <view class="binding-row" wx:for="{{bindings}}" wx:key="id">
           <view class="binding-info">
-            <view class="binding-name">{{item.deviceName}}</view>
-            <view class="binding-vendor">{{item.vendor}} · {{item.status}}</view>
+            <view class="binding-name">{{item.deviceName}} <text class="status-badge {{item.status}}">{{item.status === 'online' ? '● 在线' : '○ 离线'}}</text></view>
+            <view class="binding-vendor">{{item.vendor}}</view>
           </view>
           <view class="binding-unbind" data-vendor="{{item.vendor}}" data-name="{{item.deviceName}}" bindtap="onUnbind">解绑</view>
         </view>
       </view>
 
-      <!-- 实时心率卡 -->
-      <view class="section live-card" wx:if="{{liveHr !== null}}">
-        <view class="live-title">实时心率</view>
-        <view class="live-hr">{{liveHr}}<text class="u"> bpm</text></view>
-        <view class="live-meta" wx:if="{{liveBattery !== null}}">电量 {{liveBattery}}%</view>
-        <view class="live-meta" wx:if="{{liveManufacturer}}">{{liveManufacturer}} · {{liveModel || ''}}</view>
-        <view class="live-meta" wx:if="{{liveSpO2}}">血氧 {{liveSpO2.spo2}}% · 脉率 {{liveSpO2.pr}}</view>
-        <view class="live-meta" wx:if="{{liveBodyLocation}}">佩戴 {{liveBodyLocation}}</view>
-      </view>
+      <!-- 实时心率卡已移除（V0.2.115：心率后台订阅保留落库，设备中心不实时显示）-->
 
       <!-- 体脂秤卡 -->
       <view class="section scale-card" wx:if="{{liveScale}}">
@@ -54,7 +46,7 @@
 
       <!-- 微信运动卡 -->
       <view class="section">
-        <view class="section-title">VIVO手环（同步步数）</view>
+        <view class="section-title">运动步数（微信运动数据源）</view>
         <view class="werun-stats">
           <view class="w-stat"><text class="w-v">{{werunSummary.totalSteps}}</text><text class="w-l">总步数</text></view>
           <view class="w-stat"><text class="w-v">{{werunSummary.totalKm}}</text><text class="w-l">总里程km</text></view>
