@@ -78,8 +78,8 @@
       <view class="advice-item" wx:for="{{weatherAdvice}}" wx:key="*this">{{item}}</view>
     </view>
 
-    <!-- 3 数据卡 -->
-    <view class="data-row" wx:if="{{score}}">
+    <!-- 3 数据卡（P3 可点击跳 health 页看详情）-->
+    <view class="data-row" wx:if="{{score}}" bindtap="onTapHealth" hover-class="data-row-hover" hover-stay-time="100">
       <view class="data-card">
         <view class="icon">👟</view>
         <view class="value">{{score.steps}}</view>

@@ -166,3 +166,6 @@
 .diet-card .diet-title { font-size: 28rpx; font-weight: 600; color: #333; }
 .diet-card .diet-sub { font-size: 24rpx; color: #666; margin-top: 4rpx; }
 .diet-card .diet-arrow { color: #ccc; font-size: 32rpx; }
+
+/* P3 3 数据卡点击反馈 */
+.data-row-hover { opacity: 0.7; }

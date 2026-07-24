@@ -185,6 +185,11 @@ Page({
     wx.navigateTo({ url: '/pages/diet/index' });
   },
 
+  /** P3 今日健康数据卡 → 今日健康页 */
+  onTapHealth() {
+    wx.navigateTo({ url: '/pages/health/index' });
+  },
+
   /** 「更多」→ 月度健康报告页（按月聚合展示历史）*/
   goMonthlyReport() {
     wx.navigateTo({ url: '/pages/report-monthly/index' });
