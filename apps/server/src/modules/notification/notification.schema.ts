@@ -1,15 +1,27 @@
 /**
  * notification module Zod schemas（V0.1.31，社交向 — 消息通知）
  *
- * type：like | comment | follow | system | goal_achieved | strength_done | new_post
- * MVP 先用 like / comment（feed 集成触发）；follow / system 预留扩展
+ * type：8 值（V0.2.131 shared 化 同步到 @qm-wx/shared/constants/notif-types）
  * **V0.2.121** +goal_achieved（sprint.checkin 检测目标完成时触发，自动 realtime 推送）
  * **V0.2.122** +strength_done（strength.finishSession 完成时触发，自动 realtime 推送）
  * **V0.2.125** +new_post（feed.publish fan-out 给作者所有粉丝，自动 realtime 推送）
+ * **V0.2.129** +plan_completed（strength 计划完成通知）
+ *
+ * V0.2.131 shared 化：NotifType 8 值在 @qm-wx/shared 定义，本文件保留向后兼容的本地副本。
+ * 后续可统一改 `import { NOTIF_TYPES, type NotifType } from '@qm-wx/shared/constants/notif-types'`。
  */
 import { z } from 'zod';
 
-export const NOTIF_TYPES = ['like', 'comment', 'follow', 'system', 'goal_achieved', 'strength_done', 'new_post', 'plan_completed'] as const;
+export const NOTIF_TYPES = [
+  'like',
+  'comment',
+  'follow',
+  'system',
+  'goal_achieved',
+  'strength_done',
+  'new_post',
+  'plan_completed',
+] as const;
 export type NotifType = (typeof NOTIF_TYPES)[number];
 
 /** 分页 */
