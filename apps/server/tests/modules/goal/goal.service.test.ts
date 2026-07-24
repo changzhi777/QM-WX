@@ -8,7 +8,7 @@ import { mockErrors } from '../../helpers/mockErrors.js';
 
 vi.mock('src/infra/prisma.js', () => ({
   prisma: {
-    goal: { findMany: vi.fn(), create: vi.fn(), findFirst: vi.fn(), delete: vi.fn() },
+    goal: { findMany: vi.fn(), create: vi.fn(), findFirst: vi.fn(), delete: vi.fn(), updateMany: vi.fn() },
     checkin: { aggregate: vi.fn(), findMany: vi.fn() },
     familyMember: { findUnique: vi.fn(), findMany: vi.fn() }, // V0.1.34 家庭目标
     user: { findUnique: vi.fn(), update: vi.fn() }, // V0.1.135 自定义里程碑
@@ -358,5 +358,95 @@ describe('goalService 缓存（V0.2.3）', () => {
     await goalService.myProgress('u1');
     expect(mockedPrisma.goal.findMany).toHaveBeenCalledTimes(1);
     expect(_redisMockState.cacheStore.has('qmwx:cache:goal:myProgress:u1')).toBe(true);
+  });
+});
+
+describe('goalService.detectAndMarkJustAchieved (V0.2.121)', () => {
+  beforeEach(() => {
+    _redisMockState.cacheStore.clear();
+    vi.clearAllMocks();
+  });
+
+  it('本次打卡刚好让 active 目标从 < target 跨到 >= target → 返回并标 completed', async () => {
+    // 一个 active 本月目标：target 100，今天周期内
+    mockedPrisma.goal.findMany.mockResolvedValue([
+      {
+        id: 'g1',
+        userId: 'u1',
+        familyId: null,
+        status: 'active',
+        type: 'monthly',
+        title: '月度100km',
+        targetDistance: 100,
+        periodStart: new Date('2026-07-01T00:00:00Z'),
+        periodEnd: new Date('2026-08-01T00:00:00Z'),
+      },
+    ] as never);
+    // 累计 = 100 (含本次 + 5km；before = 95, after = 100，刚好达标)
+    mockedPrisma.checkin.aggregate.mockResolvedValue({ _sum: { distance: 100 } } as never);
+    mockedPrisma.goal.updateMany.mockResolvedValue({ count: 1 } as never);
+
+    const result = await goalService.detectAndMarkJustAchieved('u1', 5, '2026-07-24');
+
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('g1');
+    expect(result[0].targetDistance).toBe(100);
+    expect(mockedPrisma.goal.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: { in: ['g1'] } },
+        data: { status: 'completed' },
+      }),
+    );
+  });
+
+  it('本次打卡但累计仍未达 target → 不返回，不 update', async () => {
+    mockedPrisma.goal.findMany.mockResolvedValue([
+      {
+        id: 'g1',
+        familyId: null,
+        status: 'active',
+        title: '月度100km',
+        targetDistance: 100,
+        periodStart: new Date('2026-07-01T00:00:00Z'),
+        periodEnd: new Date('2026-08-01T00:00:00Z'),
+      },
+    ] as never);
+    // 累计 50 (本次 + 5, before = 45, after = 50) 仍 < 100
+    mockedPrisma.checkin.aggregate.mockResolvedValue({ _sum: { distance: 50 } } as never);
+
+    const result = await goalService.detectAndMarkJustAchieved('u1', 5, '2026-07-24');
+
+    expect(result).toEqual([]);
+    expect(mockedPrisma.goal.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('目标 period 不包含今天 → 跳过（防止"已达成但 status 仍是 active"误报）', async () => {
+    // 上月目标，今天不在 period
+    mockedPrisma.goal.findMany.mockResolvedValue([
+      {
+        id: 'g1',
+        familyId: null,
+        status: 'active',
+        title: '6月100km',
+        targetDistance: 100,
+        periodStart: new Date('2026-06-01T00:00:00Z'),
+        periodEnd: new Date('2026-07-01T00:00:00Z'),
+      },
+    ] as never);
+    // 不应被调（period 跳过）
+    mockedPrisma.checkin.aggregate.mockResolvedValue({ _sum: { distance: 100 } } as never);
+
+    const result = await goalService.detectAndMarkJustAchieved('u1', 5, '2026-07-24');
+
+    expect(result).toEqual([]);
+    expect(mockedPrisma.checkin.aggregate).not.toHaveBeenCalled();
+    expect(mockedPrisma.goal.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('family 目标（familyId!=null）→ 不处理（只处理个人目标）', async () => {
+    mockedPrisma.goal.findMany.mockResolvedValue([] as never); // where familyId: null 已过滤
+    const result = await goalService.detectAndMarkJustAchieved('u1', 5, '2026-07-24');
+    expect(result).toEqual([]);
+    expect(mockedPrisma.checkin.aggregate).not.toHaveBeenCalled();
   });
 });

@@ -108,3 +108,41 @@ export async function notify(input: NotifyInput) {
     /* realtime 推送失败静默，DB 已是权威源，下次轮询仍可见 */
   }
 }
+
+/**
+ * 目标达成通知（V0.2.121 — sport.checkin 触发）
+ *
+ * 与 `notify()` 区别：自己触发自己（user 是自己的 actor），不跳过；专用 type='goal_achieved'
+ *
+ * @param userId - 接收者（也是达成者）
+ * @param goal - { id, title, targetDistance } 目标信息
+ */
+export async function notifyGoalAchieved(
+  userId: string,
+  goal: { id: string; title: string | null; targetDistance: number },
+) {
+  const titleSuffix = goal.title ? `「${goal.title}」` : '';
+  const content = `🎯 目标${titleSuffix}已达成！${goal.targetDistance}km`;
+  await prisma.notification.create({
+    data: {
+      userId,
+      actorId: userId, // 自己是触发者
+      type: 'goal_achieved',
+      targetType: 'goal',
+      targetId: goal.id,
+      content,
+    },
+  });
+  // V0.2.119 realtime 推送（复用通道）
+  try {
+    await publishToUser(userId, 'notification', {
+      type: 'goal_achieved',
+      targetType: 'goal',
+      targetId: goal.id,
+      content,
+      actorId: userId,
+    });
+  } catch {
+    /* realtime 推送失败静默 */
+  }
+}

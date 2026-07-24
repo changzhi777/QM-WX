@@ -132,6 +132,55 @@ export const goalService = {
     return { ok: true };
   },
 
+  /**
+   * V0.2.121 检测"刚刚达成"的目标（sport.checkin 完成后调用）
+   *
+   * 算法：仅考虑 period 包含今天的 active 个人目标
+   *  - aggregate Checkin.distance 包含本次新打卡
+   *  - beforeProgress = aggregate - todayDistance（= 减本次后的累计）
+   *  - afterProgress = aggregate
+   *  - justAchieved = (beforeProgress < target) && (afterProgress >= target)
+   *
+   * 副作用：把刚达成的目标 status 改为 'completed'，避免下次打卡误报
+   *
+   * @param userId - 用户
+   * @param todayDistance - 本次打卡距离（km）
+   * @param todayDateStr - 本次打卡日期（YYYY-MM-DD CN）
+   * @returns 刚刚达成的目标列表（供 sport.service 调 notifyGoalAchieved）
+   */
+  async detectAndMarkJustAchieved(
+    userId: string,
+    todayDistance: number,
+    todayDateStr: string,
+  ): Promise<Array<{ id: string; title: string | null; targetDistance: number }>> {
+    const goals = await prisma.goal.findMany({
+      where: { userId, familyId: null, status: 'active' },
+    });
+    const justAchieved: Array<{ id: string; title: string | null; targetDistance: number }> = [];
+    for (const g of goals) {
+      const range = cnDateRange(g.periodStart, g.periodEnd);
+      // 只关心 period 包含今天的（今天才可能"刚"完成）
+      if (todayDateStr < range.gte || todayDateStr >= range.lt) continue;
+      const agg = await prisma.checkin.aggregate({
+        _sum: { distance: true },
+        where: { userId, date: range },
+      });
+      const afterProgress = agg._sum.distance ?? 0;
+      const beforeProgress = afterProgress - todayDistance;
+      if (beforeProgress < g.targetDistance && afterProgress >= g.targetDistance) {
+        justAchieved.push({ id: g.id, title: g.title, targetDistance: g.targetDistance });
+      }
+    }
+    if (justAchieved.length > 0) {
+      // 标 completed（避免下次 checkin 重复触发）
+      await prisma.goal.updateMany({
+        where: { id: { in: justAchieved.map((g) => g.id) } },
+        data: { status: 'completed' },
+      });
+    }
+    return justAchieved;
+  },
+
   /** 当前 active 个人目标进度（首页/mine 红点用；仅 familyId=null） */
   async myProgress(userId: string) {
     const cacheKey = `goal:myProgress:${userId}`;

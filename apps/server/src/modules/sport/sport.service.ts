@@ -31,6 +31,8 @@ import type {
 import { CheckinInputSchema } from './sport.schema.js';
 import { statsService } from '../stats/stats.service.js';
 import { incrementShoeKm } from '../shoes/shoes.service.js';
+import { goalService } from '../goal/goal.service.js';
+import { notifyGoalAchieved } from '../notification/notification.service.js';
 
 /** sport.today 缓存 TTL：60s（打卡后 60s 内可能仍看到旧态，可接受） */
 const TODAY_CACHE_TTL_SEC = 60;
@@ -186,6 +188,17 @@ export const sportService = {
     if (clean.groupId) {
       await Cache.delByPattern(`sport:groupRanking:${clean.groupId}:*`);
       await Cache.delByPattern(`weeklyReport:aggregate:${clean.groupId}:*`);
+    }
+
+    // 6. V0.2.121 目标达成检测（本次打卡是否"刚刚"让某个 active 目标达成）
+    //    - 失败不阻塞 checkin 主返回值（realtime 推送内部已 try/catch 静默）
+    try {
+      const justAchieved = await goalService.detectAndMarkJustAchieved(userId, clean.distance, date);
+      for (const goal of justAchieved) {
+        await notifyGoalAchieved(userId, goal);
+      }
+    } catch {
+      // 目标检测/通知失败不影响打卡结果（业务已 commit + 缓存已失效）
     }
 
     return { points, todayDone: true, date };

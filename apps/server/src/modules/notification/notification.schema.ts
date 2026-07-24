@@ -1,12 +1,13 @@
 /**
  * notification module Zod schemas（V0.1.31，社交向 — 消息通知）
  *
- * type：like | comment | follow | system
+ * type：like | comment | follow | system | goal_achieved
  * MVP 先用 like / comment（feed 集成触发）；follow / system 预留扩展
+ * **V0.2.121** +goal_achieved（sprint.checkin 检测目标完成时触发，自动 realtime 推送）
  */
 import { z } from 'zod';
 
-export const NOTIF_TYPES = ['like', 'comment', 'follow', 'system'] as const;
+export const NOTIF_TYPES = ['like', 'comment', 'follow', 'system', 'goal_achieved'] as const;
 export type NotifType = (typeof NOTIF_TYPES)[number];
 
 /** 分页 */
