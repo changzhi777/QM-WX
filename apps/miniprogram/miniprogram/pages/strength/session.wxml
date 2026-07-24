@@ -1,0 +1,65 @@
+<view class="container">
+  <!-- 计时 + 容量 -->
+  <view class="hero">
+    <view class="hero__timer">{{durationText}}</view>
+    <view class="hero__volume">
+      <text class="hero__volume-num">{{totalVolume}}</text>
+      <text class="hero__volume-unit">kg·次</text>
+    </view>
+    <view class="hero__hint">实时累加容量</view>
+  </view>
+
+  <!-- 动作选择 + 添加组 -->
+  <view class="form-card">
+    <view class="form-card__title">添加一组</view>
+    <view class="form-row">
+      <text class="form-row__label">动作</text>
+      <picker mode="selector" range="{{exercises}}" range-key="name" value="{{exerciseIndex}}" bindchange="onPickExercise">
+        <view class="form-row__value">
+          <text wx:if="{{exerciseName}}">{{exerciseName}}</text>
+          <text wx:else class="form-row__placeholder">选择动作</text>
+        </view>
+      </picker>
+    </view>
+    <view class="form-row">
+      <text class="form-row__label">自定义</text>
+      <input class="form-row__input" placeholder="未在上方可选自定义输入" value="{{customName}}" bindinput="onInputCustom" />
+    </view>
+    <view class="form-row form-row--grid">
+      <view class="form-col">
+        <text class="form-row__label">次数</text>
+        <input class="form-row__input" type="number" value="{{reps}}" bindinput="onInputReps" placeholder="12" />
+      </view>
+      <view class="form-col">
+        <text class="form-row__label">重量(kg)</text>
+        <input class="form-row__input" type="digit" value="{{weight}}" bindinput="onInputWeight" placeholder="40" />
+      </view>
+      <view class="form-col">
+        <text class="form-row__label">组序</text>
+        <input class="form-row__input" type="number" value="{{setIndex}}" bindinput="onInputSetIndex" placeholder="1" />
+      </view>
+    </view>
+    <view class="add-btn" bindtap="onAddSet">+ 添加这组</view>
+  </view>
+
+  <!-- 已添加组列表 -->
+  <view class="section-title">本次训练（{{sets.length}} 组）</view>
+  <view wx:if="{{sets.length === 0}}" class="empty">还没添加组，从上方录入第一组</view>
+  <view class="set-list">
+    <view wx:for="{{sets}}" wx:key="order" class="set-item">
+      <view class="set-item__num">#{{item.order}}</view>
+      <view class="set-item__name">{{item.exerciseName}}</view>
+      <view class="set-item__detail">{{item.reps}} 次 × {{item.weight}}kg</view>
+      <view class="set-item__vol">{{item.reps * item.weight}}</view>
+    </view>
+  </view>
+
+  <!-- 完成训练 -->
+  <view class="finish-card">
+    <view class="form-row">
+      <text class="form-row__label">备注</text>
+      <input class="form-row__input" placeholder="今天的训练感受" value="{{notes}}" bindinput="onInputNotes" maxlength="500" />
+    </view>
+    <view class="finish-btn" bindtap="onFinish">完成训练</view>
+  </view>
+</view>

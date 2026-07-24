@@ -40,6 +40,19 @@
     <view class="sum-item"><text class="v">{{summary.avgDistanceKm}}</text><text class="u">km/次</text></view>
   </view>
 
+  <!-- V0.2.120 力量训练入口（训记式：容量追踪） -->
+  <view class="section">
+    <view class="section-title">力量训练</view>
+    <view class="strength-entry" bindtap="onGoStrength">
+      <view class="strength-entry__icon">💪</view>
+      <view class="strength-entry__body">
+        <view class="strength-entry__title">力量训练日志</view>
+        <view class="strength-entry__desc">容量累加 · 动作库 · 历史明细</view>
+      </view>
+      <view class="strength-entry__arrow">›</view>
+    </view>
+  </view>
+
   <!-- 智能训练计划 -->
   <view class="section">
     <view class="section-title">智能训练计划</view>

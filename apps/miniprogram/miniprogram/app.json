@@ -24,7 +24,10 @@
     "pages/membership/index",
     "pages/report-monthly/index",
     "pages/more/index",
-    "pages/interpret/index"
+    "pages/interpret/index",
+    "pages/strength/index",
+    "pages/strength/session",
+    "pages/strength/detail"
   ],
   "window": {
     "backgroundTextStyle": "dark",

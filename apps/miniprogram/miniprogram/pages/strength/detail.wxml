@@ -1,0 +1,45 @@
+<view class="container">
+  <view wx:if="{{loading}}" class="empty">加载中…</view>
+  <view wx:elif="{{!session}}" class="empty">记录不存在或已删除</view>
+  <block wx:else>
+    <!-- 头部概览 -->
+    <view class="hero">
+      <view class="hero__date">{{session.dateStr}}</view>
+      <view class="hero__stats">
+        <view class="hero__stat">
+          <view class="hero__stat-num">{{sets.length}}</view>
+          <view class="hero__stat-label">组数</view>
+        </view>
+        <view class="hero__stat">
+          <view class="hero__stat-num">{{session.totalVolumeText}}</view>
+          <view class="hero__stat-label">总容量</view>
+        </view>
+        <view class="hero__stat">
+          <view class="hero__stat-num">{{session.durationText}}</view>
+          <view class="hero__stat-label">时长</view>
+        </view>
+      </view>
+    </view>
+
+    <!-- 备注 -->
+    <view wx:if="{{session.notes}}" class="notes-card">
+      <view class="notes-card__label">备注</view>
+      <view class="notes-card__text">{{session.notes}}</view>
+    </view>
+
+    <!-- 按动作分组的组列表 -->
+    <view class="section-title">动作明细</view>
+    <view class="group-list">
+      <view wx:for="{{groupedSets}}" wx:key="exerciseName" wx:for-item="grp" class="group">
+        <view class="group__name">{{grp.exerciseName}} <text class="group__count">{{grp.sets.length}} 组</text></view>
+        <view class="group__list">
+          <view wx:for="{{grp.sets}}" wx:for-item="s" wx:key="order" class="set-row">
+            <view class="set-row__idx">#{{s.setIndex}}</view>
+            <view class="set-row__detail">{{s.reps}} 次 × {{s.weight}} kg</view>
+            <view class="set-row__vol">{{s.reps * s.weight}} kg·次</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

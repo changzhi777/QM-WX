@@ -74,3 +74,36 @@
 .ap-percent { font-size: 28rpx; font-weight: 600; color: #2D9D78; min-width: 80rpx; text-align: right; }
 .ap-meta { font-size: 24rpx; color: #999; margin-top: 12rpx; }
 .ap-done { font-size: 24rpx; color: #fa8c16; margin-top: 8rpx; }
+
+/* V0.2.120 力量训练入口卡 */
+.strength-entry {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  margin: 0 16rpx 16rpx;
+  padding: 24rpx;
+  border-radius: 16rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+.strength-entry__icon {
+  font-size: 56rpx;
+  margin-right: 20rpx;
+}
+.strength-entry__body {
+  flex: 1;
+}
+.strength-entry__title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+.strength-entry__desc {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 6rpx;
+}
+.strength-entry__arrow {
+  font-size: 48rpx;
+  color: #ccc;
+  font-weight: 300;
+}

@@ -1,0 +1,52 @@
+<view class="container">
+  <!-- V0.2.120 容量概览卡 -->
+  <view class="volume-card">
+    <view class="volume-card__row">
+      <view class="volume-card__item">
+        <view class="volume-card__num">{{totalVolume}}</view>
+        <view class="volume-card__label">近30天容量(kg·次)</view>
+      </view>
+      <view class="volume-card__divider"></view>
+      <view class="volume-card__item">
+        <view class="volume-card__num">{{totalSessions}}</view>
+        <view class="volume-card__label">训练次数</view>
+      </view>
+    </view>
+    <!-- 简易柱状图（最近7天） -->
+    <view class="volume-card__bars" wx:if="{{trend.length > 0}}">
+      <view class="bar" wx:for="{{trend}}" wx:key="date">
+        <view class="bar__col" style="height: {{item.heightPct}}%;"></view>
+        <view class="bar__date">{{item.dateLabel}}</view>
+      </view>
+    </view>
+    <view class="volume-card__empty" wx:else>暂无训练记录，开始第一次吧！</view>
+  </view>
+
+  <!-- 开始训练 -->
+  <view class="start-btn {{starting ? 'start-btn--loading' : ''}}" bindtap="onStart">
+    <text wx:if="{{!starting}}">+ 开始训练</text>
+    <text wx:else>准备中…</text>
+  </view>
+
+  <!-- 历史列表 -->
+  <view class="section-title">训练历史</view>
+  <view class="session-list">
+    <view wx:if="{{loading && sessions.length === 0}}" class="empty">加载中…</view>
+    <view wx:elif="{{sessions.length === 0}}" class="empty">还没有训练记录</view>
+    <view
+      wx:for="{{sessions}}"
+      wx:key="id"
+      class="session-item"
+      data-id="{{item.id}}"
+      bindtap="onTapSession"
+    >
+      <view class="session-item__date">{{item.dateStr}}</view>
+      <view class="session-item__meta">
+        <text class="session-item__tag">{{item.setCount}} 组</text>
+        <text class="session-item__tag">{{item.durationText}}</text>
+        <text class="session-item__volume">{{item.totalVolumeText}}</text>
+      </view>
+      <view class="session-item__notes" wx:if="{{item.notes}}">{{item.notes}}</view>
+    </view>
+  </view>
+</view>

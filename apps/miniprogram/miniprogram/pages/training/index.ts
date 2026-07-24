@@ -211,4 +211,9 @@ Page({
     const id = e.currentTarget.dataset.id as string;
     wx.navigateTo({ url: `/pages/content-detail/index?id=${id}` });
   },
+
+  /** V0.2.120 力量训练入口（跳到 strength 主页） */
+  onGoStrength() {
+    wx.navigateTo({ url: '/pages/strength/index' });
+  },
 });
