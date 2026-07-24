@@ -195,6 +195,7 @@ Page({
   },
 
   goDeviceBind() { wx.navigateTo({ url: '/pages/device/index' }); },
+  goShoes() { wx.navigateTo({ url: '/pages/shoes/index' }); },
   goRunner() { wx.navigateTo({ url: '/pages/runner/index' }); },
   /** V0.2.32 更多功能（待定页，收纳原型没有的功能）*/
   goMore() { wx.navigateTo({ url: '/pages/more/index' }); },

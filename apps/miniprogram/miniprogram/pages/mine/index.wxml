@@ -18,27 +18,32 @@
       <text class="mi-arrow">›</text>
     </view>
 
-    <!-- 设备与数据 -->
+    <!-- 运动装备（P4 3 组归类）-->
     <view class="section">
-      <view class="section-title">设备与数据</view>
+      <view class="section-title">运动装备</view>
       <view class="menu-section">
         <view class="menu-item" bindtap="goDeviceBind">
           <view class="mi-icon bg-green">📱</view>
           <view class="mi-text">设备绑定</view>
           <view class="mi-arrow">›</view>
         </view>
-        <view class="menu-item" bindtap="goProfile">
-          <view class="mi-icon bg-blue">📊</view>
-          <view class="mi-text">数据授权管理</view>
+        <view class="menu-item" bindtap="goShoes">
+          <view class="mi-icon bg-orange">👟</view>
+          <view class="mi-text">我的跑鞋</view>
           <view class="mi-arrow">›</view>
         </view>
       </view>
     </view>
 
-    <!-- AI服务 -->
+    <!-- 数据健康（P4 3 组归类）-->
     <view class="section">
-      <view class="section-title">健康服务</view>
+      <view class="section-title">数据健康</view>
       <view class="menu-section">
+        <view class="menu-item" bindtap="goProfile">
+          <view class="mi-icon bg-blue">📊</view>
+          <view class="mi-text">数据授权管理</view>
+          <view class="mi-arrow">›</view>
+        </view>
         <view class="menu-item" bindtap="goAiCoach">
           <view class="mi-icon bg-purple">🤖</view>
           <view class="mi-text">健康助手 <text class="new-label">NEW</text></view>
@@ -57,9 +62,9 @@
       </view>
     </view>
 
-    <!-- 通用 -->
+    <!-- 服务设置（P4 3 组归类）-->
     <view class="section">
-      <view class="section-title">通用</view>
+      <view class="section-title">服务设置</view>
       <view class="menu-section">
         <view class="menu-item" bindtap="onShowNotif">
           <view class="mi-icon bg-cyan">🔔</view>
