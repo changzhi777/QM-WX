@@ -146,3 +146,40 @@ export async function notifyGoalAchieved(
     /* realtime 推送失败静默 */
   }
 }
+
+/**
+ * 力量训练完成通知（V0.2.122 — strength.finishSession 触发）
+ *
+ * 与 `notifyGoalAchieved` 一样：自己触发自己，不走 self-skip 的 notify()
+ *
+ * @param userId - 接收者（训练者）
+ * @param session - { id, totalVolume, setCount } 训练摘要
+ */
+export async function notifyStrengthDone(
+  userId: string,
+  session: { id: string; totalVolume: number; setCount: number },
+) {
+  const content = `💪 训练完成！本次 ${Math.round(session.totalVolume)} kg·次 · ${session.setCount} 组`;
+  await prisma.notification.create({
+    data: {
+      userId,
+      actorId: userId, // 自己是触发者
+      type: 'strength_done',
+      targetType: 'strength_session',
+      targetId: session.id,
+      content,
+    },
+  });
+  // V0.2.119 realtime 推送（复用通道）
+  try {
+    await publishToUser(userId, 'notification', {
+      type: 'strength_done',
+      targetType: 'strength_session',
+      targetId: session.id,
+      content,
+      actorId: userId,
+    });
+  } catch {
+    /* realtime 推送失败静默 */
+  }
+}

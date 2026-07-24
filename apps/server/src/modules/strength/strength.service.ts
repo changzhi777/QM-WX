@@ -9,6 +9,7 @@
  * 容量 volume = Σ reps × weight（kg·次），实时累加（addSet 时 session.totalVolume increment）
  */
 import { prisma } from '../../infra/prisma.js';
+import { notifyStrengthDone } from '../notification/notification.service.js';
 
 /** CN 时区日期 YYYY-MM-DD（dateStr 按日聚合用）*/
 function cnDate(d = new Date()): string {
@@ -75,7 +76,7 @@ export async function finishSession(
   if (!session || session.userId !== userId) {
     throw new Error('训练不存在或无权访问');
   }
-  return prisma.strengthSession.update({
+  const updated = await prisma.strengthSession.update({
     where: { id: input.sessionId },
     data: {
       durationSec: input.durationSec ?? 0,
@@ -83,6 +84,17 @@ export async function finishSession(
     },
     include: { sets: { orderBy: { order: 'asc' } } },
   });
+  // V0.2.122 训练完成 realtime 通知（自触发，try/catch 静默不阻塞主返回）
+  try {
+    await notifyStrengthDone(userId, {
+      id: updated.id,
+      totalVolume: updated.totalVolume,
+      setCount: updated.sets.length,
+    });
+  } catch {
+    /* 通知失败不影响训练保存结果 */
+  }
+  return updated;
 }
 
 /** 训练历史列表（分页 + 组数 count）*/

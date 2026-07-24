@@ -22,7 +22,7 @@ vi.mock('src/infra/prisma.js', () => ({ prisma: mocks.prisma }));
 vi.mock('src/common/errors.js', () => ({ Errors: mockErrors }));
 vi.mock('src/infra/realtime.js', () => ({ publishToUser: realtimeMocks.publishToUser }));
 
-import { notificationService, notify, notifyGoalAchieved } from 'src/modules/notification/notification.service.js';
+import { notificationService, notify, notifyGoalAchieved, notifyStrengthDone } from 'src/modules/notification/notification.service.js';
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -237,6 +237,43 @@ describe('notifyGoalAchieved (V0.2.121 — sport.checkin 触发)', () => {
     realtimeMocks.publishToUser.mockRejectedValueOnce(new Error('ws down'));
     mocks.prisma.notification.create.mockResolvedValue({ id: 'n6' } as never);
     await expect(notifyGoalAchieved('u1', { id: 'g1', title: 't', targetDistance: 10 })).resolves.toBeUndefined();
+    expect(mocks.prisma.notification.create).toHaveBeenCalled();
+  });
+});
+
+describe('notifyStrengthDone (V0.2.122 — strength.finishSession 触发)', () => {
+  it('写库（type=strength_done, targetType=strength_session）+ realtime 推送', async () => {
+    mocks.prisma.notification.create.mockResolvedValue({ id: 'n7' } as never);
+
+    await notifyStrengthDone('u1', { id: 's1', totalVolume: 2400, setCount: 3 });
+
+    expect(mocks.prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          userId: 'u1',
+          actorId: 'u1', // 自己是触发者
+          type: 'strength_done',
+          targetType: 'strength_session',
+          targetId: 's1',
+          content: expect.stringContaining('2400'),
+        }),
+      }),
+    );
+    expect(realtimeMocks.publishToUser).toHaveBeenCalledWith('u1', 'notification', {
+      type: 'strength_done',
+      targetType: 'strength_session',
+      targetId: 's1',
+      content: expect.stringContaining('2400'),
+      actorId: 'u1',
+    });
+  });
+
+  it('realtime 推送失败 → 不影响 DB 写入', async () => {
+    realtimeMocks.publishToUser.mockRejectedValueOnce(new Error('ws down'));
+    mocks.prisma.notification.create.mockResolvedValue({ id: 'n8' } as never);
+    await expect(
+      notifyStrengthDone('u1', { id: 's2', totalVolume: 100, setCount: 1 }),
+    ).resolves.toBeUndefined();
     expect(mocks.prisma.notification.create).toHaveBeenCalled();
   });
 });

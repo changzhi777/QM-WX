@@ -61,6 +61,8 @@ Page({
     const tip = data?.type === 'like' ? '有人赞了你的动态'
       : data?.type === 'comment' ? '有人评论了你的动态'
       : data?.type === 'follow' ? '有人关注了你'
+      : data?.type === 'goal_achieved' ? '目标已达成 🎯'
+      : data?.type === 'strength_done' ? '训练完成 💪'
       : '收到一条新消息';
     wx.showToast({ title: tip, icon: 'none' });
   },

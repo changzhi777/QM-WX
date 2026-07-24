@@ -20,6 +20,8 @@ const mockPrisma = vi.hoisted(() => ({
 }));
 
 vi.mock('src/infra/prisma.js', () => ({ prisma: mockPrisma }));
+// V0.2.122 mock 掉 notifyStrengthDone（让 strength 测试不依赖 notification 真实 prisma）
+vi.mock('src/modules/notification/notification.service.js', () => ({ notifyStrengthDone: vi.fn() }));
 
 import {
   startSession,
@@ -30,6 +32,7 @@ import {
   myVolume,
   listExercises,
 } from '../../../src/modules/strength/strength.service.js';
+import { notifyStrengthDone } from 'src/modules/notification/notification.service.js';
 
 beforeEach(() => vi.clearAllMocks());
 
@@ -142,6 +145,35 @@ describe('strength.service · finishSession', () => {
     );
     expect(res.durationSec).toBe(1800);
     expect(res.sets).toHaveLength(1);
+  });
+
+  it('V0.2.122 完成训练 → 顺手调 notifyStrengthDone（自触发，realtime 推送复用通道）', async () => {
+    mockPrisma.strengthSession.findUnique.mockResolvedValue({ id: 's1', userId: 'u1' });
+    mockPrisma.strengthSession.update.mockResolvedValue({
+      id: 's1',
+      totalVolume: 2400,
+      sets: [{ id: 'set1' }, { id: 'set2' }, { id: 'set3' }],
+    });
+
+    await finishSession('u1', { sessionId: 's1' });
+
+    expect(notifyStrengthDone).toHaveBeenCalledWith('u1', {
+      id: 's1',
+      totalVolume: 2400,
+      setCount: 3,
+    });
+  });
+
+  it('V0.2.122 notifyStrengthDone 抛错 → 训练保存结果仍正常返回（try/catch 静默）', async () => {
+    mockPrisma.strengthSession.findUnique.mockResolvedValue({ id: 's1', userId: 'u1' });
+    mockPrisma.strengthSession.update.mockResolvedValue({
+      id: 's1',
+      totalVolume: 100,
+      sets: [{ id: 'set1' }],
+    });
+    vi.mocked(notifyStrengthDone).mockRejectedValueOnce(new Error('realtime down'));
+
+    await expect(finishSession('u1', { sessionId: 's1' })).resolves.toMatchObject({ id: 's1' });
   });
 });
 

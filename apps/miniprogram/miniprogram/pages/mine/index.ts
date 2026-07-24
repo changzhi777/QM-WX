@@ -25,6 +25,8 @@ const NOTIF_TYPE_TEXT: Record<string, string> = {
   comment: '评论了你的动态',
   follow: '关注了你',
   system: '系统消息',
+  goal_achieved: '🎯 目标已达成',
+  strength_done: '💪 训练完成',
 };
 
 function formatNotifTime(iso: string): string {
@@ -91,11 +93,13 @@ Page({
   },
 
   /** V0.2.119 realtime 通知回调：未读 +1 + toast */
-  onRealtimeNotification(data: { type?: string; actorId?: string }) {
+  onRealtimeNotification(data: { type?: string; actorId?: string; content?: string | null }) {
     this.setData({ notifUnread: (this.data.notifUnread ?? 0) + 1 });
     const tip = data?.type === 'like' ? '有人赞了你的动态'
       : data?.type === 'comment' ? '有人评论了你的动态'
       : data?.type === 'follow' ? '有人关注了你'
+      : data?.type === 'goal_achieved' ? '目标已达成 🎯'
+      : data?.type === 'strength_done' ? '训练完成 💪'
       : '收到一条新消息';
     wx.showToast({ title: tip, icon: 'none' });
   },
