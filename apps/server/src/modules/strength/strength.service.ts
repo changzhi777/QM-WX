@@ -180,3 +180,75 @@ export async function listExercises(input: { category?: string; search?: string 
   if (input.search) where.name = { contains: input.search };
   return prisma.exercise.findMany({ where, orderBy: [{ category: 'asc' }, { name: 'asc' }] });
 }
+
+/**
+ * V0.2.126 动作统计：个人最佳 PB + 容量分布（详情页增强）
+ *
+ * - PB: 每个动作最大重量（weight）；并列时取 reps 多的；返 achievedAt + setCount
+ * - Distribution: 每个动作累计容量 + setCount + percent（按 totalVolume 降序）
+ * - 趋势复用 myVolume（30 天），不在此处返避免重复
+ */
+export async function getExerciseStats(userId: string) {
+  const sets = await prisma.strengthSet.findMany({
+    where: { session: { userId } },
+    select: { exerciseName: true, reps: true, weight: true, createdAt: true, sessionId: true },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  // PB: Map<exerciseName, { maxWeight, maxReps, achievedAt, setCount }>
+  const pbMap = new Map<string, { exerciseName: string; maxWeight: number; maxReps: number; achievedAt: Date; setCount: number }>();
+  // Distribution: Map<exerciseName, { totalVolume, setCount }>
+  const distMap = new Map<string, { exerciseName: string; totalVolume: number; setCount: number }>();
+
+  for (const s of sets) {
+    const volume = s.reps * s.weight;
+
+    // PB 累加
+    const cur = pbMap.get(s.exerciseName);
+    if (!cur) {
+      pbMap.set(s.exerciseName, {
+        exerciseName: s.exerciseName,
+        maxWeight: s.weight,
+        maxReps: s.reps,
+        achievedAt: s.createdAt,
+        setCount: 1,
+      });
+    } else {
+      cur.setCount += 1;
+      if (s.weight > cur.maxWeight || (s.weight === cur.maxWeight && s.reps > cur.maxReps)) {
+        cur.maxWeight = s.weight;
+        cur.maxReps = s.reps;
+        cur.achievedAt = s.createdAt;
+      }
+    }
+
+    // Distribution 累加
+    const d = distMap.get(s.exerciseName);
+    if (!d) {
+      distMap.set(s.exerciseName, { exerciseName: s.exerciseName, totalVolume: volume, setCount: 1 });
+    } else {
+      d.totalVolume += volume;
+      d.setCount += 1;
+    }
+  }
+
+  const pbs = Array.from(pbMap.values())
+    .sort((a, b) => b.maxWeight - a.maxWeight)
+    .map((p) => ({ ...p, achievedAt: p.achievedAt.toISOString() }));
+
+  const totalVolumeAll = Array.from(distMap.values()).reduce((s, d) => s + d.totalVolume, 0);
+  const distribution = Array.from(distMap.values())
+    .sort((a, b) => b.totalVolume - a.totalVolume)
+    .map((d) => ({
+      ...d,
+      totalVolume: Math.round(d.totalVolume * 10) / 10,
+      percent: totalVolumeAll > 0 ? Math.round((d.totalVolume / totalVolumeAll) * 1000) / 10 : 0,
+    }));
+
+  return {
+    pbs,
+    distribution,
+    totalExercises: pbMap.size,
+    totalSets: sets.length,
+  };
+}

@@ -34,3 +34,6 @@ export const ListExercisesSchema = z.object({
   category: z.string().optional(),
   search: z.string().optional(),
 });
+
+/** V0.2.126 动作统计（PB + 容量分布）— 无入参 */
+export const GetExerciseStatsSchema = z.object({}).optional();

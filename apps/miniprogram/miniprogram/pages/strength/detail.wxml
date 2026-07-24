@@ -27,6 +27,31 @@
       <view class="notes-card__text">{{session.notes}}</view>
     </view>
 
+    <!-- V0.2.126 个人最佳 PB（按动作） -->
+    <view wx:if="{{pbs.length > 0}}" class="section-title">🏆 个人最佳</view>
+    <view wx:if="{{pbs.length > 0}}" class="pb-list">
+      <view wx:for="{{pbs}}" wx:key="exerciseName" class="pb-item">
+        <view class="pb-item__name">{{item.exerciseName}}</view>
+        <view class="pb-item__weight">{{item.maxWeight}}<text class="pb-item__unit">kg</text></view>
+        <view class="pb-item__reps">× {{item.maxReps}} 次 · {{item.setCount}} 组</view>
+      </view>
+    </view>
+
+    <!-- V0.2.126 容量分布 -->
+    <view wx:if="{{distribution.length > 0}}" class="section-title">📊 容量分布</view>
+    <view wx:if="{{distribution.length > 0}}" class="dist-list">
+      <view wx:for="{{distribution}}" wx:key="exerciseName" class="dist-item">
+        <view class="dist-item__row">
+          <view class="dist-item__name">{{item.exerciseName}}</view>
+          <view class="dist-item__vol">{{item.totalVolumeText}}</view>
+          <view class="dist-item__pct">{{item.percent}}%</view>
+        </view>
+        <view class="dist-item__bar">
+          <view class="dist-item__fill" style="width: {{item.percent}}%;"></view>
+        </view>
+      </view>
+    </view>
+
     <!-- 按动作分组的组列表 -->
     <view class="section-title">动作明细</view>
     <view class="group-list">

@@ -1,4 +1,4 @@
-// pages/strength/detail.ts — 力量训练详情（V0.2.120：按动作分组的组明细）
+// pages/strength/detail.ts — 力量训练详情（V0.2.120：按动作分组的组明细 + V0.2.126 PB + 容量分布）
 import { api } from '../../services/api';
 
 interface SetItem {
@@ -12,6 +12,22 @@ interface SetItem {
 interface GroupedSet {
   exerciseName: string;
   sets: SetItem[];
+}
+
+interface PbItem {
+  exerciseName: string;
+  maxWeight: number;
+  maxReps: number;
+  achievedAt: string;
+  setCount: number;
+}
+
+interface DistItem {
+  exerciseName: string;
+  totalVolume: number;
+  setCount: number;
+  percent: number;
+  totalVolumeText: string;
 }
 
 function formatDuration(sec: number): string {
@@ -42,6 +58,9 @@ Page({
     } | null,
     sets: [] as SetItem[],
     groupedSets: [] as GroupedSet[],
+    // V0.2.126 个人最佳 + 容量分布
+    pbs: [] as PbItem[],
+    distribution: [] as DistItem[],
     loading: false,
   },
 
@@ -58,11 +77,18 @@ Page({
   async loadDetail() {
     this.setData({ loading: true });
     try {
-      const res = await api.call<{
-        session: { id: string; dateStr: string; durationSec: number; totalVolume: number; notes: string | null };
-        sets: SetItem[];
-      }>('strength', 'sessionDetail', { sessionId: this.data.sessionId });
-      const sets = (res.sets ?? []).sort((a, b) => a.order - b.order);
+      // 并行拉详情 + 动作统计（PB + 容量分布）
+      const [detail, stats] = await Promise.all([
+        api.call<{
+          session: { id: string; dateStr: string; durationSec: number; totalVolume: number; notes: string | null };
+          sets: SetItem[];
+        }>('strength', 'sessionDetail', { sessionId: this.data.sessionId }),
+        api.call<{
+          pbs: PbItem[];
+          distribution: Array<{ exerciseName: string; totalVolume: number; setCount: number; percent: number }>;
+        }>('strength', 'getExerciseStats', {}),
+      ]);
+      const sets = (detail.sets ?? []).sort((a, b) => a.order - b.order);
       // 按动作名分组
       const map = new Map<string, SetItem[]>();
       for (const s of sets) {
@@ -75,16 +101,21 @@ Page({
       }));
       this.setData({
         session: {
-          id: res.session.id,
-          dateStr: res.session.dateStr,
-          durationSec: res.session.durationSec,
-          totalVolume: res.session.totalVolume,
-          notes: res.session.notes,
-          durationText: formatDuration(res.session.durationSec),
-          totalVolumeText: formatVolume(res.session.totalVolume),
+          id: detail.session.id,
+          dateStr: detail.session.dateStr,
+          durationSec: detail.session.durationSec,
+          totalVolume: detail.session.totalVolume,
+          notes: detail.session.notes,
+          durationText: formatDuration(detail.session.durationSec),
+          totalVolumeText: formatVolume(detail.session.totalVolume),
         },
         sets,
         groupedSets,
+        pbs: stats.pbs ?? [],
+        distribution: (stats.distribution ?? []).map((d) => ({
+          ...d,
+          totalVolumeText: formatVolume(d.totalVolume),
+        })),
       });
     } catch (e) {
       wx.showToast({ title: (e as Error).message || '加载失败', icon: 'none' });

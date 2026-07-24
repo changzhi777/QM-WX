@@ -129,6 +129,7 @@ export const ENDPOINTS = {
     sessionDetail: '/api/strength',
     myVolume: '/api/strength',
     listExercises: '/api/strength',
+    getExerciseStats: '/api/strength', // V0.2.126 动作统计（PB + 容量分布）
   },
   device: {
     listBindings: '/api/device',

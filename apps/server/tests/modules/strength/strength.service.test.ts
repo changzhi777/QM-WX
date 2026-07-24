@@ -15,7 +15,7 @@ const mockPrisma = vi.hoisted(() => ({
     count: vi.fn(),
     update: vi.fn(),
   },
-  strengthSet: { findFirst: vi.fn(), create: vi.fn() },
+  strengthSet: { findFirst: vi.fn(), create: vi.fn(), findMany: vi.fn() },
   exercise: { findMany: vi.fn() },
 }));
 
@@ -31,6 +31,7 @@ import {
   sessionDetail,
   myVolume,
   listExercises,
+  getExerciseStats,
 } from '../../../src/modules/strength/strength.service.js';
 import { notifyStrengthDone } from 'src/modules/notification/notification.service.js';
 
@@ -256,5 +257,50 @@ describe('strength.service · listExercises', () => {
         orderBy: [{ category: 'asc' }, { name: 'asc' }],
       }),
     );
+  });
+});
+
+describe('strength.service · getExerciseStats (V0.2.126)', () => {
+  it('无数据 → 空 pbs/distribution，totalExercises=0', async () => {
+    mockPrisma.strengthSet.findMany.mockResolvedValue([] as never);
+    const r = await getExerciseStats('u1');
+    expect(r.pbs).toEqual([]);
+    expect(r.distribution).toEqual([]);
+    expect(r.totalExercises).toBe(0);
+    expect(r.totalSets).toBe(0);
+  });
+
+  it('多动作多 set → PB 取最大 weight（并列时取 reps 多）+ distribution 按 totalVolume 降序', async () => {
+    mockPrisma.strengthSet.findMany.mockResolvedValue([
+      // 深蹲: 100kg×10=1000, 120kg×8=960, 120kg×5=600（PB 120×5 — 并列取 reps 多的 120×8）
+      { exerciseName: '深蹲', reps: 10, weight: 100, createdAt: new Date('2026-07-20'), sessionId: 's1' },
+      { exerciseName: '深蹲', reps: 8, weight: 120, createdAt: new Date('2026-07-21'), sessionId: 's1' },
+      { exerciseName: '深蹲', reps: 5, weight: 120, createdAt: new Date('2026-07-22'), sessionId: 's2' },
+      // 卧推: 60kg×10=600, 70kg×8=560（PB 70×8）
+      { exerciseName: '卧推', reps: 10, weight: 60, createdAt: new Date('2026-07-20'), sessionId: 's1' },
+      { exerciseName: '卧推', reps: 8, weight: 70, createdAt: new Date('2026-07-21'), sessionId: 's1' },
+    ] as never);
+
+    const r = await getExerciseStats('u1');
+
+    // PB 验证
+    const squatPb = r.pbs.find((p) => p.exerciseName === '深蹲');
+    expect(squatPb?.maxWeight).toBe(120);
+    expect(squatPb?.maxReps).toBe(8); // 并列取 reps 多的
+    expect(squatPb?.setCount).toBe(3);
+    const benchPb = r.pbs.find((p) => p.exerciseName === '卧推');
+    expect(benchPb?.maxWeight).toBe(70);
+    expect(benchPb?.maxReps).toBe(8);
+
+    // Distribution 验证（深蹲 1000+960+600=2560 > 卧推 600+560=1160）
+    expect(r.distribution[0].exerciseName).toBe('深蹲');
+    expect(r.distribution[0].totalVolume).toBe(2560);
+    expect(r.distribution[1].exerciseName).toBe('卧推');
+    expect(r.distribution[1].totalVolume).toBe(1160);
+
+    // percent: 深蹲 2560/(2560+1160) = 68.8%
+    expect(r.distribution[0].percent).toBeCloseTo(68.8, 1);
+    expect(r.totalExercises).toBe(2);
+    expect(r.totalSets).toBe(5);
   });
 });
