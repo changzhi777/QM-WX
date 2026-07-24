@@ -44,6 +44,14 @@ Page({
     loading: false,
   },
 
+  onLoad(query: Record<string, string | undefined>) {
+    // V0.2.137 从主页 ⭐ 跳来时，query 带 name → 自动锁定该动作
+    const presetName = decodeURIComponent(query.name || '');
+    if (presetName) {
+      this.setData({ exerciseName: presetName });
+    }
+  },
+
   onShow() {
     this.loadExercises();
     this.loadSessions(true);

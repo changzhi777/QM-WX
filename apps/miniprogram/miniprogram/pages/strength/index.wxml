@@ -22,6 +22,26 @@
     <view class="volume-card__empty" wx:else>暂无训练记录，开始第一次吧！</view>
   </view>
 
+  <!-- V0.2.137 我的收藏动作（strength/index 顶部展示） -->
+  <view class="fav-section" wx:if="{{favorites.length > 0}}">
+    <view class="fav-section__title">⭐ 我的收藏</view>
+    <scroll-view scroll-x class="fav-scroll">
+      <view class="fav-list">
+        <view
+          wx:for="{{favorites}}"
+          wx:key="id"
+          wx:for-item="fav"
+          class="fav-chip"
+          data-name="{{fav.name}}"
+          bindtap="onTapFav"
+        >
+          <text class="fav-chip__name">{{fav.name}}</text>
+          <text class="fav-chip__cat">{{fav.category}}</text>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
   <!-- V0.2.127 训练日历热图（最近 26 周 GitHub 风格） -->
   <view class="heatmap-card">
     <view class="heatmap-card__head">

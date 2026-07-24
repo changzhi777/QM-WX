@@ -115,8 +115,21 @@ Page({
 
   async loadAll() {
     this.setData({ loading: true });
-    await Promise.all([this.loadVolume(), this.loadSessions()]);
+    await Promise.all([this.loadVolume(), this.loadSessions(), this.loadFavorites()]);
     this.setData({ loading: false });
+  },
+
+  /** V0.2.137 加载我的收藏动作 */
+  async loadFavorites() {
+    try {
+      const res = await api.call<{ list: Array<{ id: string; name: string; category: string }> }>(
+        'strength', 'listFavoriteExercises', {},
+      );
+      this.setData({ favorites: res.list ?? [] });
+    } catch {
+      // 静默（收藏为空时返空 list）
+      this.setData({ favorites: [] });
+    }
   },
 
   /** V0.2.120 容量概览（近 30 天柱状 + V0.2.127 26 周热图） */
@@ -205,5 +218,13 @@ Page({
     } else {
       wx.showToast({ title: `${date} ${volume} kg·次`, icon: 'none' });
     }
+  },
+
+  /** V0.2.137 点收藏动作 → 跳历史页 + 预选该动作过滤 */
+  onTapFav(e: WechatMiniprogram.TouchEvent) {
+    const name = e.currentTarget.dataset.name as string;
+    if (!name) return;
+    // 跳历史页（用户可在该页继续按动作过滤）
+    wx.navigateTo({ url: `/pages/strength/history?name=${encodeURIComponent(name)}` });
   },
 });

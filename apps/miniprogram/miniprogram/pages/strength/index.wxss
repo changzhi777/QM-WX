@@ -93,6 +93,54 @@
   font-weight: 600;
 }
 
+/* V0.2.137 我的收藏动作 */
+.fav-section {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-top: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+
+.fav-section__title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+.fav-scroll {
+  white-space: nowrap;
+}
+
+.fav-list {
+  display: flex;
+  gap: 16rpx;
+}
+
+.fav-chip {
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #FFF8E1 0%, #FFE082 100%);
+  border: 2rpx solid #FFD54F;
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+  min-width: 160rpx;
+}
+
+.fav-chip__name {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #5D4037;
+}
+
+.fav-chip__cat {
+  font-size: 22rpx;
+  color: #8D6E63;
+}
+
 /* V0.2.127 训练日历热图 */
 .heatmap-card {
   background: #fff;
