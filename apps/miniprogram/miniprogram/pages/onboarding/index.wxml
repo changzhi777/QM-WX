@@ -71,7 +71,7 @@
     <view class="guide-card {{werunSynced ? 'done' : ''}}" bindtap="onSyncWeRun">
       <view class="guide-icon">👟</view>
       <view class="guide-text">
-        <view class="guide-title">VIVO手环（开发中）</view>
+        <view class="guide-title">VIVO手环（同步步数）</view>
         <view class="guide-desc" wx:if="{{werunSynced}}">✓ 已同步 {{werunSyncDays}} 天步数</view>
         <view class="guide-desc" wx:elif="{{werunSyncing}}">同步中…</view>
         <view class="guide-desc" wx:else>一键导入近 30 天步数，首页健康卡即可显示</view>

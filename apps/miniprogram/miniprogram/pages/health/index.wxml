@@ -156,7 +156,7 @@
         </view>
       </scroll-view>
     </view>
-    <button class="w-sync-btn {{syncing ? 'loading' : ''}}" bindtap="onSync">{{syncing ? '同步中…' : 'VIVO手环（开发中）'}}</button>
-    <view class="w-tip">VIVO手环功能开发中，敬请期待</view>
+    <button class="w-sync-btn {{syncing ? 'loading' : ''}}" bindtap="onSync">{{syncing ? '同步中…' : '同步步数'}}</button>
+    <view class="w-tip">同步手机运动步数（微信运动数据源）· 每日首次进入自动同步</view>
   </view>
 </view>

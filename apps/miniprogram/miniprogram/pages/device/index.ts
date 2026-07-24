@@ -417,8 +417,6 @@ Page({
   },
 
   async onSyncWeRun() {
-    wx.showToast({ title: 'VIVO手环功能开发中', icon: 'none' });
-    return;
     wx.showLoading({ title: '同步中...' });
     try {
       const res = await new Promise<WechatMiniprogram.GetWeRunDataSuccessCallbackResult>((resolve, reject) => {

@@ -1,5 +1,6 @@
 // pages/onboarding/index.ts — 新用户激活向导（V0.1.43，4 步；V0.1.44 修资料字段 bug + 头像持久化 + 微信运动同步）
 import { api } from '../../services/api';
+import { syncWeRunToday } from '../../utils/werun';
 
 Page({
   data: {
@@ -104,8 +105,28 @@ Page({
    * 首次触发 scope.werun 系统授权弹窗；拒绝则引导 openSetting
    */
   async onSyncWeRun() {
-    // VIVO手环功能开发中（原微信运动 syncWeRun 逻辑暂禁用，待 VIVO 手环对接）
-    wx.showToast({ title: 'VIVO手环功能开发中', icon: 'none' });
+    if (this.data.werunSyncing) return;
+    this.setData({ werunSyncing: true });
+    try {
+      const result = await syncWeRunToday();
+      if (result) {
+        this.setData({ werunSynced: true, werunSyncDays: result.days });
+        wx.showToast({ title: `已同步 ${result.days} 天`, icon: 'success' });
+      } else {
+        wx.showModal({
+          title: '需要授权',
+          content: '同步运动数据需要授权「微信运动数据」，是否前往设置开启？',
+          confirmText: '去设置',
+          success: (r) => {
+            if (r.confirm) wx.openSetting({});
+          },
+        });
+      }
+    } catch {
+      wx.showToast({ title: '同步失败', icon: 'none' });
+    } finally {
+      this.setData({ werunSyncing: false });
+    }
   },
 
   nextFromImport() {

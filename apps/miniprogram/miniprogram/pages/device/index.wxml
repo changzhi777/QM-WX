@@ -54,13 +54,13 @@
 
       <!-- 微信运动卡 -->
       <view class="section">
-        <view class="section-title">VIVO手环（功能开发中）</view>
+        <view class="section-title">VIVO手环（同步步数）</view>
         <view class="werun-stats">
           <view class="w-stat"><text class="w-v">{{werunSummary.totalSteps}}</text><text class="w-l">总步数</text></view>
           <view class="w-stat"><text class="w-v">{{werunSummary.totalKm}}</text><text class="w-l">总里程km</text></view>
           <view class="w-stat"><text class="w-v">{{werunSummary.days}}</text><text class="w-l">活跃天</text></view>
         </view>
-        <button class="btn-submit" bindtap="onSyncWeRun">VIVO手环（开发中）</button>
+        <button class="btn-submit" bindtap="onSyncWeRun">同步步数</button>
       </view>
 
       <!-- 调试面板 -->
