@@ -159,6 +159,72 @@ export const trainingService = {
   },
 
   /**
+   * V0.2.133 力量计划周场次推进（按周切片聚合 strength session）
+   *
+   * - weeks = plan.weeks；targetSessionsPerWeek = ceil(targetSessions / weeks)
+   * - week N (1-based) 范围 = [joinedAt + (N-1)*7d, joinedAt + N*7d)
+   * - actualSessions = count StrengthSession where createdAt ∈ week 范围
+   * - completed = actual >= target
+   *
+   * 不复用 calcPlanProgress（那是总进度；这里需要按周切片）
+   * YAGNI：当前/过去/未来 3 段都返，前端按需展示
+   */
+  async getPlanWeeklyProgress(userId: string) {
+    const enrollment = await prisma.userPlanEnrollment.findUnique({
+      where: { userId },
+      include: { plan: true },
+    });
+    if (!enrollment || enrollment.plan.kind !== 'strength' || !enrollment.plan.targetSessions) {
+      return null;
+    }
+    const { plan, joinedAt } = enrollment;
+    const targetTotal = plan.targetSessions ?? 0;
+    const weeks = plan.weeks;
+    const perWeek = Math.ceil(targetTotal / weeks);
+
+    // 单查询：joinedAt 之后的所有 sessions（按周聚合在内存）
+    const sessions = await prisma.strengthSession.findMany({
+      where: { userId, createdAt: { gte: joinedAt } },
+      orderBy: { createdAt: 'asc' },
+      select: { createdAt: true },
+    });
+
+    const joinedMs = joinedAt.getTime();
+    const msPerWeek = 7 * 86_400_000;
+    const weeklyCounts: number[] = new Array(weeks).fill(0);
+    for (const s of sessions) {
+      const diffMs = s.createdAt.getTime() - joinedMs;
+      const w = Math.floor(diffMs / msPerWeek);
+      if (w >= 0 && w < weeks) weeklyCounts[w] += 1;
+    }
+
+    const now = new Date();
+    const currentWeek = Math.min(weeks, Math.max(1, Math.floor((now.getTime() - joinedMs) / msPerWeek) + 1));
+
+    return {
+      planId: plan.id,
+      planName: plan.name,
+      joinedAt: joinedAt.toISOString(),
+      currentWeek,
+      totalWeeks: weeks,
+      perWeek,
+      weeks: weeklyCounts.map((actual, i) => {
+        const weekStart = new Date(joinedMs + i * msPerWeek);
+        const weekEnd = new Date(joinedMs + (i + 1) * msPerWeek);
+        return {
+          weekNumber: i + 1,
+          startDate: weekStart.toISOString(),
+          endDate: weekEnd.toISOString(),
+          target: perWeek,
+          actual,
+          completed: actual >= perWeek,
+          isCurrent: i + 1 === currentWeek,
+        };
+      }),
+    };
+  },
+
+  /**
    * 离开训练计划（V0.1.41，deleteMany 幂等 — 不存在也 ok）
    */
   async leavePlan(userId: string) {

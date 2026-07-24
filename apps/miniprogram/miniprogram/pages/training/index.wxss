@@ -75,6 +75,75 @@
 .ap-meta { font-size: 24rpx; color: #999; margin-top: 12rpx; }
 .ap-done { font-size: 24rpx; color: #fa8c16; margin-top: 8rpx; }
 
+/* V0.2.133 力量计划周场次表 */
+.week-grid {
+  margin-top: 24rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.week-grid__title {
+  font-size: 24rpx;
+  color: #666;
+  margin-bottom: 12rpx;
+  font-weight: 500;
+}
+
+.week-grid__scroll {
+  white-space: nowrap;
+}
+
+.week-grid__list {
+  display: flex;
+  gap: 12rpx;
+}
+
+.week-cell {
+  flex-shrink: 0;
+  width: 96rpx;
+  background: #f5f6f8;
+  border: 2rpx solid transparent;
+  border-radius: 8rpx;
+  padding: 12rpx 8rpx;
+  text-align: center;
+}
+
+.week-cell--done {
+  background: #E6F7F2;
+  border-color: #2D9D78;
+}
+
+.week-cell--current {
+  border-color: #2D9D78;
+  border-style: dashed;
+}
+
+.week-cell__num {
+  font-size: 20rpx;
+  color: #999;
+  font-weight: 500;
+}
+
+.week-cell__count {
+  font-size: 22rpx;
+  color: #333;
+  font-weight: 600;
+  margin: 6rpx 0;
+}
+
+.week-cell--done .week-cell__count {
+  color: #2D9D78;
+}
+
+.week-cell__icon {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.week-cell--done .week-cell__icon {
+  color: #2D9D78;
+}
+
 /* V0.2.128 力量训练计划卡（plan-card--strength 修饰） */
 .plan-card--strength {
   background: linear-gradient(135deg, #fff 0%, #E6F7F2 100%);

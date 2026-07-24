@@ -14,7 +14,7 @@ vi.mock('src/infra/prisma.js', () => ({
     rawActivity: { findMany: vi.fn() },
     trainingPlan: { findMany: vi.fn(), findUnique: vi.fn() },
     userPlanEnrollment: { upsert: vi.fn(), findUnique: vi.fn(), deleteMany: vi.fn() },
-    strengthSession: { count: vi.fn(), aggregate: vi.fn() }, // V0.2.129 力量计划进度
+    strengthSession: { count: vi.fn(), aggregate: vi.fn(), findMany: vi.fn() }, // V0.2.129 力量计划进度 + V0.2.133 周切片
   },
 }));
 
@@ -324,5 +324,51 @@ describe('trainingService.detectAndMarkPlanCompleted (V0.2.129)', () => {
     } as never);
     const result = await trainingService.detectAndMarkPlanCompleted('u1');
     expect(result).toEqual([]);
+  });
+});
+
+describe('trainingService.getPlanWeeklyProgress (V0.2.133)', () => {
+  it('周切片：12 周计划，本周 2 场 + 第 1 周 3 场 + 缺 1 周 → 准确归桶', async () => {
+    const joinedAt = new Date('2026-07-01T00:00:00Z');
+    mockedPrisma.userPlanEnrollment.findUnique.mockResolvedValue({
+      joinedAt,
+      plan: { id: 'p1', kind: 'strength', name: '力量入门 12 周', targetSessions: 36, weeks: 12 },
+    } as never);
+    // 第 1 周（7/1-7/7）3 场 + 本周（第 3 周 7/15-7/21）2 场；中间 1 周空
+    mockedPrisma.strengthSession.findMany.mockResolvedValue([
+      { createdAt: new Date('2026-07-02T00:00:00Z') },
+      { createdAt: new Date('2026-07-03T00:00:00Z') },
+      { createdAt: new Date('2026-07-05T00:00:00Z') },
+      { createdAt: new Date('2026-07-15T00:00:00Z') },
+      { createdAt: new Date('2026-07-18T00:00:00Z') },
+    ] as never);
+
+    const r = await trainingService.getPlanWeeklyProgress('u1');
+
+    expect(r).not.toBeNull();
+    expect(r!.perWeek).toBe(3); // ceil(36/12) = 3
+    expect(r!.totalWeeks).toBe(12);
+    // 第 1 周 3 场 → completed=true
+    expect(r!.weeks[0]).toMatchObject({ weekNumber: 1, actual: 3, completed: true });
+    // 第 2 周 0 场 → completed=false
+    expect(r!.weeks[1]).toMatchObject({ weekNumber: 2, actual: 0, completed: false });
+    // 第 3 周 2 场 → completed=false（还差 1）
+    expect(r!.weeks[2]).toMatchObject({ weekNumber: 3, actual: 2, completed: false });
+    // 第 4+ 周 0 场
+    expect(r!.weeks[3]).toMatchObject({ weekNumber: 4, actual: 0, completed: false });
+  });
+
+  it('running 计划 → 返 null（仅 strength 计划有周场次）', async () => {
+    mockedPrisma.userPlanEnrollment.findUnique.mockResolvedValue({
+      plan: { kind: 'running', targetSessions: null, weeks: 16 },
+    } as never);
+    const r = await trainingService.getPlanWeeklyProgress('u1');
+    expect(r).toBeNull();
+  });
+
+  it('无 active enrollment → 返 null', async () => {
+    mockedPrisma.userPlanEnrollment.findUnique.mockResolvedValue(null as never);
+    const r = await trainingService.getPlanWeeklyProgress('u1');
+    expect(r).toBeNull();
   });
 });

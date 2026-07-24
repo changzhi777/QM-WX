@@ -25,6 +25,6 @@ export const JoinPlanSchema = z.object({
 export type JoinPlanInput = z.infer<typeof JoinPlanSchema>;
 
 export const TrainingActionBodySchema = z.object({
-  action: z.enum(['myPlans', 'mySportRecords', 'joinPlan', 'myActivePlan', 'leavePlan']),
+  action: z.enum(['myPlans', 'mySportRecords', 'joinPlan', 'myActivePlan', 'leavePlan', 'getPlanWeeklyProgress']),
   payload: z.unknown().optional(),
 });

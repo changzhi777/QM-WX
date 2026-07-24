@@ -51,6 +51,25 @@ interface ActivePlan {
   completed: boolean;
 }
 
+// V0.2.133 力量计划周场次推进
+interface WeekCell {
+  weekNumber: number;
+  startDate: string;
+  endDate: string;
+  target: number;
+  actual: number;
+  completed: boolean;
+  isCurrent: boolean;
+}
+interface WeeklyProgress {
+  planId: string;
+  planName: string;
+  currentWeek: number;
+  totalWeeks: number;
+  perWeek: number;
+  weeks: WeekCell[];
+}
+
 Page({
   data: {
     plans: [] as TrainingPlan[],
@@ -58,6 +77,7 @@ Page({
     summary: { totalRuns: 0, totalDistanceKm: 0, avgDistanceKm: 0 },
     marathons: [] as MarathonContent[],
     activePlan: null as ActivePlan | null, // V0.1.41 当前加入的计划 + 进度
+    weeklyProgress: null as WeeklyProgress | null, // V0.2.133 力量计划周场次推进
     loadingPlans: false,
     loadingRecords: false,
     loadingMarathons: false,
@@ -120,11 +140,18 @@ Page({
     }
   },
 
-  /** V0.1.41 我的当前计划 + 进度（无加入返 plan:null，UI 隐藏进度卡） */
+  /** V0.1.41 我的当前计划 + 进度（V0.2.133 扩到并行拉 weeklyProgress） */
   async loadMyActivePlan() {
     try {
-      const res = await api.call<ActivePlan | { plan: null }>('training', 'myActivePlan', {});
-      this.setData({ activePlan: res.plan ? (res as ActivePlan) : null });
+      // 并行拉 activePlan + weeklyProgress（仅 strength 计划 weeklyProgress 返非 null）
+      const [active, weekly] = await Promise.all([
+        api.call<ActivePlan | { plan: null }>('training', 'myActivePlan', {}),
+        api.call<WeeklyProgress | null>('training', 'getPlanWeeklyProgress', {}),
+      ]);
+      this.setData({
+        activePlan: active.plan ? (active as ActivePlan) : null,
+        weeklyProgress: weekly,
+      });
     } catch {
       // 静默
     }

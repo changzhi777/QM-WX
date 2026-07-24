@@ -31,6 +31,25 @@
       已跑 {{activePlan.currentDistance}} / {{activePlan.targetKm}} km · 坚持 {{activePlan.daysJoined}} 天
     </view>
     <view class="ap-done" wx:if="{{activePlan.completed}}">🎉 目标已达成</view>
+
+    <!-- V0.2.133 力量计划周场次表（仅 kind=strength 显示） -->
+    <view class="week-grid" wx:if="{{weeklyProgress && weeklyProgress.weeks}}">
+      <view class="week-grid__title">周场次推进 · 本周 W{{weeklyProgress.currentWeek}}/{{weeklyProgress.totalWeeks}}</view>
+      <scroll-view scroll-x class="week-grid__scroll">
+        <view class="week-grid__list">
+          <view
+            wx:for="{{weeklyProgress.weeks}}"
+            wx:key="weekNumber"
+            wx:for-item="wk"
+            class="week-cell {{wk.completed ? 'week-cell--done' : ''}} {{wk.isCurrent ? 'week-cell--current' : ''}}"
+          >
+            <view class="week-cell__num">W{{wk.weekNumber}}</view>
+            <view class="week-cell__count">{{wk.actual}}/{{wk.target}}</view>
+            <view class="week-cell__icon">{{wk.completed ? '✓' : (wk.actual > 0 ? '⏳' : '·')}}</view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
   </view>
 
   <!-- 跑步汇总 -->

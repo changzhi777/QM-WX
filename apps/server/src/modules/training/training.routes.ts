@@ -34,6 +34,10 @@ export async function trainingRoutes(app: FastifyInstance) {
       case 'leavePlan': {
         return { code: 0, data: await trainingService.leavePlan(userId) };
       }
+      case 'getPlanWeeklyProgress': {
+        // V0.2.133 力量计划周场次推进（kind=strength 才有效；其他返 null）
+        return { code: 0, data: await trainingService.getPlanWeeklyProgress(userId) };
+      }
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
     }
