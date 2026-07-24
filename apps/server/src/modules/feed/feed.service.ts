@@ -97,7 +97,7 @@ export const feedService = {
     };
   },
 
-  /** 发布动态（V0.1.36 +topic +videoUrl + V0.1.136 +shoeId） */
+  /** 发布动态（V0.1.36 +topic +videoUrl + V0.1.136 +shoeId + V0.2.125 fan-out 给粉丝） */
   async publish(userId: string, input: PublishFeedInput) {
     // V0.1.136 校验 shoeId 归属（不属则忽略）
     let shoeId: string | null = null;
@@ -121,6 +121,31 @@ export const feedService = {
         shoeId,
       },
     });
+
+    // V0.2.125 fan-out：给作者所有粉丝推 realtime notification（type=new_post, target=feed）
+    //  - 用 prisma.follow 查粉丝列表（自身不能关注自己，@@unique 防止，N+1 可接受，YAGNI 优化）
+    //  - 失败静默吞错（不影响 feed 发布主返回）
+    try {
+      const followers = await prisma.follow.findMany({
+        where: { followeeId: userId },
+        select: { followerId: true },
+      });
+      // 并行 fan-out（典型粉丝数 < 100，N+1 可接受；如未来粉丝数爆炸可改 queue）
+      await Promise.allSettled(
+        followers.map((f) =>
+          notify({
+            userId: f.followerId,
+            actorId: userId,
+            type: 'new_post',
+            targetType: 'feed',
+            targetId: feed.id,
+          }),
+        ),
+      );
+    } catch {
+      /* fan-out 失败不影响 feed 发布 */
+    }
+
     return { id: feed.id };
   },
 

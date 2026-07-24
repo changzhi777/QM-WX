@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const helpers = require('../../helpers/mockPrisma.ts') as typeof import('../../helpers/mockPrisma.js');
   return helpers.createPrismaMock({
-    models: ['feed', 'feedLike', 'feedComment', 'shoe'], // V0.1.136 +shoe
+    models: ['feed', 'feedLike', 'feedComment', 'shoe', 'follow'], // V0.1.136 +shoe, V0.2.125 +follow fan-out
     txModels: ['feed', 'feedLike', 'feedComment'],
   });
 });
@@ -266,6 +266,62 @@ describe('feedService.publish 含 shoeId (V0.1.136)', () => {
         data: expect.objectContaining({ shoeId: null }),
       }),
     );
+  });
+});
+
+describe('feedService.publish V0.2.125 fan-out 给粉丝', () => {
+  it('发布动态 → 查 followers → 给每个粉丝调 notify(type=new_post, targetType=feed, targetId=feed.id)', async () => {
+    mocks.prisma.feed.create.mockResolvedValue({ id: 'f99' } as never);
+    // 3 个粉丝
+    mocks.prisma.follow.findMany.mockResolvedValue([
+      { followerId: 'follower-1' },
+      { followerId: 'follower-2' },
+      { followerId: 'follower-3' },
+    ] as never);
+
+    await feedService.publish('u1', { content: '训练完成！', images: [] });
+
+    expect(mocks.prisma.follow.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { followeeId: 'u1' }, select: { followerId: true } }),
+    );
+    expect(notify).toHaveBeenCalledTimes(3);
+    expect(notify).toHaveBeenCalledWith({
+      userId: 'follower-1',
+      actorId: 'u1',
+      type: 'new_post',
+      targetType: 'feed',
+      targetId: 'f99',
+    });
+    expect(notify).toHaveBeenCalledWith({
+      userId: 'follower-2',
+      actorId: 'u1',
+      type: 'new_post',
+      targetType: 'feed',
+      targetId: 'f99',
+    });
+  });
+
+  it('无粉丝 → 不调 notify', async () => {
+    mocks.prisma.feed.create.mockResolvedValue({ id: 'f99' } as never);
+    mocks.prisma.follow.findMany.mockResolvedValue([] as never);
+
+    await feedService.publish('u1', { content: '孤芳自赏', images: [] });
+
+    expect(notify).not.toHaveBeenCalled();
+  });
+
+  it('notify 单个失败 → 不影响其他通知（Promise.allSettled 隔离）', async () => {
+    mocks.prisma.feed.create.mockResolvedValue({ id: 'f99' } as never);
+    mocks.prisma.follow.findMany.mockResolvedValue([
+      { followerId: 'f-1' },
+      { followerId: 'f-2' },
+    ] as never);
+    vi.mocked(notify).mockImplementation(async (input) => {
+      if (input.userId === 'f-1') throw new Error('redis down');
+    });
+
+    await expect(feedService.publish('u1', { content: 'x', images: [] })).resolves.toMatchObject({ id: 'f99' });
+    expect(notify).toHaveBeenCalledTimes(2);
   });
 });
 

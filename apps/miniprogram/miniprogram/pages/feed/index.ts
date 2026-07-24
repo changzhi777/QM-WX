@@ -63,6 +63,7 @@ Page({
       : data?.type === 'follow' ? '有人关注了你'
       : data?.type === 'goal_achieved' ? '目标已达成 🎯'
       : data?.type === 'strength_done' ? '训练完成 💪'
+      : data?.type === 'new_post' ? '关注的人发了新动态'
       : '收到一条新消息';
     wx.showToast({ title: tip, icon: 'none' });
   },
