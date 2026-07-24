@@ -26,7 +26,8 @@
             <view class="progress-fill {{item.completed ? 'done' : ''}}" style="width: {{item.percent > 100 ? 100 : item.percent}}%;"></view>
           </view>
           <view class="progress-text">
-            <text class="current">{{item.currentDistance}}</text> / {{item.targetDistance}} km · {{item.percent}}%
+            <text class="current">{{item.kind === 'volume' ? item.currentVolume : item.currentDistance}}</text>
+            / {{item.kind === 'volume' ? item.targetVolume : item.targetDistance}} {{item.kind === 'volume' ? 'kg·次' : 'km'}} · {{item.percent}}%
           </view>
         </view>
         <view class="goal-actions" wx:if="{{item.status === 'active'}}">
@@ -184,12 +185,19 @@
         </view>
       </view>
       <view class="form-item">
-        <text class="label">目标距离 (km)</text>
-        <input class="input" type="number" value="{{goalForm.targetDistance}}" bindinput="onInputTarget" />
+        <text class="label">目标类型</text>
+        <view class="type-chips">
+          <view class="type-chip {{goalForm.kind === 'distance' ? 'active' : ''}}" data-kind="distance" bindtap="onSelectKind">🏃 距离(km)</view>
+          <view class="type-chip {{goalForm.kind === 'volume' ? 'active' : ''}}" data-kind="volume" bindtap="onSelectKind">💪 容量(kg·次)</view>
+        </view>
+      </view>
+      <view class="form-item">
+        <text class="label">{{goalForm.kind === 'volume' ? '目标容量 (kg·次)' : '目标距离 (km)'}}</text>
+        <input class="input" type="number" value="{{goalForm.kind === 'volume' ? goalForm.targetVolume : goalForm.targetDistance}}" bindinput="onInputTarget" />
       </view>
       <view class="form-item">
         <text class="label">标题（选填）</text>
-        <input class="input" value="{{goalForm.title}}" bindinput="onInputTitle" placeholder="如 夏季百公里" />
+        <input class="input" value="{{goalForm.title}}" bindinput="onInputTitle" placeholder="{{goalForm.kind === 'volume' ? '如 月度5000kg' : '如 夏季百公里'}}" />
       </view>
       <view class="form-actions">
         <button class="btn-cancel" bindtap="closeGoalForm">取消</button>

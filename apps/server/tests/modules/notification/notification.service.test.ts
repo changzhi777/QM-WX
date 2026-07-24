@@ -194,21 +194,21 @@ describe('notify V0.2.119 realtime 推送', () => {
   });
 });
 
-describe('notifyGoalAchieved (V0.2.121 — sport.checkin 触发)', () => {
-  it('写库（type=goal_achieved, targetType=goal）+ realtime 推送（不跳过自己触发自己）', async () => {
+describe('notifyGoalAchieved (V0.2.121 distance + V0.2.124 volume 兼容)', () => {
+  it('kind=distance + target 写库 + realtime 推送', async () => {
     mocks.prisma.notification.create.mockResolvedValue({ id: 'n4' } as never);
 
-    await notifyGoalAchieved('u1', { id: 'g1', title: '月度100km', targetDistance: 100 });
+    await notifyGoalAchieved('u1', { id: 'g1', title: '月度100km', kind: 'distance', target: 100 });
 
     expect(mocks.prisma.notification.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           userId: 'u1',
-          actorId: 'u1', // 自己是触发者
+          actorId: 'u1',
           type: 'goal_achieved',
           targetType: 'goal',
           targetId: 'g1',
-          content: expect.stringContaining('月度100km'),
+          content: expect.stringContaining('100km'),
         }),
       }),
     );
@@ -216,14 +216,28 @@ describe('notifyGoalAchieved (V0.2.121 — sport.checkin 触发)', () => {
       type: 'goal_achieved',
       targetType: 'goal',
       targetId: 'g1',
-      content: expect.stringContaining('月度100km'),
+      content: expect.stringContaining('100km'),
       actorId: 'u1',
     });
   });
 
+  it('kind=volume + target → content 显示 kg·次 单位', async () => {
+    mocks.prisma.notification.create.mockResolvedValue({ id: 'n4v' } as never);
+
+    await notifyGoalAchieved('u1', { id: 'g1', title: '月度5000kg', kind: 'volume', target: 5000 });
+
+    expect(mocks.prisma.notification.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          content: expect.stringContaining('5000kg·次'),
+        }),
+      }),
+    );
+  });
+
   it('title 为空 → content 用通用文案（不含「」）', async () => {
     mocks.prisma.notification.create.mockResolvedValue({ id: 'n5' } as never);
-    await notifyGoalAchieved('u1', { id: 'g2', title: null, targetDistance: 50 });
+    await notifyGoalAchieved('u1', { id: 'g2', title: null, kind: 'distance', target: 50 });
     expect(mocks.prisma.notification.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
@@ -236,7 +250,9 @@ describe('notifyGoalAchieved (V0.2.121 — sport.checkin 触发)', () => {
   it('realtime 推送失败 → 不影响 DB 写入', async () => {
     realtimeMocks.publishToUser.mockRejectedValueOnce(new Error('ws down'));
     mocks.prisma.notification.create.mockResolvedValue({ id: 'n6' } as never);
-    await expect(notifyGoalAchieved('u1', { id: 'g1', title: 't', targetDistance: 10 })).resolves.toBeUndefined();
+    await expect(
+      notifyGoalAchieved('u1', { id: 'g1', title: 't', kind: 'distance', target: 10 }),
+    ).resolves.toBeUndefined();
     expect(mocks.prisma.notification.create).toHaveBeenCalled();
   });
 });

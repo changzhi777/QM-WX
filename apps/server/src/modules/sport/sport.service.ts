@@ -190,12 +190,13 @@ export const sportService = {
       await Cache.delByPattern(`weeklyReport:aggregate:${clean.groupId}:*`);
     }
 
-    // 6. V0.2.121 目标达成检测（本次打卡是否"刚刚"让某个 active 目标达成）
+    // 6. V0.2.121 目标达成检测（本次打卡是否"刚刚"让某个 active 距离目标达成）
+    //    V0.2.124 拆出 strength 容量目标检测给 strength.finishSession，本处只处理 distance
     //    - 失败不阻塞 checkin 主返回值（realtime 推送内部已 try/catch 静默）
     try {
       const justAchieved = await goalService.detectAndMarkJustAchieved(userId, clean.distance, date);
       for (const goal of justAchieved) {
-        await notifyGoalAchieved(userId, goal);
+        await notifyGoalAchieved(userId, { ...goal, kind: 'distance', target: goal.targetDistance });
       }
     } catch {
       // 目标检测/通知失败不影响打卡结果（业务已 commit + 缓存已失效）

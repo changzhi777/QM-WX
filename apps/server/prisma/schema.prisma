@@ -392,17 +392,19 @@ model FamilyMember {
 }
 
 // ===== 跑步目标（V0.1.28，跑者向 — 月度/年度/自定义 + 进度跟踪）=====
-// 进度由 Checkin aggregate 动态算（periodStart-End 范围内 distance 之和）
+// 进度由 Checkin/StrengthSession aggregate 动态算（periodStart-End 范围内）
+// kind 由 targetVolume != null 隐式判定（V0.2.124：volume 目标走 StrengthSession.totalVolume，distance 目标走 Checkin.distance）
 model Goal {
   id             String   @id @default(cuid())
   userId         String
   type           String // monthly | yearly | custom
   title          String? // 自定义标题（optional）
-  targetDistance Float // 目标距离 km
+  targetDistance Float    @default(0) // 目标距离 km（distance 目标用；volume 目标为 0 占位）
+  targetVolume   Float? // V0.2.124 目标容量 kg·次（volume 目标用；distance 目标为 null）
   periodStart    DateTime // 周期开始（东八区 0 点）
   periodEnd      DateTime // 周期结束（exclusive）
   familyId       String? // V0.1.34 家庭目标（null=个人；有值=家庭目标，进度按家庭成员算）
-  status         String   @default("active") // active | archived
+  status         String   @default("active") // active | completed | archived
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

@@ -55,9 +55,10 @@ function computePeriod(
 }
 
 /**
- * 计算单个目标进度（DB 查 Checkin aggregate）
+ * 计算单个目标进度（DB 查 Checkin/StrengthSession aggregate）
  *
  * V0.1.34：userIds 参数 — 个人目标 [userId]；家庭目标 家庭成员 userIds 列表
+ * V0.2.124：kind 隐式判定（targetVolume != null → volume 走 StrengthSession；否则 distance 走 Checkin）
  */
 async function calcGoalProgress(
   userIds: string[],
@@ -66,6 +67,7 @@ async function calcGoalProgress(
     type: string;
     title: string | null;
     targetDistance: number;
+    targetVolume: number | null;
     periodStart: Date;
     periodEnd: Date;
     familyId: string | null;
@@ -73,6 +75,30 @@ async function calcGoalProgress(
   },
 ) {
   const range = cnDateRange(g.periodStart, g.periodEnd);
+  if (g.targetVolume != null) {
+    // V0.2.124 力量训练容量目标：aggregate StrengthSession.totalVolume
+    const agg = await prisma.strengthSession.aggregate({
+      _sum: { totalVolume: true },
+      where: { userId: { in: userIds }, dateStr: range },
+    });
+    const current = agg._sum.totalVolume ?? 0;
+    return {
+      id: g.id,
+      type: g.type,
+      kind: 'volume' as const,
+      title: g.title,
+      targetDistance: 0,
+      targetVolume: g.targetVolume,
+      currentVolume: Math.round(current * 10) / 10,
+      percent: g.targetVolume > 0 ? Math.min(100, Math.round((current / g.targetVolume) * 100)) : 0,
+      status: g.status,
+      familyId: g.familyId,
+      periodStart: g.periodStart.toISOString(),
+      periodEnd: g.periodEnd.toISOString(),
+      completed: current >= g.targetVolume,
+    };
+  }
+  // distance 目标：aggregate Checkin.distance（原 V0.1.28 行为）
   const agg = await prisma.checkin.aggregate({
     _sum: { distance: true },
     where: { userId: { in: userIds }, date: range },
@@ -81,8 +107,10 @@ async function calcGoalProgress(
   return {
     id: g.id,
     type: g.type,
+    kind: 'distance' as const,
     title: g.title,
     targetDistance: g.targetDistance,
+    targetVolume: null,
     currentDistance: Math.round(current * 10) / 10,
     percent: g.targetDistance > 0 ? Math.min(100, Math.round((current / g.targetDistance) * 100)) : 0,
     status: g.status,
@@ -107,16 +135,26 @@ export const goalService = {
     return { goals: await Promise.all(goals.map((g) => calcGoalProgress([userId], g))) };
   },
 
-  /** 添加个人目标 */
+  /** 添加个人目标（V0.2.124 支持 kind=volume 力量训练容量目标） */
   async add(userId: string, input: AddGoalInput) {
     const { start, end } = computePeriod(input.type, input);
     if (end <= start) throw Errors.badRequest('周期结束必须晚于开始');
+    const kind = input.kind ?? 'distance';
+    // V0.2.124 kind/target 互斥校验（schema 抽到 service 端，保持 ZodObject 不破坏 .extend 链）
+    if (kind === 'volume' && input.targetVolume == null) {
+      throw Errors.badRequest('kind=volume 需传 targetVolume');
+    }
+    if (kind === 'distance' && input.targetDistance == null) {
+      throw Errors.badRequest('kind=distance 需传 targetDistance');
+    }
     const goal = await prisma.goal.create({
       data: {
         userId,
         type: input.type,
         title: input.title,
-        targetDistance: input.targetDistance,
+        // kind=volume 时 targetDistance 占位 0（schema 已有 default 0；显式传 0 防御性）
+        targetDistance: kind === 'volume' ? 0 : (input.targetDistance ?? 0),
+        targetVolume: kind === 'volume' ? (input.targetVolume ?? null) : null,
         periodStart: start,
         periodEnd: end,
       },
@@ -181,6 +219,49 @@ export const goalService = {
     return justAchieved;
   },
 
+  /**
+   * V0.2.124 检测"刚刚达成"的容量目标（strength.finishSession 完成后调用）
+   *
+   * 算法与 V0.2.121 同款，区别：聚合 StrengthSession.totalVolume + 仅看 targetVolume != null 的目标
+   *
+   * @param userId - 用户
+   * @param todayVolume - 本次训练新增容量（kg·次 = session.totalVolume）
+   * @param todayDateStr - 本次训练日期（YYYY-MM-DD CN）
+   * @returns 刚刚达成的容量目标列表
+   */
+  async detectAndMarkStrengthJustAchieved(
+    userId: string,
+    todayVolume: number,
+    todayDateStr: string,
+  ): Promise<Array<{ id: string; title: string | null; targetVolume: number }>> {
+    const goals = await prisma.goal.findMany({
+      where: { userId, familyId: null, status: 'active', targetVolume: { not: null } },
+    });
+    const justAchieved: Array<{ id: string; title: string | null; targetVolume: number }> = [];
+    for (const g of goals) {
+      const range = cnDateRange(g.periodStart, g.periodEnd);
+      // 只关心 period 包含今天的（今天才可能"刚"完成）
+      if (todayDateStr < range.gte || todayDateStr >= range.lt) continue;
+      const agg = await prisma.strengthSession.aggregate({
+        _sum: { totalVolume: true },
+        where: { userId, dateStr: range },
+      });
+      const afterProgress = agg._sum.totalVolume ?? 0;
+      const beforeProgress = afterProgress - todayVolume;
+      const target = g.targetVolume ?? 0;
+      if (beforeProgress < target && afterProgress >= target) {
+        justAchieved.push({ id: g.id, title: g.title, targetVolume: target });
+      }
+    }
+    if (justAchieved.length > 0) {
+      await prisma.goal.updateMany({
+        where: { id: { in: justAchieved.map((g) => g.id) } },
+        data: { status: 'completed' },
+      });
+    }
+    return justAchieved;
+  },
+
   /** 当前 active 个人目标进度（首页/mine 红点用；仅 familyId=null） */
   async myProgress(userId: string) {
     const cacheKey = `goal:myProgress:${userId}`;
@@ -207,13 +288,21 @@ export const goalService = {
 
     const { start, end } = computePeriod(input.type, input);
     if (end <= start) throw Errors.badRequest('周期结束必须晚于开始');
+    const kind = input.kind ?? 'distance';
+    if (kind === 'volume' && input.targetVolume == null) {
+      throw Errors.badRequest('kind=volume 需传 targetVolume');
+    }
+    if (kind === 'distance' && input.targetDistance == null) {
+      throw Errors.badRequest('kind=distance 需传 targetDistance');
+    }
     const goal = await prisma.goal.create({
       data: {
         userId,
         familyId: input.familyId,
         type: input.type,
         title: input.title,
-        targetDistance: input.targetDistance,
+        targetDistance: kind === 'volume' ? 0 : (input.targetDistance ?? 0),
+        targetVolume: kind === 'volume' ? (input.targetVolume ?? null) : null,
         periodStart: start,
         periodEnd: end,
       },

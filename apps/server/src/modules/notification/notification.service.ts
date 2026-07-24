@@ -110,19 +110,22 @@ export async function notify(input: NotifyInput) {
 }
 
 /**
- * 目标达成通知（V0.2.121 — sport.checkin 触发）
+ * 目标达成通知（V0.2.121 — sport.checkin 触发 / V0.2.124 扩 strength 容量目标）
  *
  * 与 `notify()` 区别：自己触发自己（user 是自己的 actor），不跳过；专用 type='goal_achieved'
  *
  * @param userId - 接收者（也是达成者）
- * @param goal - { id, title, targetDistance } 目标信息
+ * @param goal - { id, title, kind?, target } 目标信息
+ *   - kind: 'distance'（默认）/ 'volume'（V0.2.124 strength 容量）
+ *   - target: targetDistance (km) 或 targetVolume (kg·次)
  */
 export async function notifyGoalAchieved(
   userId: string,
-  goal: { id: string; title: string | null; targetDistance: number },
+  goal: { id: string; title: string | null; kind?: 'distance' | 'volume'; target: number },
 ) {
   const titleSuffix = goal.title ? `「${goal.title}」` : '';
-  const content = `🎯 目标${titleSuffix}已达成！${goal.targetDistance}km`;
+  const unit = goal.kind === 'volume' ? 'kg·次' : 'km';
+  const content = `🎯 目标${titleSuffix}已达成！${goal.target}${unit}`;
   await prisma.notification.create({
     data: {
       userId,

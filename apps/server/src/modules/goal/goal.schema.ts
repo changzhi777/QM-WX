@@ -1,15 +1,21 @@
 /**
- * goal module Zod schemas（V0.1.28 跑者向 — 跑步目标 + V0.1.34 家庭目标 + V0.1.135 自定义里程碑）
+ * goal module Zod schemas（V0.1.28 跑者向 + V0.1.34 家庭目标 + V0.1.135 自定义里程碑 + V0.2.124 力量训练容量目标）
  */
 import { z } from 'zod';
 
 export const GoalTypeEnum = z.enum(['monthly', 'yearly', 'custom']);
 export type GoalType = z.infer<typeof GoalTypeEnum>;
 
+/** V0.2.124 目标类型：distance 走 Checkin.aggregate；volume 走 StrengthSession.aggregate */
+export const GoalKindEnum = z.enum(['distance', 'volume']);
+export type GoalKind = z.infer<typeof GoalKindEnum>;
+
 /** 添加目标（type 决定 periodStart/End 自动算；custom 需手传） */
 export const AddGoalInputSchema = z.object({
   type: GoalTypeEnum,
-  targetDistance: z.number().min(1).max(10000),
+  kind: GoalKindEnum.default('distance'), // V0.2.124 默认距离目标
+  targetDistance: z.number().min(1).max(10000).optional(), // V0.2.124 kind=distance 必传
+  targetVolume: z.number().min(1).max(10_000_000).optional(), // V0.2.124 kind=volume 必传
   title: z.string().max(50).optional(),
   /** custom 类型必传（ISO）；monthly/yearly 后端自动算 */
   periodStart: z.string().datetime().optional(),
@@ -17,7 +23,7 @@ export const AddGoalInputSchema = z.object({
 });
 export type AddGoalInput = z.infer<typeof AddGoalInputSchema>;
 
-/** V0.1.34 家庭目标（复用 AddGoalInput + familyId） */
+/** V0.1.34 家庭目标（复用 AddGoalInput 字段 + familyId） */
 export const AddFamilyGoalSchema = AddGoalInputSchema.extend({
   familyId: z.string().min(1),
 });

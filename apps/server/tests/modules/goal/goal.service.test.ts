@@ -12,6 +12,7 @@ vi.mock('src/infra/prisma.js', () => ({
     checkin: { aggregate: vi.fn(), findMany: vi.fn() },
     familyMember: { findUnique: vi.fn(), findMany: vi.fn() }, // V0.1.34 家庭目标
     user: { findUnique: vi.fn(), update: vi.fn() }, // V0.1.135 自定义里程碑
+    strengthSession: { aggregate: vi.fn() }, // V0.2.124 力量训练容量目标
   },
 }));
 vi.mock('src/common/errors.js', () => ({ Errors: mockErrors }));
@@ -448,5 +449,118 @@ describe('goalService.detectAndMarkJustAchieved (V0.2.121)', () => {
     const result = await goalService.detectAndMarkJustAchieved('u1', 5, '2026-07-24');
     expect(result).toEqual([]);
     expect(mockedPrisma.checkin.aggregate).not.toHaveBeenCalled();
+  });
+});
+
+describe('goalService.detectAndMarkStrengthJustAchieved (V0.2.124)', () => {
+  beforeEach(() => {
+    _redisMockState.cacheStore.clear();
+    vi.clearAllMocks();
+  });
+
+  it('本次训练刚好让 active 容量目标从 < target 跨到 >= target → 返回并标 completed', async () => {
+    mockedPrisma.goal.findMany.mockResolvedValue([
+      {
+        id: 'g1',
+        userId: 'u1',
+        familyId: null,
+        status: 'active',
+        type: 'monthly',
+        title: '月度5000kg',
+        targetDistance: 0,
+        targetVolume: 5000,
+        periodStart: new Date('2026-07-01T00:00:00Z'),
+        periodEnd: new Date('2026-08-01T00:00:00Z'),
+      },
+    ] as never);
+    // 累计 = 5000 (含本次 + 1500；before = 3500, after = 5000，刚好达标)
+    mockedPrisma.strengthSession.aggregate.mockResolvedValue({ _sum: { totalVolume: 5000 } } as never);
+    mockedPrisma.goal.updateMany.mockResolvedValue({ count: 1 } as never);
+
+    const result = await goalService.detectAndMarkStrengthJustAchieved('u1', 1500, '2026-07-24');
+
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('g1');
+    expect(result[0].targetVolume).toBe(5000);
+    expect(mockedPrisma.goal.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: { in: ['g1'] } },
+        data: { status: 'completed' },
+      }),
+    );
+  });
+
+  it('未达 target → 不返回，不 update', async () => {
+    mockedPrisma.goal.findMany.mockResolvedValue([
+      {
+        id: 'g1',
+        familyId: null,
+        status: 'active',
+        title: '月度5000kg',
+        targetDistance: 0,
+        targetVolume: 5000,
+        periodStart: new Date('2026-07-01T00:00:00Z'),
+        periodEnd: new Date('2026-08-01T00:00:00Z'),
+      },
+    ] as never);
+    // 累计 2000 (本次 + 500, before = 1500, after = 2000) 仍 < 5000
+    mockedPrisma.strengthSession.aggregate.mockResolvedValue({ _sum: { totalVolume: 2000 } } as never);
+
+    const result = await goalService.detectAndMarkStrengthJustAchieved('u1', 500, '2026-07-24');
+
+    expect(result).toEqual([]);
+    expect(mockedPrisma.goal.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('period 不含今天 → 跳过', async () => {
+    mockedPrisma.goal.findMany.mockResolvedValue([
+      {
+        id: 'g1',
+        familyId: null,
+        status: 'active',
+        targetVolume: 5000,
+        periodStart: new Date('2026-06-01T00:00:00Z'),
+        periodEnd: new Date('2026-07-01T00:00:00Z'),
+      },
+    ] as never);
+    mockedPrisma.strengthSession.aggregate.mockResolvedValue({ _sum: { totalVolume: 5000 } } as never);
+
+    const result = await goalService.detectAndMarkStrengthJustAchieved('u1', 100, '2026-07-24');
+
+    expect(result).toEqual([]);
+    expect(mockedPrisma.strengthSession.aggregate).not.toHaveBeenCalled();
+  });
+});
+
+describe('goalService.add kind=volume (V0.2.124)', () => {
+  beforeEach(() => {
+    _redisMockState.cacheStore.clear();
+    vi.clearAllMocks();
+  });
+
+  it('kind=volume + targetVolume → 落库（targetDistance 占位 0，targetVolume 写入）', async () => {
+    mockedPrisma.goal.create.mockResolvedValue({ id: 'g1' } as never);
+    const r = await goalService.add('u1', {
+      type: 'monthly',
+      kind: 'volume',
+      targetVolume: 5000,
+      title: '月度5000kg',
+    });
+    expect(r.id).toBe('g1');
+    const data = mockedPrisma.goal.create.mock.calls[0][0].data;
+    expect(data.targetVolume).toBe(5000);
+    expect(data.targetDistance).toBe(0);
+  });
+
+  it('kind=volume 缺 targetVolume → badRequest', async () => {
+    await expect(
+      goalService.add('u1', { type: 'monthly', kind: 'volume' } as never),
+    ).rejects.toThrow();
+  });
+
+  it('kind=distance 缺 targetDistance → badRequest', async () => {
+    await expect(
+      goalService.add('u1', { type: 'monthly', kind: 'distance' } as never),
+    ).rejects.toThrow();
   });
 });

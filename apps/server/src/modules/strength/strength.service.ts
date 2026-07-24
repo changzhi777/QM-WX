@@ -9,7 +9,8 @@
  * 容量 volume = Σ reps × weight（kg·次），实时累加（addSet 时 session.totalVolume increment）
  */
 import { prisma } from '../../infra/prisma.js';
-import { notifyStrengthDone } from '../notification/notification.service.js';
+import { notifyStrengthDone, notifyGoalAchieved } from '../notification/notification.service.js';
+import { goalService } from '../goal/goal.service.js';
 
 /** CN 时区日期 YYYY-MM-DD（dateStr 按日聚合用）*/
 function cnDate(d = new Date()): string {
@@ -93,6 +94,16 @@ export async function finishSession(
     });
   } catch {
     /* 通知失败不影响训练保存结果 */
+  }
+  // V0.2.124 力量训练容量目标达成检测（复用 V0.2.121 范式，聚合 StrengthSession.totalVolume）
+  try {
+    const todayDateStr = updated.dateStr;
+    const justAchieved = await goalService.detectAndMarkStrengthJustAchieved(userId, updated.totalVolume, todayDateStr);
+    for (const goal of justAchieved) {
+      await notifyGoalAchieved(userId, { id: goal.id, title: goal.title, kind: 'volume', target: goal.targetVolume });
+    }
+  } catch {
+    /* 目标检测/通知失败不影响训练保存结果 */
   }
   return updated;
 }

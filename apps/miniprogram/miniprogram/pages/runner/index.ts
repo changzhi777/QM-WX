@@ -99,7 +99,7 @@ Page({
     goals: [] as Goal[],
     goalLoading: false,
     goalFormVisible: false,
-    goalForm: { type: 'monthly', targetDistance: 50, title: '' },
+    goalForm: { type: 'monthly' as 'monthly' | 'yearly' | 'custom', kind: 'distance' as 'distance' | 'volume', targetDistance: 50, targetVolume: 5000, title: '' },
     goalSubmitting: false,
     // 证书
     certs: null as CertsRes | null,
@@ -156,17 +156,32 @@ Page({
   },
 
   onAddGoal() {
-    this.setData({ goalFormVisible: true, goalForm: { type: 'monthly', targetDistance: 50, title: '' } });
+    this.setData({
+      goalFormVisible: true,
+      goalForm: { type: 'monthly', kind: 'distance', targetDistance: 50, targetVolume: 5000, title: '' },
+    });
   },
 
   onSelectType(e: WechatMiniprogram.TouchEvent) {
-    const type = (e.currentTarget.dataset.type as string) || 'monthly';
+    const type = (e.currentTarget.dataset.type as 'monthly' | 'yearly' | 'custom') || 'monthly';
     const defaultTarget = type === 'yearly' ? 600 : 50;
     this.setData({ goalForm: { ...this.data.goalForm, type, targetDistance: defaultTarget } });
   },
 
+  /** V0.2.124 切换目标类型：距离 / 容量 */
+  onSelectKind(e: WechatMiniprogram.TouchEvent) {
+    const kind = (e.currentTarget.dataset.kind as 'distance' | 'volume') || 'distance';
+    this.setData({ goalForm: { ...this.data.goalForm, kind } });
+  },
+
   onInputTarget(e: WechatMiniprogram.CustomEvent) {
-    this.setData({ goalForm: { ...this.data.goalForm, targetDistance: Number(e.detail.value) || 50 } });
+    const v = Number(e.detail.value) || 0;
+    // V0.2.124 根据 kind 写不同字段
+    if (this.data.goalForm.kind === 'volume') {
+      this.setData({ goalForm: { ...this.data.goalForm, targetVolume: v } });
+    } else {
+      this.setData({ goalForm: { ...this.data.goalForm, targetDistance: v || 50 } });
+    }
   },
 
   onInputTitle(e: WechatMiniprogram.CustomEvent) {
@@ -174,14 +189,28 @@ Page({
   },
 
   async onSubmitGoal() {
-    const { type, targetDistance, title } = this.data.goalForm;
-    if (targetDistance < 1) {
+    const { type, kind, targetDistance, targetVolume, title } = this.data.goalForm;
+    if (kind === 'volume' && (!targetVolume || targetVolume < 1)) {
+      wx.showToast({ title: '目标至少 1 kg·次', icon: 'none' });
+      return;
+    }
+    if (kind === 'distance' && (!targetDistance || targetDistance < 1)) {
       wx.showToast({ title: '目标至少 1 km', icon: 'none' });
       return;
     }
     this.setData({ goalSubmitting: true });
     try {
-      await api.call('goal', 'add', { type, targetDistance, title: title.trim() || undefined });
+      const payload: Record<string, unknown> = {
+        type,
+        kind,
+        title: title.trim() || undefined,
+      };
+      if (kind === 'volume') {
+        payload.targetVolume = targetVolume;
+      } else {
+        payload.targetDistance = targetDistance;
+      }
+      await api.call('goal', 'add', payload);
       this.setData({ goalSubmitting: false, goalFormVisible: false });
       wx.showToast({ title: '已创建', icon: 'success' });
       this.loadGoals();
