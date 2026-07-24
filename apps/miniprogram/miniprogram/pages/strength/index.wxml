@@ -55,7 +55,9 @@
   </view>
 
   <!-- 历史列表 -->
-  <view class="section-title">训练历史</view>
+  <view class="section-title">训练历史
+    <view class="section-title__more" bindtap="onOpenHistory">查看全部 ›</view>
+  </view>
   <view class="session-list">
     <view wx:if="{{loading && sessions.length === 0}}" class="empty">加载中…</view>
     <view wx:elif="{{sessions.length === 0}}" class="empty">还没有训练记录</view>

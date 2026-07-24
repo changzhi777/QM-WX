@@ -118,16 +118,25 @@ export async function finishSession(
   return updated;
 }
 
-/** 训练历史列表（分页 + 组数 count）*/
+/**
+ * 训练历史列表（分页 + 组数 count + V0.2.136 exerciseName 过滤）
+ *
+ * - exerciseName 过滤通过 sets 表的 some 关系实现（Prisma 自动 JOIN）；YAGNI 不预聚合
+ * - 仍按 createdAt desc 排序
+ */
 export async function listSessions(
   userId: string,
-  input: { page?: number; pageSize?: number } = {},
+  input: { page?: number; pageSize?: number; exerciseName?: string } = {},
 ) {
   const page = input.page ?? 1;
   const pageSize = input.pageSize ?? 20;
+  const where: Record<string, unknown> = { userId };
+  if (input.exerciseName) {
+    where.sets = { some: { exerciseName: input.exerciseName } };
+  }
   const [list, total] = await Promise.all([
     prisma.strengthSession.findMany({
-      where: { userId },
+      where,
       orderBy: { createdAt: 'desc' },
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -141,7 +150,7 @@ export async function listSessions(
         _count: { select: { sets: true } },
       },
     }),
-    prisma.strengthSession.count({ where: { userId } }),
+    prisma.strengthSession.count({ where }),
   ]);
   return { list, total, page, pageSize };
 }

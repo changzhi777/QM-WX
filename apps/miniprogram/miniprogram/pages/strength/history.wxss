@@ -1,0 +1,102 @@
+.container {
+  padding: 24rpx;
+  padding-bottom: 80rpx;
+}
+
+/* 过滤栏 */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 12rpx;
+  padding: 16rpx 20rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+
+.filter-bar__picker {
+  flex: 1;
+  color: #333;
+  font-size: 28rpx;
+  font-weight: 500;
+}
+
+.filter-bar__placeholder {
+  color: #999;
+}
+
+.filter-bar__clear {
+  color: #2D9D78;
+  font-size: 24rpx;
+  padding: 6rpx 16rpx;
+  background: #E6F7F2;
+  border-radius: 6rpx;
+}
+
+/* 列表（与 index 风格一致） */
+.session-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.session-item {
+  background: #fff;
+  border-radius: 12rpx;
+  padding: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+
+.session-item__date {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.session-item__meta {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.session-item__tag {
+  background: #f5f6f8;
+  padding: 4rpx 12rpx;
+  border-radius: 6rpx;
+}
+
+.session-item__vol {
+  color: #2D9D78;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.session-item__notes {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  color: #666;
+  background: #f9fafb;
+  padding: 12rpx;
+  border-radius: 6rpx;
+}
+
+.empty, .loading, .footer {
+  text-align: center;
+  color: #999;
+  font-size: 26rpx;
+  padding: 40rpx 0;
+}
+
+.footer__more {
+  color: #2D9D78;
+  font-size: 26rpx;
+  background: #fff;
+  border: 2rpx solid #2D9D78;
+  border-radius: 8rpx;
+  padding: 16rpx 0;
+  display: inline-block;
+  min-width: 200rpx;
+}

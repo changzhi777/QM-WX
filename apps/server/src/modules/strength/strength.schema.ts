@@ -24,6 +24,7 @@ export const SessionDetailSchema = z.object({
 export const ListSessionsSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  exerciseName: z.string().min(1).max(50).optional(), // V0.2.136 按动作过滤
 });
 
 export const MyVolumeSchema = z.object({

@@ -189,6 +189,11 @@ Page({
     if (id) wx.navigateTo({ url: `/pages/strength/detail?sessionId=${id}` });
   },
 
+  /** V0.2.136 「查看全部」→ 跳历史页（按动作过滤 + 滚动加载） */
+  onOpenHistory() {
+    wx.navigateTo({ url: '/pages/strength/history' });
+  },
+
   /** V0.2.127 点热图某天 → 跳当天第一个 session 详情 */
   onTapHeatmapDay(e: WechatMiniprogram.TouchEvent) {
     const date = e.currentTarget.dataset.date as string;

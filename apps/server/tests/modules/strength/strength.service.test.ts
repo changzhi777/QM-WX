@@ -397,3 +397,30 @@ describe('getExerciseTrend (V0.2.135)', () => {
     expect(r.points[1]).toMatchObject({ dateStr: '2026-07-17', maxWeight: 110, setCount: 2, totalVolume: 1540, avgReps: 7 });
   });
 });
+
+describe('listSessions V0.2.136 exerciseName 过滤', () => {
+  it('指定 exerciseName → where.sets.some 过滤', async () => {
+    mockPrisma.strengthSession.findMany.mockResolvedValue([] as never);
+    mockPrisma.strengthSession.count.mockResolvedValue(0 as never);
+    await listSessions('u1', { exerciseName: '深蹲' });
+    expect(mockPrisma.strengthSession.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          userId: 'u1',
+          sets: { some: { exerciseName: '深蹲' } },
+        }),
+      }),
+    );
+  });
+
+  it('无 exerciseName → 不过滤', async () => {
+    mockPrisma.strengthSession.findMany.mockResolvedValue([] as never);
+    mockPrisma.strengthSession.count.mockResolvedValue(0 as never);
+    await listSessions('u1');
+    expect(mockPrisma.strengthSession.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { userId: 'u1' },
+      }),
+    );
+  });
+});

@@ -188,6 +188,16 @@
   font-size: 28rpx;
   color: #666;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* V0.2.136 「查看全部」链接 */
+.section-title__more {
+  font-size: 24rpx;
+  color: #2D9D78;
+  font-weight: 400;
 }
 
 .session-list {

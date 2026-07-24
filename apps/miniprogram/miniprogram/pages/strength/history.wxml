@@ -1,0 +1,38 @@
+<view class="container">
+  <!-- V0.2.136 顶部过滤栏 -->
+  <view class="filter-bar">
+    <picker mode="selector" range="{{exercises}}" range-key="name" value="{{exerciseIndex}}" bindchange="onPickExercise">
+      <view class="filter-bar__picker">
+        <text wx:if="{{exerciseName}}">{{exerciseName}}</text>
+        <text wx:else class="filter-bar__placeholder">全部动作</text>
+      </view>
+    </picker>
+    <view class="filter-bar__clear" wx:if="{{exerciseName}}" bindtap="onClearFilter">✕ 清除</view>
+  </view>
+
+  <!-- 训练列表（V0.2.136 复用 session 卡样式 + 过滤） -->
+  <view class="loading" wx:if="{{loading && sessions.length === 0}}">加载中…</view>
+  <view class="empty" wx:elif="{{sessions.length === 0 && !loading}}">暂无训练记录</view>
+  <view class="session-list" wx:else>
+    <view
+      wx:for="{{sessions}}"
+      wx:key="id"
+      class="session-item"
+      data-id="{{item.id}}"
+      bindtap="onTapSession"
+    >
+      <view class="session-item__date">{{item.dateStr}}</view>
+      <view class="session-item__meta">
+        <text class="session-item__tag">{{item.setCount}} 组</text>
+        <text class="session-item__tag">{{item.durationText}}</text>
+        <text class="session-item__vol">{{item.totalVolumeText}}</text>
+      </view>
+      <view class="session-item__notes" wx:if="{{item.notes}}">{{item.notes}}</view>
+    </view>
+  </view>
+
+  <view class="footer" wx:if="{{hasMore && sessions.length > 0}}">
+    <view class="footer__more" bindtap="onLoadMore">{{loading ? '加载中…' : '加载更多'}}</view>
+  </view>
+  <view class="footer" wx:elif="{{sessions.length > 0}}">— 已加载全部 —</view>
+</view>
