@@ -35,6 +35,9 @@
       <view class="fav-btn" wx:if="{{exerciseIndex >= 0}}" bindtap="onToggleFavorite">
         <text class="fav-btn__icon">⭐</text>
       </view>
+      <view class="video-btn" wx:if="{{exerciseIndex >= 0}}" bindtap="onShowVideo">
+        <text class="video-btn__icon">📹</text>
+      </view>
     </view>
     <view class="form-row">
       <text class="form-row__label">自定义</text>
@@ -56,6 +59,23 @@
       <view class="form-col">
         <text class="form-row__label">组序</text>
         <input class="form-row__input" type="number" value="{{setIndex}}" bindinput="onInputSetIndex" placeholder="1" />
+      </view>
+    </view>
+    <!-- V0.2.143 完结度 RPE 1-10 + 本组备注 + V0.2.148 组间心率（可选） -->
+    <view class="form-row form-row--meta">
+      <view class="form-col">
+        <text class="form-row__label">完结度 RPE（可选 1-10）</text>
+        <input class="form-row__input" type="number" value="{{rpe}}" bindinput="onInputRpe" placeholder="如 8" />
+      </view>
+      <view class="form-col">
+        <text class="form-row__label">组间心率（可选 bpm）</text>
+        <input class="form-row__input" type="number" value="{{postHr}}" bindinput="onInputPostHr" placeholder="如 130" />
+      </view>
+    </view>
+    <view class="form-row form-row--meta">
+      <view class="form-col">
+        <text class="form-row__label">备注</text>
+        <input class="form-row__input" value="{{setNote}}" bindinput="onInputSetNote" maxlength="200" placeholder="如 差点力竭" />
       </view>
     </view>
     <view class="add-btn" bindtap="onAddSet">+ 添加这组</view>
@@ -80,5 +100,21 @@
       <input class="form-row__input" placeholder="今天的训练感受" value="{{notes}}" bindinput="onInputNotes" maxlength="500" />
     </view>
     <view class="finish-btn" bindtap="onFinish">完成训练</view>
+  </view>
+
+  <!-- V0.2.141 动作视频示范 modal -->
+  <view class="video-modal" wx:if="{{videoVisible}}" bindtap="onCloseVideo">
+    <view class="video-modal__panel" catchtap="">
+      <view class="video-modal__title">{{videoName}} · 动作示范</view>
+      <video
+        class="video-modal__player"
+        src="{{videoUrl}}"
+        controls
+        show-fullscreen-btn
+        enable-progress-gesture
+        object-fit="contain"
+      />
+      <view class="video-modal__close" bindtap="onCloseVideo">关闭</view>
+    </view>
   </view>
 </view>

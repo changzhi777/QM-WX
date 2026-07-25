@@ -15,7 +15,7 @@ import { mockErrors } from '../../helpers/mockErrors.js';
 const mocks = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const helpers = require('../../helpers/mockPrisma.ts') as typeof import('../../helpers/mockPrisma.js');
-  return helpers.createPrismaMock({ models: ['deviceBinding', 'weRunRecord', 'user', 'heartRateRecord', 'spO2Record', 'sleepRecord'], txModels: [] });
+  return helpers.createPrismaMock({ models: ['deviceBinding', 'weRunRecord', 'user', 'heartRateRecord', 'spO2Record', 'sleepRecord', 'deviceDailyActivity'], txModels: [] });
 });
 
 // Mock Redis（Cache.wrap + syncWeRun session_key 都走 redis）
@@ -268,6 +268,33 @@ describe('deviceService.importXiaomiZip (V0.1.43 小米数据包导入)', () => 
     zip.addFile('other.csv', Buffer.from('a,b\n1,2'));
     await expect(deviceService.importXiaomiZip('u1', zip.toBuffer())).rejects.toThrow(
       '未找到',
+    );
+  });
+});
+
+describe('V0.2.153 listDeviceDailyActivity 设备每日活动（VIVO 数据模型占位接口）', () => {
+  it('按 vendor + days 过滤 → 列表 + 完整字段', async () => {
+    mocks.prisma.deviceDailyActivity.findMany.mockResolvedValue([
+      { id: 'da1', vendor: 'vivo', date: '2026-07-25', step: 8500, distanceM: 6200, caloriesKcal: 320, sleepMin: 480, activeMin: 95, source: 'manual' },
+      { id: 'da2', vendor: 'wechat', date: '2026-07-24', step: 6200, distanceM: 4500, caloriesKcal: 240, sleepMin: 420, activeMin: 65, source: 'api' },
+    ] as never);
+
+    const { deviceService } = await import('../../../src/modules/device/device.service.js');
+    const r = await deviceService.listDeviceDailyActivity('u1', { days: 7 });
+
+    expect(r.list).toHaveLength(2);
+    expect(r.list[0].vendor).toBe('vivo');
+    expect(r.list[0].step).toBe(8500);
+    expect(r.list[1].vendor).toBe('wechat');
+    expect(r.days).toBe(7);
+  });
+
+  it('指定 vendor → 过滤 + findMany.where 含 vendor', async () => {
+    mocks.prisma.deviceDailyActivity.findMany.mockResolvedValue([] as never);
+    const { deviceService } = await import('../../../src/modules/device/device.service.js');
+    await deviceService.listDeviceDailyActivity('u1', { vendor: 'vivo', days: 30 });
+    expect(mocks.prisma.deviceDailyActivity.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({ where: expect.objectContaining({ userId: 'u1', vendor: 'vivo' }) }),
     );
   });
 });

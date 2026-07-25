@@ -303,3 +303,76 @@
   padding: 12rpx;
   border-radius: 6rpx;
 }
+
+/* V0.2.147 力量训练总览仪表盘 */
+.overview-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-top: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+
+.overview-card__title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.overview-metrics {
+  display: flex;
+  background: linear-gradient(135deg, #2D9D78, #4FB68F);
+  border-radius: 12rpx;
+  padding: 20rpx 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.overview-metric {
+  flex: 1;
+  text-align: center;
+  color: #fff;
+}
+
+.overview-metric__num {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.overview-metric__label {
+  display: block;
+  font-size: 22rpx;
+  opacity: 0.85;
+  margin-top: 4rpx;
+}
+
+.overview-section {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #333;
+  margin: 16rpx 0 12rpx;
+  border-left: 6rpx solid #2D9D78;
+  padding-left: 12rpx;
+}
+
+.overview-top {
+  background: #f9fafb;
+  border-radius: 8rpx;
+  padding: 16rpx 20rpx;
+  margin-bottom: 8rpx;
+  display: flex;
+  justify-content: space-between;
+  font-size: 26rpx;
+}
+
+.overview-top__name {
+  color: #333;
+  font-weight: 500;
+}
+
+.overview-top__vol {
+  color: #2D9D78;
+  font-weight: 600;
+}

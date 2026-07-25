@@ -105,6 +105,8 @@ Page({
     trend: [] as VolumeTrendItem[],
     sessions: [] as SessionItem[],
     heatmap: { weeks: [], totalTrainings: 0, maxVolume: 0, maxVolumeText: '0' } as HeatmapData,
+    // V0.2.147 总览仪表盘（顶部 4 指标 + top 5 动作 + 日趋势）
+    overview: null as null | { totalSessions: number; totalSets: number; totalReps: number; totalVolume: number; avgRpe: number | null; topExercises: Array<{ exerciseName: string; volume: number; sets: number; reps: number; maxWeight: number }>; dailyTrend: Array<{ date: string; volume: number; sessions: number }> },
     loading: false,
     starting: false,
   },
@@ -115,8 +117,23 @@ Page({
 
   async loadAll() {
     this.setData({ loading: true });
-    await Promise.all([this.loadVolume(), this.loadSessions(), this.loadFavorites()]);
+    await Promise.all([this.loadVolume(), this.loadSessions(), this.loadFavorites(), this.loadOverview()]);
     this.setData({ loading: false });
+  },
+
+  /** V0.2.147 加载力量训练总览仪表盘（顶部 section） */
+  async loadOverview() {
+    try {
+      const res = await api.call<{
+        totalSessions: number; totalSets: number; totalReps: number;
+        totalVolume: number; avgRpe: number | null;
+        topExercises: Array<{ exerciseName: string; sets: number; reps: number; maxWeight: number; volume: number }>;
+        dailyTrend: Array<{ date: string; volume: number; sessions: number }>;
+      }>('strength', 'getStrengthOverview', { days: 30 });
+      this.setData({ overview: res });
+    } catch {
+      this.setData({ overview: null });
+    }
   },
 
   /** V0.2.137 加载我的收藏动作 */

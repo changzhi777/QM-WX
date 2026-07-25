@@ -6,8 +6,15 @@
  */
 import { z } from 'zod';
 
-export const DEVICE_VENDORS = ['werun', 'garmin', 'huawei', 'xiaomi', 'honor', 'coros', 'zepp', 'ble'] as const;
+export const DEVICE_VENDORS = ['werun', 'garmin', 'huawei', 'xiaomi', 'honor', 'coros', 'zepp', 'ble', 'vivo'] as const;
 export type DeviceVendor = (typeof DEVICE_VENDORS)[number];
+
+/** V0.2.153 设备每日活动查询（VIVO 设备数据模型占位接口） */
+export const ListDeviceDailyActivitySchema = z.object({
+  vendor: z.enum(DEVICE_VENDORS).optional(),
+  days: z.coerce.number().int().min(1).max(180).default(30),
+});
+export type ListDeviceDailyActivityInput = z.infer<typeof ListDeviceDailyActivitySchema>;
 
 export const ListBindingsInputSchema = z.object({}).optional();
 export type ListBindingsInput = z.infer<typeof ListBindingsInputSchema>;
@@ -193,6 +200,7 @@ export const DeviceActionBodySchema = z.object({
     'myProcessed',
     'ignoreActivity',
     'importToCheckin',
+    'listDeviceDailyActivity', // V0.2.153 设备每日活动（VIVO 数据模型占位）
   ]),
   payload: z.unknown().optional(),
 });

@@ -42,6 +42,34 @@
     </scroll-view>
   </view>
 
+  <!-- V0.2.147 总览仪表盘（4 指标 + top 5 动作 + 日趋势） -->
+  <view class="overview-card" wx:if="{{overview && overview.totalSessions > 0}}">
+    <view class="overview-card__title">📊 30 天总览</view>
+    <view class="overview-metrics">
+      <view class="overview-metric">
+        <text class="overview-metric__num">{{overview.totalSessions}}</text>
+        <text class="overview-metric__label">训练</text>
+      </view>
+      <view class="overview-metric">
+        <text class="overview-metric__num">{{overview.totalSets}}</text>
+        <text class="overview-metric__label">组数</text>
+      </view>
+      <view class="overview-metric">
+        <text class="overview-metric__num">{{overview.totalVolume}}</text>
+        <text class="overview-metric__label">kg·次</text>
+      </view>
+      <view class="overview-metric">
+        <text class="overview-metric__num">{{overview.avgRpe || '—'}}</text>
+        <text class="overview-metric__label">RPE</text>
+      </view>
+    </view>
+    <view class="overview-section">🏆 主力动作（top 5）</view>
+    <view class="overview-top" wx:for="{{overview.topExercises}}" wx:key="exerciseName" wx:for-item="ex">
+      <text class="overview-top__name">{{ex.exerciseName}}</text>
+      <text class="overview-top__vol">{{ex.volume}} kg·次</text>
+    </view>
+  </view>
+
   <!-- V0.2.127 训练日历热图（最近 26 周 GitHub 风格） -->
   <view class="heatmap-card">
     <view class="heatmap-card__head">

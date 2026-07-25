@@ -74,6 +74,8 @@ Page({
       sleepHours: null as number | null,
       healthScore: 0,
     },
+    // V0.2.151 跑训结合总览（Checkin + StrengthSet 跨模块聚合）
+    unified: null as null | { days: number; totalRunKm: number; totalRunCount: number; totalStrengthVolume: number; totalStrengthCount: number; totalTrainingDays: number; dominant: 'run' | 'strength'; runPct: number; strengthPct: number; weeklyTrend: Array<{ weekStart: string; runKm: number; strengthVolume: number }> },
     // 消息未读数（V0.1.31 红点）
     notifUnread: 0,
     // V0.1.143 消息弹层（合并 notification）
@@ -122,6 +124,7 @@ Page({
       // 头部数据（今日健康 + 未读）
       this.loadTodayHealth();
       this.loadNotifUnread();
+      this.loadUnifiedOverview();
 
       this.setData({
         flags: (app.globalData.config?.featureFlags ?? this.data.flags) as FeatureFlagsConfig,
@@ -169,6 +172,24 @@ Page({
       this.setData({ notifUnread: res.count ?? 0 });
     } catch {
       // 未读数加载失败不阻塞主页
+    }
+  },
+
+  /** V0.2.151 跑训结合总览（4 指标 + 8 周双线趋势） */
+  async loadUnifiedOverview() {
+    try {
+      const res = await api.call<{
+        days: number;
+        totalRunKm: number; totalRunCount: number;
+        totalStrengthVolume: number; totalStrengthCount: number;
+        totalTrainingDays: number;
+        dominant: 'run' | 'strength';
+        runPct: number; strengthPct: number;
+        weeklyTrend: Array<{ weekStart: string; runKm: number; strengthVolume: number }>;
+      }>('stats', 'getUnifiedOverview', { days: 30 });
+      this.setData({ unified: res });
+    } catch {
+      this.setData({ unified: null });
     }
   },
 

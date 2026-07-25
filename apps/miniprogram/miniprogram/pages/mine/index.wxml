@@ -90,6 +90,39 @@
       </view>
     </view>
 
+    <!-- V0.2.151 跑训结合总览（Checkin + StrengthSet 跨模块聚合） -->
+    <view class="unified-card" wx:if="{{unified && unified.totalTrainingDays > 0}}">
+      <view class="unified-card__head">
+        <text class="unified-card__title">🏃+💪 跑训结合</text>
+        <text class="unified-card__days">近 {{unified.days}} 天</text>
+      </view>
+      <view class="unified-metrics">
+        <view class="unified-metric">
+          <text class="unified-metric__num">{{unified.totalRunKm}}</text>
+          <text class="unified-metric__label">跑步 km</text>
+        </view>
+        <view class="unified-metric">
+          <text class="unified-metric__num">{{unified.totalStrengthVolume}}</text>
+          <text class="unified-metric__label">力量 kg·次</text>
+        </view>
+        <view class="unified-metric">
+          <text class="unified-metric__num">{{unified.totalTrainingDays}}</text>
+          <text class="unified-metric__label">训练日</text>
+        </view>
+      </view>
+      <view class="unified-ratio">
+        <text class="unified-ratio__label">主导：{{unified.dominant === 'run' ? '🏃 跑步' : '💪 力量'}}</text>
+        <view class="unified-ratio__bar">
+          <view class="unified-ratio__fill unified-ratio__fill--run" style="width: {{unified.runPct}}%;"></view>
+          <view class="unified-ratio__fill unified-ratio__fill--strength" style="width: {{unified.strengthPct}}%;"></view>
+        </view>
+        <view class="unified-ratio__pct">
+          <text>🏃 {{unified.runPct}}%</text>
+          <text>💪 {{unified.strengthPct}}%</text>
+        </view>
+      </view>
+    </view>
+
     <!-- 更多功能（待定入口 → pages/more）-->
     <view class="section">
       <view class="menu-section">

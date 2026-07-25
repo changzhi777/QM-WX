@@ -37,6 +37,10 @@ import {
   toggleFavoriteExercise,
   listFavoriteExercises,
   getExerciseTrend,
+  suggestNextWeight,
+  getSessionReport,
+  getStrengthOverview,
+  getCompletionScore,
 } from '../../../src/modules/strength/strength.service.js';
 import { notifyStrengthDone } from 'src/modules/notification/notification.service.js';
 
@@ -422,5 +426,177 @@ describe('listSessions V0.2.136 exerciseName 过滤', () => {
         where: { userId: 'u1' },
       }),
     );
+  });
+});
+
+describe('V0.2.141 listExercises 返 videoUrl 字段', () => {
+  it('带 videoUrl 的动作正确返回（前端可展示）', async () => {
+    mockPrisma.exercise.findMany.mockResolvedValue([
+      { id: 'e1', name: '深蹲', category: '腿', videoUrl: 'https://example.com/squat.mp4' },
+      { id: 'e2', name: '自定义动作', category: '其他', videoUrl: null },
+    ] as never);
+    const r = await listExercises('u1');
+    expect(r).toHaveLength(2);
+    expect((r[0] as { videoUrl?: string }).videoUrl).toBe('https://example.com/squat.mp4');
+    expect((r[1] as { videoUrl?: string }).videoUrl).toBeNull();
+  });
+});
+
+describe('suggestNextWeight (V0.2.142)', () => {
+  it('无历史 → hasHistory=false + suggestedWeight=null', async () => {
+    mockPrisma.strengthSet.findMany.mockResolvedValue([] as never);
+    const r = await suggestNextWeight('u1', { exerciseName: '深蹲' });
+    expect(r.hasHistory).toBe(false);
+    expect(r.suggestedWeight).toBeNull();
+  });
+
+  it('3 场同重量 → 建议 +2.5kg（double progression）', async () => {
+    mockPrisma.strengthSet.findMany.mockResolvedValue([
+      // session 3（最早）: max 100
+      { sessionId: 's3', exerciseName: '深蹲', reps: 8, weight: 100, session: { createdAt: new Date('2026-07-10') } },
+      // session 2: max 100
+      { sessionId: 's2', exerciseName: '深蹲', reps: 8, weight: 100, session: { createdAt: new Date('2026-07-17') } },
+      // session 1（最新）: max 100
+      { sessionId: 's1', exerciseName: '深蹲', reps: 8, weight: 100, session: { createdAt: new Date('2026-07-24') } },
+    ] as never);
+    const r = await suggestNextWeight('u1', { exerciseName: '深蹲' });
+    expect(r.hasHistory).toBe(true);
+    expect(r.suggestedWeight).toBe(102.5);
+    expect(r.basis).toBe('progression');
+  });
+
+  it('3 场不同重量 → 维持 lastMax（basis=maintain）', async () => {
+    mockPrisma.strengthSet.findMany.mockResolvedValue([
+      // desc 顺序（生产 findMany orderBy session.createdAt desc）
+      { sessionId: 's1', reps: 8, weight: 100, session: { createdAt: new Date('2026-07-24') } },
+      { sessionId: 's2', reps: 8, weight: 100, session: { createdAt: new Date('2026-07-17') } },
+      { sessionId: 's3', reps: 8, weight: 95, session: { createdAt: new Date('2026-07-10') } },
+    ] as never);
+    const r = await suggestNextWeight('u1', { exerciseName: '深蹲' });
+    expect(r.suggestedWeight).toBe(100);
+    expect(r.basis).toBe('maintain');
+  });
+});
+
+describe('addSet V0.2.143 完结度 RPE + 备注', () => {
+  it('带 rpe + note → 落库', async () => {
+    mockPrisma.strengthSession.findUnique.mockResolvedValue({ id: 's1', userId: 'u1' } as never);
+    mockPrisma.strengthSet.findFirst.mockResolvedValue(null as never);
+    mockPrisma.strengthSet.create.mockResolvedValue({ id: 'set1', order: 1 } as never);
+    await addSet('u1', {
+      sessionId: 's1', exerciseName: '深蹲', reps: 8, weight: 100, setIndex: 1,
+      rpe: 8, note: '差点力竭',
+    });
+    expect(mockPrisma.strengthSet.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ rpe: 8, note: '差点力竭' }),
+      }),
+    );
+  });
+
+  it('无 rpe/note → 兼容（保持 nullable）', async () => {
+    mockPrisma.strengthSession.findUnique.mockResolvedValue({ id: 's1', userId: 'u1' } as never);
+    mockPrisma.strengthSet.findFirst.mockResolvedValue(null as never);
+    mockPrisma.strengthSet.create.mockResolvedValue({ id: 'set1' } as never);
+    await addSet('u1', { sessionId: 's1', exerciseName: '深蹲', reps: 8, weight: 100, setIndex: 1 });
+    expect(mockPrisma.strengthSet.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ rpe: undefined, note: undefined }) }),
+    );
+  });
+});
+
+describe('getSessionReport (V0.2.144)', () => {
+  it('完整训练报告：3 动作 + 5 组 + RPE 2 个 + 总容量 2000', async () => {
+    mockPrisma.strengthSession.findUnique.mockResolvedValue({
+      id: 's1', userId: 'u1', dateStr: '2026-07-24', durationSec: 1800, totalVolume: 3400, notes: '状态好',
+      sets: [
+        { id: 'set1', order: 1, exerciseName: '深蹲', reps: 8, weight: 100, setIndex: 1, rpe: 8, note: null },
+        { id: 'set2', order: 2, exerciseName: '深蹲', reps: 8, weight: 100, setIndex: 2, rpe: 9, note: '差点力竭' },
+        { id: 'set3', order: 3, exerciseName: '卧推', reps: 10, weight: 60, setIndex: 1, rpe: null, note: null },
+        { id: 'set4', order: 4, exerciseName: '卧推', reps: 10, weight: 60, setIndex: 2, rpe: null, note: null },
+        { id: 'set5', order: 5, exerciseName: '硬拉', reps: 5, weight: 120, setIndex: 1, rpe: 9, note: '完美' },
+      ],
+    } as never);
+    const r = await getSessionReport('u1', 's1');
+    expect(r.totalSets).toBe(5);
+    expect(r.totalReps).toBe(8 + 8 + 10 + 10 + 5); // 41
+    expect(r.totalVolume).toBe(3400); // 800+800+600+600+600
+    expect(r.avgRpe).toBeCloseTo((8 + 9 + 9) / 3, 1); // 仅 3 个 rpe
+    expect(r.rpeCompletion).toBe(60); // 3/5
+    expect(r.exercises).toHaveLength(3);
+    expect(r.exercises[0].exerciseName).toBe('深蹲'); // volume 最大
+    expect(r.rpeDist[7]).toBe(1); // RPE 8
+    expect(r.rpeDist[8]).toBe(2); // RPE 9 x 2
+    expect(r.notes).toBe('状态好');
+  });
+
+  it('非本人 session → throw', async () => {
+    mockPrisma.strengthSession.findUnique.mockResolvedValue({ id: 's1', userId: 'other', sets: [] } as never);
+    await expect(getSessionReport('u1', 's1')).rejects.toThrow();
+  });
+});
+
+describe('getStrengthOverview (V0.2.147)', () => {
+  it('5 场 / 10 set / 3 动作 → 完整总览 + top 5 + 日趋势', async () => {
+    mockPrisma.strengthSet.findMany.mockResolvedValue([
+      { exerciseName: '深蹲', reps: 8, weight: 100, rpe: 8, sessionId: 's1', session: { dateStr: '2026-07-20', createdAt: new Date() } },
+      { exerciseName: '深蹲', reps: 8, weight: 100, rpe: 9, sessionId: 's1', session: { dateStr: '2026-07-20', createdAt: new Date() } },
+      { exerciseName: '卧推', reps: 10, weight: 60, rpe: 7, sessionId: 's1', session: { dateStr: '2026-07-20', createdAt: new Date() } },
+      { exerciseName: '深蹲', reps: 8, weight: 100, rpe: null, sessionId: 's2', session: { dateStr: '2026-07-22', createdAt: new Date() } },
+      { exerciseName: '卧推', reps: 10, weight: 60, rpe: null, sessionId: 's2', session: { dateStr: '2026-07-22', createdAt: new Date() } },
+      { exerciseName: '硬拉', reps: 5, weight: 120, rpe: 9, sessionId: 's2', session: { dateStr: '2026-07-22', createdAt: new Date() } },
+      { exerciseName: '深蹲', reps: 8, weight: 100, rpe: 7, sessionId: 's3', session: { dateStr: '2026-07-24', createdAt: new Date() } },
+      { exerciseName: '卧推', reps: 10, weight: 60, rpe: 6, sessionId: 's3', session: { dateStr: '2026-07-24', createdAt: new Date() } },
+      { exerciseName: '卧推', reps: 8, weight: 65, rpe: null, sessionId: 's3', session: { dateStr: '2026-07-24', createdAt: new Date() } },
+      { exerciseName: '硬拉', reps: 5, weight: 120, rpe: null, sessionId: 's3', session: { dateStr: '2026-07-24', createdAt: new Date() } },
+    ] as never);
+    const r = await getStrengthOverview('u1', { days: 30 });
+    expect(r.totalSessions).toBe(3);
+    expect(r.totalSets).toBe(10);
+    expect(r.totalReps).toBe(8 + 8 + 10 + 8 + 10 + 5 + 8 + 10 + 8 + 5);
+    expect(r.avgRpe).toBeCloseTo((8 + 9 + 7 + 9 + 7 + 6) / 6, 1);
+    expect(r.topExercises[0].exerciseName).toBe('深蹲'); // 容量最大
+    expect(r.dailyTrend).toHaveLength(3); // 3 个不同日期
+  });
+});
+
+describe('getCompletionScore (V0.2.148)', () => {
+  it('无 set → score=0 + totalSets=0', async () => {
+    mockPrisma.strengthSession.findUnique.mockResolvedValue({ id: 's1', userId: 'u1', sets: [] } as never);
+    const r = await getCompletionScore('u1', 's1');
+    expect(r.score).toBe(0);
+    expect(r.totalSets).toBe(0);
+  });
+
+  it('4 项因子 + 高 RPE 加分 → 完整评分', async () => {
+    mockPrisma.strengthSession.findUnique.mockResolvedValue({
+      id: 's1', userId: 'u1', sets: [
+        { exerciseName: '深蹲', reps: 8, weight: 100, rpe: 8, postHr: 130, note: '完美' },
+        { exerciseName: '深蹲', reps: 8, weight: 100, rpe: 9, postHr: 140, note: '差点力竭' },
+        { exerciseName: '卧推', reps: 10, weight: 60, rpe: 8, postHr: 120, note: '稳' },
+        { exerciseName: '硬拉', reps: 5, weight: 120, rpe: 7, postHr: 135, note: '稳' },
+      ],
+    } as never);
+    const r = await getCompletionScore('u1', 's1');
+    expect(r.totalSets).toBe(4);
+    expect(r.factors.rpeCoverage).toBe(100);
+    expect(r.factors.postHrCoverage).toBe(100);
+    expect(r.factors.noteCoverage).toBe(100);
+    expect(r.factors.exerciseDiversity).toBe(75); // 3 unique / 4 sets
+    expect(r.avgRpe).toBe(8);
+    expect(r.bonus).toBe(5); // avgRpe >= 7
+    // base = (100+100+100+75)/4 = 93.75 → 94 + 5 = 99
+    expect(r.score).toBe(99);
+  });
+
+  it('低 RPE → 无加分', async () => {
+    mockPrisma.strengthSession.findUnique.mockResolvedValue({
+      id: 's1', userId: 'u1', sets: [
+        { exerciseName: '深蹲', reps: 8, weight: 100, rpe: 4, postHr: 130, note: '轻松' },
+        { exerciseName: '深蹲', reps: 8, weight: 100, rpe: 5, postHr: 130, note: '轻松' },
+      ],
+    } as never);
+    const r = await getCompletionScore('u1', 's1');
+    expect(r.bonus).toBe(0);
   });
 });

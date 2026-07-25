@@ -308,3 +308,122 @@
   border-radius: 6rpx;
   transition: width 0.3s ease;
 }
+
+/* V0.2.145 Canvas 海报 + 次要按钮 */
+.poster-canvas {
+  position: fixed;
+  top: -9999rpx;
+  left: -9999rpx;
+  width: 375rpx;
+  height: 667rpx;
+}
+.report-modal__share--secondary {
+  background: #f5f6f8;
+  color: #666;
+}
+
+/* V0.2.146 分享 FAB 按钮（page right top；触发微信原生 share） */
+.share-fab {
+  position: fixed;
+  top: 20rpx;
+  right: 20rpx;
+  width: 72rpx;
+  height: 72rpx;
+  border-radius: 50%;
+  background: #2D9D78;
+  color: #fff;
+  font-size: 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 12rpx rgba(45, 157, 120, 0.3);
+  border: none;
+  z-index: 998;
+  line-height: 1;
+}
+
+/* V0.2.149 完成度评分 section */
+.completion-section {
+  margin-top: 24rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.completion-section__title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 12rpx;
+}
+
+.completion-score {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6rpx;
+  padding: 24rpx 0;
+  border-radius: 12rpx;
+  color: #fff;
+  margin-bottom: 16rpx;
+}
+
+.completion-score__num {
+  font-size: 60rpx;
+  font-weight: 700;
+}
+
+.completion-score__label {
+  font-size: 24rpx;
+  opacity: 0.9;
+}
+
+.completion-factors {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.completion-factor {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 24rpx;
+}
+
+.completion-factor__label {
+  width: 200rpx;
+  color: #333;
+}
+
+.completion-factor__bar {
+  flex: 1;
+  height: 16rpx;
+  background: #f0f0f0;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.completion-factor__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2D9D78, #4FB68F);
+  border-radius: 8rpx;
+  transition: width 0.3s ease;
+}
+
+.completion-factor__pct {
+  width: 60rpx;
+  color: #2D9D78;
+  font-weight: 600;
+  text-align: right;
+}
+
+.completion-bonus {
+  margin-top: 12rpx;
+  padding: 12rpx 16rpx;
+  background: #FFF8E1;
+  border-radius: 8rpx;
+  color: #5D4037;
+  font-size: 24rpx;
+  text-align: center;
+  font-weight: 500;
+}

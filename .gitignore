@@ -97,3 +97,5 @@ apps/miniprogram/.cloudbase/
 docs/_assets/
 # qm-rhythmind 子项目（Ag2Hermes 独立工作空间，本地参考，不入 QM-WX 仓）
 qm-rhythmind/
+# Serena MCP 本地配置（含 project.yml 权限 600 敏感配置，不入仓）
+.serena/

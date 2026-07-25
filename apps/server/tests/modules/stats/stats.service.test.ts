@@ -18,6 +18,7 @@ vi.mock('src/infra/prisma.js', () => ({
     shoe: { aggregate: vi.fn(), findFirst: vi.fn() }, // V0.1.137 跑鞋成就
     user: { findUnique: vi.fn() }, // V0.2.0 userProfile
     bodyCompositionRecord: { findFirst: vi.fn() }, // V0.2.0 userProfile
+    strengthSession: { findMany: vi.fn() }, // V0.2.150 跑训结合总览
   },
 }));
 
@@ -706,5 +707,52 @@ describe('statsService.userProfile 缓存（V0.2.2）', () => {
     expect(mockedPrisma.checkin.aggregate).toHaveBeenCalledTimes(1);
     // 缓存 key 存在
     expect(_redisMock.cacheStore.has('qmwx:cache:stats:userProfile:u1')).toBe(true);
+  });
+});
+
+describe('V0.2.150 getUnifiedOverview 跑训结合', () => {
+  it('跨 Checkin + StrengthSession 聚合 → 训练日数 + 比例 + 8 周趋势', async () => {
+    const { prisma } = await import('../../../src/infra/prisma.js');
+    vi.mocked(prisma.checkin.findMany).mockResolvedValue([
+      { distance: 5, date: '2026-07-20', createdAt: new Date('2026-07-20T10:00:00Z') },
+      { distance: 3, date: '2026-07-22', createdAt: new Date('2026-07-22T10:00:00Z') },
+    ] as never);
+    vi.mocked(prisma.strengthSession.findMany).mockResolvedValue([
+      { totalVolume: 2000, date: '2026-07-20', createdAt: new Date('2026-07-20T18:00:00Z') },
+      { totalVolume: 1500, date: '2026-07-23', createdAt: new Date('2026-07-23T18:00:00Z') },
+    ] as never);
+
+    const { getUnifiedOverview } = await import('../../../src/modules/stats/stats.service.js');
+    const r = await getUnifiedOverview('u1', { days: 30 });
+
+    expect(r.totalRunKm).toBe(8);
+    expect(r.totalRunCount).toBe(2);
+    expect(r.totalStrengthVolume).toBe(3500);
+    expect(r.totalStrengthCount).toBe(2);
+    expect(r.totalTrainingDays).toBe(3);
+    expect(r.runPct).toBe(50);
+    expect(r.strengthPct).toBe(50);
+    expect(r.weeklyTrend).toHaveLength(8);
+  });
+});
+
+describe('V0.2.152 getDailyTrainingOverview 训练日历明细', () => {
+  it('按日期分组 Checkin + StrengthSession → 每日跑+力量明细', async () => {
+    const { prisma } = await import('../../../src/infra/prisma.js');
+    vi.mocked(prisma.checkin.findMany).mockResolvedValue([
+      { distance: 5, date: '2026-07-20', createdAt: new Date('2026-07-20T10:00:00Z') },
+    ] as never);
+    vi.mocked(prisma.strengthSession.findMany).mockResolvedValue([
+      { totalVolume: 2000, date: new Date('2026-07-20T18:00:00Z'), _count: { sets: 3 } },
+    ] as never);
+
+    const { getDailyTrainingOverview } = await import('../../../src/modules/stats/stats.service.js');
+    const r = await getDailyTrainingOverview('u1', { days: 30 });
+    expect(r.daily).toHaveLength(1);
+    expect(r.daily[0].date).toBe('2026-07-20');
+    expect(r.daily[0].runKm).toBe(5);
+    expect(r.daily[0].strengthVolume).toBe(2000);
+    expect(r.daily[0].runSets).toBe(1);
+    expect(r.daily[0].strengthSets).toBe(3);
   });
 });

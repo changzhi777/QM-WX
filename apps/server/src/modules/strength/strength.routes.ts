@@ -29,6 +29,10 @@ import {
   RemoveUserExerciseSchema,
   ToggleFavoriteExerciseSchema,
   GetExerciseTrendSchema,
+  SuggestNextWeightSchema,
+  GetSessionReportSchema,
+  GetStrengthOverviewSchema,
+  GetCompletionScoreSchema,
 } from './strength.schema.js';
 
 export async function strengthRoutes(app: FastifyInstance) {
@@ -79,6 +83,26 @@ export async function strengthRoutes(app: FastifyInstance) {
         // V0.2.135 单一动作趋势（按 session 聚合 maxWeight + totalVolume）
         const input = GetExerciseTrendSchema.parse(payload);
         return { code: 0, data: await strengthService.getExerciseTrend(userId, input) };
+      }
+      case 'suggestNextWeight': {
+        // V0.2.142 下组重量建议（前端 session 自动填用）
+        const input = SuggestNextWeightSchema.parse(payload);
+        return { code: 0, data: await strengthService.suggestNextWeight(userId, input) };
+      }
+      case 'getSessionReport': {
+        // V0.2.144 训练会话报告（汇总 metrics + 动作分布 + RPE 分布）
+        const { sessionId } = GetSessionReportSchema.parse(payload);
+        return { code: 0, data: await strengthService.getSessionReport(userId, sessionId) };
+      }
+      case 'getStrengthOverview': {
+        // V0.2.147 力量训练总览仪表盘（首页顶部 section）
+        const input = GetStrengthOverviewSchema.parse(payload);
+        return { code: 0, data: await strengthService.getStrengthOverview(userId, input) };
+      }
+      case 'getCompletionScore': {
+        // V0.2.148 完成度评分（多维度：RPE + postHr + note + 动作多样性）
+        const { sessionId } = GetCompletionScoreSchema.parse(payload);
+        return { code: 0, data: await strengthService.getCompletionScore(userId, sessionId) };
       }
       default:
         throw Errors.badRequest(`unknown action: ${action}`);

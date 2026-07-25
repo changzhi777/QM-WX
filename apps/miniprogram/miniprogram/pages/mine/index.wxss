@@ -67,3 +67,100 @@
 /* menu-item 作 button（帮助反馈 open-type=contact 需重置默认样式）*/
 .menu-item.cell-btn { background: #fff; border: none; text-align: left; line-height: normal; width: 100%; }
 .menu-item.cell-btn::after { border: none; }
+
+/* V0.2.151 跑训结合总览 */
+.unified-card {
+  background: #fff;
+  border-radius: 16rpx;
+  padding: 24rpx;
+  margin-top: 24rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.04);
+}
+
+.unified-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.unified-card__title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.unified-card__days {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.unified-metrics {
+  display: flex;
+  background: linear-gradient(135deg, #2D9D78, #4FB68F);
+  border-radius: 12rpx;
+  padding: 20rpx 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.unified-metric {
+  flex: 1;
+  text-align: center;
+  color: #fff;
+}
+
+.unified-metric__num {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.unified-metric__label {
+  display: block;
+  font-size: 22rpx;
+  opacity: 0.85;
+  margin-top: 4rpx;
+}
+
+.unified-ratio {
+  background: #f9fafb;
+  border-radius: 8rpx;
+  padding: 16rpx;
+}
+
+.unified-ratio__label {
+  font-size: 24rpx;
+  color: #333;
+  font-weight: 500;
+  margin-bottom: 8rpx;
+}
+
+.unified-ratio__bar {
+  display: flex;
+  height: 16rpx;
+  background: #f0f0f0;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.unified-ratio__fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.unified-ratio__fill--run {
+  background: linear-gradient(90deg, #4FB68F, #2D9D78);
+}
+
+.unified-ratio__fill--strength {
+  background: linear-gradient(90deg, #FFA726, #FFD54F);
+}
+
+.unified-ratio__pct {
+  display: flex;
+  justify-content: space-between;
+  font-size: 22rpx;
+  color: #666;
+  margin-top: 6rpx;
+}

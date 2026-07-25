@@ -867,6 +867,42 @@ export const deviceService = {
    * COROS app 导出活动 FIT → 小程序上传 → fit-file-parser 解析 → RawActivity upsert
    * 复用 RawActivity（vendor='coros'），后续走 importToCheckin 进统一榜（同 garmin 范式）
    */
+  /**
+   * V0.2.153 设备每日活动（VIVO 数据模型占位接口）
+   *
+   * - 查指定 vendor + 最近 N 天
+   * - 当前 V0.2.153 仅查（YAGNI：写入由各 vendor 同步动作做）
+   * - vendor 留 enum：vivo | wechat | garmin | huawei | mi（多厂商统一）
+   */
+  async listDeviceDailyActivity(userId: string, input: { vendor?: string; days?: number } = {}) {
+    const days = input.days ?? 30;
+    const since = new Date(Date.now() - days * 86_400_000);
+    const where: { userId: string; createdAt: { gte: Date }; vendor?: string } = {
+      userId,
+      createdAt: { gte: since },
+    };
+    if (input.vendor) where.vendor = input.vendor;
+    const list = await prisma.deviceDailyActivity.findMany({
+      where,
+      orderBy: { date: 'desc' },
+      take: 200, // 上限防滥用
+    });
+    return {
+      list: list.map((d) => ({
+        id: d.id,
+        vendor: d.vendor,
+        date: d.date,
+        step: d.step,
+        distanceM: d.distanceM,
+        caloriesKcal: d.caloriesKcal,
+        sleepMin: d.sleepMin,
+        activeMin: d.activeMin,
+        source: d.source,
+      })),
+      days,
+    };
+  },
+
   async importCorosFit(userId: string, buffer: Buffer): Promise<{
     id: string;
     type: string;

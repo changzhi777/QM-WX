@@ -7,7 +7,7 @@ import type { FastifyInstance } from 'fastify';
 import { deviceService } from './device.service.js';
 import { Errors } from '../../common/errors.js';
 import {
-  ListBindingsInputSchema,
+  ListBindingsInputSchema, ListDeviceDailyActivitySchema,
   StartOAuthInputSchema,
   SyncWeRunInputSchema,
   MyWeRunQuerySchema,
@@ -115,6 +115,11 @@ export async function deviceRoutes(app: FastifyInstance) {
         case 'importToCheckin': {
           const input = ImportToCheckinInputSchema.parse(payload);
           return { code: 0, data: await deviceService.importToCheckin(userId, input) };
+        }
+        case 'listDeviceDailyActivity': {
+          // V0.2.153 设备每日活动（VIVO 数据模型占位接口）
+          const input = ListDeviceDailyActivitySchema.parse(payload ?? {});
+          return { code: 0, data: await deviceService.listDeviceDailyActivity(userId, input) };
         }
         case 'corosAuthUrl': {
           // V0.1.130 生成 Terra widget 授权 URL

@@ -7,7 +7,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { statsService } from './stats.service.js';
 import { Errors } from '../../common/errors.js';
-import { MyRunnerStatsQuerySchema, MyAnnualReportQuerySchema, HealthScoreQuerySchema, DailyReportQuerySchema, DailyReportListQuerySchema } from './stats.schema.js';
+import { MyRunnerStatsQuerySchema, MyAnnualReportQuerySchema, HealthScoreQuerySchema, DailyReportQuerySchema, DailyReportListQuerySchema, GetUnifiedOverviewSchema, GetDailyTrainingOverviewSchema } from './stats.schema.js';
 
 /** 统一把 Zod 错误转 BusinessError（与 sport.routes 一致） */
 function parseOrBadRequest<S extends z.ZodTypeAny>(schema: S, payload: unknown): z.output<S> {
@@ -62,6 +62,16 @@ export async function statsRoutes(app: FastifyInstance) {
       }
       case 'weatherAnalysis': {
         return { code: 0, data: await statsService.weatherAnalysis(userId) };
+      }
+      case 'getUnifiedOverview': {
+        // V0.2.150 跑训结合总览（Checkin + StrengthSet 跨模块聚合）
+        const input = GetUnifiedOverviewSchema.parse(payload ?? {});
+        return { code: 0, data: await statsService.getUnifiedOverview(userId, input) };
+      }
+      case 'getDailyTrainingOverview': {
+        // V0.2.152 每日训练明细（前端训练日历用）
+        const input = GetDailyTrainingOverviewSchema.parse(payload ?? {});
+        return { code: 0, data: await statsService.getDailyTrainingOverview(userId, input) };
       }
       case 'userProfile': {
         return { code: 0, data: await statsService.userProfile(userId) };

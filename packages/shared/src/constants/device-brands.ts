@@ -83,6 +83,15 @@ export const DEVICE_BRANDS: DeviceBrand[] = [
     desc: 'Mi Band 系列（BLE 心率 + 电量）',
   },
   {
+    key: 'vivo',
+    name: 'VIVO 手环',
+    category: 'bracelet',
+    // V0.2.153：VIVO 蓝牙直连协议未开放，数据经「微信运动」通道同步（诚实标注数据源）
+    connectionType: 'werun',
+    available: true,
+    desc: 'vivo WATCH / 手环系列（数据经微信运动同步）',
+  },
+  {
     key: 'honor',
     name: '荣耀手环',
     category: 'bracelet',
@@ -205,6 +214,15 @@ export const IMPORT_GUIDE: Record<string, ImportGuideConfig> = {
       { text: '设备绑定页 →「同步微信运动」（自动拉取 30 天步数）', shot: '/images/import-guide/werun-2.png' },
     ],
     action: { label: '去同步微信运动', url: '/pages/device-bind/index', available: true },
+  },
+  vivo: {
+    // V0.2.153：VIVO 蓝牙直连待对接，数据经微信运动通道同步（诚实标注）
+    sourceLabel: 'VIVO 健康管理（经微信运动）',
+    steps: [
+      { text: 'vivo 健康管理 App → 我的 → 设置 → 第三方接入 → 开启「微信运动」同步' },
+      { text: '设备中心 → VIVO 手环 → 同步（经微信运动拉取步数；VIVO 蓝牙直连数据待后续对接）' },
+    ],
+    action: { label: '去同步 VIVO 数据', available: true },
   },
   ble: {
     sourceLabel: '蓝牙 BLE 直连（标准协议）',

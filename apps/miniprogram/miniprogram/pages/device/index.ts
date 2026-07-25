@@ -22,7 +22,7 @@ interface FoundDevice extends BleDevice {
   brandLabel: string;
 }
 
-const BRAND_LABEL: Record<string, string> = { garmin: '佳明', xiaomi: '小米', coros: '高驰', ble: '通用' };
+const BRAND_LABEL: Record<string, string> = { garmin: '佳明', xiaomi: '小米', coros: '高驰', ble: '通用', vivo: 'VIVO' };
 
 interface Binding {
   id: string; vendor: string; deviceName: string; status: string; lastDataAt?: string | null;
@@ -46,7 +46,7 @@ interface ActivityRow {
 // === 导入 tab ===
 const IMPORT_BRAND_ICON: Record<string, string> = {
   garmin: '⌚', xiaomi: '⌚', coros: '⌚', huawei: '⌚', suunto: '⌚',
-  honor: '⌚', ble: '💓', werun: '💬', zepp: '📱',
+  honor: '⌚', ble: '💓', werun: '💬', zepp: '📱', vivo: '⌚',
 };
 
 Page({
@@ -157,6 +157,9 @@ Page({
       this.startScan();
     } else if (brand.key === 'werun') {
       wx.showToast({ title: '微信运动同步开发中', icon: 'none' });
+    } else if (brand.key === 'vivo') {
+      // V0.2.153：VIVO 蓝牙直连待后续对接，数据经微信运动通道同步（V0.2.113 诚实标注数据源）
+      this.onSyncWeRun();
     }
   },
 

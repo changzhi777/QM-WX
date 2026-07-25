@@ -41,6 +41,18 @@ export const StatsActionBodySchema = z.object({
   action: z.enum([
     'myRunnerStats', 'myAnnualReport', 'myCertificates',
     'healthScore', 'dailyReport', 'dailyReportList',
+    'getUnifiedOverview', // V0.2.150 跑训结合
+    'getDailyTrainingOverview', // V0.2.152 每日训练明细
   ]),
   payload: z.unknown().optional(),
+});
+
+/** V0.2.150 跑训结合总览 */
+export const GetUnifiedOverviewSchema = z.object({
+  days: z.coerce.number().int().min(1).max(365).default(30),
+});
+
+/** V0.2.152 每日训练明细（前端训练日历用） */
+export const GetDailyTrainingOverviewSchema = z.object({
+  days: z.coerce.number().int().min(1).max(180).default(30),
 });

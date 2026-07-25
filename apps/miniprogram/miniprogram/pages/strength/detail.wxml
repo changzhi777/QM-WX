@@ -1,4 +1,6 @@
 <view class="container">
+  <!-- V0.2.146 分享 FAB（trigger 微信原生 onShareAppMessage） -->
+  <button class="share-fab" open-type="share">↗</button>
   <view wx:if="{{loading}}" class="empty">加载中…</view>
   <view wx:elif="{{!session}}" class="empty">记录不存在或已删除</view>
   <block wx:else>
@@ -106,4 +108,89 @@
       <view class="trend-modal__close" bindtap="onCloseTrendModal">关闭</view>
     </view>
   </view>
+
+  <!-- V0.2.144 训练报告 modal（metrics + 动作分布 + RPE 完成度） -->
+  <view class="report-modal" wx:if="{{reportVisible}}" bindtap="onCloseReport">
+    <view class="report-modal__panel" catchtap="">
+      <view class="report-modal__title">📊 训练报告 · {{report.data.dateStr || ''}}</view>
+      <view wx:if="{{report.loading}}" class="report-modal__hint">加载中…</view>
+      <block wx:elif="{{report.data}}">
+        <view class="report-modal__metrics">
+          <view class="report-metric">
+            <text class="report-metric__num">{{report.data.totalSets}}</text>
+            <text class="report-metric__label">组数</text>
+          </view>
+          <view class="report-metric">
+            <text class="report-metric__num">{{report.data.totalReps}}</text>
+            <text class="report-metric__label">次数</text>
+          </view>
+          <view class="report-metric">
+            <text class="report-metric__num">{{report.data.totalVolume}}</text>
+            <text class="report-metric__label">kg·次</text>
+          </view>
+          <view class="report-metric">
+            <text class="report-metric__num">{{report.data.avgRpe || '—'}}</text>
+            <text class="report-metric__label">平均 RPE</text>
+          </view>
+        </view>
+        <view class="report-modal__row">RPE 填写率 {{report.data.rpeCompletion}}% · 时长 {{report.data.durationText}}</view>
+        <view class="report-section">动作明细</view>
+        <view class="report-exercise" wx:for="{{report.data.exercises}}" wx:key="exerciseName" wx:for-item="ex">
+          <view class="report-exercise__head">
+            <text class="report-exercise__name">{{ex.exerciseName}}</text>
+            <text class="report-exercise__vol">{{ex.volume}} kg·次</text>
+          </view>
+          <view class="report-exercise__meta">{{ex.sets}} 组 · max {{ex.maxWeight}}kg × {{ex.reps}} 次<text wx:if="{{ex.avgRpe}}"> · RPE {{ex.avgRpe}}</text></view>
+        </view>
+        <view wx:if="{{report.data.notes}}" class="report-notes">📝 {{report.data.notes}}</view>
+
+        <!-- V0.2.149 完成度评分（4 因子加权 + 高 RPE 加分） -->
+        <view wx:if="{{completion}}" class="completion-section">
+          <view class="completion-section__title">⭐ 完成度评分</view>
+          <view class="completion-score" style="background: {{completion.score >= 90 ? 'linear-gradient(135deg, #FFD54F, #FFA726)' : completion.score >= 60 ? 'linear-gradient(135deg, #2D9D78, #4FB68F)' : 'linear-gradient(135deg, #90A4AE, #607D8B)'}}">
+            <text class="completion-score__num">{{completion.score}}</text>
+            <text class="completion-score__label">分</text>
+          </view>
+          <view class="completion-factors">
+            <view class="completion-factor">
+              <text class="completion-factor__label">💪 RPE 填写率</text>
+              <view class="completion-factor__bar">
+                <view class="completion-factor__fill" style="width: {{completion.factors.rpeCoverage}}%;"></view>
+              </view>
+              <text class="completion-factor__pct">{{completion.factors.rpeCoverage}}%</text>
+            </view>
+            <view class="completion-factor">
+              <text class="completion-factor__label">❤️ 组间心率</text>
+              <view class="completion-factor__bar">
+                <view class="completion-factor__fill" style="width: {{completion.factors.postHrCoverage}}%;"></view>
+              </view>
+              <text class="completion-factor__pct">{{completion.factors.postHrCoverage}}%</text>
+            </view>
+            <view class="completion-factor">
+              <text class="completion-factor__label">📝 备注填写率</text>
+              <view class="completion-factor__bar">
+                <view class="completion-factor__fill" style="width: {{completion.factors.noteCoverage}}%;"></view>
+              </view>
+              <text class="completion-factor__pct">{{completion.factors.noteCoverage}}%</text>
+            </view>
+            <view class="completion-factor">
+              <text class="completion-factor__label">🎯 动作多样性</text>
+              <view class="completion-factor__bar">
+                <view class="completion-factor__fill" style="width: {{completion.factors.exerciseDiversity}}%;"></view>
+              </view>
+              <text class="completion-factor__pct">{{completion.factors.exerciseDiversity}}%</text>
+            </view>
+          </view>
+          <view wx:if="{{completion.bonus > 0}}" class="completion-bonus">🏅 高质量记录 +{{completion.bonus}}（平均 RPE {{completion.avgRpe}}）</view>
+        </view>
+      </block>
+      <view class="report-modal__actions">
+        <view class="report-modal__share" bindtap="onSavePoster">🎨 保存海报</view>
+        <view class="report-modal__share report-modal__share--secondary" bindtap="onShareReport">📋 复制摘要</view>
+        <view class="report-modal__close" bindtap="onCloseReport">关闭</view>
+      </view>
+    </view>
+  </view>
+  <!-- V0.2.145 Canvas 海报节点（375×667 = 750×1334 的 0.5 倍渲染，自动高清） -->
+  <canvas canvas-id="training-poster" class="poster-canvas"></canvas>
 </view>

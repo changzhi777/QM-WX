@@ -83,6 +83,7 @@ model User {
   interpretRecords       InterpretRecord[] // V0.2.33 资料解读（minimax M3）
   strengthSessions       StrengthSession[] // V0.2.42 力量训练（训记式）
   exercises              Exercise[] // V0.2.132 用户自定义动作库
+  deviceActivities      DeviceDailyActivity[] // V0.2.153 设备每日活动
   corosRawEvents         CorosRawEvent[] // V0.1.130 COROS Terra webhook 原始数据
   conversationTurns      ConversationTurn[] // V0.1.139 AI 私教对话（多轮记忆）
   dailyReports           DailyReport[] // V0.1.144 每日 AI 健康简报（健康分数+AI 解读）
@@ -1016,6 +1017,32 @@ model WeRunRecord {
   @@index([userId, date])
 }
 
+// ===== V0.2.153 设备每日活动（VIVO 设备数据模型占位）=====
+// 通用 daily 活动：步数 / 距离 / 卡路里 / 睡眠 / 活跃分钟
+//  vendor: vivo | wechat | garmin | huawei | mi（多设备厂商可统一）
+//  数据来源：API 拉取（V0.2.153+ 续作 OAuth + 同步） / 手动导入 / BLE 上报
+//  YAGNI：先建表 + 占位接口，OAuth 后续
+model DeviceDailyActivity {
+  id          String   @id @default(cuid())
+  userId      String
+  vendor      String   // vivo | wechat | garmin | huawei | mi
+  date        String   // YYYY-MM-DD（CN 时区）
+  step        Int      @default(0) // 步数
+  distanceM   Int      @default(0) // 距离 米
+  caloriesKcal Int     @default(0) // 卡路里 千卡
+  sleepMin    Int      @default(0) // 睡眠 分钟
+  activeMin   Int      @default(0) // 活跃分钟
+  source      String   @default("manual") // manual | api | ble（数据来源）
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, vendor, date]) // 同一用户同一厂商同一日只一条
+  @@index([userId, date])
+  @@index([userId, vendor])
+}
+
 // ===== 心率历史（V0.1.43，BLE 心率 0x180D notify 批量落库）=====
 // submitHeartRate 写 Redis（实时 ble:hr:{userId}）+ createMany 落历史
 // myHealthHistory 按 type=hr + dateRange 查询；myTodayHealth 取今日 latest
@@ -1249,6 +1276,9 @@ model StrengthSet {
   weight       Float // 重量 kg
   setIndex     Int // 第几组（同动作多组）
   restSec      Int? // 组间间歇秒（记录用）
+  rpe          Int? // V0.2.143 完结度 RPE 1-10（Rate of Perceived Exertion；nullable 兼容存量）
+  note         String? // V0.2.143 本组备注（如 "差点力竭"、"姿势不稳"；max 200）
+  postHr       Int? // V0.2.148 组间心率 bpm（组完成 → 30-60s 后测量；nullable 兼容存量）
   createdAt    DateTime @default(now())
 
   session   StrengthSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
@@ -1265,6 +1295,7 @@ model Exercise {
   muscleGroup String? // 具体肌群（如 股四头肌）
   isCustom    Boolean  @default(false) // 用户自定义 vs 预设
   userId      String? // V0.2.132 用户自定义动作（null=全局预设；有值=某用户私有）
+  videoUrl    String? // V0.2.141 动作视频示范 URL（mp4 优先；nullable 兼容存量）
   createdAt   DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: Cascade)

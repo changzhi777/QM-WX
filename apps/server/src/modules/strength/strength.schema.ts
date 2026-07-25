@@ -9,6 +9,11 @@ export const AddSetSchema = z.object({
   weight: z.coerce.number().min(0),
   setIndex: z.coerce.number().int().min(1),
   restSec: z.coerce.number().int().min(0).optional(),
+  // V0.2.143 力量训练记录 V0.3 增量：完结度 RPE + 本组备注
+  rpe: z.coerce.number().int().min(1).max(10).optional(),
+  note: z.string().max(200).optional(),
+  // V0.2.148 组间心率 bpm
+  postHr: z.coerce.number().int().min(30).max(220).optional(),
 });
 
 export const FinishSessionSchema = z.object({
@@ -60,4 +65,25 @@ export const ToggleFavoriteExerciseSchema = z.object({
 export const GetExerciseTrendSchema = z.object({
   exerciseName: z.string().min(1),
   days: z.coerce.number().int().min(7).max(365).default(90),
+});
+
+/** V0.2.142 下组重量建议 */
+export const SuggestNextWeightSchema = z.object({
+  exerciseName: z.string().min(1),
+  targetReps: z.coerce.number().int().min(1).max(20).default(8),
+});
+
+/** V0.2.144 训练会话报告（无入参；从 sessionId 在 user context 推导） */
+export const GetSessionReportSchema = z.object({
+  sessionId: z.string().min(1),
+});
+
+/** V0.2.147 力量训练总览仪表盘（按 days 过滤） */
+export const GetStrengthOverviewSchema = z.object({
+  days: z.coerce.number().int().min(1).max(365).default(30),
+});
+
+/** V0.2.148 完成度评分（无入参；从 sessionId 推导） */
+export const GetCompletionScoreSchema = z.object({
+  sessionId: z.string().min(1),
 });

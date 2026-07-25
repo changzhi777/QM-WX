@@ -133,6 +133,32 @@ async function main() {
     console.log('⚠️ Admin seed 跳过（ADMIN_ROOT_PWD/ADMIN_ADMIN_PWD env 未设）');
   }
 
+  // V0.2.141 动作库 seed：3 个示例动作 + videoUrl 占位（实际视频 URL 后续可换）
+  const SEED_EXERCISES = [
+    { key: 'squat',     name: '深蹲',       category: '腿',   muscleGroup: '股四头肌', videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4' },
+    { key: 'bench',     name: '卧推',       category: '胸',   muscleGroup: '胸大肌',   videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4' },
+    { key: 'deadlift',  name: '硬拉',       category: '背',   muscleGroup: '竖脊肌',   videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4' },
+  ];
+  let exerciseInserted = 0;
+  for (const e of SEED_EXERCISES) {
+    const exists = await prisma.exercise.findFirst({ where: { name: e.name, userId: null } });
+    if (!exists) {
+      // V0.2.141 引入 videoUrl 字段（seed 阶段老字段保留；V0.2.132 改 userId:null 表示全局）
+      await prisma.exercise.create({
+        data: {
+          name: e.name,
+          category: e.category,
+          muscleGroup: e.muscleGroup,
+          videoUrl: e.videoUrl,
+          isCustom: false,
+          userId: null,
+        },
+      });
+      exerciseInserted++;
+    }
+  }
+  console.log(`✅ Exercises seed done（新增 ${exerciseInserted}，定义 ${SEED_EXERCISES.length}）`);
+
   console.log({
     feature_flags: DEFAULT_FEATURE_FLAGS,
     member_levels: DEFAULT_MEMBER_LEVELS,

@@ -12,6 +12,7 @@ interface ExerciseItem {
   id: string;
   name: string;
   category: string;
+  videoUrl?: string; // V0.2.141 动作视频示范
 }
 
 function pad(n: number): string {
@@ -46,10 +47,19 @@ Page({
     reps: '',
     weight: '',
     setIndex: '1',
+    // V0.2.143 完结度 RPE + 本组备注
+    rpe: '',
+    setNote: '',
+    // V0.2.148 组间心率 bpm
+    postHr: '',
     // 已添加组
     sets: [] as SetItem[],
     // V0.2.123 组间休息倒计时
     restActive: false,
+    // V0.2.141 动作视频 modal
+    videoVisible: false,
+    videoUrl: '',
+    videoName: '',
     restReady: false,
     restRemaining: 0,
     restRemainingText: '00:00',
@@ -114,6 +124,30 @@ Page({
         exerciseName: ex.name,
         customName: '',
       });
+      // V0.2.142 自动拉取下组重量建议（double progression 范式）→ 自动填重量输入
+      this.loadSuggestNextWeight(ex.name);
+    } else {
+      this.setData({ exerciseIndex: -1, exerciseName: '' });
+    }
+  },
+
+  /** V0.2.142 拉取并自动填入下组重量建议 */
+  async loadSuggestNextWeight(exerciseName: string) {
+    try {
+      const res = await api.call<{ hasHistory: boolean; suggestedWeight: number | null; suggestedReps: number; basis: string }>(
+        'strength', 'suggestNextWeight', { exerciseName, targetReps: 8 },
+      );
+      if (res.hasHistory && res.suggestedWeight != null) {
+        const tipMap: Record<string, string> = {
+          progression: '💪 3 场同重 → 进阶 +2.5kg',
+          maintain: '维持上次',
+          first_session: '基于上次',
+        };
+        wx.showToast({ title: `${tipMap[res.basis] || ''} → ${res.suggestedWeight}kg`, icon: 'none' });
+        this.setData({ weight: String(res.suggestedWeight) });
+      }
+    } catch {
+      // 静默（不阻塞手动输入）
     }
   },
 
@@ -146,6 +180,24 @@ Page({
     }
   },
 
+  /** V0.2.141 查看动作视频示范（仅 picker 选中的动作 + 有 videoUrl） */
+  onShowVideo() {
+    if (!this.data.exerciseIndex || this.data.exerciseIndex < 0) {
+      wx.showToast({ title: '请从动作库选择动作', icon: 'none' });
+      return;
+    }
+    const ex = this.data.exercises[this.data.exerciseIndex];
+    if (!ex.videoUrl) {
+      wx.showToast({ title: '示范视频即将上线', icon: 'none' });
+      return;
+    }
+    this.setData({ videoVisible: true, videoUrl: ex.videoUrl, videoName: ex.name });
+  },
+
+  onCloseVideo() {
+    this.setData({ videoVisible: false });
+  },
+
   /** V0.2.134 切换收藏动作（⭐ 按钮；toggle 模式） */
   async onToggleFavorite() {
     const name = (this.data.exerciseName || this.data.customName).trim();
@@ -172,6 +224,11 @@ Page({
   onInputReps(e: WechatMiniprogram.Input) { this.setData({ reps: e.detail.value }); },
   onInputWeight(e: WechatMiniprogram.Input) { this.setData({ weight: e.detail.value }); },
   onInputSetIndex(e: WechatMiniprogram.Input) { this.setData({ setIndex: e.detail.value }); },
+  // V0.2.143 完结度 RPE + 本组备注
+  onInputRpe(e: WechatMiniprogram.Input) { this.setData({ rpe: e.detail.value }); },
+  onInputSetNote(e: WechatMiniprogram.Input) { this.setData({ setNote: e.detail.value }); },
+  // V0.2.148 组间心率 bpm
+  onInputPostHr(e: WechatMiniprogram.Input) { this.setData({ postHr: e.detail.value }); },
   onInputNotes(e: WechatMiniprogram.Input) { this.setData({ notes: e.detail.value }); },
 
   /** 添加一组：调 addSet → 累加容量 + 列表追加 + V0.2.123 启动休息倒计时 */
@@ -197,6 +254,10 @@ Page({
       ? Math.max(0, Math.floor((DEFAULT_REST_SEC - this.data.restRemaining)))
       : 0;
     try {
+      // V0.2.143 完结度 RPE + 本组备注 + V0.2.148 组间心率（可选）
+      const rpe = this.data.rpe ? Number(this.data.rpe) : undefined;
+      const setNote = this.data.setNote?.trim() || undefined;
+      const postHr = this.data.postHr ? Number(this.data.postHr) : undefined;
       const res = await api.call<{ set: { order: number }; session: { totalVolume: number } }>(
         'strength', 'addSet', {
           sessionId: this.data.sessionId,
@@ -205,6 +266,9 @@ Page({
           weight,
           setIndex,
           restSec, // V0.2.123 透传
+          ...(rpe ? { rpe } : {}),
+          ...(setNote ? { note: setNote } : {}),
+          ...(postHr ? { postHr } : {}), // V0.2.148
         },
       );
       const newSet: SetItem = {
@@ -221,6 +285,10 @@ Page({
         reps: '',
         weight: '',
         setIndex: String(setIndex + 1),
+        // V0.2.143 RPE + 备注 + V0.2.148 postHr 也清空
+        rpe: '',
+        setNote: '',
+        postHr: '',
       });
       // V0.2.123 启动休息倒计时
       this.startRestTimer(DEFAULT_REST_SEC);

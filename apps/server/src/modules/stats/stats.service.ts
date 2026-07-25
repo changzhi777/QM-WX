@@ -449,6 +449,16 @@ export const statsService = {
       summary: `${age ?? '?'}岁${user?.gender === 'male' ? '男' : user?.gender === 'female' ? '女' : ''}，BMI ${bmi?.toFixed(1) ?? '?'}（${tags[0] ?? ''}），累计跑量 ${total.toFixed(0)}km（${tags[1] ?? ''}）`,
     };
   },
+
+  // V0.2.150 跑训结合总览（Checkin + StrengthSet 跨模块聚合）— 本模块底部独立函数
+  async getUnifiedOverview(userId: string, input: { days?: number } = {}) {
+    return getUnifiedOverview(userId, input);
+  },
+
+  // V0.2.152 每日训练明细（前端训练日历用）
+  async getDailyTrainingOverview(userId: string, input: { days?: number } = {}) {
+    return getDailyTrainingOverview(userId, input);
+  },
 };
 
 // V0.2.0 关联分析 helpers（模块级）
@@ -864,4 +874,146 @@ async function computeShoeCheckinMilestonesCert(userId: string) {
     achieved: CERTS.filter((c) => total >= c.count).map((c) => ({ ...c, achievedCount: total })),
     next: CERTS.find((c) => total < c.count) ?? null,
   };
+}
+
+/**
+ * V0.2.150 跑训结合总览（Checkin + StrengthSet 跨模块聚合）
+ *
+ * - 总跑量（km）+ 总力量容量（kg·次）+ 训练日数（distinct dateStr）
+ * - 跑步次数 vs 力量次数 → 比例（%）+ 主导项目判断
+ * - 按周切片（最近 8 周）双线趋势：weeklyRunKm / weeklyStrengthVolume
+ * - 用于 mine 页"跑训结合"section（V0.2.150 新增）
+ *
+ * 范式：2 SQL（findMany Checkin + findMany StrengthSet）→ 内存聚合
+ * 缓存：暂不接 Cache（前端 5min 内重复进页频次低；YAGNI）
+ */
+export async function getUnifiedOverview(userId: string, input: { days?: number } = {}) {
+  const days = input.days ?? 30;
+  const since = new Date(Date.now() - days * 86_400_000);
+
+  // 1) 跑步：Checkin.sportType=run
+  const checkins = await prisma.checkin.findMany({
+    where: { userId, createdAt: { gte: since }, sportType: 'run' },
+    select: { distance: true, date: true, createdAt: true },
+  });
+  // 2) 力量：StrengthSession.totalVolume
+  const sessions = await prisma.strengthSession.findMany({
+    where: { userId, createdAt: { gte: since } },
+    select: { totalVolume: true, date: true, createdAt: true },
+  });
+
+  // 总指标
+  const totalRunKm = Math.round(checkins.reduce((s, x) => s + x.distance, 0) * 10) / 10;
+  const totalRunCount = checkins.length;
+  const totalStrengthVolume = Math.round(sessions.reduce((s, x) => s + x.totalVolume, 0) * 10) / 10;
+  const totalStrengthCount = sessions.length;
+
+  // 训练日数（去重）
+  const runDates = new Set(checkins.map((x) => x.date));
+  const strengthDates = new Set(sessions.map((x) => x.date));
+  const allDates = new Set([...runDates, ...strengthDates]);
+  const totalTrainingDays = allDates.size;
+
+  // 主导项目（按次数判断）
+  const dominant = totalRunCount >= totalStrengthCount ? 'run' : 'strength';
+
+  // 比例（按总容量比较：跑步 km vs 力量 kg·次 — 不同单位，仅按次数比）
+  const totalCount = totalRunCount + totalStrengthCount;
+  const runPct = totalCount > 0 ? Math.round((totalRunCount / totalCount) * 100) : 0;
+  const strengthPct = totalCount > 0 ? 100 - runPct : 0;
+
+  // 按周切片（最近 8 周）
+  const weekCount = 8;
+  const weekBuckets: Array<{ weekStart: string; runKm: number; strengthVolume: number }> = [];
+  const now = new Date();
+  // 简化：本周 = 本周一到周日
+  for (let i = weekCount - 1; i >= 0; i--) {
+    const ws = new Date(now.getTime() - (i + 1) * 7 * 86_400_000);
+    const we = new Date(ws.getTime() + 7 * 86_400_000);
+    weekBuckets.push({ weekStart: ws.toISOString().slice(0, 10), runKm: 0, strengthVolume: 0 });
+    const wsMs = ws.getTime();
+    const weMs = we.getTime();
+    for (const c of checkins) {
+      const t = c.createdAt.getTime();
+      if (t >= wsMs && t < weMs) weekBuckets[weekBuckets.length - 1].runKm += c.distance;
+    }
+    for (const s of sessions) {
+      const t = s.createdAt.getTime();
+      if (t >= wsMs && t < weMs) weekBuckets[weekBuckets.length - 1].strengthVolume += s.totalVolume;
+    }
+  }
+  // round
+  for (const w of weekBuckets) {
+    w.runKm = Math.round(w.runKm * 10) / 10;
+    w.strengthVolume = Math.round(w.strengthVolume * 10) / 10;
+  }
+
+  return {
+    days,
+    totalRunKm,
+    totalRunCount,
+    totalStrengthVolume,
+    totalStrengthCount,
+    totalTrainingDays,
+    dominant,
+    runPct,
+    strengthPct,
+    weeklyTrend: weekBuckets,
+  };
+}
+
+/**
+ * V0.2.152 每日训练明细（按日期分组；前端训练日历用）
+ *
+ * - 每条记录：date, runKm, strengthVolume, runSets, strengthSets
+ * - 用于前端 strength 主页"训练日历"section（V0.2.152 新增；与 V0.2.127 26 周热图并列展示）
+ *
+ * 范式：2 SQL → 内存 Map 合并（同 dateStr）
+ */
+export async function getDailyTrainingOverview(userId: string, input: { days?: number } = {}) {
+  const days = input.days ?? 30;
+  const since = new Date(Date.now() - days * 86_400_000);
+  const sinceDateStr = since.toISOString().slice(0, 10);
+
+  // 1) 跑步：Checkin.sportType=run
+  const checkins = await prisma.checkin.findMany({
+    where: { userId, createdAt: { gte: since }, sportType: 'run' },
+    select: { distance: true, date: true, createdAt: true },
+  });
+  // 2) 力量：StrengthSession 关联 set 数量
+  const sessions = await prisma.strengthSession.findMany({
+    where: { userId, createdAt: { gte: since } },
+    select: { totalVolume: true, date: true, _count: { select: { sets: true } } },
+  });
+
+  // 按 dateStr 聚合
+  const byDate = new Map<string, { runKm: number; strengthVolume: number; runSets: number; strengthSets: number }>();
+  for (const c of checkins) {
+    // Checkin.date 是 String YYYY-MM-DD（不是 DateTime）— 跳过 Date.toISOString
+    const cur = byDate.get(c.date) ?? { runKm: 0, strengthVolume: 0, runSets: 0, strengthSets: 0 };
+    cur.runKm += c.distance;
+    cur.runSets += 1; // 每次 Checkin 算 1 次跑步
+    byDate.set(c.date, cur);
+  }
+  for (const s of sessions) {
+    // StrengthSession.date 是 DateTime（V0.2.127 标记）；V0.2.152 转 YYYY-MM-DD 与 Checkin 对齐
+    const sDateStr = s.date.toISOString().slice(0, 10);
+    const cur = byDate.get(sDateStr) ?? { runKm: 0, strengthVolume: 0, runSets: 0, strengthSets: 0 };
+    cur.strengthVolume += s.totalVolume;
+    cur.strengthSets += s._count.sets;
+    byDate.set(sDateStr, cur);
+  }
+
+  // 排序 + round
+  const daily = Array.from(byDate.entries())
+    .map(([date, v]) => ({
+      date,
+      runKm: Math.round(v.runKm * 10) / 10,
+      strengthVolume: Math.round(v.strengthVolume * 10) / 10,
+      runSets: v.runSets,
+      strengthSets: v.strengthSets,
+    }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  return { days, sinceDateStr, daily };
 }
