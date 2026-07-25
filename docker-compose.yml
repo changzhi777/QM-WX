@@ -48,6 +48,8 @@ services:
       context: .
       dockerfile: apps/server/Dockerfile
     container_name: qmwx-server
+    env_file:
+      - .env
     depends_on:
       postgres:
         condition: service_healthy
@@ -57,7 +59,7 @@ services:
       NODE_ENV: production
       PORT: 3000
       HOST: 0.0.0.0
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/qmwx # V0.2.138 修正：DB=qmwx（pre-existing bug）
+      # DATABASE_URL: 由 env_file: .env 注入（V0.2.141 修复：避免写死占位密码导致 P1000）
       REDIS_URL: redis://redis:6379
       # JWT_SECRET 强制显式（不允许弱默认被部署到 staging/prod）
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required, use 'openssl rand -hex 32'}
