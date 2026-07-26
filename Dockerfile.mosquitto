@@ -1,0 +1,45 @@
+# Dockerfile.mosquitto — 自定义 mosquitto 镜像（V0.2.149 修 debug）
+#
+# 用途：VIVO Bridge / Terra Bridge MQTT broker（V0.3.1 mqtt.js subscribe 前置）
+# 原因：eclipse-mosquitto:1.6/2.0 在 Debian 13 + Docker 29 + cgroup v2 下 daemon 进程
+#       被立即 SIGKILL（V0.2.146/147/148 debug 三次失败）
+# 修法：基于 debian:bookworm-slim + apt-get install mosquitto（非 alpine 基础镜像）
+#
+# 参考：docs/research/mosquitto-vivo-bridge.md §4 阶段 3 实施路线
+#
+# 构建：docker build -f Dockerfile.mosquitto -t qmwx-mosquitto:latest .
+# 验证：docker run --rm qmwx-mosquitto:latest mosquitto -h
+
+FROM debian:bookworm-slim
+
+# mosquitto 2.0.11（bookworm-slim apt 仓库）
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        mosquitto \
+        mosquitto-clients && \
+    rm -rf /var/lib/apt/lists/*
+
+# 数据 + 日志 + 配置目录
+RUN mkdir -p /mosquitto/data /mosquitto/log /mosquitto/config && \
+    chown -R mosquitto:mosquitto /mosquitto
+
+# 默认 user (mosquitto package 默认 uid 1883)
+USER mosquitto
+
+# 数据 + 日志目录（volume mount 覆盖）
+VOLUME ["/mosquitto/data", "/mosquitto/log"]
+
+# 健康检查（host 部署 mosquitto_pub 验证 broker）
+HEALTHCHECK --interval=30s --timeout=10s --retries=5 \
+    CMD mosquitto_pub -h localhost -p 1883 \
+        -t '$SYS/health' \
+        -m 'ping' \
+        -u "$$MQTT_USER" \
+        -P "$$MQTT_PASS" \
+        || exit 1
+
+# 直接跑 mosquitto daemon（无 entrypoint 包装，避免 chown 失败）
+# -c 指定配置路径（volume mount /mosquitto/config/mosquitto.conf）
+# -v verbose（生产可去掉）
+ENTRYPOINT ["/usr/sbin/mosquitto", "-c", "/mosquitto/config/mosquitto.conf"]
+CMD ["-v"]

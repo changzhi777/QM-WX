@@ -42,18 +42,21 @@ services:
       retries: 10
 
   # ===== MQTT broker（VIVO Bridge / Terra Bridge 复用）=====
-  # ⚠️ V0.2.147 第二次 debug 失败：user:root + command 覆盖 entrypoint 跳过 chown
-  #    仍 ExitCode 1（0.25s 死，0 字节 stderr，1883 端口未 listen）
-  # 临时禁用：保留配置 + 调研 + debug TODO
+  # ⚠️ V0.2.149 第四次 debug 失败：自定义 Dockerfile.mosquitto + user:root 解决了 SIGKILL
+  #    但新问题：bind mount conf volume 后 container 立即死（0 字节 stderr, 0.25s ExitCode 1, 1883 不 listen）
+  # 临时禁用：保留 Dockerfile + 配置 + 调研 + debug TODO
   # 启用方式（debug 完成后）：取消下方注释 + 跑 `docker compose --profile prod up -d --no-deps mosquitto`
-  # Debug 路径（优先级排序）：
-  #   1. 换 eclipse-mosquitto:1.6 老镜像（entrypoint chown 可能已 fix）
-  #   2. 换 confluentinc/cp-kafka-mqtt-bridge（无 chown 问题）
-  #   3. 自定义 Dockerfile（基于 alpine + 跳过 chown）
-  #   4. 部署到非 docker 环境（host systemd）
-  #   5. 用 podman compose（不同 namespace 解决 read-only）
+  # Debug 路径（按 ROI 排序）：
+  #   1. 部署到 host systemd（绕过 docker，apt-get install mosquitto + systemctl start mosquitto）
+  #   2. 换 confluentinc/cp-kafka-mqtt-bridge（无 chown 问题，k8s 原生）
+  #   3. 换 EMQX（国内 MQTT broker，docker 兼容性更好）
+  #   4. docker network host + alpine 直跑（不用 bind mount，绕开 volume 问题）
+  #   5. podman compose（不同 namespace 解决 read-only + cgroup v2）
   # mosquitto:
-  #   image: eclipse-mosquitto:2.0
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.mosquitto
+  #   image: qmwx-mosquitto:latest
   #   container_name: qmwx-mosquitto
   #   profiles: ["prod"]
   #   ports:
@@ -62,11 +65,6 @@ services:
   #     - ./mosquitto/conf:/mosquitto/config
   #     - mosquitto_data:/mosquitto/data
   #     - mosquitto_log:/mosquitto/log
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "mosquitto_pub -h localhost -p 1883 -t '$SYS/health' -m 'ping' -u qmwx-server -P 'Muhe@2026Qingmu!' || exit 1"]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 5
   #   restart: unless-stopped
 
   # ===== 后端服务（可选：用 --profile prod 启动）=====
