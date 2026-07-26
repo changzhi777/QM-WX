@@ -22,6 +22,7 @@ import { processGarminImport, type GarminImportJobData } from './garmin-import.j
 import { processLudongSync } from './ludong-sync.job.js';
 import { processUploadParse, type UploadParseJobData } from './upload-parse.job.js';
 import { processDevicePollCleanup } from './device-poll-cleanup.job.js';
+import { processDevicePollPull } from './device-poll-pull.job.js';
 import { logger } from '../common/logger.js';
 
 const QUEUE_PREFIX = 'qmwx';
@@ -37,6 +38,9 @@ export const LUDONG_SYNC_EVERY_MS = 5 * 60 * 1000;
 
 /** 设备数据清理周期（毫秒）— 24 小时（GDPR 90 天数据保留） */
 export const DEVICE_POLL_CLEANUP_EVERY_MS = 24 * 60 * 60 * 1000;
+
+/** 设备数据主动拉取周期（毫秒）— 24 小时（V0.2.152 skeleton） */
+export const DEVICE_POLL_PULL_EVERY_MS = 24 * 60 * 60 * 1000;
 
 // ===== 队列定义 =====
 export const weeklyReportQueue = new Queue('weekly-report', {
@@ -84,6 +88,17 @@ export const garminImportQueue = new Queue('garmin-import', {
 });
 
 export const devicePollCleanupQueue = new Queue('device-poll-cleanup', {
+  connection: redis,
+  prefix: QUEUE_PREFIX,
+  defaultJobOptions: {
+    attempts: 2,
+    backoff: { type: 'fixed', delay: 60_000 },
+    removeOnComplete: { count: 50, age: 7 * 86400 },
+    removeOnFail: { count: 100, age: 7 * 86400 },
+  },
+});
+
+export const devicePollPullQueue = new Queue('device-poll-pull', {
   connection: redis,
   prefix: QUEUE_PREFIX,
   defaultJobOptions: {
@@ -166,6 +181,10 @@ export function startWorkers() {
   startWorker('device-poll-cleanup', async () => {
     return processDevicePollCleanup();
   }, 1);
+
+  startWorker('device-poll-pull', async () => {
+    return processDevicePollPull();
+  }, 1);
 }
 
 /** 优雅关闭 */
@@ -178,6 +197,7 @@ export async function stopWorkers() {
     garminImportQueue.close(),
     ludongSyncQueue.close(),
     devicePollCleanupQueue.close(),
+    devicePollPullQueue.close(),
   ]);
 }
 
@@ -249,6 +269,29 @@ async function scheduleDevicePollCleanup() {
   // 启动时立即跑一次（防止上次宕机期间积压）
   await devicePollCleanupQueue.add('cleanup-now', {});
   logger.info({ everyMs: DEVICE_POLL_CLEANUP_EVERY_MS }, 'device-poll-cleanup scheduler registered (every 24h, 90d retention)');
+}
+
+/**
+ * 注册设备数据主动拉取的 24h repeatable job（V0.2.152 skeleton）
+ * 替代 Mosquitto broker 接 device data — cron 主动拉
+ * 当前 SKELETON（V0.3.1 拍板数据源后实施）
+ */
+async function scheduleDevicePollPull() {
+  if (env.NODE_ENV === 'test') {
+    logger.info('device-poll-pull scheduler skipped (test env)');
+    return;
+  }
+  await devicePollPullQueue.add(
+    'pull',
+    {},
+    { repeat: { every: DEVICE_POLL_PULL_EVERY_MS }, jobId: 'device-poll-pull-repeat' },
+  );
+  // 启动时立即跑一次（防止上次宕机期间积压）
+  await devicePollPullQueue.add('pull-now', {});
+  logger.info(
+    { everyMs: DEVICE_POLL_PULL_EVERY_MS },
+    'device-poll-pull scheduler registered (every 24h, skeleton — data source TBD V0.3.1)',
+  );
 }
 
 /** 工具：手动 trigger 周报（admin endpoint / 测试用） */
@@ -336,6 +379,10 @@ export async function startJobs() {
   // 设备数据清理（24h repeatable + 启动预热，V0.2.151）
   scheduleDevicePollCleanup().catch((err) => {
     logger.error({ err }, 'schedule device-poll-cleanup failed');
+  });
+  // 设备数据主动拉取（24h repeatable + 启动预热，V0.2.152 skeleton）
+  scheduleDevicePollPull().catch((err) => {
+    logger.error({ err }, 'schedule device-poll-pull failed');
   });
   logger.info('jobs system started');
 }
