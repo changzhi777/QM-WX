@@ -42,27 +42,26 @@ services:
       retries: 10
 
   # ===== MQTT broker（VIVO Bridge / Terra Bridge 复用，V0.2.145 增量）=====
-  # 配置：mosquitto/conf/{mosquitto.conf, acl, passwd}
-  # ACL 范式见 mosquitto/conf/acl；密码生成 `docker run --rm eclipse-mosquitto:2.0 mosquitto_passwd`
-  # 详见 docs/research/mosquitto-vivo-bridge.md §3.2/3.3/3.4
-  mosquitto:
-    image: eclipse-mosquitto:2.0
-    container_name: qmwx-mosquitto
-    profiles: ["prod"]  # 默认不启动（开发不需要 MQTT），生产 docker compose --profile prod 启
-    ports:
-      - "1883:1883"   # MQTT（内网）
-      # - "8883:8883"  # MQTT over TLS（生产配证书后启用）
-    volumes:
-      - ./mosquitto/conf:/mosquitto/config:ro
-      - mosquitto_data:/mosquitto/data
-      - mosquitto_log:/mosquitto/log
-    healthcheck:
-      # mosquitto 自带 mosquitto_pub -h localhost -t $SYS/health 检查健康度
-      test: ["CMD-SHELL", "mosquitto_pub -h localhost -p 1883 -t '$SYS/health' -m 'ping' -u $${MQTT_USER:-anon} -P $${MQTT_PASS:-} || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    restart: unless-stopped
+  # ⚠️ V0.2.146 暂时禁用：eclipse-mosquitto:2.0 entrypoint chown /mosquitto/config 持续失败导致容器循环 restart（ExitCode 1）
+  # 调试待办：① 用 eclipse-mosquitto:1.6 老镜像 ② 用 confluentinc 替代 ③ 改 entrypoint 自定义 image
+  # 配置 + ACL + 调研文档保留：mosquitto/conf/ + docs/research/mosquitto-vivo-bridge.md
+  # 启用方式（debug 完成后）：取消下方注释 + 跑 `docker compose --profile prod up -d --no-deps mosquitto`
+  # mosquitto:
+  #   image: eclipse-mosquitto:2.0
+  #   container_name: qmwx-mosquitto
+  #   profiles: ["prod"]
+  #   ports:
+  #     - "1883:1883"
+  #   volumes:
+  #     - ./mosquitto/conf:/mosquitto/config
+  #     - mosquitto_data:/mosquitto/data
+  #     - mosquitto_log:/mosquitto/log
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "mosquitto_pub -h localhost -p 1883 -t '$SYS/health' -m 'ping' -u $${MQTT_USER:-anon} -P $${MQTT_PASS:-} || exit 1"]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 5
+  #   restart: unless-stopped
 
   # ===== 后端服务（可选：用 --profile prod 启动）=====
   server:
@@ -78,15 +77,13 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      mosquitto:
-        condition: service_started
     environment:
       NODE_ENV: production
       PORT: 3000
       HOST: 0.0.0.0
       # DATABASE_URL: 由 env_file: .env 注入（V0.2.141 修复：避免写死占位密码导致 P1000）
       REDIS_URL: redis://redis:6379
-      # MQTT_URL: 由 env_file: .env 注入（V0.2.145 Mosquitto Bridge；待 device.syncTerra/mqtt.js subscribe 实施）
+      # MQTT_URL: 由 env_file: .env 注入（V0.2.145 Mosquitto Bridge；待 device.syncTerra/mqtt.js subscribe 实施 + V0.2.146 mosquitto deploy debug 完成后）
       # MQTT_URL: mqtt://${MQTT_USER:-qmwx-server}:${MQTT_PASS}@mosquitto:1883
       CORS_ORIGINS: "*"
     ports:
@@ -96,5 +93,5 @@ services:
 volumes:
   pg_data:
   redis_data:
-  mosquitto_data:
-  mosquitto_log:
+  # mosquitto_data:  # V0.2.146 暂禁
+  # mosquitto_log:
