@@ -105,3 +105,6 @@ qm-wx-*.tar.gz
 mosquitto/conf/passwd
 mosquitto/conf/*.crt
 mosquitto/conf/*.key
+# miniprogram-architecture 输出 PDF + xlsx（中文文件名，大文件易过期可重现）
+docs/checklists/小程序架构文档.pdf
+docs/checklists/小程序架构表格.xlsx
