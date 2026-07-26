@@ -34,12 +34,12 @@ async function parseFitSummary(buffer: Buffer): Promise<string> {
   try {
     data = (await parser.parseAsync(buffer as unknown as ArrayBuffer)) as FitData;
   } catch (e) {
-    throw new Error(`FIT 解析失败: ${(e as Error).message}`);
+    throw Errors.badRequest(`FIT 解析失败: ${(e as Error).message}`);
   }
   const sessions = data.sessions ?? [];
   const records = data.records ?? [];
   if (sessions.length === 0 && records.length === 0) {
-    throw new Error('FIT 文件无有效运动数据');
+    throw Errors.badRequest('FIT 文件无有效运动数据');
   }
   const num = (x: unknown) => (typeof x === 'number' ? x : 0);
   const src = sessions.length ? sessions : records;
@@ -65,7 +65,7 @@ export async function interpretGarminFit(
   input: { buffer: Buffer; inputKey: string },
 ): Promise<{ interpretation: string; recordId: string }> {
   if (!isMinimaxConfigured()) {
-    throw new Error('MINIMAX_API_KEY 未配置');
+    throw Errors.featureDisabled('MINIMAX');
   }
   const summary = await parseFitSummary(input.buffer);
   const messages: MinimaxMessage[] = [{ role: 'user', content: `佳明 FIT 数据：\n${summary}` }];
@@ -149,7 +149,7 @@ export async function interpretScreenshot(
   input: { imageUrl: string; inputKey: string },
 ): Promise<{ interpretation: string; recordId: string; extract: ScreenshotExtract }> {
   if (!isGlmVisionConfigured()) {
-    throw new Error('LLM_API_KEY 未配置');
+    throw Errors.featureDisabled('GLM-vision');
   }
 
   // ① GLM-4.6V 识图 → 结构化数据（json_object）
