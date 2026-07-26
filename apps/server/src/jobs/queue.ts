@@ -21,6 +21,7 @@ import { processRefreshPlatformCerts } from './refresh-certs.job.js';
 import { processGarminImport, type GarminImportJobData } from './garmin-import.job.js';
 import { processLudongSync } from './ludong-sync.job.js';
 import { processUploadParse, type UploadParseJobData } from './upload-parse.job.js';
+import { processDevicePollCleanup } from './device-poll-cleanup.job.js';
 import { logger } from '../common/logger.js';
 
 const QUEUE_PREFIX = 'qmwx';
@@ -33,6 +34,9 @@ export const REFRESH_CERTS_EVERY_MS = 12 * 60 * 60 * 1000;
 
 /** 律动 outbox 投递周期（毫秒）— 5 分钟 */
 export const LUDONG_SYNC_EVERY_MS = 5 * 60 * 1000;
+
+/** 设备数据清理周期（毫秒）— 24 小时（GDPR 90 天数据保留） */
+export const DEVICE_POLL_CLEANUP_EVERY_MS = 24 * 60 * 60 * 1000;
 
 // ===== 队列定义 =====
 export const weeklyReportQueue = new Queue('weekly-report', {
@@ -76,6 +80,17 @@ export const garminImportQueue = new Queue('garmin-import', {
     backoff: { type: 'fixed', delay: 5_000 },
     removeOnComplete: { count: 200, age: 86400 },
     removeOnFail: { count: 500, age: 7 * 86400 },
+  },
+});
+
+export const devicePollCleanupQueue = new Queue('device-poll-cleanup', {
+  connection: redis,
+  prefix: QUEUE_PREFIX,
+  defaultJobOptions: {
+    attempts: 2,
+    backoff: { type: 'fixed', delay: 60_000 },
+    removeOnComplete: { count: 50, age: 7 * 86400 },
+    removeOnFail: { count: 100, age: 7 * 86400 },
   },
 });
 
@@ -147,6 +162,10 @@ export function startWorkers() {
   startWorker('upload-parse', async (job: Job) => {
     return processUploadParse(job.data as UploadParseJobData);
   }, 2);
+
+  startWorker('device-poll-cleanup', async () => {
+    return processDevicePollCleanup();
+  }, 1);
 }
 
 /** 优雅关闭 */
@@ -158,6 +177,7 @@ export async function stopWorkers() {
     refreshCertsQueue.close(),
     garminImportQueue.close(),
     ludongSyncQueue.close(),
+    devicePollCleanupQueue.close(),
   ]);
 }
 
@@ -208,6 +228,27 @@ async function scheduleLudongSync() {
   // 启动时立即投一次（防止上次宕机期间积压）
   await ludongSyncQueue.add('sync-now', {});
   logger.info({ everyMs: LUDONG_SYNC_EVERY_MS }, 'ludong-sync scheduler registered');
+}
+
+/**
+ * 注册设备数据清理的 24h repeatable job（V0.2.151）
+ * 删除 DeviceDailyActivity createdAt < now - 90 days（GDPR 合规 + 避免表无限增长）
+ * 替代 V0.2.146-150 Mosquitto debug 5 次失败 — 不依赖 broker 接 device data
+ * 用 cron 维护 DeviceDailyActivity 表健康（V0.2.143 recordDeviceDailyActivity 写路径独立可用）
+ */
+async function scheduleDevicePollCleanup() {
+  if (env.NODE_ENV === 'test') {
+    logger.info('device-poll-cleanup scheduler skipped (test env)');
+    return;
+  }
+  await devicePollCleanupQueue.add(
+    'cleanup',
+    {},
+    { repeat: { every: DEVICE_POLL_CLEANUP_EVERY_MS }, jobId: 'device-poll-cleanup-repeat' },
+  );
+  // 启动时立即跑一次（防止上次宕机期间积压）
+  await devicePollCleanupQueue.add('cleanup-now', {});
+  logger.info({ everyMs: DEVICE_POLL_CLEANUP_EVERY_MS }, 'device-poll-cleanup scheduler registered (every 24h, 90d retention)');
 }
 
 /** 工具：手动 trigger 周报（admin endpoint / 测试用） */
@@ -291,6 +332,10 @@ export async function startJobs() {
   // 律动 outbox 投递（5min repeatable + 启动预热）
   scheduleLudongSync().catch((err) => {
     logger.error({ err }, 'schedule ludong-sync failed');
+  });
+  // 设备数据清理（24h repeatable + 启动预热，V0.2.151）
+  scheduleDevicePollCleanup().catch((err) => {
+    logger.error({ err }, 'schedule device-poll-cleanup failed');
   });
   logger.info('jobs system started');
 }
