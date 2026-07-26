@@ -101,3 +101,7 @@ qm-rhythmind/
 .serena/
 # deploy tarballs（生产部署临时打包，已通过 scp 上传，无需入库）
 qm-wx-*.tar.gz
+# Mosquitto 密码文件（含真实 hash，部署时由 mosquitto_passwd 生成，chmod 600）
+mosquitto/conf/passwd
+mosquitto/conf/*.crt
+mosquitto/conf/*.key

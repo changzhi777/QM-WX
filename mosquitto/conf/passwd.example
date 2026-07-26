@@ -1,0 +1,22 @@
+# mosquitto/conf/passwd.example — mosquitto 密码文件模板（实际 passwd 由 mosquitto_passwd 生成）
+#
+# 用法（首次部署或新增 device 时）：
+#   docker run --rm -it eclipse-mosquitto:2.0 \
+#     mosquitto_passwd -c /tmp/passwd <username>
+#   # 输入密码两次
+#   mv /tmp/passwd /opt/qm-wx/mosquitto/conf/passwd
+#   chmod 600 /opt/qm-wx/mosquitto/conf/passwd
+#
+# 现有账号（已生成）：
+#   qmwx-server:$6$...hash...  (生产 secret - 实际由 .env MQTT_PASS 通过 entrypoint 注入)
+#
+# VIVO Bridge 账号（每个 device 一行）：
+#   device-u1-vivo-watch:$6$...hash...
+#   device-u1-garmin-fenix:$6$...hash...
+#
+# 注意：
+#   1. **不要** 把真实密码 commit 到 git（即使 hash 也不应 commit）
+#   2. 真实 passwd 文件由部署脚本生成 + chmod 600 + 在 .gitignore 排除
+#   3. .gitignore 已加 mosquitto/conf/passwd (避免误纳)
+
+# 安全提示：本文件是占位，部署时需替换为 mosquitto_passwd 生成的 hash 格式

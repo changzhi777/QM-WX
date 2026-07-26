@@ -1,0 +1,39 @@
+# mosquitto/conf/acl — QM-WX MQTT ACL 范式
+# 参考 docs/research/mosquitto-vivo-bridge.md §3.4
+#
+# 规则：
+#   - 每个 device 只 pub 自己的 topic: device/{userId}-{vendor}-{deviceId}/data
+#   - qmwx-server 只 read 全部 device topic
+#   - qmwx-admin 只 read admin topic (后续 V0.3.1+ 实施)
+#
+# 生成密码：
+#   docker run --rm -it eclipse-mosquitto:2.0 mosquitto_passwd -c /tmp/passwd <username>
+# 然后将生成的 password_hash 复制到 /opt/qm-wx/mosquitto/conf/passwd
+# （容器启动时 read-only mount 进 /mosquitto/config/passwd）
+
+# ===== 默认拒绝所有 =====
+#
+# 注：mosquitto ACL 默认拒绝（无需显式写），但显式 deny 便于审计
+
+# ===== qmwx-server（最高权限，read all device topic）=====
+user qmwx-server
+topic read device/+/+/+
+topic read $SYS/#
+
+# ===== qmwx-admin（待 V0.3.1 实施 admin 服务时启用）=====
+# user qmwx-admin
+# topic read device/+/+/+
+# topic read admin/#
+
+# ===== VIVO 手环 Bridge 账号示例（每个 device 一个，name=userId-vendor-deviceId）=====
+# 生成：docker run --rm eclipse-mosquitto:2.0 mosquitto_passwd -c /tmp/passwd device-u1-vivo-watch
+# 然后追加到 passwd 文件
+
+# user device-u1-vivo-watch
+# topic write device/u1-vivo-watch/data
+# topic read device/u1-vivo-watch/cmd
+
+# ===== Terra Bridge 账号（待签约后实施）=====
+# user device-terra-bridge
+# topic read device/+/+/+
+# topic write device/terra-sync/#
