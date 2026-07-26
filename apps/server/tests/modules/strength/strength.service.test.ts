@@ -340,6 +340,17 @@ describe('strength.service · getExerciseStats (V0.2.126)', () => {
     expect(r.totalExercises).toBe(2);
     expect(r.totalSets).toBe(5);
   });
+
+  it('边界：3 way tie（深蹲 100kg×10 vs 100kg×8 vs 100kg×6）→ PB 取 reps 最多（V0.2.157）', async () => {
+    mockPrisma.strengthSet.findMany.mockResolvedValue([
+      { exerciseName: '深蹲', reps: 6, weight: 100, createdAt: new Date(), sessionId: 's1' },
+      { exerciseName: '深蹲', reps: 8, weight: 100, createdAt: new Date(), sessionId: 's1' },
+      { exerciseName: '深蹲', reps: 10, weight: 100, createdAt: new Date(), sessionId: 's1' },
+    ] as never);
+    const r = await getExerciseStats('u1');
+    expect(r.pbs).toHaveLength(1);
+    expect(r.pbs[0].maxReps).toBe(10); // 100×10（reps 最多的并列）
+  });
 });
 
 describe('toggleFavoriteExercise / listFavoriteExercises (V0.2.134)', () => {
@@ -399,6 +410,14 @@ describe('getExerciseTrend (V0.2.135)', () => {
     expect(r.maxWeightAllTime).toBe(110);
     expect(r.points[0]).toMatchObject({ dateStr: '2026-07-10', maxWeight: 105, setCount: 3, totalVolume: 2230, avgReps: 7.3 });
     expect(r.points[1]).toMatchObject({ dateStr: '2026-07-17', maxWeight: 110, setCount: 2, totalVolume: 1540, avgReps: 7 });
+  });
+
+  it('边界：无 sets → totalSessions=0 + 空 points + maxWeightAllTime=0（V0.2.157）', async () => {
+    mockPrisma.strengthSet.findMany.mockResolvedValue([] as never);
+    const r = await getExerciseTrend('u1', { exerciseName: '深蹲' });
+    expect(r.totalSessions).toBe(0);
+    expect(r.points).toEqual([]);
+    expect(r.maxWeightAllTime).toBe(0);
   });
 });
 
@@ -475,6 +494,14 @@ describe('suggestNextWeight (V0.2.142)', () => {
     const r = await suggestNextWeight('u1', { exerciseName: '深蹲' });
     expect(r.suggestedWeight).toBe(100);
     expect(r.basis).toBe('maintain');
+  });
+
+  it('边界：无历史记录 → hasHistory=false + suggestedWeight=null（V0.2.157）', async () => {
+    mockPrisma.strengthSet.findMany.mockResolvedValue([] as never);
+    const r = await suggestNextWeight('u1', { exerciseName: '深蹲', lastReps: 8, lastWeight: 60 });
+    expect(r.hasHistory).toBe(false);
+    expect(r.suggestedWeight).toBeNull();
+    expect(r.basis).toBe('no_history');
   });
 });
 
