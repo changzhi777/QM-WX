@@ -27,7 +27,7 @@ topic read $SYS/#
 
 # ===== VIVO 手环 Bridge 账号示例（每个 device 一个，name=userId-vendor-deviceId）=====
 # 生成：docker run --rm eclipse-mosquitto:2.0 mosquitto_passwd -c /tmp/passwd device-u1-vivo-watch
-# 然后追加到 passwd 文件
+# 然后追加到 /etc/mosquitto/passwd 文件
 
 # user device-u1-vivo-watch
 # topic write device/u1-vivo-watch/data
