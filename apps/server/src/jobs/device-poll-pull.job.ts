@@ -1,17 +1,18 @@
 /**
- * jobs/device-poll-pull.job.ts — 设备数据主动拉取 worker（V0.2.153 实施真实数据源）
+ * jobs/device-poll-pull.job.ts — 设备数据主动拉取 worker（V0.3.1 多 vendor 扩展）
  *
  * 触发:BullMQ repeatable(每 24 小时)+ 启动预热一次
- * 目的:替代 Mosquitto broker — cron 主动从已有数据源回流到 DeviceDailyActivity 表
+ * 目的:替代 Mosquitto broker — cron 主动从多 vendor 数据源回流到 DeviceDailyActivity 表
  *
- * 当前数据源(V0.2.153):WeRunRecord 表最近 7 天（已有数据，V0.2.113 syncWeRun 落库）
- *   - step / distanceM → DeviceDailyActivity.step / distanceM
- *   - caloriesKcal → DeviceDailyActivity.caloriesKcal
- *   - 每天聚合（userId+vendor='wechat'+date=YYYY-MM-DD）→ upsert
+ * V0.3.1 数据源：
+ *   - wechat:V0.2.113 syncWeRun（已有数据，wx.getWeRunData + AES-128-CBC）
+ *     step: 步数（唯一字段，distance/calorie schema 无）
+ *   - garmin:V0.3.1 mock（V0.2.128 已实装 coros_fit/garmin OAuth 同步框架，V0.3.1 扩展到每日活动）
+ *     真实接入待 V0.3.1 主人拍板 OAuth 凭据；当前 mock 数据
+ *   - terra:V0.3.1 mock（待 V0.3.1 主人签约 Terra 后接入 HTTPS API）
+ *     真实接入前 mock 数据
  *
- * V0.3.1 数据源扩展（待主人拍板）：
- *   - 路径 B:Terra HTTPS API（需签约）
- *   - 路径 D:cron 调 Garmin/华为 OAuth API（多 vendor 聚合）
+ * V0.2.151 cleanup + V0.2.153 WeRun + V0.3.1 Garmin/Terra mock
  *
  * 详见 V0.2.153 commit + memory mosquitto-5x-debug-root-cause.md
  */
@@ -20,27 +21,90 @@ import { logger } from '../common/logger.js';
 
 export interface DevicePollPullJobData {}
 
-export interface DevicePollPullResult {
-  activeUserCount: number;
-  pulledDaysCount: number;
-  upsertedCount: number;
-  skippedDaysCount: number;
+/** V0.3.1 vendor enum（强类型 vendor 列表） */
+export type DeviceVendor = 'wechat' | 'garmin' | 'terra';
+
+export interface DailyData {
+  vendor: DeviceVendor;
+  date: string; // YYYY-MM-DD
+  step?: number;
+  distanceM?: number;
+  caloriesKcal?: number;
+  sleepMin?: number;
+  activeMin?: number;
 }
 
-/** WeRunRecord 单天聚合（按 userId + date 维度） */
-async function aggregateWeRunForDay(
-  userId: string,
-  date: string,
-): Promise<{ step: number } | null> {
-  // WeRunRecord 同一用户同日多条（来自多次 syncWeRun），累加 step
-  // 注意：WeRunRecord schema 只有 step 字段（V0.1.43 wx.getWeRunData 仅步数），distance/calorie 默认 0
-  const records = await prisma.weRunRecord.findMany({
-    where: { userId, date },
-    select: { step: true },
+export interface DevicePollPullResult {
+  activeUserCount: number;
+  perVendorCount: Record<DeviceVendor, { pulledDaysCount: number; upsertedCount: number; skippedDaysCount: number }>;
+  totalUpsertedCount: number;
+}
+
+// ===== 3 vendor 数据源 =====
+
+/** WeRunRecord 单天聚合（V0.2.153 wechat 数据源） */
+async function fetchWechatData(userId: string, since: Date): Promise<DailyData[]> {
+  const dates = await prisma.weRunRecord.findMany({
+    where: { userId, createdAt: { gte: since } },
+    select: { date: true },
+    distinct: ['date'],
+    orderBy: { date: 'desc' },
   });
-  if (records.length === 0) return null;
-  const step = records.reduce((s, r) => s + r.step, 0);
-  return { step };
+  if (dates.length === 0) return [];
+  const result: DailyData[] = [];
+  for (const { date } of dates) {
+    const records = await prisma.weRunRecord.findMany({
+      where: { userId, date },
+      select: { step: true },
+    });
+    if (records.length === 0) continue;
+    const step = records.reduce((s, r) => s + r.step, 0);
+    result.push({ vendor: 'wechat', date, step });
+  }
+  return result;
+}
+
+/** Garmin mock（V0.3.1 — 真实 OAuth 接入待 V0.3.1 主人拍板凭据） */
+async function fetchGarminData(_userId: string, _since: Date): Promise<DailyData[]> {
+  // TODO V0.3.1 真实接入：Garmin Health API（V0.2.75 已实装 OAuth 同步框架，V0.2.128 COROS 复用）
+  // 当前 mock：每个用户 1 天假数据（仅开发/测试环境，避免 V0.3.1 真实接入前漏数据）
+  // 返回空数组：跳过 mock 注入，避免污染真实数据
+  // V0.3.1 真实接入后：fetch Garmin daily summary API → upsert
+  return [];
+}
+
+/** Terra mock（V0.3.1 — 真实 HTTPS API 接入待 V0.3.1 主人签约 Terra） */
+async function fetchTerraData(_userId: string, _since: Date): Promise<DailyData[]> {
+  // TODO V0.3.1 真实接入：Terra HTTPS API（V0.2.69-71 调研，签约后接入 daily/sleep/activity）
+  // 当前 mock：返回空（同 Garmin mock 理由）
+  return [];
+}
+
+// ===== upsert 共享 helper =====
+
+async function upsertDailyActivity(
+  userId: string,
+  data: DailyData,
+): Promise<'created' | 'updated'> {
+  const existing = await prisma.deviceDailyActivity.findFirst({
+    where: { userId, vendor: data.vendor, date: data.date },
+  });
+  const fields = {
+    step: data.step ?? 0,
+    distanceM: data.distanceM ?? 0,
+    caloriesKcal: data.caloriesKcal ?? 0,
+    sleepMin: data.sleepMin ?? 0,
+    activeMin: data.activeMin ?? 0,
+    source: 'api' as const,
+  };
+  if (existing) {
+    await prisma.deviceDailyActivity.update({ where: { id: existing.id }, data: fields });
+    return 'updated';
+  }
+  await prisma.deviceDailyActivity.create({
+    data: { userId, vendor: data.vendor, date: data.date, ...fields },
+  });
+  return 'created';
 }
 
 export async function processDevicePollPull(): Promise<DevicePollPullResult> {
@@ -54,72 +118,64 @@ export async function processDevicePollPull(): Promise<DevicePollPullResult> {
     take: 1000,
   });
 
-  let pulledDaysCount = 0;
-  let upsertedCount = 0;
-  let skippedDaysCount = 0;
+  // V0.3.1 多 vendor fetch 函数数组（并行 Promise.allSettled 隔离失败）
+  const vendorFetchers: Array<{ vendor: DeviceVendor; fetch: (userId: string, since: Date) => Promise<DailyData[]> }> = [
+    { vendor: 'wechat', fetch: fetchWechatData },
+    { vendor: 'garmin', fetch: fetchGarminData },
+    { vendor: 'terra', fetch: fetchTerraData },
+  ];
 
-  // 2. 对每个用户拉最近 7 天 WeRunRecord（按天聚合 → upsert DeviceDailyActivity）
+  const perVendorCount: Record<DeviceVendor, { pulledDaysCount: number; upsertedCount: number; skippedDaysCount: number }> = {
+    wechat: { pulledDaysCount: 0, upsertedCount: 0, skippedDaysCount: 0 },
+    garmin: { pulledDaysCount: 0, upsertedCount: 0, skippedDaysCount: 0 },
+    terra: { pulledDaysCount: 0, upsertedCount: 0, skippedDaysCount: 0 },
+  };
+  let totalUpsertedCount = 0;
+
+  // 2. 对每个用户调 3 vendor fetch（并行 + 失败隔离）
   for (const u of activeUsers) {
-    try {
-      // 拉最近 7 天有数据的日期（distinct date）
-      const dates = await prisma.weRunRecord.findMany({
-        where: { userId: u.id, createdAt: { gte: since } },
-        select: { date: true },
-        distinct: ['date'],
-        orderBy: { date: 'desc' },
-      });
-
-      for (const { date } of dates) {
-        pulledDaysCount++;
-        const agg = await aggregateWeRunForDay(u.id, date);
-        if (!agg) {
-          skippedDaysCount++;
-          continue;
+    const results = await Promise.allSettled(
+      vendorFetchers.map(async ({ vendor, fetch }) => {
+        const data = await fetch(u.id, since);
+        for (const d of data) {
+          perVendorCount[vendor].pulledDaysCount++;
+          try {
+            await upsertDailyActivity(u.id, d);
+            perVendorCount[vendor].upsertedCount++;
+          } catch (e) {
+            logger.error(
+              { err: (e as Error).message, userId: u.id, vendor, date: d.date },
+              'device-poll-pull upsert failed',
+            );
+            perVendorCount[vendor].skippedDaysCount++;
+          }
         }
-
-        // upsert DeviceDailyActivity by [userId, vendor='wechat', date]
-        // WeRunRecord 只有 step；distanceM/caloriesKcal 默认 0（V0.3.1 接入其他 vendor 数据源后补全）
-        const existing = await prisma.deviceDailyActivity.findFirst({
-          where: { userId: u.id, vendor: 'wechat', date },
-        });
-        if (existing) {
-          await prisma.deviceDailyActivity.update({
-            where: { id: existing.id },
-            data: {
-              step: agg.step,
-              source: 'api',
-            },
-          });
-        } else {
-          await prisma.deviceDailyActivity.create({
-            data: {
-              userId: u.id,
-              vendor: 'wechat',
-              date,
-              step: agg.step,
-              source: 'api',
-            },
-          });
-        }
-        upsertedCount++;
+      }),
+    );
+    // 记录 vendor fetch 整体失败（不影响主流程）
+    results.forEach((r, i) => {
+      if (r.status === 'rejected') {
+        logger.error(
+          { err: (r.reason as Error).message, userId: u.id, vendor: vendorFetchers[i].vendor },
+          'device-poll-pull vendor fetch failed',
+        );
       }
-    } catch (e) {
-      logger.error(
-        { err: (e as Error).message, userId: u.id },
-        'device-poll-pull user processing failed',
-      );
-    }
+    });
   }
+
+  totalUpsertedCount =
+    perVendorCount.wechat.upsertedCount +
+    perVendorCount.garmin.upsertedCount +
+    perVendorCount.terra.upsertedCount;
 
   const result: DevicePollPullResult = {
     activeUserCount: activeUsers.length,
-    pulledDaysCount,
-    upsertedCount,
-    skippedDaysCount,
+    perVendorCount,
+    totalUpsertedCount,
   };
 
-  if (upsertedCount > 0) {
-    logger.info(result, 'device-poll-pull backfilled DeviceDailyActivity from WeRunRecord');
+  if (totalUpsertedCount > 0) {
+    logger.info(result, 'device-poll-pull backfilled DeviceDailyActivity from 3 vendors');
   }
   return result;
 }
