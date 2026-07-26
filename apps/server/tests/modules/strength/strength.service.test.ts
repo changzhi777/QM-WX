@@ -558,6 +558,18 @@ describe('getStrengthOverview (V0.2.147)', () => {
     expect(r.topExercises[0].exerciseName).toBe('深蹲'); // 容量最大
     expect(r.dailyTrend).toHaveLength(3); // 3 个不同日期
   });
+
+  it('越权：session 存在但 userId 不匹配 → throw Errors.notFound（V0.2.156 错误一致性）', async () => {
+    mockPrisma.strengthSession.findUnique.mockResolvedValue({
+      id: 's1', userId: 'u_owner', dateStr: '2026-07-24', sets: [],
+    } as never);
+    await expect(getSessionReport('u_other', 's1')).rejects.toThrow('训练不存在或无权访问');
+  });
+
+  it('session 不存在 → throw Errors.notFound', async () => {
+    mockPrisma.strengthSession.findUnique.mockResolvedValue(null as never);
+    await expect(getSessionReport('u1', 's_nonexistent')).rejects.toThrow('训练不存在或无权访问');
+  });
 });
 
 describe('getCompletionScore (V0.2.148)', () => {
@@ -598,5 +610,12 @@ describe('getCompletionScore (V0.2.148)', () => {
     } as never);
     const r = await getCompletionScore('u1', 's1');
     expect(r.bonus).toBe(0);
+  });
+
+  it('越权：session 存在但 userId 不匹配 → throw Errors.notFound（V0.2.156 错误一致性）', async () => {
+    mockPrisma.strengthSession.findUnique.mockResolvedValue({
+      id: 's1', userId: 'u_owner', sets: [],
+    } as never);
+    await expect(getCompletionScore('u_other', 's1')).rejects.toThrow('训练不存在或无权访问');
   });
 });

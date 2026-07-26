@@ -12,6 +12,7 @@ import { prisma } from '../../infra/prisma.js';
 import { notifyStrengthDone, notifyGoalAchieved, notifyPlanCompleted } from '../notification/notification.service.js';
 import { goalService } from '../goal/goal.service.js';
 import { trainingService } from '../training/training.service.js';
+import { Errors } from '../../common/errors.js';
 
 /** CN 时区日期 YYYY-MM-DD（dateStr 按日聚合用）*/
 function cnDate(d = new Date()): string {
@@ -528,7 +529,7 @@ export async function getSessionReport(userId: string, sessionId: string) {
       sets: { orderBy: { order: 'asc' } },
     },
   });
-  if (!session || session.userId !== userId) throw new Error('训练不存在或无权访问');
+  if (!session || session.userId !== userId) throw Errors.notFound('训练不存在或无权访问');
 
   const sets = session.sets;
   // 总指标
@@ -700,7 +701,7 @@ export async function getCompletionScore(userId: string, sessionId: string) {
     where: { id: sessionId },
     include: { sets: { select: { exerciseName: true, reps: true, weight: true, rpe: true, postHr: true, note: true } } },
   });
-  if (!session || session.userId !== userId) throw new Error('训练不存在或无权访问');
+  if (!session || session.userId !== userId) throw Errors.notFound('训练不存在或无权访问');
 
   const sets = session.sets;
   const total = sets.length;
