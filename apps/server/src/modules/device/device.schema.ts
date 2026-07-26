@@ -16,6 +16,19 @@ export const ListDeviceDailyActivitySchema = z.object({
 });
 export type ListDeviceDailyActivityInput = z.infer<typeof ListDeviceDailyActivitySchema>;
 
+/** V0.2.143 设备每日活动写入（upsert by [userId, vendor, date]） */
+export const RecordDeviceDailyActivitySchema = z.object({
+  vendor: z.enum(DEVICE_VENDORS),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD'),
+  step: z.number().int().min(0).max(200000).default(0),
+  distanceM: z.number().int().min(0).max(200000).default(0),
+  caloriesKcal: z.number().int().min(0).max(50000).default(0),
+  sleepMin: z.number().int().min(0).max(1440).default(0),
+  activeMin: z.number().int().min(0).max(1440).default(0),
+  source: z.enum(['api', 'ble', 'manual']).default('manual'),
+});
+export type RecordDeviceDailyActivityInput = z.infer<typeof RecordDeviceDailyActivitySchema>;
+
 export const ListBindingsInputSchema = z.object({}).optional();
 export type ListBindingsInput = z.infer<typeof ListBindingsInputSchema>;
 

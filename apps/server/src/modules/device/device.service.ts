@@ -868,10 +868,70 @@ export const deviceService = {
    * 复用 RawActivity（vendor='coros'），后续走 importToCheckin 进统一榜（同 garmin 范式）
    */
   /**
+   * V0.2.143 syncVivo（VIVO 蓝牙直连 stub）
+   *
+   * - 前端 onTapBrand vivo → onSyncWeRun（V0.2.113 经微信运动通道）
+   * - 本接口是后端独立同步入口（V0.2.140 漏写，V0.2.143 补），当前 stub
+   * - 后续 Mosquitto VIVO Bridge 对接后可真实拉取（v0.2.140 changelog 预留）
+   *
+   * @returns { synced: 0, message: '...' } — 提示文本，前端 toast
+   */
+  async syncVivo(_userId: string): Promise<{ synced: number; message: string }> {
+    // YAGNI：实际拉取待 Mosquitto VIVO Bridge 接入；当前仅返提示，不调 recordDeviceDailyActivity
+    return {
+      synced: 0,
+      message: 'V0.2.153 VIVO 蓝牙直连待后续对接，数据经微信运动通道同步（参考 V0.2.113）',
+    };
+  },
+
+  /**
+   * V0.2.143 recordDeviceDailyActivity（设备每日活动 upsert）
+   *
+   * - upsert by [userId, vendor, date] — 同一用户同一厂商同一日只一条
+   * - Mosquitto VIVO Bridge / 各 vendor 同步动作调用入口（替代 V0.2.140 YAGNI 仅查）
+   * - 当前是基础 upsert，未来按 vendor 拆分（vivo vs garmin vs ...）做差异化字段映射
+   */
+  async recordDeviceDailyActivity(
+    userId: string,
+    input: {
+      vendor: string;
+      date: string;
+      step?: number;
+      distanceM?: number;
+      caloriesKcal?: number;
+      sleepMin?: number;
+      activeMin?: number;
+      source?: 'api' | 'ble' | 'manual';
+    },
+  ): Promise<{ id: string; created: boolean }> {
+    const data = {
+      step: input.step ?? 0,
+      distanceM: input.distanceM ?? 0,
+      caloriesKcal: input.caloriesKcal ?? 0,
+      sleepMin: input.sleepMin ?? 0,
+      activeMin: input.activeMin ?? 0,
+      source: input.source ?? 'manual',
+    };
+    const existing = await prisma.deviceDailyActivity.findFirst({
+      where: { userId, vendor: input.vendor, date: input.date },
+    });
+    if (existing) {
+      const updated = await prisma.deviceDailyActivity.update({
+        where: { id: existing.id },
+        data,
+      });
+      return { id: updated.id, created: false };
+    }
+    const created = await prisma.deviceDailyActivity.create({
+      data: { userId, vendor: input.vendor, date: input.date, ...data },
+    });
+    return { id: created.id, created: true };
+  },
+
+  /**
    * V0.2.153 设备每日活动（VIVO 数据模型占位接口）
    *
    * - 查指定 vendor + 最近 N 天
-   * - 当前 V0.2.153 仅查（YAGNI：写入由各 vendor 同步动作做）
    * - vendor 留 enum：vivo | wechat | garmin | huawei | mi（多厂商统一）
    */
   async listDeviceDailyActivity(userId: string, input: { vendor?: string; days?: number } = {}) {

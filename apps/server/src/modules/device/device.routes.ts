@@ -8,6 +8,7 @@ import { deviceService } from './device.service.js';
 import { Errors } from '../../common/errors.js';
 import {
   ListBindingsInputSchema, ListDeviceDailyActivitySchema,
+  RecordDeviceDailyActivitySchema,
   StartOAuthInputSchema,
   SyncWeRunInputSchema,
   MyWeRunQuerySchema,
@@ -120,6 +121,15 @@ export async function deviceRoutes(app: FastifyInstance) {
           // V0.2.153 设备每日活动（VIVO 数据模型占位接口）
           const input = ListDeviceDailyActivitySchema.parse(payload ?? {});
           return { code: 0, data: await deviceService.listDeviceDailyActivity(userId, input) };
+        }
+        case 'syncVivo': {
+          // V0.2.143 VIVO 蓝牙直连 stub（V0.2.140 漏写补）
+          return { code: 0, data: await deviceService.syncVivo(userId) };
+        }
+        case 'recordDeviceDailyActivity': {
+          // V0.2.143 设备每日活动写入（upsert by [userId, vendor, date]）
+          const input = RecordDeviceDailyActivitySchema.parse(payload);
+          return { code: 0, data: await deviceService.recordDeviceDailyActivity(userId, input) };
         }
         case 'corosAuthUrl': {
           // V0.1.130 生成 Terra widget 授权 URL

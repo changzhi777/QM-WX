@@ -298,3 +298,52 @@ describe('V0.2.153 listDeviceDailyActivity 设备每日活动（VIVO 数据模�
     );
   });
 });
+
+describe('V0.2.143 syncVivo VIVO 蓝牙直连 stub（V0.2.140 漏写补）', () => {
+  it('返 synced=0 + 提示文案，不调 recordDeviceDailyActivity（避免污染数据）', async () => {
+    const { deviceService } = await import('../../../src/modules/device/device.service.js');
+    const r = await deviceService.syncVivo('u1');
+    expect(r.synced).toBe(0);
+    expect(r.message).toMatch(/VIVO.*蓝牙.*微信运动/);
+    // 关键约束：syncVivo stub 不能调 deviceDailyActivity（YAGNI，留待 Mosquitto VIVO Bridge 接入）
+    expect(mocks.prisma.deviceDailyActivity.create).not.toHaveBeenCalled();
+    expect(mocks.prisma.deviceDailyActivity.update).not.toHaveBeenCalled();
+    expect(mocks.prisma.deviceDailyActivity.upsert).not.toHaveBeenCalled();
+  });
+});
+
+describe('V0.2.143 recordDeviceDailyActivity 设备每日活动 upsert（V0.2.140 漏写补）', () => {
+  it('新记录 → findFirst 返回 null → create 返 {id, created:true}', async () => {
+    mocks.prisma.deviceDailyActivity.findFirst.mockResolvedValue(null as never);
+    mocks.prisma.deviceDailyActivity.create.mockResolvedValue({ id: 'da-new', userId: 'u1', vendor: 'vivo', date: '2026-07-25', step: 8500, distanceM: 6200, caloriesKcal: 320, sleepMin: 480, activeMin: 95, source: 'manual' } as never);
+
+    const { deviceService } = await import('../../../src/modules/device/device.service.js');
+    const r = await deviceService.recordDeviceDailyActivity('u1', {
+      vendor: 'vivo', date: '2026-07-25', step: 8500, distanceM: 6200, caloriesKcal: 320, source: 'api',
+    });
+
+    expect(r.id).toBe('da-new');
+    expect(r.created).toBe(true);
+    expect(mocks.prisma.deviceDailyActivity.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ userId: 'u1', vendor: 'vivo', date: '2026-07-25', step: 8500, distanceM: 6200, source: 'api' }),
+    });
+  });
+
+  it('已存在 → findFirst 返 existing → update 返 {id, created:false}（不 create）', async () => {
+    mocks.prisma.deviceDailyActivity.findFirst.mockResolvedValue({ id: 'da-exist', userId: 'u1', vendor: 'vivo', date: '2026-07-24' } as never);
+    mocks.prisma.deviceDailyActivity.update.mockResolvedValue({ id: 'da-exist', userId: 'u1', vendor: 'vivo', date: '2026-07-24', step: 9000 } as never);
+
+    const { deviceService } = await import('../../../src/modules/device/device.service.js');
+    const r = await deviceService.recordDeviceDailyActivity('u1', {
+      vendor: 'vivo', date: '2026-07-24', step: 9000,
+    });
+
+    expect(r.id).toBe('da-exist');
+    expect(r.created).toBe(false);
+    expect(mocks.prisma.deviceDailyActivity.update).toHaveBeenCalledWith({
+      where: { id: 'da-exist' },
+      data: expect.objectContaining({ step: 9000 }),
+    });
+    expect(mocks.prisma.deviceDailyActivity.create).not.toHaveBeenCalled();
+  });
+});
