@@ -14,6 +14,10 @@ const DEFAULT_FEATURE_FLAGS = {
   membershipPurchase: false,
   smartAgent: false,
   bindApp: false,
+  // V0.3.6 产品收敛（2026-07-26 清单）：17 页隐藏，对应入口默认 false
+  diet: false,
+  shoes: false,
+  runner: false,
 };
 
 const DEFAULT_MEMBER_LEVELS = {

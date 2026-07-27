@@ -23,12 +23,12 @@
     "pages/report-detail/index",
     "pages/membership/index",
     "pages/report-monthly/index",
-    "pages/more/index",
     "pages/interpret/index",
     "pages/strength/index",
     "pages/strength/session",
     "pages/strength/detail",
-    "pages/strength/history"
+    "pages/strength/history",
+    "pages/goal/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",

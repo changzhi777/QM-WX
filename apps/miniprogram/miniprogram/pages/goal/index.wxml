@@ -1,0 +1,68 @@
+<view class="page">
+  <!-- 目标列表 -->
+  <view class="goal-list" wx:if="{{goals.length > 0}}">
+    <view class="goal-card" wx:for="{{goals}}" wx:key="id">
+      <view class="goal-head">
+        <text class="goal-icon">{{item.kindIcon}}</text>
+        <text class="goal-title">{{item.title || item.kindLabel}}</text>
+        <text class="goal-status" wx:if="{{item.completed}}">✓ 已达成</text>
+        <text class="goal-status expired" wx:if="{{item.expired}}">⏰ 已过期</text>
+      </view>
+      <view class="goal-progress">
+        <view class="goal-bar">
+          <view class="goal-bar-fill" style="width: {{item.percent}}%;"></view>
+        </view>
+        <view class="goal-numbers">
+          当前 {{item.currentValue != null ? item.currentValue : '?'}} / 目标 {{item.targetValue}} {{item.unit}}
+        </view>
+      </view>
+      <!-- V0.3.8 友好失败（清单 pages/goal #30）：过期未完成不惩罚，建议降难度续期 -->
+      <view class="goal-friendly" wx:if="{{item.expired}}">
+        <text class="goal-friendly-tip">💡 未完成没关系，建议调整目标到 {{item.suggestedTarget}} {{item.unit}} 继续努力</text>
+      </view>
+      <view class="goal-actions">
+        <view class="goal-btn" wx:if="{{item.kind === 'mood' || item.kind === 'sugar' || item.kind === 'dampness'}}" data-id="{{item.id}}" bindtap="onTapUpdate">更新进度</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty" wx:elif="{{!loading}}">
+    <text class="empty-icon">🎯</text>
+    <text class="empty-text">还没有健康目标</text>
+    <text class="empty-sub">点击右下角 + 添加第一个目标</text>
+  </view>
+
+  <!-- 添加 FAB -->
+  <view class="fab" bindtap="onTapAdd">+</view>
+
+  <!-- 添加弹层 -->
+  <view class="mask" wx:if="{{showAdd}}" bindtap="onCloseAdd">
+    <view class="sheet" catchtap="">
+      <view class="sheet-title">添加健康目标</view>
+      <view class="sheet-row">
+        <text class="sheet-label">类型</text>
+        <picker mode="selector" range="{{kindLabels}}" value="{{addKindIndex}}" bindchange="onKindChange">
+          <view class="picker">{{kindLabels[addKindIndex]}} ›</view>
+        </picker>
+      </view>
+      <view class="sheet-row">
+        <text class="sheet-label">目标值</text>
+        <input class="sheet-input" type="digit" placeholder="如 65（kg/h/分）" value="{{addTarget}}" bindinput="onTargetInput" />
+      </view>
+      <view class="sheet-row">
+        <text class="sheet-label">周期</text>
+        <view class="picker">本月（自动算）</view>
+      </view>
+      <button class="sheet-btn" bindtap="onSubmitAdd">创建目标</button>
+    </view>
+  </view>
+
+  <!-- 更新进度弹层 -->
+  <view class="mask" wx:if="{{showUpdate}}" bindtap="onCloseUpdate">
+    <view class="sheet" catchtap="">
+      <view class="sheet-title">更新当前进度</view>
+      <input class="sheet-input" type="digit" placeholder="今日测量值" value="{{updateValue}}" bindinput="onUpdateInput" />
+      <button class="sheet-btn" bindtap="onSubmitUpdate">提交</button>
+    </view>
+  </view>
+</view>

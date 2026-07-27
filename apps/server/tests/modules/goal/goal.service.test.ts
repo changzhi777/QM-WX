@@ -8,11 +8,13 @@ import { mockErrors } from '../../helpers/mockErrors.js';
 
 vi.mock('src/infra/prisma.js', () => ({
   prisma: {
-    goal: { findMany: vi.fn(), create: vi.fn(), findFirst: vi.fn(), delete: vi.fn(), updateMany: vi.fn() },
+    goal: { findMany: vi.fn(), create: vi.fn(), findFirst: vi.fn(), delete: vi.fn(), updateMany: vi.fn(), update: vi.fn() },
     checkin: { aggregate: vi.fn(), findMany: vi.fn() },
     familyMember: { findUnique: vi.fn(), findMany: vi.fn() }, // V0.1.34 家庭目标
     user: { findUnique: vi.fn(), update: vi.fn() }, // V0.1.135 自定义里程碑
     strengthSession: { aggregate: vi.fn() }, // V0.2.124 力量训练容量目标
+    bodyCompositionRecord: { findFirst: vi.fn() }, // V0.3.7 健康目标（weight）
+    sleepRecord: { aggregate: vi.fn() }, // V0.3.7 健康目标（sleep）
   },
 }));
 vi.mock('src/common/errors.js', () => ({ Errors: mockErrors }));
@@ -562,5 +564,85 @@ describe('goalService.add kind=volume (V0.2.124)', () => {
     await expect(
       goalService.add('u1', { type: 'monthly', kind: 'distance' } as never),
     ).rejects.toThrow();
+  });
+});
+
+// ===== V0.3.7 健康目标闭环 + V0.3.8 友好失败 =====
+
+describe('goalService V0.3.7 健康目标闭环（清单 #30）', () => {
+  it('add kind=weight_loss 创建健康目标（targetValue + unit 默认 kg）', async () => {
+    mockedPrisma.goal.create.mockResolvedValue({ id: 'g1' } as never);
+    const r = await goalService.add('u1', {
+      type: 'monthly', kind: 'weight_loss', targetValue: 65,
+    } as never);
+    expect(r.id).toBe('g1');
+    const data = mockedPrisma.goal.create.mock.calls[0][0].data;
+    expect(data.kind).toBe('weight_loss');
+    expect(data.targetValue).toBe(65);
+    expect(data.unit).toBe('kg');
+    expect(data.targetDistance).toBe(0);
+    expect(data.targetVolume).toBeNull();
+  });
+
+  it('add kind=weight_loss 缺 targetValue → badRequest', async () => {
+    await expect(
+      goalService.add('u1', { type: 'monthly', kind: 'weight_loss' } as never),
+    ).rejects.toThrow();
+  });
+
+  it('calcHealthGoalProgress weight_loss：BodyCompositionRecord.weight 最新值，current > target 未达成', async () => {
+    mockedPrisma.goal.findMany.mockResolvedValue([
+      { id: 'g1', type: 'monthly', title: null, kind: 'weight_loss',
+        targetValue: 65, currentValue: null, unit: null, judgeCriteria: null,
+        targetDistance: 0, targetVolume: null,
+        periodStart: new Date('2026-07-01'), periodEnd: new Date('2026-08-01'),
+        familyId: null, status: 'active' },
+    ] as never);
+    mockedPrisma.bodyCompositionRecord.findFirst.mockResolvedValue({ weight: 70 } as never);
+    const r = await goalService.list('u1');
+    const g = r.goals[0] as Record<string, unknown>;
+    expect(g.kind).toBe('weight_loss');
+    expect(g.currentValue).toBe(70);
+    expect(g.targetValue).toBe(65);
+    expect(g.completed).toBe(false);
+    expect(g.unit).toBe('kg');
+  });
+
+  it('updateProgress mood kind 允许手动更新 currentValue', async () => {
+    mockedPrisma.goal.findFirst.mockResolvedValue({
+      id: 'g1', userId: 'u1', kind: 'mood', targetValue: 5, currentValue: null,
+      targetDistance: 0, targetVolume: null,
+    } as never);
+    mockedPrisma.goal.update.mockResolvedValue({} as never);
+    const r = await goalService.updateProgress('u1', { goalId: 'g1', currentValue: 3 });
+    expect(r.ok).toBe(true);
+    expect(r.currentValue).toBe(3);
+    expect(mockedPrisma.goal.update).toHaveBeenCalledWith({
+      where: { id: 'g1' }, data: { currentValue: 3 },
+    });
+  });
+
+  it('updateProgress distance kind 拒绝（系统自动计算，非 health kind）', async () => {
+    mockedPrisma.goal.findFirst.mockResolvedValue({
+      id: 'g1', userId: 'u1', kind: 'distance', targetDistance: 100, targetVolume: null,
+    } as never);
+    await expect(
+      goalService.updateProgress('u1', { goalId: 'g1', currentValue: 50 }),
+    ).rejects.toThrow();
+  });
+
+  it('V0.3.8 expired：periodEnd < now && !completed → expired=true + suggestedTarget 降难度建议', async () => {
+    mockedPrisma.goal.findMany.mockResolvedValue([
+      { id: 'g1', type: 'monthly', title: null, kind: 'weight_loss',
+        targetValue: 65, currentValue: null, unit: null, judgeCriteria: null,
+        targetDistance: 0, targetVolume: null,
+        periodStart: new Date('2026-06-01'), periodEnd: new Date('2026-06-30'),
+        familyId: null, status: 'active' },
+    ] as never);
+    mockedPrisma.bodyCompositionRecord.findFirst.mockResolvedValue({ weight: 70 } as never);
+    const r = await goalService.list('u1');
+    const g = r.goals[0] as Record<string, unknown>;
+    expect(g.expired).toBe(true);
+    expect(Number(g.suggestedTarget)).toBeGreaterThan(0);
   });
 });

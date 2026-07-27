@@ -63,6 +63,10 @@ Page({
       membershipPurchase: false,
       smartAgent: false,
       bindApp: false,
+      // V0.3.6 产品收敛（清单 2026-07-26）：3 个隐藏页入口对应 flag 默认 false
+      diet: false,
+      shoes: false,
+      runner: false,
     } as FeatureFlagsConfig,
     isLogin: false,
     error: false,
@@ -245,8 +249,9 @@ Page({
   goDeviceBind() { wx.navigateTo({ url: '/pages/device/index' }); },
   goShoes() { wx.navigateTo({ url: '/pages/shoes/index' }); },
   goRunner() { wx.navigateTo({ url: '/pages/runner/index' }); },
-  /** V0.2.32 更多功能（待定页，收纳原型没有的功能）*/
-  goMore() { wx.navigateTo({ url: '/pages/more/index' }); },
+
+  /** V0.3.7 健康目标闭环（清单 #30 新增★）*/
+  goGoal() { wx.navigateTo({ url: '/pages/goal/index' }); },
 
   /** 健康助手（原 健康教练，V0.2.4 改名）*/
   goAiCoach() { wx.switchTab({ url: '/pages/ai-coach/index' }); },

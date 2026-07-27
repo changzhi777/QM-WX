@@ -6,8 +6,20 @@ import { z } from 'zod';
 export const GoalTypeEnum = z.enum(['monthly', 'yearly', 'custom']);
 export type GoalType = z.infer<typeof GoalTypeEnum>;
 
-/** V0.2.124 目标类型：distance 走 Checkin.aggregate；volume 走 StrengthSession.aggregate */
-export const GoalKindEnum = z.enum(['distance', 'volume']);
+/**
+ * V0.2.124 目标类型：distance 走 Checkin.aggregate；volume 走 StrengthSession.aggregate
+ * V0.3.7 扩展 6 类健康目标：weight_loss/weight_gain（BodyCompositionRecord）/ sleep（SleepRecord）/ mood/sugar/dampness（手动 currentValue）
+ */
+export const GoalKindEnum = z.enum([
+  'distance',      // 跑步距离（Checkin aggregate）
+  'volume',        // 力量容量（StrengthSession aggregate）
+  'weight_loss',   // 减脂/减重（BodyCompositionRecord.weightKg）
+  'weight_gain',   // 增重（BodyCompositionRecord.weightKg）
+  'sleep',         // 睡眠时长（SleepRecord.durationHours avg）
+  'mood',          // 情绪评分 1-10（手动 currentValue）
+  'sugar',         // 空腹血糖 mmol/L（手动 currentValue）
+  'dampness',      // 祛湿症状评分 1-10（手动 currentValue，越低越好）
+]);
 export type GoalKind = z.infer<typeof GoalKindEnum>;
 
 /** 添加目标（type 决定 periodStart/End 自动算；custom 需手传） */
@@ -16,12 +28,23 @@ export const AddGoalInputSchema = z.object({
   kind: GoalKindEnum.default('distance'), // V0.2.124 默认距离目标
   targetDistance: z.number().min(1).max(10000).optional(), // V0.2.124 kind=distance 必传
   targetVolume: z.number().min(1).max(10_000_000).optional(), // V0.2.124 kind=volume 必传
+  // V0.3.7 健康目标字段（weight_loss/gain/sleep/mood/sugar/dampness 用）
+  targetValue: z.number().min(0).max(10000).optional(), // 目标值（kg / h / 分 / mmol/L）
+  unit: z.string().max(20).optional(), // 单位标签
+  judgeCriteria: z.string().max(200).optional(), // 判断标准描述
   title: z.string().max(50).optional(),
   /** custom 类型必传（ISO）；monthly/yearly 后端自动算 */
   periodStart: z.string().datetime().optional(),
   periodEnd: z.string().datetime().optional(),
 });
 export type AddGoalInput = z.infer<typeof AddGoalInputSchema>;
+
+/** V0.3.7 手动更新健康目标进度（mood/sugar/dampness 用） */
+export const UpdateProgressInputSchema = z.object({
+  goalId: z.string().min(1),
+  currentValue: z.number().min(0).max(10000),
+});
+export type UpdateProgressInput = z.infer<typeof UpdateProgressInputSchema>;
 
 /** V0.1.34 家庭目标（复用 AddGoalInput 字段 + familyId） */
 export const AddFamilyGoalSchema = AddGoalInputSchema.extend({
@@ -69,6 +92,8 @@ export const GoalActionBodySchema = z.object({
     'removeCustomMilestone',
     'listCustomMilestones',
     'checkMilestoneAchievement',
+    // V0.3.7 健康目标手动更新进度
+    'updateProgress',
   ]),
   payload: z.unknown().optional(),
 });

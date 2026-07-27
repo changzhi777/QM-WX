@@ -93,7 +93,8 @@
 
   <!-- ===== 导入 tab ===== -->
   <view wx:if="{{tab === 'import'}}">
-    <!-- V0.1.150 上传运动数据包（COS 中转 → 后台异步解析）-->
+    <!-- V0.3.6 产品收敛 Phase 2：多品牌文件导入已隐藏（清单·#24 佳明/华为/COROS/小米直连导入）；App 阶段再放；远程恢复取消注释即可 -->
+    <!--
     <view class="upload-section">
       <view class="section-title">上传数据包（自动解析）</view>
       <view class="upload-hint">选文件 → 上传 COS → 后台自动解析导入运动数据</view>
@@ -122,6 +123,8 @@
       <view class="i-unavailable" wx:else>{{guide.action.label}}</view>
     </view>
     <view class="empty" wx:else>选择品牌查看导入指南</view>
+    -->
+    <view class="empty">多品牌数据导入功能升级中，请使用「文件上传解读」或「微信运动同步」</view>
   </view>
 
   <!-- 扫描弹层 -->

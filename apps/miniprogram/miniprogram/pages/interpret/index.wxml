@@ -35,10 +35,10 @@
   </view>
 
   <!-- 📁 佳明 FIT 文件 -->
-  <view class="section-title">📁 佳明 FIT 文件</view>
+  <view class="section-title">📁 运动文件解读（FIT/截图）</view>
   <view class="upload-card {{loading ? 'loading' : ''}}" bindtap="onChooseFile">
     <view class="upload-icon">{{loading ? '⏳' : '📁'}}</view>
-    <view class="upload-text">{{loading ? '解读中…请稍候' : '上传佳明 FIT 文件'}}</view>
+    <view class="upload-text">{{loading ? '解读中…请稍候' : '上传运动文件（FIT/截图）'}}</view>
     <view class="upload-hint" wx:if="{{fileName && !loading}}">已选：{{fileName}}</view>
   </view>
 
@@ -64,6 +64,6 @@
   </view>
 
   <view class="tip" wx:if="{{!interpretation && !loading && !error && !shotResult && history.length === 0}}">
-    💡 截图：跑步 app 成绩页 / 体脂秤报告 / 体检单拍照。FIT：佳明 Connect / COROS 导出。
+    💡 支持任意运动文件：截图（跑步 app 成绩页 / 体脂秤报告 / 体检单拍照）/ FIT 文件（佳明 Connect / COROS 导出）。
   </view>
 </view>

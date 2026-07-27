@@ -21,6 +21,7 @@ import type {
   AddCustomMilestoneInput,
   RemoveCustomMilestoneInput,
   CustomMilestone,
+  UpdateProgressInput,
 } from './goal.schema.js';
 
 /** Checkin.date 是 "YYYY-MM-DD"（东八区），按周期算字符串范围 */
@@ -121,6 +122,107 @@ async function calcGoalProgress(
   };
 }
 
+// ===== V0.3.7 健康目标闭环（清单 2026-07-26 #30）=====
+
+/** V0.3.7 健康目标默认单位 */
+function defaultUnitForKind(kind: string): string {
+  if (kind === 'weight_loss' || kind === 'weight_gain') return 'kg';
+  if (kind === 'sleep') return 'h';
+  if (kind === 'sugar') return 'mmol/L';
+  if (kind === 'mood' || kind === 'dampness') return '分';
+  return '';
+}
+
+const HEALTH_KINDS = ['weight_loss', 'weight_gain', 'sleep', 'mood', 'sugar', 'dampness'] as const;
+
+/**
+ * V0.3.7 健康目标进度计算（6 类 health kind）
+ * - weight_loss/weight_gain：BodyCompositionRecord.weightKg 最新值
+ * - sleep：SleepRecord.durationHours 周期内平均
+ * - mood/sugar/dampness：goal.currentValue（用户手动 updateProgress 更新）
+ * 完成判定：降指标（weight_loss/mood/sugar/dampness）current ≤ target；升指标（weight_gain/sleep）current ≥ target
+ */
+async function calcHealthGoalProgress(
+  userIds: string[],
+  g: {
+    id: string; type: string; title: string | null;
+    kind: string; targetValue: number | null; currentValue: number | null;
+    unit: string | null; judgeCriteria: string | null;
+    periodStart: Date; periodEnd: Date; familyId: string | null; status: string;
+  },
+) {
+  const kind = g.kind;
+  const target = g.targetValue ?? 0;
+  let current: number | null = g.currentValue;
+
+  if (kind === 'weight_loss' || kind === 'weight_gain') {
+    const latest = await prisma.bodyCompositionRecord.findFirst({
+      where: { userId: { in: userIds } },
+      orderBy: { timestamp: 'desc' },
+      select: { weight: true },
+    });
+    current = latest?.weight ?? null;
+  } else if (kind === 'sleep') {
+    const agg = await prisma.sleepRecord.aggregate({
+      _avg: { durationSeconds: true },
+      where: { userId: { in: userIds }, createdAt: { gte: g.periodStart, lt: g.periodEnd } },
+    });
+    const avgSeconds = agg._avg?.durationSeconds;
+    current = avgSeconds != null ? Math.round((avgSeconds / 3600) * 10) / 10 : null;
+  }
+
+  const isIncrease = kind === 'weight_gain' || kind === 'sleep';
+  const completed = current != null && target > 0 && (
+    isIncrease ? current >= target : current <= target
+  );
+  const percent = current != null && target > 0
+    ? Math.min(100, Math.max(0, Math.round(
+        isIncrease ? (current / target) * 100 : Math.max(0, 1 - (current - target) / Math.max(1, current)) * 100
+      )))
+    : 0;
+
+  return {
+    id: g.id, type: g.type, kind, title: g.title,
+    targetValue: target, currentValue: current,
+    unit: g.unit ?? defaultUnitForKind(kind), judgeCriteria: g.judgeCriteria,
+    percent, status: g.status, familyId: g.familyId,
+    periodStart: g.periodStart.toISOString(), periodEnd: g.periodEnd.toISOString(),
+    completed,
+  };
+}
+
+/**
+ * V0.3.7 统一 goal 进度入口
+ * - distance/volume → calcGoalProgress（老逻辑）；6 类 health kind → calcHealthGoalProgress（新）
+ * - 兜底：老目标无 kind 字段时，按 targetVolume!=null 推断 volume，否则 distance
+ */
+async function computeGoalProgress(userIds: string[], g: any) {
+  const kind: string = g.kind || (g.targetVolume != null ? 'volume' : 'distance');
+  let result: any;
+  if ((HEALTH_KINDS as readonly string[]).includes(kind)) {
+    result = await calcHealthGoalProgress(userIds, g);
+  } else {
+    result = await calcGoalProgress(userIds, g);
+  }
+  // V0.3.8 友好失败（清单 pages/goal #30）：过期未完成不惩罚，前端提示续期/降难度
+  result.expired = new Date(g.periodEnd) < new Date() && !result.completed;
+  // V0.3.8 建议降难度值（health kind：当前值的 1.1 倍更易达成；distance/volume：目标的 80%）
+  if (result.expired) {
+    if ((HEALTH_KINDS as readonly string[]).includes(kind)) {
+      const cv = result.currentValue;
+      const tv = result.targetValue;
+      const isIncrease = kind === 'weight_gain' || kind === 'sleep';
+      result.suggestedTarget = isIncrease
+        ? (cv != null ? Math.round(cv * 1.1 * 10) / 10 : Math.round(tv * 0.8 * 10) / 10)
+        : (cv != null ? Math.round(cv * 0.9 * 10) / 10 : Math.round(tv * 1.2 * 10) / 10);
+    } else {
+      const tv = result.targetDistance ?? result.targetVolume ?? 0;
+      result.suggestedTarget = Math.round(tv * 0.8 * 10) / 10;
+    }
+  }
+  return result;
+}
+
 export const goalService = {
   /** 我的个人目标列表（含进度，active 在前；仅 familyId=null 的个人目标） */
   async list(userId: string) {
@@ -132,34 +234,63 @@ export const goalService = {
       where: { userId, familyId: null },
       orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
     });
-    return { goals: await Promise.all(goals.map((g) => calcGoalProgress([userId], g))) };
+    return { goals: await Promise.all(goals.map((g) => computeGoalProgress([userId], g))) };
   },
 
-  /** 添加个人目标（V0.2.124 支持 kind=volume 力量训练容量目标） */
+  /** 添加个人目标（V0.2.124 volume；V0.3.7 6 类 health kind） */
   async add(userId: string, input: AddGoalInput) {
     const { start, end } = computePeriod(input.type, input);
     if (end <= start) throw Errors.badRequest('周期结束必须晚于开始');
     const kind = input.kind ?? 'distance';
-    // V0.2.124 kind/target 互斥校验（schema 抽到 service 端，保持 ZodObject 不破坏 .extend 链）
+    const isHealth = (HEALTH_KINDS as readonly string[]).includes(kind);
+    // kind/target 校验
     if (kind === 'volume' && input.targetVolume == null) {
       throw Errors.badRequest('kind=volume 需传 targetVolume');
     }
     if (kind === 'distance' && input.targetDistance == null) {
       throw Errors.badRequest('kind=distance 需传 targetDistance');
     }
+    if (isHealth && input.targetValue == null) {
+      throw Errors.badRequest(`kind=${kind} 需传 targetValue`);
+    }
     const goal = await prisma.goal.create({
       data: {
         userId,
         type: input.type,
         title: input.title,
-        // kind=volume 时 targetDistance 占位 0（schema 已有 default 0；显式传 0 防御性）
+        kind,
+        // distance/volume 老字段
         targetDistance: kind === 'volume' ? 0 : (input.targetDistance ?? 0),
         targetVolume: kind === 'volume' ? (input.targetVolume ?? null) : null,
+        // V0.3.7 health 字段
+        targetValue: isHealth ? (input.targetValue ?? null) : null,
+        unit: isHealth ? (input.unit ?? defaultUnitForKind(kind)) : null,
+        judgeCriteria: isHealth ? (input.judgeCriteria ?? null) : null,
         periodStart: start,
         periodEnd: end,
       },
     });
     return { id: goal.id };
+  },
+
+  /**
+   * V0.3.7 手动更新健康目标进度（mood/sugar/dampness 用）
+   *
+   * 仅 health kind 目标可手动更新（weight/sleep 后端 aggregate 自动覆盖 currentValue）
+   * 写后清 Cache（myProgress/list TTL 120s 自然失效，YAGNI 不主动清）
+   */
+  async updateProgress(userId: string, input: UpdateProgressInput) {
+    const goal = await prisma.goal.findFirst({ where: { id: input.goalId, userId } });
+    if (!goal) throw Errors.notFound('goal not found');
+    const kind = goal.kind || (goal.targetVolume != null ? 'volume' : 'distance');
+    if (!(HEALTH_KINDS as readonly string[]).includes(kind)) {
+      throw Errors.badRequest(`kind=${kind} 目标进度由系统自动计算，无需手动更新`);
+    }
+    await prisma.goal.update({
+      where: { id: input.goalId },
+      data: { currentValue: input.currentValue },
+    });
+    return { ok: true, currentValue: input.currentValue };
   },
 
   /** 删除目标（硬删；个人/家庭目标通用） */
@@ -272,7 +403,7 @@ export const goalService = {
       where: { userId, status: 'active', familyId: null },
       orderBy: { createdAt: 'desc' },
     });
-    return { goals: await Promise.all(goals.map((g) => calcGoalProgress([userId], g))) };
+    return { goals: await Promise.all(goals.map((g) => computeGoalProgress([userId], g))) };
   },
 
   /**

@@ -20,6 +20,8 @@
           <view class="stat"><text class="stat-val">+{{todayCheckin.points}}</text><text class="stat-unit">积分</text></view>
         </view>
         <view class="tip">明天再来吧！</view>
+        <!-- V0.3.6 产品收敛 Phase 2：分享成就 + 生成海报 + Canvas 已隐藏（清单 2026-07-26·#20）；远程恢复取消注释即可 -->
+        <!--
         <button class="share-btn" open-type="share">分享成就 📤</button>
         <button class="poster-btn" bindtap="onGeneratePoster">生成海报 🖼️</button>
         <view class="poster-preview" wx:if="{{posterImagePath}}">
@@ -27,6 +29,7 @@
           <button class="poster-save-btn" bindtap="onSavePoster">保存到相册</button>
         </view>
         <canvas type="2d" id="posterCanvas" class="poster-canvas-hidden"></canvas>
+        -->
       </view>
     </block>
 
@@ -82,6 +85,8 @@
             <input class="input" type="number" placeholder="选填" value="{{form.cadence}}" bindinput="onInputCadence" />
           </view>
         </view>
+        <!-- V0.3.6 产品收敛 Phase 2：选跑鞋记里程 + 归属群 picker 已隐藏（清单·#21、#22）；远程恢复取消注释即可 -->
+        <!--
         <view class="field" wx:if="{{shoes.length > 1}}">
           <text class="label">跑鞋</text>
           <picker mode="selector" range="{{shoes}}" range-key="name" value="{{shoeIndex}}" bindchange="onShoeChange">
@@ -94,6 +99,7 @@
             <view class="picker">{{groups[groupIndex].name}} <text class="arrow-sm">›</text></view>
           </picker>
         </view>
+        -->
         <van-button type="primary" block bindtap="onSubmitCheckin" disabled="{{submitting}}" loading="{{submitting}}" custom-style="margin-top:16rpx">
           {{submitting ? '提交中...' : '打卡'}}
         </van-button>
@@ -101,7 +107,8 @@
     </block>
   </view>
 
-  <!-- 我的群 -->
+  <!-- V0.3.6 产品收敛 Phase 2：跑群模块整体隐藏（清单·#21 创建/加入跑群 + pages/group-detail 隐藏）；远程恢复取消注释即可 -->
+  <!--
   <view class="groups bg-white m-2 p-4 rounded-lg shadow">
     <view class="title-row">
       <view class="title">我的群</view>
@@ -132,6 +139,7 @@
       </view>
     </block>
   </view>
+  -->
 
   <!-- V0.1.35 运动入口网格（功能从 mine 分散到运动 tab）-->
   <entry-grid title="运动工具" items="{{sportTools}}" />

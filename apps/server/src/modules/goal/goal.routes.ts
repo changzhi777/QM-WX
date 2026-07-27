@@ -14,6 +14,7 @@ import {
   AddCustomMilestoneInputSchema,
   RemoveCustomMilestoneInputSchema,
   CheckMilestoneAchievementInputSchema,
+  UpdateProgressInputSchema,
 } from './goal.schema.js';
 
 export async function goalRoutes(app: FastifyInstance) {
@@ -55,6 +56,11 @@ export async function goalRoutes(app: FastifyInstance) {
       case 'checkMilestoneAchievement': {
         const input = CheckMilestoneAchievementInputSchema.parse(payload);
         return { code: 0, data: await goalService.checkMilestoneAchievement(userId, input.km) };
+      }
+      // V0.3.7 健康目标手动更新进度（mood/sugar/dampness）
+      case 'updateProgress': {
+        const input = UpdateProgressInputSchema.parse(payload);
+        return { code: 0, data: await goalService.updateProgress(userId, input) };
       }
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });

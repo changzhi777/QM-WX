@@ -12,8 +12,8 @@
       member-level="{{memberLevel}}"
     />
 
-    <!-- 非会员升级入口（原型 profile-header 升级按钮）-->
-    <view class="upgrade-cell" wx:if="{{!isMember}}" bindtap="goMembership">
+    <!-- 非会员升级入口（原型 profile-header 升级按钮）V0.3.6 加 flags.membershipPurchase 守门（会员中心隐藏·商业化后置）-->
+    <view class="upgrade-cell" wx:if="{{!isMember && flags.membershipPurchase}}" bindtap="goMembership">
       <text class="upgrade-text">⭐ 升级会员 — 解锁完整解读 + 无限问答</text>
       <text class="mi-arrow">›</text>
     </view>
@@ -27,7 +27,7 @@
           <view class="mi-text">设备绑定</view>
           <view class="mi-arrow">›</view>
         </view>
-        <view class="menu-item" bindtap="goShoes">
+        <view class="menu-item" wx:if="{{flags.shoes}}" bindtap="goShoes">
           <view class="mi-icon bg-orange">👟</view>
           <view class="mi-text">我的跑鞋</view>
           <view class="mi-arrow">›</view>
@@ -49,9 +49,15 @@
           <view class="mi-text">健康助手 <text class="new-label">NEW</text></view>
           <view class="mi-arrow">›</view>
         </view>
-        <view class="menu-item" bindtap="goRunner">
+        <view class="menu-item" wx:if="{{flags.runner}}" bindtap="goRunner">
           <view class="mi-icon bg-orange">📋</view>
           <view class="mi-text">我的解读报告</view>
+          <view class="mi-arrow">›</view>
+        </view>
+        <!-- V0.3.7 健康目标闭环入口（清单 #30 新增★）-->
+        <view class="menu-item" bindtap="goGoal">
+          <view class="mi-icon bg-green">🎯</view>
+          <view class="mi-text">健康目标 <text class="new-label">NEW</text></view>
           <view class="mi-arrow">›</view>
         </view>
         <view class="menu-item" bindtap="goAiCoach">
@@ -123,19 +129,8 @@
       </view>
     </view>
 
-    <!-- 更多功能（待定入口 → pages/more）-->
-    <view class="section">
-      <view class="menu-section">
-        <view class="menu-item" bindtap="goMore">
-          <view class="mi-icon bg-more">📋</view>
-          <view class="mi-text">
-            更多功能
-            <view class="mi-sub">打卡/跑鞋/训练/榜单/健康/饮食/动态/赛事</view>
-          </view>
-          <view class="mi-arrow">›</view>
-        </view>
-      </view>
-    </view>
+    <!-- V0.3.6 pages/more 已物理删除（产品收敛 Phase 1·清单 2026-07-26；远程恢复需重建 pages/more + goMore 函数）-->
+    <!-- V0.3.6 mine 页其余隐藏入口：goShoes / goRunner / upgrade-cell(goMembership) 已用 flags.{shoes,runner,membershipPurchase} 包裹（详见各入口）-->
 
     <view class="logout" wx:if="{{user}}" bindtap="onTapReactivate">重新激活授权</view>
   </block>

@@ -1,0 +1,30 @@
+/* pages/goal/index.wxss — 健康目标闭环（V0.3.7 清单 #30）*/
+.page { padding: 16rpx; min-height: 100vh; background: #f5f6f8; }
+.goal-list { padding-bottom: 140rpx; }
+.goal-card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04); }
+.goal-head { display: flex; align-items: center; }
+.goal-icon { font-size: 36rpx; margin-right: 12rpx; }
+.goal-title { font-size: 30rpx; font-weight: 600; flex: 1; color: #333; }
+.goal-status { font-size: 24rpx; color: #2D9D78; font-weight: 600; }
+.goal-status.expired { color: #e67e22; }
+.goal-friendly { margin-top: 12rpx; padding: 12rpx 16rpx; background: #fff8e1; border-radius: 8rpx; }
+.goal-friendly-tip { font-size: 24rpx; color: #8a6d3b; line-height: 1.5; }
+.goal-progress { margin-top: 16rpx; }
+.goal-bar { height: 12rpx; background: #e8e8e8; border-radius: 6rpx; overflow: hidden; }
+.goal-bar-fill { height: 100%; background: #2D9D78; transition: width 0.3s; }
+.goal-numbers { margin-top: 8rpx; font-size: 24rpx; color: #888; }
+.goal-actions { margin-top: 16rpx; display: flex; justify-content: flex-end; }
+.goal-btn { font-size: 26rpx; color: #2D9D78; padding: 8rpx 24rpx; border: 1rpx solid #2D9D78; border-radius: 24rpx; }
+.empty { text-align: center; padding: 200rpx 32rpx; }
+.empty-icon { font-size: 80rpx; display: block; }
+.empty-text { display: block; margin-top: 16rpx; font-size: 30rpx; color: #666; }
+.empty-sub { display: block; margin-top: 8rpx; font-size: 26rpx; color: #999; }
+.fab { position: fixed; right: 32rpx; bottom: 60rpx; width: 96rpx; height: 96rpx; background: #2D9D78; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 56rpx; box-shadow: 0 4rpx 16rpx rgba(45,157,120,0.4); }
+.mask { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; z-index: 100; }
+.sheet { background: #fff; border-radius: 24rpx 24rpx 0 0; padding: 32rpx; width: 100%; }
+.sheet-title { font-size: 32rpx; font-weight: 600; margin-bottom: 24rpx; color: #333; }
+.sheet-row { margin-bottom: 24rpx; }
+.sheet-label { display: block; font-size: 26rpx; color: #888; margin-bottom: 8rpx; }
+.sheet-input { border: 1rpx solid #e0e0e0; border-radius: 8rpx; padding: 16rpx; font-size: 28rpx; }
+.picker { padding: 16rpx; border: 1rpx solid #e0e0e0; border-radius: 8rpx; color: #666; font-size: 28rpx; }
+.sheet-btn { background: #2D9D78; color: #fff; border-radius: 8rpx; margin-top: 32rpx; font-size: 30rpx; }

@@ -60,7 +60,8 @@
       </block>
     </view>
 
-    <!-- P3 饮食摘要卡（food.myMeals 今日宏量）-->
+    <!-- V0.3.6 饮食摘要卡已隐藏（产品收敛 Phase 1·清单 2026-07-26；远程开启：app_config.feature_flags.diet=true 后恢复 wxml 节点）-->
+    <!-- 已隐藏节点原文（git 历史可恢复）：
     <view class="diet-card" wx:if="{{dietRes}}" bindtap="onTapDiet">
       <text class="diet-icon">🍎</text>
       <view class="diet-info">
@@ -70,6 +71,7 @@
       </view>
       <text class="diet-arrow">›</text>
     </view>
+    -->
 
     <!-- 运动与天气建议（stats.weatherAnalysis insights）-->
     <view class="weather-advice-card" wx:if="{{weatherAdvice.length}}">

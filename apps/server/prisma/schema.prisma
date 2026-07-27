@@ -404,6 +404,12 @@ model Goal {
   title          String? // 自定义标题（optional）
   targetDistance Float    @default(0) // 目标距离 km（distance 目标用；volume 目标为 0 占位）
   targetVolume   Float? // V0.2.124 目标容量 kg·次（volume 目标用；distance 目标为 null）
+  // V0.3.7 健康目标闭环（清单 2026-07-26 #30）：6 类 health kind 字段
+  kind           String   @default("distance") // distance | volume | weight_loss | weight_gain | sleep | mood | sugar | dampness
+  targetValue    Float? // 健康目标值（weight kg / sleep h / mood 1-10 分 / sugar mmol/L / dampness 1-10 分）
+  currentValue   Float? // 当前进度值（mood/sugar/dampness 用户手动更新；weight/sleep 后端 aggregate 覆盖）
+  unit           String? // 单位标签（kg / h / 分 / mmol/L）
+  judgeCriteria  String? // 判断标准描述（如"连续 7 天平均 ≤ 目标"）
   periodStart    DateTime // 周期开始（东八区 0 点）
   periodEnd      DateTime // 周期结束（exclusive）
   familyId       String? // V0.1.34 家庭目标（null=个人；有值=家庭目标，进度按家庭成员算）

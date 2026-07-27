@@ -35,11 +35,14 @@
           <view class="t-bc-item"><text class="t-bc-label">阻抗</text><text class="t-bc-val">{{bodyComp.impedance != null ? bodyComp.impedance + 'Ω' : '-'}}</text></view>
         </view>
       </view>
+      <!-- V0.3.6 产品收敛 Phase 2：体脂秤入口已隐藏（清单·#16）；远程恢复取消注释即可 -->
+      <!--
       <view class="t-card t-body-comp-empty" wx:else bindtap="onTapGoScale">
         <view class="t-bc-empty-title">体成分</view>
         <view class="t-bc-empty-tip">连接小米体脂秤，上秤测量查看 6 项指标</view>
         <view class="t-bc-empty-btn">去测量 ›</view>
       </view>
+      -->
 
       <view class="t-grid">
         <view class="t-card t-metric-card">
