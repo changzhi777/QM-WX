@@ -17,6 +17,7 @@ import type { FastifyInstance } from 'fastify';
 import { featureGatePlugin } from '../../common/middleware/feature-gate.js';
 import { Errors } from '../../common/errors.js';
 import * as adminService from './admin.service.js';
+import * as adminGlobalSearch from './admin.globalSearch.js';
 import { prisma } from '../../infra/prisma.js';
 import {
   UpsertContentSchema,
@@ -40,6 +41,7 @@ import {
   UpsertTrainingPlanSchema,
   ListTrainingPlansSchema,
   ListUploadsSchema,
+  GlobalSearchInputSchema,
   AdjustPointsSchema,
   GrantMemberSchema,
   ListInviteStatsSchema,
@@ -139,6 +141,11 @@ export async function adminRoutes(app: FastifyInstance) {
       case 'dashboard':
         // RBAC 守卫已由 admin middleware 拦截（operator 无 admin 权限）
         return { code: 0, data: await adminService.getAdminDashboard() };
+      // ===== V0.3.5 admin.globalSearch 全局搜索（5 表 LIKE 跨表）=====
+      case 'globalSearch': {
+        const { query, limit } = GlobalSearchInputSchema.parse(payload ?? { query: '' });
+        return { code: 0, data: await adminGlobalSearch.globalSearch(query, limit) };
+      }
       // ===== V0.2.65 小程序代码提审（super-admin 独占，SUPER_ONLY_ACTIONS）=====
       case 'getMpCategory':
         return { code: 0, data: await adminService.getMpCategory() };

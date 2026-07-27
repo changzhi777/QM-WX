@@ -18,6 +18,11 @@ const mockPrisma = vi.hoisted(() => ({
   order: { findMany: vi.fn(), count: vi.fn(), findUnique: vi.fn(), update: vi.fn(), aggregate: vi.fn() },
   user: { findMany: vi.fn(), count: vi.fn() },
   checkin: { count: vi.fn() },
+  // V0.3.4 dashboard + V0.3.5 globalSearch 跨表搜 5 表
+  feed: { findMany: vi.fn() },
+  feedComment: { findMany: vi.fn() },
+  interpretRecord: { findMany: vi.fn() },
+  strengthSession: { findMany: vi.fn() },
   // V0.2.8 admin RBAC：Admin 表 + 账号体系 — 替代 V0.1.18 白名单 openid 鉴权
   admin: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn() },
   adminLoginLog: { create: vi.fn() }, // V0.2.8 adminLogin 审计落库（可选）
@@ -650,6 +655,56 @@ describe('V0.3.4 admin.dashboard 仪表盘', () => {
       method: 'POST',
       url: '/api/admin',
       payload: { action: 'dashboard' },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+});
+
+// ===== V0.3.5 admin.globalSearch 全局搜索（5 表 LIKE 跨表）=====
+describe('V0.3.5 admin.globalSearch 全局搜索', () => {
+  it('happy: super-admin 查 "张" → 200 返 5 字段结构（含各表结果）', async () => {
+    // mock 5 表 prisma.findMany
+    mockPrisma.user.findMany.mockResolvedValueOnce([{ id: 'u1', nickname: '张三', phone: '138', openid: 'ox1' }]);
+    mockPrisma.feed.findMany.mockResolvedValueOnce([{ id: 'f1', userId: 'u1', content: '今天和张三跑', createdAt: new Date() }]);
+    mockPrisma.feedComment.findMany.mockResolvedValueOnce([{ id: 'c1', feedId: 'f1', content: '张三加油', createdAt: new Date() }]);
+    mockPrisma.interpretRecord.findMany.mockResolvedValueOnce([{ id: 'i1', userId: 'u1', type: 'screenshot', result: '张三的步数', createdAt: new Date() }]);
+    mockPrisma.strengthSession.findMany.mockResolvedValueOnce([{ id: 's1', userId: 'u1', dateStr: '2026-07-25', createdAt: new Date() }]);
+
+    const app = await buildApp({ admin: { role: 'super-admin' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin',
+      payload: { action: 'globalSearch', payload: { query: '张' } },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.code).toBe(0);
+    expect(body.data.users).toHaveLength(1);
+    expect(body.data.feeds).toHaveLength(1);
+    expect(body.data.feedComments).toHaveLength(1);
+    expect(body.data.interpretRecords).toHaveLength(1);
+    expect(body.data.strengthSessions).toHaveLength(1);
+  });
+
+  it('空 query → 200 返 5 表空数组（V0.3.5 service 早期返回 guard）', async () => {
+    const app = await buildApp({ admin: { role: 'super-admin' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin',
+      payload: { action: 'globalSearch', payload: { query: '' } },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.data.users).toEqual([]);
+    expect(body.data.feeds).toEqual([]);
+  });
+
+  it('RBAC 拦截：operator 调 globalSearch → 403（middleware 守门）', async () => {
+    const app = await buildApp({ admin: { role: 'operator' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin',
+      payload: { action: 'globalSearch', payload: { query: '张' } },
     });
     expect(res.statusCode).toBe(403);
   });

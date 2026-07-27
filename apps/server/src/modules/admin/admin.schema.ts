@@ -313,3 +313,43 @@ export const AdminDashboardResponseSchema = z.object({
   failedAdminLogins30d: z.number().int().nonnegative(),
   totalInterpret: z.number().int().nonnegative(),
 });
+
+// ===== V0.3.5 admin.globalSearch 全局搜索 =====
+export const GlobalSearchInputSchema = z.object({
+  query: z.string().min(1).max(50),
+  limit: z.coerce.number().int().min(1).max(20).default(5),
+});
+export const GlobalSearchResponseSchema = z.object({
+  users: z.array(z.object({
+    id: z.string(),
+    nickname: z.string().nullable(),
+    phone: z.string().nullable(),
+    openid: z.string(),
+  })),
+  feeds: z.array(z.object({
+    id: z.string(),
+    userId: z.string(),
+    content: z.string(),
+    createdAt: z.coerce.date(),
+  })),
+  feedComments: z.array(z.object({
+    id: z.string(),
+    feedId: z.string(),
+    content: z.string(),
+    createdAt: z.coerce.date(),
+  })),
+  interpretRecords: z.array(z.object({
+    id: z.string(),
+    userId: z.string(),
+    type: z.string(),
+    result: z.string(),
+    createdAt: z.coerce.date(),
+  })),
+  strengthSessions: z.array(z.object({
+    id: z.string(),
+    userId: z.string(),
+    dateStr: z.string(),
+    createdAt: z.coerce.date(),
+  })),
+});
+
