@@ -34,6 +34,15 @@ export async function goalRoutes(app: FastifyInstance) {
         const { id } = GoalIdInputSchema.parse(payload);
         return { code: 0, data: await goalService.remove(userId, id) };
       }
+      // V0.3.9 暂停/恢复目标（清单 #30 "可暂停"）
+      case 'pauseGoal': {
+        const { id } = GoalIdInputSchema.parse(payload);
+        return { code: 0, data: await goalService.pauseGoal(userId, id) };
+      }
+      case 'resumeGoal': {
+        const { id } = GoalIdInputSchema.parse(payload);
+        return { code: 0, data: await goalService.resumeGoal(userId, id) };
+      }
       case 'myProgress':
         return { code: 0, data: await goalService.myProgress(userId) };
       case 'addFamilyGoal': {

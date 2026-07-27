@@ -645,4 +645,21 @@ describe('goalService V0.3.7 健康目标闭环（清单 #30）', () => {
     expect(g.expired).toBe(true);
     expect(Number(g.suggestedTarget)).toBeGreaterThan(0);
   });
+
+  it('V0.3.9 pauseGoal：active → paused', async () => {
+    mockedPrisma.goal.findFirst.mockResolvedValue({ id: 'g1', userId: 'u1', status: 'active' } as never);
+    mockedPrisma.goal.update.mockResolvedValue({} as never);
+    const r = await goalService.pauseGoal('u1', 'g1');
+    expect(r.ok).toBe(true);
+    expect(r.status).toBe('paused');
+    expect(mockedPrisma.goal.update).toHaveBeenCalledWith({ where: { id: 'g1' }, data: { status: 'paused' } });
+  });
+
+  it('V0.3.9 resumeGoal：paused → active', async () => {
+    mockedPrisma.goal.findFirst.mockResolvedValue({ id: 'g1', userId: 'u1', status: 'paused' } as never);
+    mockedPrisma.goal.update.mockResolvedValue({} as never);
+    const r = await goalService.resumeGoal('u1', 'g1');
+    expect(r.ok).toBe(true);
+    expect(r.status).toBe('active');
+  });
 });

@@ -94,6 +94,9 @@ export const GoalActionBodySchema = z.object({
     'checkMilestoneAchievement',
     // V0.3.7 健康目标手动更新进度
     'updateProgress',
+    // V0.3.9 暂停/恢复目标（清单 #30 "可暂停"）
+    'pauseGoal',
+    'resumeGoal',
   ]),
   payload: z.unknown().optional(),
 });

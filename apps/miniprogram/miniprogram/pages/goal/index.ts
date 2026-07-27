@@ -86,6 +86,27 @@ Page({
       wx.showToast({ title: '更新失败', icon: 'none' });
     }
   },
+
+  /** V0.3.9 暂停/恢复目标（清单 #30 "可暂停"）*/
+  async onTapPause(e: { currentTarget: { dataset: { id: string } } }) {
+    try {
+      await api.call('goal', 'pauseGoal', { id: e.currentTarget.dataset.id });
+      wx.showToast({ title: '已暂停', icon: 'success' });
+      this.loadGoals();
+    } catch (e2) {
+      wx.showToast({ title: '操作失败', icon: 'none' });
+    }
+  },
+
+  async onTapResume(e: { currentTarget: { dataset: { id: string } } }) {
+    try {
+      await api.call('goal', 'resumeGoal', { id: e.currentTarget.dataset.id });
+      wx.showToast({ title: '已恢复', icon: 'success' });
+      this.loadGoals();
+    } catch (e2) {
+      wx.showToast({ title: '操作失败', icon: 'none' });
+    }
+  },
 });
 
 export {};

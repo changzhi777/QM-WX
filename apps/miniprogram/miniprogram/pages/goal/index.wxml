@@ -22,6 +22,8 @@
       </view>
       <view class="goal-actions">
         <view class="goal-btn" wx:if="{{item.kind === 'mood' || item.kind === 'sugar' || item.kind === 'dampness'}}" data-id="{{item.id}}" bindtap="onTapUpdate">更新进度</view>
+        <view class="goal-btn" wx:if="{{item.status === 'active' && !item.expired}}" data-id="{{item.id}}" bindtap="onTapPause">暂停</view>
+        <view class="goal-btn" wx:if="{{item.status === 'paused'}}" data-id="{{item.id}}" bindtap="onTapResume">恢复</view>
       </view>
     </view>
   </view>

@@ -293,6 +293,24 @@ export const goalService = {
     return { ok: true, currentValue: input.currentValue };
   },
 
+  /** V0.3.9 暂停目标（清单 #30 "可暂停"要求；status active → paused） */
+  async pauseGoal(userId: string, id: string) {
+    const existing = await prisma.goal.findFirst({ where: { id, userId } });
+    if (!existing) throw Errors.notFound('goal not found');
+    if (existing.status !== 'active') throw Errors.badRequest('仅 active 目标可暂停');
+    await prisma.goal.update({ where: { id }, data: { status: 'paused' } });
+    return { ok: true, status: 'paused' };
+  },
+
+  /** V0.3.9 恢复目标（status paused → active） */
+  async resumeGoal(userId: string, id: string) {
+    const existing = await prisma.goal.findFirst({ where: { id, userId } });
+    if (!existing) throw Errors.notFound('goal not found');
+    if (existing.status !== 'paused') throw Errors.badRequest('仅 paused 目标可恢复');
+    await prisma.goal.update({ where: { id }, data: { status: 'active' } });
+    return { ok: true, status: 'active' };
+  },
+
   /** 删除目标（硬删；个人/家庭目标通用） */
   async remove(userId: string, id: string) {
     const existing = await prisma.goal.findFirst({ where: { id, userId } });
