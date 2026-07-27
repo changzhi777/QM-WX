@@ -21,11 +21,11 @@ const mockPrisma = vi.hoisted(() => ({
   // V0.3.4 dashboard + V0.3.5 globalSearch 跨表搜 5 表
   feed: { findMany: vi.fn() },
   feedComment: { findMany: vi.fn() },
-  interpretRecord: { findMany: vi.fn() },
+  interpretRecord: { findMany: vi.fn(), count: vi.fn() },
   strengthSession: { findMany: vi.fn() },
   // V0.2.8 admin RBAC：Admin 表 + 账号体系 — 替代 V0.1.18 白名单 openid 鉴权
   admin: { findUnique: vi.fn(), findMany: vi.fn(), create: vi.fn() },
-  adminLoginLog: { create: vi.fn() }, // V0.2.8 adminLogin 审计落库（可选）
+  adminLoginLog: { create: vi.fn(), count: vi.fn() },
   // V0.2.6 邀请裂变 admin 调试接口可能用到
   wallet: { findUnique: vi.fn() },
   memberSubscription: { findFirst: vi.fn(), create: vi.fn(), update: vi.fn() },
@@ -598,6 +598,12 @@ describe('V0.3.3 admin 错误响应一致性', () => {
 
 // ===== V0.3.4 admin.dashboard 仪表盘（9 字段 1 API 拉全）=====
 describe('V0.3.4 admin.dashboard 仪表盘', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPrisma.admin.findUnique.mockResolvedValue({
+      id: 'admin-1', username: 'admin-1', role: 'super-admin', disabled: false,
+    });
+  });
   it('happy: super-admin 调 dashboard → 200 返 9 字段（用户/订单/营收/活跃/打卡/异常）', async () => {
     // mock 9 个 prisma.aggregate/count（每次 chain 返 undefined，单独调用）
     mockPrisma.user.count.mockResolvedValueOnce(1000);   // totalUsers
@@ -650,6 +656,7 @@ describe('V0.3.4 admin.dashboard 仪表盘', () => {
   });
 
   it('RBAC 拦截：operator 调 dashboard → 403（checkPermission 守门）', async () => {
+    mockPrisma.admin.findUnique.mockResolvedValueOnce({ id: 'admin-1', username: 'admin-1', role: 'operator', disabled: false });
     const app = await buildApp({ admin: { role: 'operator' } });
     const res = await app.inject({
       method: 'POST',
@@ -662,6 +669,12 @@ describe('V0.3.4 admin.dashboard 仪表盘', () => {
 
 // ===== V0.3.5 admin.globalSearch 全局搜索（5 表 LIKE 跨表）=====
 describe('V0.3.5 admin.globalSearch 全局搜索', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockPrisma.admin.findUnique.mockResolvedValue({
+      id: 'admin-1', username: 'admin-1', role: 'super-admin', disabled: false,
+    });
+  });
   it('happy: super-admin 查 "张" → 200 返 5 字段结构（含各表结果）', async () => {
     // mock 5 表 prisma.findMany
     mockPrisma.user.findMany.mockResolvedValueOnce([{ id: 'u1', nickname: '张三', phone: '138', openid: 'ox1' }]);
@@ -700,6 +713,7 @@ describe('V0.3.5 admin.globalSearch 全局搜索', () => {
   });
 
   it('RBAC 拦截：operator 调 globalSearch → 403（middleware 守门）', async () => {
+    mockPrisma.admin.findUnique.mockResolvedValueOnce({ id: 'admin-1', username: 'admin-1', role: 'operator', disabled: false });
     const app = await buildApp({ admin: { role: 'operator' } });
     const res = await app.inject({
       method: 'POST',

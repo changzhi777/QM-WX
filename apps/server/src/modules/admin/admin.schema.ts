@@ -316,7 +316,7 @@ export const AdminDashboardResponseSchema = z.object({
 
 // ===== V0.3.5 admin.globalSearch 全局搜索 =====
 export const GlobalSearchInputSchema = z.object({
-  query: z.string().min(1).max(50),
+  query: z.string().min(0).max(50),
   limit: z.coerce.number().int().min(1).max(20).default(5),
 });
 export const GlobalSearchResponseSchema = z.object({
