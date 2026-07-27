@@ -135,6 +135,10 @@ export async function adminRoutes(app: FastifyInstance) {
         return { code: 0, data: await adminService.listInterpret(ListInterpretSchema.parse(payload ?? {})) };
       case 'retryParse':
         return { code: 0, data: await adminService.retryParse(RetryParseSchema.parse(payload)) };
+      // ===== V0.3.4 admin.dashboard 仪表盘（admin + super-admin 可访问）=====
+      case 'dashboard':
+        // RBAC 守卫已由 admin middleware 拦截（operator 无 admin 权限）
+        return { code: 0, data: await adminService.getAdminDashboard() };
       // ===== V0.2.65 小程序代码提审（super-admin 独占，SUPER_ONLY_ACTIONS）=====
       case 'getMpCategory':
         return { code: 0, data: await adminService.getMpCategory() };

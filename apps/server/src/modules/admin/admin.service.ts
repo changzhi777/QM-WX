@@ -1385,10 +1385,87 @@ export async function submitMpAudit(input: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
-  const data = (await res.json()) as { auditid?: number; errcode?: number; errmsg?: string };
+  const data = (await res.json() as { auditid?: number; errcode?: number; errmsg?: string });
   // errcode 0 = 成功；非 0 抛（含 auditid 时仍返）
   if (data.errcode && data.errcode !== 0 && !data.auditid) {
     throw Errors.badRequest(`submitAudit 失败: errcode=${data.errcode} ${data.errmsg ?? ''}`);
   }
   return { auditId: data.auditid ?? 0, errcode: data.errcode, errmsg: data.errmsg };
+}
+
+// ===== V0.3.4 admin.dashboard 仪表盘 =====
+
+/** admin.dashboard 6 指标聚合（1 API 拉全 — V0.2.147/2.150 范式） */
+export interface AdminDashboardData {
+  // 用户维度
+  totalUsers: number;
+  activeUsers7d: number; // 最近 7 天有 checkin/weRunRecord/strengthSession 任一
+  // 订单维度
+  totalOrders: number;
+  totalRevenueFen: number; // CNY 分
+  paidOrders: number;
+  // 打卡维度
+  totalCheckins: number;
+  checkins30d: number;
+  // 异常告警
+  failedAdminLogins30d: number;
+  totalInterpret: number;
+}
+
+export async function getAdminDashboard(): Promise<AdminDashboardData> {
+  const now = new Date();
+  const last7d = new Date(now.getTime() - 7 * 86_400_000);
+  const last30d = new Date(now.getTime() - 30 * 86_400_000);
+
+  // 6 类聚合并行（Promise.allSettled 失败隔离 — V0.3.1 cron pull 范式）
+  const results = await Promise.allSettled([
+    // 1. 用户总数
+    prisma.user.count(),
+    // 2. 7 天活跃用户（有打卡/weRunRecord/strengthSession 任一）
+    prisma.user.count({
+      where: {
+        OR: [
+          { checkins: { some: { createdAt: { gte: last7d } } } },
+          { weRunRecords: { some: { createdAt: { gte: last7d } } } },
+          { strengthSessions: { some: { createdAt: { gte: last7d } } } },
+        ],
+      },
+    }),
+    // 3. 订单总数
+    prisma.order.count(),
+    // 4. 营收（order.totalAmount 元，Decimal → 转换为分）
+    prisma.order.aggregate({ _sum: { totalAmount: true } }),
+    // 5. 已支付订单数
+    prisma.order.count({ where: { status: 'paid' } }),
+    // 6. 打卡总数 + 30 天
+    prisma.checkin.count(),
+    prisma.checkin.count({ where: { createdAt: { gte: last30d } } }),
+    // 7. 30 天 admin 失败 login（field = createdAt）
+    prisma.adminLoginLog.count({ where: { ok: false, createdAt: { gte: last30d } } }),
+    // 8. interpret 总数
+    prisma.interpretRecord.count(),
+  ]);
+
+  // 失败隔离（任意失败返 0，dashboard 不整体崩）
+  const val = <T>(i: number, fallback: T): T => {
+    const r = results[i];
+    return r.status === 'fulfilled' ? (r.value as T) : fallback;
+  };
+
+  // totalAmount 是 Decimal（prisma 返回 Decimal 对象），需 Number() 转换
+  // 1 元 = 100 分（CNY），转分需 *100 + round
+  const totalAmountVal = val<{ _sum: { totalAmount: unknown } }>(3, { _sum: { totalAmount: null } });
+  const totalAmountNum = totalAmountVal._sum?.totalAmount ? Number(totalAmountVal._sum.totalAmount) : 0;
+
+  return {
+    totalUsers: val(0, 0),
+    activeUsers7d: val(1, 0),
+    totalOrders: val(2, 0),
+    totalRevenueFen: Math.round(totalAmountNum * 100), // 元 → 分
+    paidOrders: val(4, 0),
+    totalCheckins: val(5, 0),
+    checkins30d: val(6, 0),
+    failedAdminLogins30d: val(7, 0),
+    totalInterpret: val(8, 0),
+  };
 }

@@ -590,3 +590,67 @@ describe('V0.3.3 admin 错误响应一致性', () => {
     expect(res.statusCode).toBeGreaterThanOrEqual(400);
   });
 });
+
+// ===== V0.3.4 admin.dashboard 仪表盘（9 字段 1 API 拉全）=====
+describe('V0.3.4 admin.dashboard 仪表盘', () => {
+  it('happy: super-admin 调 dashboard → 200 返 9 字段（用户/订单/营收/活跃/打卡/异常）', async () => {
+    // mock 9 个 prisma.aggregate/count（每次 chain 返 undefined，单独调用）
+    mockPrisma.user.count.mockResolvedValueOnce(1000);   // totalUsers
+    mockPrisma.user.count.mockResolvedValueOnce(120);    // activeUsers7d
+    mockPrisma.order.count.mockResolvedValueOnce(500);   // totalOrders
+    mockPrisma.order.count.mockResolvedValueOnce(350);   // paidOrders
+    mockPrisma.order.aggregate.mockResolvedValueOnce({ _sum: { totalAmount: 50000 } });
+    mockPrisma.checkin.count.mockResolvedValueOnce(8000);  // totalCheckins
+    mockPrisma.checkin.count.mockResolvedValueOnce(450);   // checkins30d
+    mockPrisma.adminLoginLog.count.mockResolvedValueOnce(3);
+    mockPrisma.interpretRecord.count.mockResolvedValueOnce(50);
+
+    const app = await buildApp({ admin: { role: 'super-admin' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin',
+      payload: { action: 'dashboard' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.code).toBe(0);
+    expect(body.data).toMatchObject({
+      totalUsers: 1000,
+      activeUsers7d: 120,
+      totalOrders: 500,
+      paidOrders: 350,
+      totalRevenueFen: 5_000_000,
+      totalCheckins: 8000,
+      checkins30d: 450,
+      failedAdminLogins30d: 3,
+      totalInterpret: 50,
+    });
+  });
+
+  it('happy: admin 调 dashboard → 200（admin 有权限）', async () => {
+    mockPrisma.user.count.mockResolvedValue(1);
+    mockPrisma.order.count.mockResolvedValue(1);
+    mockPrisma.order.aggregate.mockResolvedValue({ _sum: { totalAmount: 1 } });
+    mockPrisma.checkin.count.mockResolvedValue(1);
+    mockPrisma.adminLoginLog.count.mockResolvedValue(0);
+    mockPrisma.interpretRecord.count.mockResolvedValue(1);
+
+    const app = await buildApp({ admin: { role: 'admin' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin',
+      payload: { action: 'dashboard' },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('RBAC 拦截：operator 调 dashboard → 403（checkPermission 守门）', async () => {
+    const app = await buildApp({ admin: { role: 'operator' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin',
+      payload: { action: 'dashboard' },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+});

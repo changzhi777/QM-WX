@@ -300,3 +300,16 @@ export const ListAdminLoginLogsSchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
 export type ListAdminLoginLogsInput = z.infer<typeof ListAdminLoginLogsSchema>;
+
+// ===== V0.3.4 admin.dashboard 仪表盘 =====
+export const AdminDashboardResponseSchema = z.object({
+  totalUsers: z.number().int().nonnegative(),
+  activeUsers7d: z.number().int().nonnegative(),
+  totalOrders: z.number().int().nonnegative(),
+  totalRevenueFen: z.number().int().nonnegative(),
+  paidOrders: z.number().int().nonnegative(),
+  totalCheckins: z.number().int().nonnegative(),
+  checkins30d: z.number().int().nonnegative(),
+  failedAdminLogins30d: z.number().int().nonnegative(),
+  totalInterpret: z.number().int().nonnegative(),
+});
