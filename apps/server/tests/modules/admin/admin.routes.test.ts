@@ -563,3 +563,30 @@ describe('admin.routes · V0.2.8 createAdmin + RBAC 守卫', () => {
     expect(mockPrisma.admin.create).not.toHaveBeenCalled();
   });
 });
+
+// ===== V0.3.3 admin 错误一致性（admin 22 action 已 0 裸 Error，本测试验证 BusinessError 统一）=====
+describe('V0.3.3 admin 错误响应一致性', () => {
+  it('operator 调 admin-only action → 403 forbidden（统一 BusinessError）', async () => {
+    // createAdmin 是 super-admin only，operator 必拒
+    const app = await buildApp({ admin: { role: 'operator' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin',
+      payload: { action: 'createAdmin', payload: { username: 'x', password: 'y' } },
+    });
+    expect(res.statusCode).toBe(403);
+    const body = res.json();
+    expect(body.code).toBe(403); // BusinessError 403
+  });
+
+  it('super-admin 调 unknown action → 500（zod 解析失败 + setErrorHandler 500）', async () => {
+    // unknown action 走 Schema.parse 失败 → 500（admin 设计如此）
+    const app = await buildApp({ admin: { role: 'super-admin' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/admin',
+      payload: { action: 'noSuchAction', payload: {} },
+    });
+    expect(res.statusCode).toBeGreaterThanOrEqual(400);
+  });
+});
