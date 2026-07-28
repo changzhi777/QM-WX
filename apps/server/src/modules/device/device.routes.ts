@@ -143,6 +143,14 @@ export async function deviceRoutes(app: FastifyInstance) {
           // V0.2.89 A 路线：Garmin Health API 直连 OAuth 1.0a 授权 URL（不依赖 Terra，免费）
           return { code: 0, data: await deviceService.garminHealthAuthUrl(userId) };
         }
+        case 'huaweiHealthAuthUrl': {
+          // V0.3.18 C 选项：华为运动健康 Cloud API OAuth 2.0 授权 URL
+          return { code: 0, data: await deviceService.huaweiHealthAuthUrl(userId) };
+        }
+        case 'syncHuaweiActivities': {
+          // V0.3.18 C 选项：手动拉华为活动历史（accessToken → RawActivity）
+          return { code: 0, data: await deviceService.syncHuaweiActivities(userId) };
+        }
         case 'syncFromTerra': {
           // V0.1.130 Terra REST 手动拉历史 activity
           const input = (payload ?? {}) as { start: string; end: string };

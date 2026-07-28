@@ -30,6 +30,12 @@ import {
   garminHealthAccessToken,
   isGarminHealthConfigured,
 } from './garmin-health.js';
+import {
+  generateHuaweiAuthUrl,
+  exchangeHuaweiCode,
+  isHuaweiConfigured,
+  upsertHuaweiActivity,
+} from './huawei-health.js';
 import { encryptToken } from '../../infra/crypto.js';
 import { parse as parseCsv } from 'csv-parse/sync';
 import { Errors } from '../../common/errors.js';
@@ -1047,6 +1053,85 @@ export const deviceService = {
       );
     }
     return { url: result.url, configured: isGarminHealthConfigured() };
+  },
+
+  /**
+   * V0.3.18 C 选项：华为运动健康 Cloud API OAuth 2.0 授权 URL
+   *
+   * state=userId 防 CSRF（Redis 暂存 5min），华为回调凭 state=userId 解码 → huaweiHealthCallback
+   * 凭据就绪（HUAWEI_APP_ID/SECRET）后激活；未配齐时返空 URL + configured: false
+   */
+  async huaweiHealthAuthUrl(userId: string): Promise<{ url: string; configured: boolean }> {
+    const host = env.WX_NOTIFY_URL ? new URL(env.WX_NOTIFY_URL).host : 'localhost';
+    const callbackUrl = `https://${host}/api/device/huawei-health-callback?state=${encodeURIComponent(userId)}`;
+    const result = generateHuaweiAuthUrl(userId, callbackUrl);
+    if (result.configured) {
+      // 暂存 state→userId（5min TTL 防 CSRF，callback 凭 state 解 userId）
+      await redis.set(`huawei:oauth:state:${userId}`, userId, 'EX', 300);
+    }
+    return result;
+  },
+
+  /**
+   * V0.3.18 C 选项：华为 OAuth 2.0 回调（authorization code → access_token）
+   *
+   * state 校验（Redis 暂存）+ code 换 token + 加密存 DeviceBinding（vendor=huawei_oauth）
+   */
+  async huaweiHealthCallback(input: {
+    code: string;
+    state: string;
+  }): Promise<{ ok: boolean; userId?: string }> {
+    const userId = input.state;
+    if (!userId) return { ok: false };
+    // state→userId 校验（防 CSRF）
+    const stored = await redis.get(`huawei:oauth:state:${userId}`);
+    if (stored !== userId) return { ok: false };
+    const host = env.WX_NOTIFY_URL ? new URL(env.WX_NOTIFY_URL).host : 'localhost';
+    const callbackUrl = `https://${host}/api/device/huawei-health-callback?state=${encodeURIComponent(userId)}`;
+    const tokens = await exchangeHuaweiCode(input.code, callbackUrl);
+    if (!tokens) return { ok: false };
+    // 落 DeviceBinding（vendor=huawei_oauth 区分 BLE huawei；加密存 OAuth 2.0 token）
+    await prisma.deviceBinding.upsert({
+      where: { userId_vendor: { userId, vendor: 'huawei_oauth' } },
+      create: {
+        userId,
+        vendor: 'huawei_oauth',
+        accessTokenEnc: encryptToken(tokens.accessToken),
+        refreshTokenEnc: encryptToken(tokens.refreshToken),
+        vendorUserId: tokens.unionId ?? null,
+        scopes: ['huawei_health'],
+        lastSyncAt: new Date(),
+      },
+      update: {
+        accessTokenEnc: encryptToken(tokens.accessToken),
+        refreshTokenEnc: encryptToken(tokens.refreshToken),
+        vendorUserId: tokens.unionId ?? null,
+        scopes: ['huawei_health'],
+        lastSyncAt: new Date(),
+        status: 'active',
+      },
+    });
+    await redis.del(`huawei:oauth:state:${userId}`);
+    return { ok: true, userId };
+  },
+
+  /**
+   * V0.3.18 C 选项：手动同步华为活动（用 accessToken 拉历史 → 落 RawActivity）
+   *
+   * 凭据未配齐或 DeviceBinding 不存在 → 返 ok:false
+   * 配齐后激活：accessToken 解密 + 拉过去 N 天活动 + upsert RawActivity
+   */
+  async syncHuaweiActivities(userId: string): Promise<{ ok: boolean; count?: number }> {
+    if (!isHuaweiConfigured()) return { ok: false };
+    const binding = await prisma.deviceBinding.findUnique({
+      where: { userId_vendor: { userId, vendor: 'huawei_oauth' } },
+    });
+    if (!binding) return { ok: false };
+    if (!binding.accessTokenEnc) return { ok: false };
+    const accessToken = (await import('../../infra/crypto.js')).decryptToken(binding.accessTokenEnc);
+    const endDate = new Date().toISOString().slice(0, 10);
+    const startDate = new Date(Date.now() - 30 * 86_400_000).toISOString().slice(0, 10);
+    return upsertHuaweiActivity(userId, accessToken, startDate, endDate);
   },
 
   /**

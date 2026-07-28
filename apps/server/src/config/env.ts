@@ -84,6 +84,10 @@ const EnvSchema = z.object({
   GARMIN_CONSUMER_SECRET: z.string().optional(),
   CRYPTO_KEY: z.string().optional(), // V0.2.89 token 加密（infra/crypto.ts AES-256-GCM，存 OAuth token）
 
+  // V0.3.18 C 选项：华为运动健康 Cloud API OAuth 2.0（需企业资质 + open platform 申请）
+  HUAWEI_APP_ID: z.string().optional(),
+  HUAWEI_APP_SECRET: z.string().optional(),
+
   // V0.1.148 和风天气 API（qweather.com）
   QWEATHER_KEY: z.string().optional(),
   QWEATHER_API_HOST: z.string().default('nf5b5vtkcp.re.qweatherapi.com'),
