@@ -21,8 +21,8 @@ import { logger } from '../common/logger.js';
 
 export interface DevicePollPullJobData {}
 
-/** V0.3.1 vendor enum（强类型 vendor 列表） */
-export type DeviceVendor = 'wechat' | 'garmin' | 'terra';
+/** V0.3.1 vendor enum（强类型 vendor 列表，V0.3.13 加 'huawei'） */
+export type DeviceVendor = 'wechat' | 'garmin' | 'terra' | 'huawei';
 
 export interface DailyData {
   vendor: DeviceVendor;
@@ -80,6 +80,42 @@ async function fetchTerraData(_userId: string, _since: Date): Promise<DailyData[
   return [];
 }
 
+/** Huawei 数据源（V0.3.13 — 从 Checkin where dataSource='huawei_export' 聚合）
+ *
+ * 数据流：用户上传华为 ZIP/TCX → upload-parse.job → device-parser.registry huawei_export
+ *   → sportService.checkin(dataSource='huawei_export') → Checkin 落库
+ * 本函数从 Checkin 聚合最近 7 天的华为运动数据到 DeviceDailyActivity。
+ *
+ * 字段映射：
+ *   - distance (km) → distanceM (m, ×1000)
+ *   - durationSec → activeMin (÷60)
+ *   - step / caloriesKcal / sleepMin → 0（华为 ZIP 不含步数，Checkin 无 calories 字段）
+ */
+async function fetchHuaweiData(userId: string, since: Date): Promise<DailyData[]> {
+  const checkins = await prisma.checkin.findMany({
+    where: { userId, dataSource: 'huawei_export', createdAt: { gte: since } },
+    select: { date: true, distance: true, durationSec: true },
+  });
+  if (checkins.length === 0) return [];
+
+  // 按 date 分组聚合（reduce 内存，date 已经是 YYYY-MM-DD）
+  const byDate = new Map<string, { distanceKm: number; durationSec: number }>();
+  for (const c of checkins) {
+    const cur = byDate.get(c.date) ?? { distanceKm: 0, durationSec: 0 };
+    cur.distanceKm += c.distance;
+    cur.durationSec += c.durationSec ?? 0;
+    byDate.set(c.date, cur);
+  }
+
+  return Array.from(byDate.entries()).map(([date, agg]) => ({
+    vendor: 'huawei',
+    date,
+    distanceM: Math.round(agg.distanceKm * 1000),
+    activeMin: Math.round(agg.durationSec / 60),
+    // step / caloriesKcal / sleepMin 华为 ZIP 不含，留 0
+  }));
+}
+
 // ===== upsert 共享 helper =====
 
 async function upsertDailyActivity(
@@ -118,21 +154,23 @@ export async function processDevicePollPull(): Promise<DevicePollPullResult> {
     take: 1000,
   });
 
-  // V0.3.1 多 vendor fetch 函数数组（并行 Promise.allSettled 隔离失败）
+  // V0.3.1 多 vendor fetch 函数数组（并行 Promise.allSettled 隔离失败，V0.3.13 加 huawei）
   const vendorFetchers: Array<{ vendor: DeviceVendor; fetch: (userId: string, since: Date) => Promise<DailyData[]> }> = [
     { vendor: 'wechat', fetch: fetchWechatData },
     { vendor: 'garmin', fetch: fetchGarminData },
     { vendor: 'terra', fetch: fetchTerraData },
+    { vendor: 'huawei', fetch: fetchHuaweiData },
   ];
 
   const perVendorCount: Record<DeviceVendor, { pulledDaysCount: number; upsertedCount: number; skippedDaysCount: number }> = {
     wechat: { pulledDaysCount: 0, upsertedCount: 0, skippedDaysCount: 0 },
     garmin: { pulledDaysCount: 0, upsertedCount: 0, skippedDaysCount: 0 },
     terra: { pulledDaysCount: 0, upsertedCount: 0, skippedDaysCount: 0 },
+    huawei: { pulledDaysCount: 0, upsertedCount: 0, skippedDaysCount: 0 },
   };
   let totalUpsertedCount = 0;
 
-  // 2. 对每个用户调 3 vendor fetch（并行 + 失败隔离）
+  // 2. 对每个用户调 4 vendor fetch（并行 + 失败隔离）
   for (const u of activeUsers) {
     const results = await Promise.allSettled(
       vendorFetchers.map(async ({ vendor, fetch }) => {
@@ -166,7 +204,8 @@ export async function processDevicePollPull(): Promise<DevicePollPullResult> {
   totalUpsertedCount =
     perVendorCount.wechat.upsertedCount +
     perVendorCount.garmin.upsertedCount +
-    perVendorCount.terra.upsertedCount;
+    perVendorCount.terra.upsertedCount +
+    perVendorCount.huawei.upsertedCount;
 
   const result: DevicePollPullResult = {
     activeUserCount: activeUsers.length,
@@ -175,7 +214,7 @@ export async function processDevicePollPull(): Promise<DevicePollPullResult> {
   };
 
   if (totalUpsertedCount > 0) {
-    logger.info(result, 'device-poll-pull backfilled DeviceDailyActivity from 3 vendors');
+    logger.info(result, 'device-poll-pull backfilled DeviceDailyActivity from 4 vendors');
   }
   return result;
 }
