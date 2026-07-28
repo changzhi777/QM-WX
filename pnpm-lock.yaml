@@ -50,9 +50,6 @@ importers:
       '@vant/weapp':
         specifier: ^1.11.7
         version: 1.11.7
-      mqtt:
-        specifier: ^5.15.2
-        version: 5.15.2
     devDependencies:
       miniprogram-api-typings:
         specifier: ^3.0.0

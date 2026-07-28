@@ -13,8 +13,7 @@
   },
   "dependencies": {
     "@qm-wx/shared": "workspace:*",
-    "@vant/weapp": "^1.11.7",
-    "mqtt": "^5.15.2"
+    "@vant/weapp": "^1.11.7"
   },
   "devDependencies": {
     "miniprogram-api-typings": "^3.0.0",
