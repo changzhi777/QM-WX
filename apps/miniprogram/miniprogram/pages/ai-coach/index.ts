@@ -45,7 +45,7 @@ Page({
     sending: false,
     scrollTop: 0,
     quickQuestions: QUICK_QUESTIONS,
-    alert: null as string | null, // V0.1.144 计划提醒
+    alert: null as string | null, // V0.3.27 冗余保留（wxml 已删 AI主动提醒卡，alert 不显示；data 字段保留避免 ts 引用断链）
     todayData: null as { steps: number; restingHr: number | null; sleepHours: number | null; healthScore: number } | null,
     reportAdvice: '', // V0.2.30 建议计划气泡（今日 dailyReport reportText）
     hasHistory: false,
@@ -83,7 +83,6 @@ Page({
         api.call<{ reportText?: string }>('stats', 'dailyReport', {}).catch(() => null),
       ]);
       this.setData({
-        alert: res.alert,
         todayData: { steps: res.steps, restingHr: res.restingHr, sleepHours: res.sleepHours, healthScore: res.healthScore },
         reportAdvice: reportRes?.reportText || '',
       });

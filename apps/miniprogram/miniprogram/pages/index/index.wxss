@@ -55,15 +55,6 @@
 .ai-title { font-size: 28rpx; font-weight: 600; color: #333; flex: 1; }
 .free-tag { font-size: 18rpx; color: #b8860b; background: #fff8e1; padding: 2rpx 12rpx; border-radius: 10rpx; }
 .ai-body { font-size: 26rpx; color: #555; line-height: 1.7; }
-.ai-alert {
-  margin-top: 16rpx;
-  background: #fff8e1;
-  border-radius: 12rpx;
-  padding: 16rpx;
-  font-size: 24rpx;
-  color: #795548;
-  line-height: 1.5;
-}
 .ai-footer { margin-top: 20rpx; display: flex; gap: 16rpx; }
 .ai-action-btn {
   flex: 1;
@@ -171,8 +162,3 @@
 .data-row-hover { opacity: 0.7; }
 
 /* V0.3.11 AI 快报（健康提醒卡）*/
-.ai-alert-card { background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%); border-radius: 16rpx; padding: 24rpx; margin: 16rpx 0; border-left: 6rpx solid #ffc107; }
-.ai-alert-head { display: flex; align-items: center; margin-bottom: 12rpx; }
-.ai-alert-icon { font-size: 32rpx; margin-right: 8rpx; }
-.ai-alert-title { font-size: 28rpx; font-weight: 600; color: #8a6d3b; }
-.ai-alert-text { font-size: 26rpx; color: #66584c; line-height: 1.6; }

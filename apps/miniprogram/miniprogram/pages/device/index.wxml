@@ -26,6 +26,10 @@
         <view class="live-meta {{liveScale.stabilized ? 'ok' : 'wait'}}">{{liveScale.stabilized ? '✓ 已稳定' : '测量中...'}}</view>
         <button class="btn-submit" wx:if="{{liveScale.stabilized}}" bindtap="onSaveScaleData">保存数据</button>
       </view>
+      <view class="section scale-card" wx:else>
+        <view class="live-title">体脂秤</view>
+        <button class="btn-submit" bindtap="onConnectScale">🔗 连接体脂秤</button>
+      </view>
 
       <!-- 微信运动卡 -->
       <view class="section">

@@ -79,7 +79,7 @@
       <view class="advice-item" wx:for="{{weatherAdvice}}" wx:key="*this">{{item}}</view>
     </view>
 
-    <!-- 3 数据卡（P3 可点击跳 health 页看详情）-->
+    <!-- V0.3.29 隐藏：3 数据卡（今日步数/静息心率/昨晚睡眠）— 其余不动，恢复取消注释即可
     <view class="data-row" wx:if="{{score}}">
       <view class="data-card">
         <view class="icon">👟</view>
@@ -97,6 +97,7 @@
         <view class="label">昨晚睡眠</view>
       </view>
     </view>
+    -->
 
     <!-- 本周趋势（柱顶数值 + 柱底日期）-->
     <view class="section-title" wx:if="{{weekTrend.length}}">本周趋势 <text class="more" bindtap="goMonthlyReport">查看月度 →</text></view>

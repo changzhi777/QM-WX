@@ -39,16 +39,18 @@
     <view class="section">
       <view class="section-title">数据健康</view>
       <view class="menu-section">
-        <view class="menu-item" bindtap="goProfile">
+        <view class="menu-item" bindtap="goDeviceBind">
           <view class="mi-icon bg-blue">📊</view>
           <view class="mi-text">数据授权管理</view>
           <view class="mi-arrow">›</view>
         </view>
+        <!-- V0.3.29 隐藏：健康助手入口（与 tabBar 健康助手重复，恢复取消注释即可）
         <view class="menu-item" bindtap="goAiCoach">
           <view class="mi-icon bg-purple">🤖</view>
           <view class="mi-text">健康助手 <text class="new-label">NEW</text></view>
           <view class="mi-arrow">›</view>
         </view>
+        -->
         <view class="menu-item" wx:if="{{flags.runner}}" bindtap="goRunner">
           <view class="mi-icon bg-orange">📋</view>
           <view class="mi-text">我的解读报告</view>
@@ -60,11 +62,13 @@
           <view class="mi-text">健康目标 <text class="new-label">NEW</text></view>
           <view class="mi-arrow">›</view>
         </view>
+        <!-- V0.3.29 隐藏：问答历史入口（跳转到健康助手 tab，与 tabBar 重复，恢复取消注释即可）
         <view class="menu-item" bindtap="goAiCoach">
           <view class="mi-icon bg-pink">💬</view>
           <view class="mi-text">问答历史</view>
           <view class="mi-arrow">›</view>
         </view>
+        -->
       </view>
     </view>
 

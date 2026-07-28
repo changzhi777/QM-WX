@@ -292,11 +292,6 @@
 .ai-page-title { font-size: 36rpx; font-weight: 600; }
 .ai-page-sub { font-size: 24rpx; opacity: 0.9; margin: 6rpx 0 16rpx; }
 
-.ai-alert-card { margin: 16rpx; background: linear-gradient(135deg, #fff8e1, #fff3cd); border-radius: 16rpx; padding: 20rpx; display: flex; gap: 12rpx; align-items: flex-start; border: 1rpx solid #ffe082; }
-.ai-alert-icon { font-size: 32rpx; flex-shrink: 0; }
-.ai-alert-body { flex: 1; }
-.ai-alert-title { font-size: 24rpx; font-weight: 600; color: #e65100; margin-bottom: 6rpx; }
-.ai-alert-text { font-size: 24rpx; color: #795548; line-height: 1.5; }
 
 /* V0.1.144 AI 等待动画（pending + 首个 token 未到）*/
 .thinking { display: flex; align-items: center; gap: 12rpx; }

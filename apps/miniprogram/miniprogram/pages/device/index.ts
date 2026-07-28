@@ -201,19 +201,9 @@ Page({
     }
   },
 
-  onTapBrand(e: WechatMiniprogram.TouchEvent) {
-    const key = e.currentTarget.dataset.key as string;
-    const brand = this.data.brands.find((b) => b.key === key);
-    if (!brand) return;
-    if (!brand.available) { wx.showToast({ title: '敬请期待', icon: 'none' }); return; }
-    if (brand.connectionType === 'ble' || brand.key === 'garmin' || brand.key === 'xiaomi') {
-      this.startScan();
-    } else if (brand.key === 'werun') {
-      wx.showToast({ title: '微信运动同步开发中', icon: 'none' });
-    } else if (brand.key === 'vivo') {
-      // V0.2.153：VIVO 蓝牙直连待后续对接，数据经微信运动通道同步（V0.2.113 诚实标注数据源）
-      this.onSyncWeRun();
-    }
+  /** V0.3.27 融合后体脂秤连接入口（替代已删的品牌宫格 onTapBrand，复用 startScan 扫描逻辑）*/
+  onConnectScale() {
+    this.startScan();
   },
 
   async startScan() {
@@ -518,27 +508,6 @@ Page({
   closeScan() {
     this.setData({ scanVisible: false });
     if (this.data.scanning) { closeBleAdapter(); this.setData({ scanning: false }); }
-  },
-
-  onUnbind(e: WechatMiniprogram.TouchEvent) {
-    const vendor = e.currentTarget.dataset.vendor as string;
-    const deviceName = e.currentTarget.dataset.name as string;
-    wx.showModal({
-      title: '解绑设备',
-      content: `确定解绑「${deviceName}」吗？`,
-      success: async (r) => {
-        if (!r.confirm) return;
-        try {
-          await api.call('device', 'unbind', { vendor });
-          if ((vendor === 'ble' || vendor === 'garmin' || vendor === 'xiaomi') && this.data.boundBleDeviceId) {
-            await disconnectDevice(this.data.boundBleDeviceId);
-            this.setData({ boundBleDeviceId: '', liveHr: null, liveBattery: null, liveModel: null, liveManufacturer: null });
-          }
-          wx.showToast({ title: '已解绑', icon: 'success' });
-          this.loadBindings();
-        } catch { wx.showToast({ title: '解绑失败', icon: 'none' }); }
-      },
-    });
   },
 
   // ===== V0.1.150 上传运动数据包（COS 中转 → 后台异步解析）=====
