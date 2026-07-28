@@ -46,6 +46,37 @@ export const UpdateProgressInputSchema = z.object({
 });
 export type UpdateProgressInput = z.infer<typeof UpdateProgressInputSchema>;
 
+/** V0.3.16 Phase 6 recommendGoals：单条推荐 */
+export const RecommendationSchema = z.object({
+  ruleId: z.string(),                 // 规则标识（前端埋点/AB 用）
+  kind: GoalKindEnum,
+  type: GoalTypeEnum,
+  title: z.string(),
+  targetDistance: z.number().optional(),  // kind=distance
+  targetVolume: z.number().optional(),    // kind=volume
+  targetValue: z.number().optional(),     // health kind
+  unit: z.string().optional(),
+  judgeCriteria: z.string().optional(),
+  reason: z.string(),                 // 推荐理由（前端展示）
+  priority: z.number(),               // 1-10 越高越优先
+});
+export type Recommendation = z.infer<typeof RecommendationSchema>;
+
+/** V0.3.16 recommend 返回 */
+export const RecommendResultSchema = z.object({
+  recommendations: z.array(RecommendationSchema),
+  profile: z.object({
+    monthlyDistanceKm: z.number(),       // 本月跑量 km
+    monthlyVolumeKg: z.number(),         // 本月力量容量 kg·次
+    monthlyStrengthSessions: z.number(), // 本月力量次数
+    bmi: z.number().nullable(),          // 最新 BMI
+    avgSleepHours: z.number().nullable(),// 近 30 天平均睡眠 h
+    daysSinceRegistration: z.number(),  // 注册天数
+    hasActiveGoalByKind: z.array(z.string()), // 已有同类 active goal kinds
+  }),
+});
+export type RecommendResult = z.infer<typeof RecommendResultSchema>;
+
 /** V0.1.34 家庭目标（复用 AddGoalInput 字段 + familyId） */
 export const AddFamilyGoalSchema = AddGoalInputSchema.extend({
   familyId: z.string().min(1),
@@ -97,6 +128,8 @@ export const GoalActionBodySchema = z.object({
     // V0.3.9 暂停/恢复目标（清单 #30 "可暂停"）
     'pauseGoal',
     'resumeGoal',
+    // V0.3.16 Phase 6 系统推荐
+    'recommend',
   ]),
   payload: z.unknown().optional(),
 });

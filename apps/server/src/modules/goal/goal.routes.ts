@@ -71,6 +71,9 @@ export async function goalRoutes(app: FastifyInstance) {
         const input = UpdateProgressInputSchema.parse(payload);
         return { code: 0, data: await goalService.updateProgress(userId, input) };
       }
+      // V0.3.16 Phase 6：基于画像规则推荐下一步目标
+      case 'recommend':
+        return { code: 0, data: await goalService.recommend(userId) };
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
     }

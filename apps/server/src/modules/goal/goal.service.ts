@@ -223,11 +223,245 @@ async function computeGoalProgress(userIds: string[], g: any) {
   return result;
 }
 
+/**
+ * V0.3.16 Phase 6 recommendGoals：基于画像规则引擎
+ *
+ * 数据源（5 类）：
+ *   1. User.createdAt（注册天数）
+ *   2. Checkin this month aggregate（跑量）
+ *   3. StrengthSession this month aggregate（力量容量 + 次数）
+ *   4. BodyCompositionRecord latest（体重 + BMI）
+ *   5. SleepRecord avg durationSeconds last 30 days
+ *   6. Goal where status='active'（已有同类目标排除）
+ *
+ * 规则 8 条（hardcoded const，后续可 DB 化）：
+ *   - newcomer：注册 < 7 天 + 月跑量 = 0 → distance 30km/月
+ *   - low_distance：月跑 < 50km → distance 100km/月
+ *   - mid_distance：月跑 50-150km → distance 200km/月
+ *   - high_distance：月跑 > 150km → distance 500km/年
+ *   - low_volume：月力量次数 < 4 → volume 8000 kg·次/月
+ *   - high_volume：月力量次数 ≥ 16 → volume 30000 kg·次/月
+ *   - weight_loss：BMI ≥ 24 → weight_loss 5kg/月
+ *   - sleep_low：近 30 天平均睡眠 < 6.5h → sleep 7h × 30 天
+ *
+ * 排除：已有同类 active goal → 不推荐（防重复）
+ */
+async function computeRecommend(userId: string): Promise<{
+  recommendations: Array<{
+    ruleId: string;
+    kind: string;
+    type: 'monthly' | 'yearly' | 'custom';
+    title: string;
+    targetDistance?: number;
+    targetVolume?: number;
+    targetValue?: number;
+    unit?: string;
+    judgeCriteria?: string;
+    reason: string;
+    priority: number;
+  }>;
+  profile: {
+    monthlyDistanceKm: number;
+    monthlyVolumeKg: number;
+    monthlyStrengthSessions: number;
+    bmi: number | null;
+    avgSleepHours: number | null;
+    daysSinceRegistration: number;
+    hasActiveGoalByKind: string[];
+  };
+}> {
+  // ===== 1. 数据采集（5 类 prisma 调用并行 Promise.all） =====
+  const now = new Date();
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1) - 8 * 3600 * 1000);
+  const monthRange = cnDateRange(monthStart, now);
+  const sleepStart = new Date(now.getTime() - 30 * 86_400_000);
+
+  const [user, monthCheckinAgg, monthStrengthAgg, latestBody, sleepAgg, activeGoals] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { createdAt: true, height: true } }),
+    prisma.checkin.aggregate({
+      _sum: { distance: true },
+      where: { userId, date: monthRange },
+    }),
+    prisma.strengthSession.aggregate({
+      _sum: { totalVolume: true },
+      _count: true,
+      where: { userId, createdAt: { gte: monthStart, lte: now } },
+    }),
+    prisma.bodyCompositionRecord.findFirst({
+      where: { userId },
+      orderBy: { timestamp: 'desc' },
+      select: { weight: true, bmi: true },
+    }),
+    prisma.sleepRecord.aggregate({
+      _avg: { durationSeconds: true },
+      where: { userId, createdAt: { gte: sleepStart, lte: now } },
+    }),
+    prisma.goal.findMany({
+      where: { userId, status: 'active' },
+      select: { kind: true },
+    }),
+  ]);
+
+  const monthlyDistanceKm = monthCheckinAgg._sum.distance ?? 0;
+  const monthlyVolumeKg = monthStrengthAgg._sum.totalVolume ?? 0;
+  const monthlyStrengthSessions = monthStrengthAgg._count ?? 0;
+  const bmi = latestBody?.bmi ?? null;
+  // bodyCompositionRecord 没 bmi 时，user.height + latestBody.weight 反推
+  const computedBmi = bmi != null ? bmi : (
+    latestBody?.weight != null && user?.height != null && user.height > 0
+      ? Math.round((latestBody.weight / Math.pow(user.height / 100, 2)) * 10) / 10
+      : null
+  );
+  const avgSleepSeconds = sleepAgg._avg.durationSeconds;
+  const avgSleepHours = avgSleepSeconds != null ? Math.round((avgSleepSeconds / 3600) * 10) / 10 : null;
+  const daysSinceRegistration = user?.createdAt
+    ? Math.floor((now.getTime() - user.createdAt.getTime()) / 86_400_000)
+    : 0;
+  const activeKinds = new Set(activeGoals.map((g) => g.kind).filter((k): k is string => !!k));
+
+  // ===== 2. 应用规则（按 priority 倒序排序，active kind 排除） =====
+  const recommendations: Array<{
+    ruleId: string;
+    kind: string;
+    type: 'monthly' | 'yearly' | 'custom';
+    title: string;
+    targetDistance?: number;
+    targetVolume?: number;
+    targetValue?: number;
+    unit?: string;
+    judgeCriteria?: string;
+    reason: string;
+    priority: number;
+  }> = [];
+
+  // rule_newcomer：注册 < 7 天 + 月跑 = 0
+  if (daysSinceRegistration < 7 && monthlyDistanceKm === 0 && !activeKinds.has('distance')) {
+    recommendations.push({
+      ruleId: 'newcomer',
+      kind: 'distance',
+      type: 'monthly',
+      title: '新用户起步：30km 养成跑步习惯',
+      targetDistance: 30,
+      reason: '刚注册 + 暂无打卡数据，建议先养成习惯（30km/月，每天 1km 即可）',
+      priority: 10,
+    });
+  }
+  // rule_low_distance
+  if (monthlyDistanceKm < 50 && !activeKinds.has('distance')) {
+    recommendations.push({
+      ruleId: 'low_distance',
+      kind: 'distance',
+      type: 'monthly',
+      title: '月跑量进阶：100km',
+      targetDistance: 100,
+      reason: `当前月跑量 ${monthlyDistanceKm.toFixed(1)}km，建议目标 100km/月逐步建立规律`,
+      priority: 7,
+    });
+  }
+  // rule_mid_distance
+  else if (monthlyDistanceKm >= 50 && monthlyDistanceKm < 150 && !activeKinds.has('distance')) {
+    recommendations.push({
+      ruleId: 'mid_distance',
+      kind: 'distance',
+      type: 'monthly',
+      title: '月跑量进阶：200km',
+      targetDistance: 200,
+      reason: `当前月跑量 ${monthlyDistanceKm.toFixed(1)}km，建议目标 200km/月突破自我`,
+      priority: 7,
+    });
+  }
+  // rule_high_distance
+  else if (monthlyDistanceKm >= 150 && !activeKinds.has('distance')) {
+    recommendations.push({
+      ruleId: 'high_distance',
+      kind: 'distance',
+      type: 'yearly',
+      title: '年度挑战：500km',
+      targetDistance: 500,
+      reason: `当前月跑量 ${monthlyDistanceKm.toFixed(1)}km，建议年度 500km 跑神挑战`,
+      priority: 6,
+    });
+  }
+  // rule_low_volume
+  if (monthlyStrengthSessions < 4 && !activeKinds.has('volume')) {
+    recommendations.push({
+      ruleId: 'low_volume',
+      kind: 'volume',
+      type: 'monthly',
+      title: '力量训练起步：8000 kg·次',
+      targetVolume: 8000,
+      reason: `当前月力量训练 ${monthlyStrengthSessions} 次，建议至少 4 次/月，每次 ~2000 kg·次`,
+      priority: 5,
+    });
+  }
+  // rule_high_volume
+  else if (monthlyStrengthSessions >= 16 && !activeKinds.has('volume')) {
+    recommendations.push({
+      ruleId: 'high_volume',
+      kind: 'volume',
+      type: 'monthly',
+      title: '力量达人：30000 kg·次',
+      targetVolume: 30000,
+      reason: `当前月力量训练 ${monthlyStrengthSessions} 次，建议 30000 kg·次/月挑战极限`,
+      priority: 4,
+    });
+  }
+  // rule_weight_loss
+  if (computedBmi != null && computedBmi >= 24 && !activeKinds.has('weight_loss')) {
+    recommendations.push({
+      ruleId: 'weight_loss',
+      kind: 'weight_loss',
+      type: 'monthly',
+      title: '体重管理：减重 5kg',
+      targetValue: 5,
+      unit: 'kg',
+      judgeCriteria: `当前 BMI ${computedBmi}（≥24 偏高），建议月减 5kg 配合饮食+运动`,
+      reason: `BMI ${computedBmi} 处于超重区间，目标减重 5kg/月`,
+      priority: 8,
+    });
+  }
+  // rule_sleep_low
+  if (avgSleepHours != null && avgSleepHours < 6.5 && !activeKinds.has('sleep')) {
+    recommendations.push({
+      ruleId: 'sleep_low',
+      kind: 'sleep',
+      type: 'custom',
+      title: '睡眠改善：每日 7 小时 × 30 天',
+      targetValue: 7,
+      unit: 'h',
+      judgeCriteria: '近 30 天平均睡眠时长需 ≥ 7h 才算达标',
+      reason: `近 30 天平均睡眠 ${avgSleepHours.toFixed(1)}h（<6.5h 不足），建议 7h × 30 天`,
+      priority: 6,
+    });
+  }
+
+  // 按 priority 倒序排序
+  recommendations.sort((a, b) => b.priority - a.priority);
+
+  return {
+    recommendations,
+    profile: {
+      monthlyDistanceKm: Math.round(monthlyDistanceKm * 10) / 10,
+      monthlyVolumeKg: Math.round(monthlyVolumeKg),
+      monthlyStrengthSessions,
+      bmi: computedBmi,
+      avgSleepHours,
+      daysSinceRegistration,
+      hasActiveGoalByKind: Array.from(activeKinds),
+    },
+  };
+}
+
 export const goalService = {
   /** 我的个人目标列表（含进度，active 在前；仅 familyId=null 的个人目标） */
   async list(userId: string) {
     const cacheKey = `goal:list:${userId}`;
     return Cache.wrap(cacheKey, 120, async () => this.computeList(userId));
+  },
+
+  /** V0.3.16 Phase 6：基于画像规则推荐下一步目标（不做 DB 写，前端可直接 add） */
+  async recommend(userId: string) {
+    return computeRecommend(userId);
   },
   async computeList(userId: string) {
     const goals = await prisma.goal.findMany({
