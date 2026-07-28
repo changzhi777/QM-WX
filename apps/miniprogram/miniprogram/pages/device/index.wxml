@@ -13,27 +13,7 @@
   <view wx:if="{{tab === 'bind'}}">
     <view class="loading" wx:if="{{bindLoading}}">加载中...</view>
     <block wx:else>
-      <!-- 品牌宫格 -->
-      <view class="brand-grid">
-        <view class="brand-card {{!item.available ? 'disabled' : ''}}" wx:for="{{brands}}" wx:key="key" data-key="{{item.key}}" bindtap="onTapBrand">
-          <view class="brand-icon">{{item.icon || '⌚'}}</view>
-          <view class="brand-name">{{item.name}}</view>
-          <view class="brand-cat">{{item._categoryLabel}}</view>
-        </view>
-      </view>
-
-      <!-- 已绑设备 -->
-      <view class="section" wx:if="{{bindings.length > 0}}">
-        <view class="section-title">多设备（可同时绑定多个）</view>
-        <view class="binding-row" wx:for="{{bindings}}" wx:key="id">
-          <view class="binding-info">
-            <view class="binding-name">{{item.deviceName}} <text class="status-badge {{item.status}}">{{item.status === 'online' ? '● 在线' : '○ 离线'}}</text></view>
-            <view class="binding-vendor">{{item.vendor}}</view>
-          </view>
-          <view class="binding-unbind" data-vendor="{{item.vendor}}" data-name="{{item.deviceName}}" bindtap="onUnbind">解绑</view>
-        </view>
-      </view>
-
+      <!-- V0.3.27 融合：品牌授权入口统一到顶部 auth-center-section（garmin/huawei/coros OAuth），绑定 tab 只保留数据采集（体脂秤 + 微信运动）-->
       <!-- 实时心率卡已移除（V0.2.115：心率后台订阅保留落库，设备中心不实时显示）-->
 
       <!-- 体脂秤卡 -->

@@ -174,7 +174,8 @@ Page({
   },
 
   loadByTab(tab: DeviceTab) {
-    if (tab === 'bind') { this.loadBindings(); this.loadWeRun(); }
+    // V0.3.27 融合：品牌授权入口统一到顶部 auth-center-section，bind tab 不再加载 brands/bindings（loadBindings 方法保留备用）
+    if (tab === 'bind') { this.loadWeRun(); }
     else if (tab === 'garmin') this.loadGarminList();
     // import tab 静态（品牌列表 data 初始化）
   },

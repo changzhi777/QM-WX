@@ -73,15 +73,6 @@
     </view>
     -->
 
-    <!-- V0.3.11 AI 快报（健康提醒，DailyReport.alertText）-->
-    <view class="ai-alert-card" wx:if="{{report.alertText}}">
-      <view class="ai-alert-head">
-        <text class="ai-alert-icon">💡</text>
-        <text class="ai-alert-title">AI 健康提醒</text>
-      </view>
-      <view class="ai-alert-text">{{report.alertText}}</view>
-    </view>
-
     <!-- 运动与天气建议（stats.weatherAnalysis insights）-->
     <view class="weather-advice-card" wx:if="{{weatherAdvice.length}}">
       <view class="advice-title">🌡️ 运动与天气建议</view>

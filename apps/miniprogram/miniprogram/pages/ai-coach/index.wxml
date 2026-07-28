@@ -13,15 +13,6 @@
     />
   </view>
 
-  <!-- 计划提醒（V0.1.144 原型图）-->
-  <view class="ai-alert-card" wx:if="{{alert}}">
-    <view class="ai-alert-icon">⚠️</view>
-    <view class="ai-alert-body">
-      <view class="ai-alert-title">AI主动提醒</view>
-      <view class="ai-alert-text">{{alert}}</view>
-    </view>
-  </view>
-
   <!-- 人设切换（A）-->
   <view class="persona-bar">
     <view
