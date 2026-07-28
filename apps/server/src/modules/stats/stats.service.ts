@@ -254,7 +254,27 @@ export const statsService = {
     const now = new Date(Date.now() + 8 * 3600 * 1000);
     const date = input.date ?? cnDate(now);
     const existing = await prisma.dailyReport.findUnique({ where: { userId_date: { userId, date } } });
-    if (existing) return existing;
+    if (existing) {
+      // V0.3.27 fix: 实时更新 steps + alertText + healthScore + reportText（避免缓存过期数据误导；buildReportText 纯函数无 LLM 成本低）
+      const liveSteps = await getTodaySteps(userId, date);
+      if (liveSteps !== existing.steps) {
+        const healthScore = calcHealthScore(liveSteps, existing.restingHr, existing.sleepHours);
+        const alertText = buildAlertText(liveSteps, existing.restingHr, existing.sleepHours);
+        const recent = await prisma.dailyReport.findMany({
+          where: { userId, date: { lt: date } },
+          orderBy: { date: 'desc' },
+          take: 7,
+          select: { steps: true },
+        });
+        const avgSteps = recent.length ? Math.round(recent.reduce((s, r) => s + r.steps, 0) / recent.length) : null;
+        const reportText = buildReportText(liveSteps, existing.restingHr, existing.sleepHours, healthScore, avgSteps);
+        return await prisma.dailyReport.update({
+          where: { userId_date: { userId, date } },
+          data: { steps: liveSteps, healthScore, alertText, reportText },
+        });
+      }
+      return existing;
+    }
     const [steps, restingHr, sleepHours] = await Promise.all([
       getTodaySteps(userId, date), getRestingHr(userId, date), getLastNightSleep(userId, date),
     ]);

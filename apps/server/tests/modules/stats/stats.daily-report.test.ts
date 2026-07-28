@@ -6,7 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('src/infra/prisma.js', () => ({
   prisma: {
-    dailyReport: { findUnique: vi.fn(), create: vi.fn(), findMany: vi.fn(), count: vi.fn() },
+    dailyReport: { findUnique: vi.fn(), create: vi.fn(), findMany: vi.fn(), count: vi.fn(), update: vi.fn() },
     weRunRecord: { findUnique: vi.fn() },
     heartRateRecord: { findFirst: vi.fn() },
     sleepRecord: { findUnique: vi.fn() },
@@ -23,16 +23,40 @@ const mockedPrisma = vi.mocked(prisma);
 beforeEach(() => vi.clearAllMocks());
 
 describe('statsService.dailyReport (V0.1.144)', () => {
-  it('已有今日报告 → 返缓存不重新生成', async () => {
+  it('已有今日报告 + steps 未变 → 返缓存不重新生成', async () => {
     const existing = {
       id: 'r1', date: '2026-07-14', healthScore: 80, reportText: '今日健康分数 80 分',
       alertText: null, steps: 5000, restingHr: 70, sleepHours: 7,
     };
     mockedPrisma.dailyReport.findUnique.mockResolvedValue(existing as never);
+    mockedPrisma.weRunRecord.findUnique.mockResolvedValue({ step: 5000 } as never); // V0.3.27: steps 未变
 
     const r = await statsService.dailyReport('u1', {});
 
     expect(r).toEqual(existing);
+    expect(mockedPrisma.dailyReport.create).not.toHaveBeenCalled();
+    expect(mockedPrisma.dailyReport.update).not.toHaveBeenCalled();
+  });
+
+  it('V0.3.27 fix: 已有今日报告 + steps 变了 → 实时更新 steps + alertText + healthScore + reportText', async () => {
+    const existing = {
+      id: 'r1', date: '2026-07-14', healthScore: 80, reportText: '今日步数 0 步',
+      alertText: null, steps: 0, restingHr: 70, sleepHours: 7,
+    };
+    const updated = { ...existing, steps: 1914, healthScore: 82, alertText: '今日步数仅 1914 步，建议增加活动量', reportText: '今日步数 1914 步' };
+    mockedPrisma.dailyReport.findUnique.mockResolvedValue(existing as never);
+    mockedPrisma.weRunRecord.findUnique.mockResolvedValue({ step: 1914 } as never); // 微信运动同步后 steps 变了
+    mockedPrisma.dailyReport.findMany.mockResolvedValue([] as never); // avgSteps 查询：无历史
+    mockedPrisma.dailyReport.update.mockResolvedValue(updated as never);
+
+    const r = await statsService.dailyReport('u1', {});
+
+    expect(r.steps).toBe(1914); // 不是缓存的 0
+    expect(r.healthScore).toBe(82);
+    expect(r.alertText).toContain('1914');
+    expect(mockedPrisma.dailyReport.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ steps: 1914, reportText: expect.any(String) }),
+    }));
     expect(mockedPrisma.dailyReport.create).not.toHaveBeenCalled();
   });
 
