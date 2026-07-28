@@ -454,7 +454,73 @@ Page({
     this.setData({ inputText: '请调整这份计划：' });
   },
 
-  /** F 语音输入（V0.2.44 已移除：去 WechatSI 插件依赖，用户用系统输入法语音）*/
+  /** V0.3.23 GAP-18 修复：恢复 K5 voice 插件接入（WechatSI 同声传译）
+   * V0.2.19 完整实现（V0.2.25 临时移除 → V0.2.44 去 WechatSI 依赖 → V0.3.23 主人公众平台授权后恢复）
+   *
+   * 流程：
+   *   1. 录音中再次点 = 停止 + 识别
+   *   2. 第一次点 = wx.getRecorderManager().start({duration:30000, format:'mp3'})
+   *   3. onStop → siPlugin.translateVoice({lfrom:'zh_CN', lto:'zh_CN', content:tempFilePath})
+   *   4. success → 文字填 inputText + 复用流式 AI 回复
+   *   5. fail → toast 错误
+   *
+   * ⚠️ 主人需在公众平台「插件管理」添加 wx069ba97219f66d99 才能激活（否则编译卡「插件未授权」）
+   */
+  onTapVoice() {
+    if (this.data.recording) { this.stopAndRecognize(); return; }
+    if (!wx.getRecorderManager) { wx.showToast({ title: '当前微信版本不支持录音', icon: 'none' }); return; }
+    const that = this;
+    const recorder = wx.getRecorderManager();
+    (that as unknown as { _recorder: WechatMiniprogram.RecorderManager })._recorder = recorder;
+    recorder.onStop((res: { tempFilePath: string; duration: number }) => {
+      if (!res || !res.tempFilePath || res.duration < 300) {
+        wx.showToast({ title: '录音太短', icon: 'none' });
+        that.setData({ recording: false });
+        return;
+      }
+      // 调同声传译插件识别（requirePlugin 编译期静态解析，pluginAppid/scope 已配）
+      const siPlugin = (typeof requirePlugin === 'function' ? requirePlugin('WechatSI') : (wx as unknown as { requirePlugin?: (id: string) => unknown }).requirePlugin?.('WechatSI')) as
+        | { translateVoice: (o: { lfrom: string; lto: string; content: string; success?: (r: { result: string }) => void; fail?: (e: unknown) => void }) => void }
+        | undefined;
+      if (!siPlugin || typeof siPlugin.translateVoice !== 'function') {
+        wx.showToast({ title: '同声传译插件未启用（请检查 app.json）', icon: 'none' });
+        that.setData({ recording: false });
+        return;
+      }
+      siPlugin.translateVoice({
+        lfrom: 'zh_CN',
+        lto: 'zh_CN',
+        content: res.tempFilePath,
+        success: (r: { result?: string }) => {
+          const text = (r?.result ?? '').trim();
+          if (text) {
+            that.setData({ inputText: text });
+            that.onSend();
+          } else {
+            wx.showToast({ title: '未识别到语音', icon: 'none' });
+          }
+          that.setData({ recording: false });
+        },
+        fail: () => {
+          wx.showToast({ title: '语音识别失败', icon: 'none' });
+          that.setData({ recording: false });
+        },
+      });
+    });
+    recorder.onError(() => {
+      wx.showToast({ title: '录音失败', icon: 'none' });
+      that.setData({ recording: false });
+    });
+    recorder.start({ duration: 30000, format: 'mp3' } as never);
+    that.setData({ recording: true });
+    wx.showToast({ title: '🎙️ 录音中…', icon: 'none' });
+  },
+
+  /** 停止录音并触发识别 */
+  stopAndRecognize() {
+    const recorder = (this as unknown as { _recorder?: WechatMiniprogram.RecorderManager })._recorder;
+    if (recorder) recorder.stop();
+  },
 
   /** D 分享 */
   onShareAppMessage() {
