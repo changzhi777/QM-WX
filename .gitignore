@@ -108,3 +108,8 @@ mosquitto/conf/*.key
 # miniprogram-architecture 输出 PDF + xlsx（中文文件名，大文件易过期可重现）
 docs/checklists/小程序架构文档.pdf
 docs/checklists/小程序架构表格.xlsx
+
+# Hallmark skill（项目目录 + .agents/）
+.agents/
+.claude/skills/
+skills-lock.json
