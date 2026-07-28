@@ -225,7 +225,7 @@ export function calcBodyComposition(
     ? 1.20 + 0.45 * h2z + 0.18 * weight
     : 0.91 + 0.47 * h2z + 0.11 * weight;
   const ffm = tbwKg / 0.732; // FFM = TBW / 0.732（去脂体重）
-  let bodyFat = Math.max(3, Math.min(60, Math.round(((weight - ffm) / weight) * 1000) / 10));
+  const bodyFat = Math.max(3, Math.min(60, Math.round(((weight - ffm) / weight) * 1000) / 10));
 
   // 肌肉量 = FFM × 0.55（肌肉约占去脂体重 55%）
   const muscle = Math.round(ffm * 0.55 * 10) / 10;

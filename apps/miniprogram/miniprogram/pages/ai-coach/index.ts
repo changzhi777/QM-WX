@@ -468,6 +468,7 @@ Page({
   onTapVoice() {
     if (this.data.recording) { this.stopAndRecognize(); return; }
     if (!wx.getRecorderManager) { wx.showToast({ title: '当前微信版本不支持录音', icon: 'none' }); return; }
+  // eslint-disable-next-line @typescript-eslint/no-this-alias
     const that = this;
     const recorder = wx.getRecorderManager();
     (that as unknown as { _recorder: WechatMiniprogram.RecorderManager })._recorder = recorder;

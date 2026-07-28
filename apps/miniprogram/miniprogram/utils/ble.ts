@@ -124,7 +124,6 @@ export function disconnectDevice(deviceId: string): Promise<void> {
  */
 export async function subscribeHeartRate(deviceId: string, onHr: (hr: number) => void): Promise<void> {
   // 防御性：清理旧监听器（readCharValue 已自管生命周期，此处清的是上次 subscribeHeartRate 残留）
-  // @ts-ignore：无参 off 清所有监听，微信运行时支持，typings 签名 `()`
   wx.offBLECharacteristicValueChange();
   wx.onBLECharacteristicValueChange((res) => {
     if (res.value && res.serviceId === BLE_SERVICES.heartRate) {
@@ -213,8 +212,8 @@ function readCharValue(
       if (settled) return;
       settled = true;
       // 微信运行时支持 offBLECharacteristicValueChange(cb) 移除特定监听；
-      // miniprogram-api-typings 该版本类型签名未声明参数，用 ts-ignore 绕过
-      // @ts-ignore
+      // miniprogram-api-typings 该版本类型签名未声明参数
+      // @ts-expect-error: 运行时支持传 cb 移除特定监听
       wx.offBLECharacteristicValueChange(handler);
       resolve(val);
     };
@@ -225,7 +224,6 @@ function readCharValue(
         finish(res.value);
       }
     };
-    // @ts-ignore：handler 结构与 OnBLECharacteristicValueChangeCallback 兼容
     wx.onBLECharacteristicValueChange(handler);
     wx.readBLECharacteristicValue({
       deviceId,
@@ -334,7 +332,7 @@ export function readSpO2SpotCheck(
     const finish = (val: { spo2: number; pr: number } | null) => {
       if (settled) return;
       settled = true;
-      // @ts-ignore：offBLECharacteristicValueChange 运行时支持 cb 参数
+      // @ts-expect-error: 运行时支持传 cb 移除特定监听
       wx.offBLECharacteristicValueChange(handler);
       resolve(val);
     };
@@ -349,7 +347,6 @@ export function readSpO2SpotCheck(
         finish(parseSpO2Measurement(res.value));
       }
     };
-    // @ts-ignore：handler 结构与微信回调兼容
     wx.onBLECharacteristicValueChange(handler);
     wx.notifyBLECharacteristicValueChange({
       deviceId,
