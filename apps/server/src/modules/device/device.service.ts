@@ -1465,6 +1465,64 @@ export const deviceService = {
       })),
     };
   },
+
+  /**
+   * V0.3.20 优化 3：设备授权中心聚合接口
+   * 一次返 3 品牌（佳明/华为/COROS）的完整状态
+   * 替代前端 4 次调用（1 authList + 3 recentActivityByVendor）
+   */
+  async authCenterList(userId: string): Promise<{
+    brands: Array<{
+      key: 'garmin' | 'huawei' | 'coros';
+      vendorOAuthKey: string;
+      configured: boolean;
+      bound: boolean;
+      lastSyncAt: string | null;
+      recentCount: number;
+    }>;
+  }> {
+    const bindings = await prisma.deviceBinding.findMany({ where: { userId } });
+    const garminBinding = bindings.find((b) => b.vendor === 'garmin_oauth');
+    const huaweiBinding = bindings.find((b) => b.vendor === 'huawei_oauth');
+    const corosBinding = bindings.find((b) => b.vendor === 'coros');
+    const counts = await Promise.all([
+      prisma.rawActivity.count({ where: { userId, vendor: 'garmin_oauth' } }),
+      prisma.rawActivity.count({ where: { userId, vendor: 'huawei_oauth' } }),
+      prisma.rawActivity.count({ where: { userId, vendor: 'coros' } }),
+    ]);
+    // isConfigured：动态 import 避免循环依赖 + 静态 import 已被 ESM 加载
+    const { isGarminHealthConfigured } = await import('./garmin-health.js');
+    const { isHuaweiConfigured } = await import('./huawei-health.js');
+    const { isTerraConfigured } = await import('./terra-client.js');
+    return {
+      brands: [
+        {
+          key: 'garmin',
+          vendorOAuthKey: 'garmin_oauth',
+          configured: isGarminHealthConfigured(),
+          bound: !!garminBinding,
+          lastSyncAt: garminBinding?.lastSyncAt?.toISOString() ?? null,
+          recentCount: Math.min(counts[0], 5),
+        },
+        {
+          key: 'huawei',
+          vendorOAuthKey: 'huawei_oauth',
+          configured: isHuaweiConfigured(),
+          bound: !!huaweiBinding,
+          lastSyncAt: huaweiBinding?.lastSyncAt?.toISOString() ?? null,
+          recentCount: Math.min(counts[1], 5),
+        },
+        {
+          key: 'coros',
+          vendorOAuthKey: 'coros',
+          configured: isTerraConfigured(),
+          bound: !!corosBinding,
+          lastSyncAt: corosBinding?.lastSyncAt?.toISOString() ?? null,
+          recentCount: Math.min(counts[2], 5),
+        },
+      ],
+    };
+  },
 };
 
 // ===== 今日健康看板辅助函数（V0.1.25）=====

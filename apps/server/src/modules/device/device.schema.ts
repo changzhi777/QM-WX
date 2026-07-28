@@ -216,6 +216,7 @@ export const DeviceActionBodySchema = z.object({
     'listDeviceDailyActivity', // V0.2.153 设备每日活动（VIVO 数据模型占位）
     // V0.3.20 设备授权中心 UI：最近活动按 vendor 维度
     'recentActivityByVendor',
+    'authCenterList', // V0.3.20 优化 3：设备授权中心聚合接口
   ]),
   payload: z.unknown().optional(),
 });

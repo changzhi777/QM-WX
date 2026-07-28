@@ -126,29 +126,29 @@ Page({
 
   /**
    * V0.3.20 加载设备授权中心 3 品牌状态
-   * 数据源：device.authList（lastSyncAt）+ device.recentActivityByVendor（recentCount）
+   * V0.3.20 优化 3：单次调用 authCenterList 替代 4 次调用（authList + 3 recentActivityByVendor）
    */
   async loadAuthBrands() {
     try {
       const r = await api.call<{
-        bindings: Array<{ vendor: string; lastSyncAt: string | null }>;
-      }>('device', 'authList', {});
-      // 并行拉 3 品牌的 recentActivityByVendor（最近 5 条 → recentCount = 长度）
-      const counts = await Promise.all([
-        api.call<{ activities: unknown[] }>('device', 'recentActivityByVendor', { vendor: 'garmin_oauth', limit: 5 }).catch(() => ({ activities: [] })),
-        api.call<{ activities: unknown[] }>('device', 'recentActivityByVendor', { vendor: 'huawei_oauth', limit: 5 }).catch(() => ({ activities: [] })),
-        api.call<{ activities: unknown[] }>('device', 'recentActivityByVendor', { vendor: 'coros', limit: 5 }).catch(() => ({ activities: [] })),
-      ]);
-      const garminBinding = r.bindings.find((b) => b.vendor === 'garmin_oauth');
-      const huaweiBinding = r.bindings.find((b) => b.vendor === 'huawei_oauth');
-      const corosBinding = r.bindings.find((b) => b.vendor === 'coros');
+        brands: Array<{
+          key: string;
+          vendorOAuthKey: string;
+          configured: boolean;
+          bound: boolean;
+          lastSyncAt: string | null;
+          recentCount: number;
+        }>;
+      }>('device', 'authCenterList', {});
       const fmtTime = (t: string | null) => (t ? new Date(t).toLocaleString('zh-CN') : null);
       this.setData({
-        authBrands: [
-          { ...AUTH_BRANDS[0], configured: true, bound: !!garminBinding, lastSyncAt: fmtTime(garminBinding?.lastSyncAt ?? null), recentCount: counts[0].activities.length },
-          { ...AUTH_BRANDS[1], configured: true, bound: !!huaweiBinding, lastSyncAt: fmtTime(huaweiBinding?.lastSyncAt ?? null), recentCount: counts[1].activities.length },
-          { ...AUTH_BRANDS[2], configured: true, bound: !!corosBinding, lastSyncAt: fmtTime(corosBinding?.lastSyncAt ?? null), recentCount: counts[2].activities.length },
-        ],
+        authBrands: r.brands.map((b, i) => ({
+          ...AUTH_BRANDS[i],
+          configured: b.configured,
+          bound: b.bound,
+          lastSyncAt: fmtTime(b.lastSyncAt),
+          recentCount: b.recentCount,
+        })),
       });
     } catch (e) {
       // 静默失败

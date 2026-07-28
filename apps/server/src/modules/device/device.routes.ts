@@ -166,6 +166,10 @@ export async function deviceRoutes(app: FastifyInstance) {
           const input = RecentActivityByVendorInputSchema.parse(payload ?? {});
           return { code: 0, data: await deviceService.recentActivityByVendor(userId, input) };
         }
+        case 'authCenterList': {
+          // V0.3.20 优化 3：设备授权中心聚合接口（替代前端 4 次调用）
+          return { code: 0, data: await deviceService.authCenterList(userId) };
+        }
         default:
           return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });
       }

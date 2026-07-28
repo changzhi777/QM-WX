@@ -155,6 +155,8 @@ export const ENDPOINTS = {
     myTodayHealth: '/api/device',
     // V0.3.20 设备授权中心 UI：按 vendor 拉最近活动
     recentActivityByVendor: '/api/device',
+    // V0.3.20 优化 3：设备授权中心聚合接口（一次返 3 品牌完整状态）
+    authCenterList: '/api/device',
     // 佳明数据处理（导入榜单，2026-07-01）
     myPending: '/api/device',
     myProcessed: '/api/device',

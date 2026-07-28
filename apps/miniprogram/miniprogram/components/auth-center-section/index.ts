@@ -27,11 +27,17 @@ Component({
   },
 
   methods: {
-    /** 触发授权：调对应 vendor 的 authUrl → 返回 URL → 前端处理（web-view 跳转/复制）*/
+    /** 触发授权：按 brandKey 选对应 vendor 的 authUrl action（修复 V0.3.20 bug：原本写死 garmin）*/
     async onTapAuth(e: { currentTarget: { dataset: { brandKey: string } } }) {
       const brandKey = e.currentTarget.dataset.brandKey as AuthBrand['key'];
+      // V0.3.20 优化：按品牌映射 action（不再写死 garmin）
+      const actionMap: Record<AuthBrand['key'], string> = {
+        garmin: 'garminHealthAuthUrl',
+        huawei: 'huaweiHealthAuthUrl',
+        coros: 'corosAuthUrl',
+      };
       try {
-        const r = await api.call<{ url: string; configured: boolean }>('device', 'garminHealthAuthUrl', {});
+        const r = await api.call<{ url: string; configured: boolean }>('device', actionMap[brandKey], {});
         if (!r?.configured) {
           wx.showToast({ title: '该品牌凭据未配置', icon: 'none' });
           return;
