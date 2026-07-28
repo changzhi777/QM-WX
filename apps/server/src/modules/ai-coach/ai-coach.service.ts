@@ -17,7 +17,9 @@
 import { randomUUID } from 'crypto';
 import type { FastifyReply } from 'fastify';
 import { prisma } from '../../infra/prisma.js';
+import { redis } from '../../infra/redis.js';
 import { Cache } from '../../infra/cache.js';
+import { Errors } from '../../common/errors.js';
 import { buildSystemPrompt } from './context-builder.js';
 import { stubProvider } from './providers/stub.js';
 import { glmProvider } from './providers/glm.js';
@@ -53,8 +55,33 @@ function buildUserContent(message: string, imageUrl?: string): string | ContentP
 }
 
 export const aiCoachService = {
+  /** V0.3.10 会员分层：免费用户每日3次对话，会员无限（架构图 v2.0 要求）*/
+  async checkChatQuota(userId: string): Promise<{ remaining: number; isMember: boolean }> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { memberExpireAt: true },
+    });
+    const isMember = user?.memberExpireAt != null && new Date(user.memberExpireAt) > new Date();
+    if (isMember) return { remaining: Infinity, isMember: true };
+
+    const today = new Date().toISOString().slice(0, 10);
+    const key = `aiCoach:daily:${userId}:${today}`;
+    const count = await redis.incr(key);
+    if (count === 1) {
+      const endOfDay = new Date();
+      endOfDay.setHours(23, 59, 59, 999);
+      await redis.expire(key, Math.ceil((endOfDay.getTime() - Date.now()) / 1000));
+    }
+    const DAILY_FREE_LIMIT = 3;
+    if (count > DAILY_FREE_LIMIT) {
+      throw Errors.forbidden(`今日免费对话已用完（${DAILY_FREE_LIMIT}/${DAILY_FREE_LIMIT}），升级会员享无限对话`);
+    }
+    return { remaining: DAILY_FREE_LIMIT - count, isMember: false };
+  },
+
   /** 非流式对话（多轮记忆 + 落库） */
   async chat(userId: string, input: ChatInput) {
+    await this.checkChatQuota(userId);
     const conversationId = input.conversationId || randomUUID();
     const provider = await pickProvider();
     const system = await buildSystemPrompt(userId);
@@ -68,6 +95,7 @@ export const aiCoachService = {
 
   /** 流式对话（逐 token 写 SSE + 流完落库） */
   async chatStream(userId: string, input: ChatInput, reply: FastifyReply) {
+    await this.checkChatQuota(userId);
     const conversationId = input.conversationId || randomUUID();
     const provider = await pickProvider();
     const system = await buildSystemPrompt(userId);

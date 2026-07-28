@@ -32,6 +32,17 @@ vi.mock('src/modules/ai-coach/providers/stub.js', () => ({ stubProvider: mockPro
 vi.mock('src/modules/ai-coach/context-builder.js', () => ({
   buildSystemPrompt: mockBuildSystemPrompt,
 }));
+// V0.3.10 checkChatQuota 用 redis.incr/expire（每日免费次数计数）
+vi.mock('src/infra/redis.js', () => ({
+  redis: {
+    incr: vi.fn().mockResolvedValue(1),
+    expire: vi.fn().mockResolvedValue('OK'),
+    get: vi.fn().mockResolvedValue(null),
+    set: vi.fn().mockResolvedValue('OK'),
+    del: vi.fn().mockResolvedValue(1),
+    scan: vi.fn().mockResolvedValue(['0', []]),
+  },
+}));
 // V0.1.140 setPersona 用 Cache.delByPattern
 vi.mock('src/infra/cache.js', () => ({
   Cache: {
