@@ -258,6 +258,9 @@ Page({
 
   goAgreement() { wx.navigateTo({ url: '/pages/agreement/index' }); },
 
+  /** V0.3.10 关于沐禾健康（架构图 v2.0 调整）*/
+  goAbout() { wx.navigateTo({ url: '/pages/about/index' }); },
+
   onTapLogin() {
     ensureLogin().then(() => this.refresh());
   },

@@ -28,7 +28,8 @@
     "pages/strength/session",
     "pages/strength/detail",
     "pages/strength/history",
-    "pages/goal/index"
+    "pages/goal/index",
+    "pages/about/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",
