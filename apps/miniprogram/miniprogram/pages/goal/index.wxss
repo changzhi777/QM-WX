@@ -28,3 +28,16 @@
 .sheet-input { border: 1rpx solid #e0e0e0; border-radius: 8rpx; padding: 16rpx; font-size: 28rpx; }
 .picker { padding: 16rpx; border: 1rpx solid #e0e0e0; border-radius: 8rpx; color: #666; font-size: 28rpx; }
 .sheet-btn { background: #2D9D78; color: #fff; border-radius: 8rpx; margin-top: 32rpx; font-size: 30rpx; }
+
+/* V0.3.17 系统推荐卡片（V0.3.16 后端 recommend 规则引擎驱动） */
+.rec-section { background: linear-gradient(135deg, #2D9D78 0%, #1e8e6e 100%); border-radius: 16rpx; padding: 20rpx 24rpx; margin-bottom: 24rpx; box-shadow: 0 4rpx 12rpx rgba(45,157,120,0.2); }
+.rec-head { display: flex; align-items: center; margin-bottom: 16rpx; }
+.rec-title { font-size: 30rpx; font-weight: 600; color: #fff; flex: 1; }
+.rec-close { font-size: 24rpx; color: rgba(255,255,255,0.8); padding: 4rpx 12rpx; }
+.rec-card { background: rgba(255,255,255,0.95); border-radius: 12rpx; padding: 20rpx; margin-bottom: 12rpx; position: relative; }
+.rec-priority { position: absolute; top: 12rpx; right: 12rpx; background: #2D9D78; color: #fff; font-size: 20rpx; padding: 4rpx 10rpx; border-radius: 12rpx; font-weight: 600; }
+.rec-card-title { font-size: 28rpx; font-weight: 600; color: #333; margin-bottom: 8rpx; padding-right: 80rpx; }
+.rec-reason { font-size: 24rpx; color: #666; line-height: 1.5; margin-bottom: 8rpx; }
+.rec-target { font-size: 26rpx; color: #2D9D78; font-weight: 600; margin-bottom: 12rpx; }
+.rec-actions { display: flex; justify-content: flex-end; }
+.rec-btn { background: #2D9D78; color: #fff; font-size: 26rpx; padding: 10rpx 24rpx; border-radius: 24rpx; }

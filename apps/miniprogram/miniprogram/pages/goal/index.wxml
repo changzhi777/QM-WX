@@ -1,4 +1,23 @@
 <view class="page">
+  <!-- V0.3.17 系统推荐卡片（基于 V0.3.16 后端 recommend 规则引擎） -->
+  <view class="rec-section" wx:if="{{recommendations.length > 0}}">
+    <view class="rec-head">
+      <text class="rec-title">🎯 系统推荐</text>
+      <text class="rec-close" bindtap="onCloseRec">收起</text>
+    </view>
+    <view class="rec-card" wx:for="{{recommendations}}" wx:key="ruleId" wx:for-item="rec">
+      <view class="rec-priority">P{{rec.priority}}</view>
+      <view class="rec-card-title">{{rec.title}}</view>
+      <view class="rec-reason">{{rec.reason}}</view>
+      <view class="rec-target" wx:if="{{rec.targetDistance}}">目标：{{rec.targetDistance}} km</view>
+      <view class="rec-target" wx:elif="{{rec.targetVolume}}">目标：{{rec.targetVolume}} kg·次</view>
+      <view class="rec-target" wx:elif="{{rec.targetValue}}">目标：{{rec.targetValue}} {{rec.unit || ''}}</view>
+      <view class="rec-actions">
+        <view class="rec-btn" data-rec="{{rec}}" bindtap="onTapAddRec">一键添加</view>
+      </view>
+    </view>
+  </view>
+
   <!-- 目标列表 -->
   <view class="goal-list" wx:if="{{goals.length > 0}}">
     <view class="goal-card" wx:for="{{goals}}" wx:key="id">

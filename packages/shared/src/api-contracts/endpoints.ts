@@ -249,6 +249,8 @@ export const ENDPOINTS = {
     // V0.3.9 暂停/恢复（清单 #30 "可暂停"要求）
     pauseGoal: '/api/goal',
     resumeGoal: '/api/goal',
+    // V0.3.16 Phase 6：基于画像规则推荐下一步目标
+    recommend: '/api/goal',
   },
   favorite: {
     list: '/api/favorite',

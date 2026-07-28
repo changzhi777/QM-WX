@@ -26,9 +26,15 @@ Page({
     updateGoalId: '',
     updateValue: '',
     kindLabels: KIND_LABELS,
+    // V0.3.17 Phase 6 推荐卡片（基于 V0.3.16 后端 goal.recommend）
+    recommendations: [] as Array<Record<string, unknown>>,
+    loadingRec: false,
   },
 
-  onShow() { this.loadGoals(); },
+  onShow() {
+    this.loadGoals();
+    this.loadRecommendations();
+  },
 
   async loadGoals() {
     try {
@@ -40,6 +46,20 @@ Page({
       this.setData({ goals, loading: false });
     } catch (e) {
       this.setData({ loading: false });
+    }
+  },
+
+  /** V0.3.17 加载系统推荐（基于 V0.3.16 后端 recommend 规则引擎） */
+  async loadRecommendations() {
+    this.setData({ loadingRec: true });
+    try {
+      const res = await api.call<{
+        recommendations: Array<Record<string, unknown>>;
+        profile: Record<string, unknown>;
+      }>('goal', 'recommend', {});
+      this.setData({ recommendations: res.recommendations || [], loadingRec: false });
+    } catch (e) {
+      this.setData({ loadingRec: false, recommendations: [] });
     }
   },
 
@@ -107,6 +127,45 @@ Page({
       wx.showToast({ title: '操作失败', icon: 'none' });
     }
   },
+
+  /** V0.3.17 一键添加推荐目标 → 后端 goal.add，加成功后从推荐列表移除 + 刷新目标 */
+  async onTapAddRec(e: { currentTarget: { dataset: { rec: string } } }) {
+    const rec = JSON.parse(e.currentTarget.dataset.rec) as {
+      kind: string;
+      type: string;
+      title: string;
+      targetDistance?: number;
+      targetVolume?: number;
+      targetValue?: number;
+      unit?: string;
+      judgeCriteria?: string;
+      ruleId: string;
+    };
+    try {
+      // kind 字段映射（后端 schema 要求）
+      const payload: Record<string, unknown> = { kind: rec.kind, type: rec.type };
+      if (rec.targetDistance != null) payload.targetDistance = rec.targetDistance;
+      if (rec.targetVolume != null) payload.targetVolume = rec.targetVolume;
+      if (rec.targetValue != null) {
+        payload.targetValue = rec.targetValue;
+        if (rec.unit) payload.unit = rec.unit;
+        if (rec.judgeCriteria) payload.judgeCriteria = rec.judgeCriteria;
+      }
+      await api.call('goal', 'add', payload);
+      wx.showToast({ title: '目标已添加', icon: 'success' });
+      // 从推荐列表移除该条（按 ruleId 唯一）
+      const remaining = (this.data.recommendations as Array<Record<string, unknown>>).filter(
+        (r) => r.ruleId !== rec.ruleId,
+      );
+      this.setData({ recommendations: remaining });
+      this.loadGoals();
+    } catch (e2) {
+      wx.showToast({ title: '添加失败', icon: 'none' });
+    }
+  },
+
+  /** V0.3.17 收起推荐卡片 */
+  onCloseRec() { this.setData({ recommendations: [] }); },
 });
 
 export {};
