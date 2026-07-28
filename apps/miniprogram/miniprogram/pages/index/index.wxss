@@ -169,3 +169,10 @@
 
 /* P3 3 数据卡点击反馈 */
 .data-row-hover { opacity: 0.7; }
+
+/* V0.3.11 AI 快报（健康提醒卡）*/
+.ai-alert-card { background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%); border-radius: 16rpx; padding: 24rpx; margin: 16rpx 0; border-left: 6rpx solid #ffc107; }
+.ai-alert-head { display: flex; align-items: center; margin-bottom: 12rpx; }
+.ai-alert-icon { font-size: 32rpx; margin-right: 8rpx; }
+.ai-alert-title { font-size: 28rpx; font-weight: 600; color: #8a6d3b; }
+.ai-alert-text { font-size: 26rpx; color: #66584c; line-height: 1.6; }
