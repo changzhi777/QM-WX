@@ -25,6 +25,7 @@ import {
   ActivityPageQuerySchema,
   IgnoreActivityInputSchema,
   ImportToCheckinInputSchema,
+  RecentActivityByVendorInputSchema, // V0.3.20 设备授权中心 UI
 } from './device.schema.js';
 
 export async function deviceRoutes(app: FastifyInstance) {
@@ -159,6 +160,11 @@ export async function deviceRoutes(app: FastifyInstance) {
         case 'authList': {
           // V0.1.144 数据授权管理（各数据源授权状态）
           return { code: 0, data: await deviceService.authList(userId) };
+        }
+        case 'recentActivityByVendor': {
+          // V0.3.20 设备授权中心 UI：按 vendor 拉最近活动
+          const input = RecentActivityByVendorInputSchema.parse(payload ?? {});
+          return { code: 0, data: await deviceService.recentActivityByVendor(userId, input) };
         }
         default:
           return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });

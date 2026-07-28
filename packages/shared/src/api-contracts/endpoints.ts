@@ -153,6 +153,8 @@ export const ENDPOINTS = {
     myFitnessAge: '/api/device',
     // 今日健康看板聚合（V0.1.25，参考图 2774）
     myTodayHealth: '/api/device',
+    // V0.3.20 设备授权中心 UI：按 vendor 拉最近活动
+    recentActivityByVendor: '/api/device',
     // 佳明数据处理（导入榜单，2026-07-01）
     myPending: '/api/device',
     myProcessed: '/api/device',

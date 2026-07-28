@@ -1,0 +1,26 @@
+/* pages/device-auth/index.wxss */
+.page { min-height: 100vh; background: #f5f6f8; padding-bottom: 60rpx; }
+.brand-header { padding: 40rpx 32rpx; color: #fff; display: flex; flex-direction: column; align-items: center; }
+.brand-icon { font-size: 80rpx; margin-bottom: 12rpx; }
+.brand-name { font-size: 36rpx; font-weight: 600; margin-bottom: 8rpx; }
+.brand-desc { font-size: 24rpx; opacity: 0.9; text-align: center; }
+.status-card { background: #fff; border-radius: 16rpx; padding: 24rpx; margin: -32rpx 24rpx 24rpx; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.06); position: relative; z-index: 1; }
+.status-row { display: flex; justify-content: space-between; align-items: center; padding: 12rpx 0; }
+.status-label { font-size: 28rpx; color: #888; }
+.status-value { font-size: 28rpx; font-weight: 600; }
+.status-value.bound { color: #2D9D78; }
+.status-value.unbound { color: #e67e22; }
+.status-value-time { font-size: 24rpx; color: #666; }
+.auth-btn { background: #2D9D78; color: #fff; font-size: 30rpx; border-radius: 8rpx; margin-top: 24rpx; }
+.section { background: #fff; border-radius: 16rpx; padding: 24rpx; margin: 0 24rpx 16rpx; }
+.section-title { font-size: 30rpx; font-weight: 600; color: #333; margin-bottom: 20rpx; }
+.activity-row { display: flex; justify-content: space-between; align-items: center; padding: 16rpx 0; border-bottom: 1rpx solid #f0f0f0; }
+.activity-row:last-child { border-bottom: none; }
+.act-type { font-size: 28rpx; font-weight: 600; color: #333; flex: 1; }
+.act-meta { display: flex; flex-direction: column; align-items: flex-end; }
+.act-distance { font-size: 26rpx; color: #2D9D78; font-weight: 600; }
+.act-time { font-size: 22rpx; color: #888; margin-top: 4rpx; }
+.empty { text-align: center; padding: 60rpx 32rpx; color: #999; font-size: 26rpx; }
+.mask { position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 100; display: flex; align-items: center; justify-content: center; }
+.webview-wrap { width: 90%; height: 80%; background: #fff; border-radius: 16rpx; overflow: hidden; position: relative; }
+.webview-close { position: absolute; top: 12rpx; right: 24rpx; background: rgba(0,0,0,0.5); color: #fff; padding: 8rpx 24rpx; border-radius: 24rpx; font-size: 24rpx; }

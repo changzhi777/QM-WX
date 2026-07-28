@@ -214,6 +214,29 @@ export const DeviceActionBodySchema = z.object({
     'ignoreActivity',
     'importToCheckin',
     'listDeviceDailyActivity', // V0.2.153 设备每日活动（VIVO 数据模型占位）
+    // V0.3.20 设备授权中心 UI：最近活动按 vendor 维度
+    'recentActivityByVendor',
   ]),
   payload: z.unknown().optional(),
 });
+
+/** V0.3.20 设备授权中心 UI：按 vendor 拉最近活动 */
+export const RecentActivityByVendorInputSchema = z.object({
+  vendor: z.enum(['garmin', 'garmin_oauth', 'huawei', 'huawei_oauth', 'coros', 'terra']).default('garmin'),
+  limit: z.number().int().min(1).max(20).default(5),
+});
+export type RecentActivityByVendorInput = z.infer<typeof RecentActivityByVendorInputSchema>;
+
+export const RecentActivityResponseSchema = z.object({
+  activities: z.array(z.object({
+    vendor: z.string(),
+    vendorActivityId: z.string(),
+    type: z.string().nullable(),
+    startTime: z.string(), // ISO
+    distanceKm: z.number().nullable(),
+    durationSec: z.number().nullable(),
+    avgHr: z.number().nullable(),
+    status: z.string().nullable(),
+  })),
+});
+export type RecentActivityResponse = z.infer<typeof RecentActivityResponseSchema>;

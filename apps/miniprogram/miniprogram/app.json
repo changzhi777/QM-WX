@@ -29,7 +29,8 @@
     "pages/strength/detail",
     "pages/strength/history",
     "pages/goal/index",
-    "pages/about/index"
+    "pages/about/index",
+    "pages/device-auth/index"
   ],
   "window": {
     "backgroundTextStyle": "dark",

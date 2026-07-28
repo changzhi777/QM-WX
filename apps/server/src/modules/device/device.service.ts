@@ -1414,6 +1414,57 @@ export const deviceService = {
       bleAuthorized: vendors.has('ble'),
     };
   },
+
+  /**
+   * V0.3.20 设备授权中心 UI：按 vendor 拉最近 RawActivity 列表
+   *
+   * 用途：device-auth 详情页展示「最近 5 条活动」历史预览
+   * 数据源：prisma.rawActivity where vendor=X orderBy startTime desc take limit
+   */
+  async recentActivityByVendor(
+    userId: string,
+    input: { vendor: string; limit?: number },
+  ): Promise<{
+    activities: Array<{
+      vendor: string;
+      vendorActivityId: string;
+      type: string | null;
+      startTime: string;
+      distanceKm: number | null;
+      durationSec: number | null;
+      avgHr: number | null;
+      status: string | null;
+    }>;
+  }> {
+    const limit = input.limit ?? 5;
+    const rows = await prisma.rawActivity.findMany({
+      where: { userId, vendor: input.vendor },
+      orderBy: { startTime: 'desc' },
+      take: limit,
+      select: {
+        vendor: true,
+        vendorActivityId: true,
+        type: true,
+        startTime: true,
+        distanceMeters: true,
+        durationSec: true,
+        avgHr: true,
+        status: true,
+      },
+    });
+    return {
+      activities: rows.map((r) => ({
+        vendor: r.vendor,
+        vendorActivityId: r.vendorActivityId,
+        type: r.type,
+        startTime: r.startTime.toISOString(),
+        distanceKm: r.distanceMeters != null ? Math.round(r.distanceMeters) / 1000 : null,
+        durationSec: r.durationSec,
+        avgHr: r.avgHr,
+        status: r.status,
+      })),
+    };
+  },
 };
 
 // ===== 今日健康看板辅助函数（V0.1.25）=====

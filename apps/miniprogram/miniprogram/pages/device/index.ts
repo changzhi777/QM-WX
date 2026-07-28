@@ -14,6 +14,24 @@ import {
 } from '@qm-wx/shared';
 import { ENV } from '../../config/env';
 
+interface AuthBrand {
+  key: 'garmin' | 'huawei' | 'coros';
+  name: string;
+  icon: string;
+  color: string;
+  configured: boolean;
+  bound: boolean;
+  lastSyncAt: string | null;
+  recentCount: number;
+  vendorOAuthKey: 'garmin' | 'garmin_oauth' | 'huawei_oauth' | 'coros';
+}
+
+const AUTH_BRANDS: AuthBrand[] = [
+  { key: 'garmin', name: '佳明 Garmin', icon: '⌚', color: '#007cc0', configured: false, bound: false, lastSyncAt: null, recentCount: 0, vendorOAuthKey: 'garmin_oauth' },
+  { key: 'huawei', name: '华为 Huawei Health', icon: '⌚', color: '#c7000b', configured: false, bound: false, lastSyncAt: null, recentCount: 0, vendorOAuthKey: 'huawei_oauth' },
+  { key: 'coros', name: 'COROS 高驰', icon: '⌚', color: '#7c3aed', configured: false, bound: false, lastSyncAt: null, recentCount: 0, vendorOAuthKey: 'coros' },
+];
+
 type DeviceTab = 'bind' | 'garmin' | 'import';
 
 // === 绑定 tab ===
@@ -52,6 +70,8 @@ const IMPORT_BRAND_ICON: Record<string, string> = {
 Page({
   data: {
     tab: 'bind' as DeviceTab,
+    // V0.3.20 设备授权中心 section
+    authBrands: [] as AuthBrand[],
     // 绑定 tab
     brands: [] as BrandCard[],
     bindings: [] as Binding[],
@@ -101,6 +121,38 @@ Page({
 
   onShow() {
     this.loadByTab(this.data.tab);
+    this.loadAuthBrands(); // V0.3.20 设备授权中心
+  },
+
+  /**
+   * V0.3.20 加载设备授权中心 3 品牌状态
+   * 数据源：device.authList（lastSyncAt）+ device.recentActivityByVendor（recentCount）
+   */
+  async loadAuthBrands() {
+    try {
+      const r = await api.call<{
+        bindings: Array<{ vendor: string; lastSyncAt: string | null }>;
+      }>('device', 'authList', {});
+      // 并行拉 3 品牌的 recentActivityByVendor（最近 5 条 → recentCount = 长度）
+      const counts = await Promise.all([
+        api.call<{ activities: unknown[] }>('device', 'recentActivityByVendor', { vendor: 'garmin_oauth', limit: 5 }).catch(() => ({ activities: [] })),
+        api.call<{ activities: unknown[] }>('device', 'recentActivityByVendor', { vendor: 'huawei_oauth', limit: 5 }).catch(() => ({ activities: [] })),
+        api.call<{ activities: unknown[] }>('device', 'recentActivityByVendor', { vendor: 'coros', limit: 5 }).catch(() => ({ activities: [] })),
+      ]);
+      const garminBinding = r.bindings.find((b) => b.vendor === 'garmin_oauth');
+      const huaweiBinding = r.bindings.find((b) => b.vendor === 'huawei_oauth');
+      const corosBinding = r.bindings.find((b) => b.vendor === 'coros');
+      const fmtTime = (t: string | null) => (t ? new Date(t).toLocaleString('zh-CN') : null);
+      this.setData({
+        authBrands: [
+          { ...AUTH_BRANDS[0], configured: true, bound: !!garminBinding, lastSyncAt: fmtTime(garminBinding?.lastSyncAt ?? null), recentCount: counts[0].activities.length },
+          { ...AUTH_BRANDS[1], configured: true, bound: !!huaweiBinding, lastSyncAt: fmtTime(huaweiBinding?.lastSyncAt ?? null), recentCount: counts[1].activities.length },
+          { ...AUTH_BRANDS[2], configured: true, bound: !!corosBinding, lastSyncAt: fmtTime(corosBinding?.lastSyncAt ?? null), recentCount: counts[2].activities.length },
+        ],
+      });
+    } catch (e) {
+      // 静默失败
+    }
   },
 
   onHide() {

@@ -1,4 +1,7 @@
 <view class="page">
+  <!-- V0.3.20 设备授权中心 section（顶部，全 tab 可见） -->
+  <auth-center-section brands="{{authBrands}}" bind:refresh="loadAuthBrands" />
+
   <!-- tab 头 -->
   <view class="tab-bar">
     <view class="tab {{tab === 'bind' ? 'active' : ''}}" data-tab="bind" bindtap="onSwitchTab">绑定</view>

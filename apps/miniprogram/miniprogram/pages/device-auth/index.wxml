@@ -1,0 +1,55 @@
+<!-- pages/device-auth/index.wxml -->
+<view class="page" wx:if="{{brand}}">
+  <!-- 品牌头部 -->
+  <view class="brand-header" style="background: {{brand.color}};">
+    <view class="brand-icon">{{brand.icon}}</view>
+    <view class="brand-name">{{brand.name}}</view>
+    <view class="brand-desc">{{brand.description}}</view>
+  </view>
+
+  <!-- 状态徽标 -->
+  <view class="status-card">
+    <view class="status-row">
+      <text class="status-label">授权状态</text>
+      <text class="status-value {{bound ? 'bound' : 'unbound'}}">
+        {{bound ? '✓ 已绑定' : (configured ? '○ 未绑定' : '✗ 未配置')}}
+      </text>
+    </view>
+    <view class="status-row" wx:if="{{lastSyncAt}}">
+      <text class="status-label">最近同步</text>
+      <text class="status-value-time">{{lastSyncAt}}</text>
+    </view>
+    <view class="status-row" wx:if="{{!lastSyncAt && bound}}">
+      <text class="status-label">最近同步</text>
+      <text class="status-value-time">暂无记录</text>
+    </view>
+    <button class="auth-btn" bindtap="onTapAuthorize">
+      {{bound ? '重新授权' : '授权'}}
+    </button>
+  </view>
+
+  <!-- 最近活动 -->
+  <view class="section" wx:if="{{activities.length > 0}}">
+    <view class="section-title">最近 5 条活动</view>
+    <view class="activity-row" wx:for="{{activities}}" wx:key="vendorActivityId" wx:for-item="act">
+      <view class="act-type">{{act.type || '未知'}}</view>
+      <view class="act-meta">
+        <text class="act-distance" wx:if="{{act.distanceKm}}">{{act.distanceKm}} km</text>
+        <text class="act-distance" wx:elif="{{act.durationSec}}">{{act.durationSec}} s</text>
+        <text class="act-time">{{act.startTime}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty" wx:elif="{{bound}}">
+    <text class="empty-text">暂无最近活动</text>
+  </view>
+
+  <!-- web-view 授权跳转 -->
+  <view class="mask" wx:if="{{showWebView}}" bindtap="onCloseWebView">
+    <view class="webview-wrap" catchtap="">
+      <web-view src="{{authUrl}}" bindload="onCloseWebView"></web-view>
+      <view class="webview-close">关闭</view>
+    </view>
+  </view>
+</view>
