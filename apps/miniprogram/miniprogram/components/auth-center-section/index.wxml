@@ -5,7 +5,7 @@
 -->
 <view class="auth-section">
   <view class="section-title">设备授权中心</view>
-  <view class="brand-card brand-card-{{item.key === 'garmin' ? 'large' : (item.key === 'huawei' ? 'medium' : 'small')}}"
+  <view class="brand-card {{item.key === 'garmin' ? 'brand-card-large' : ''}} {{item.key === 'huawei' ? 'brand-card-medium' : ''}} {{item.key === 'coros' ? 'brand-card-small' : ''}}"
         wx:for="{{brands}}" wx:key="key" wx:for-item="item">
     <view class="brand-stripe" style="background: {{item.color}};"></view>
     <view class="brand-card-head">
