@@ -244,6 +244,11 @@ export const ENDPOINTS = {
     removeCustomMilestone: '/api/goal',
     listCustomMilestones: '/api/goal',
     checkMilestoneAchievement: '/api/goal',
+    // V0.3.7 健康目标闭环：手动更新当前进度
+    updateProgress: '/api/goal',
+    // V0.3.9 暂停/恢复（清单 #30 "可暂停"要求）
+    pauseGoal: '/api/goal',
+    resumeGoal: '/api/goal',
   },
   favorite: {
     list: '/api/favorite',
