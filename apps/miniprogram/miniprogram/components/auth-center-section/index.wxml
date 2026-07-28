@@ -1,8 +1,8 @@
 <!-- components/auth-center-section/index.wxml
-/* Hallmark · macrostructure: Bento Grid · genre: Editorial · theme: Garden
- * redesign: 3 品牌不同 size（Garmin 大横排 / Huawei 中竖排 / COROS 小紧凑）
- * preserves: 3 brands + auth/unbind/detail actions + status tags
- -->
+  Hallmark · macrostructure: Bento Grid · genre: Editorial · theme: Garden
+  redesign: 3 品牌不同 size（Garmin 大横排 / Huawei 中竖排 / COROS 小紧凑）
+  preserves: 3 brands + auth/unbind/detail actions + status tags
+-->
 <view class="auth-section">
   <view class="section-title">设备授权中心</view>
   <view class="brand-card brand-card-{{item.size}}"
