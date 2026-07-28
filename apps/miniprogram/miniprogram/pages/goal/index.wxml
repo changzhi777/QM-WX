@@ -1,65 +1,46 @@
-<!-- pages/goal/index.wxml
-/* Hallmark · macrostructure: Stat-Led · genre: Editorial · theme: Newsprint
- * redesign: hero stat 段 + priority-driven card size (3 variants) + 5-segment progress block + diff CTA color
- * preserves: API calls (recommend/list/add/updateProgress/pauseGoal/resumeGoal), 6 kind goals, FAB, add/update sheet
- */
 <view class="page">
-  <!-- V0.3.24 hallmark Stat-Led hero stat 段：数字当叙事 -->
+  <!-- V0.3.17 系统推荐卡片（基于 V0.3.16 后端 recommend 规则引擎） -->
   <view class="rec-section" wx:if="{{recommendations.length > 0}}">
     <view class="rec-head">
-      <view class="rec-stat-row">
-        <view class="rec-stat-num">{{recommendations.length}}</view>
-        <view class="rec-stat-label">条系统推荐 · 最高 P10</view>
-      </view>
-      <view class="rec-close" bindtap="onCloseRec">收起</view>
+      <text class="rec-title">🎯 系统推荐</text>
+      <text class="rec-close" bindtap="onCloseRec">收起</text>
     </view>
-    <!-- 3 种 size：priority 10 大 / 6-8 中 / <6 紧凑 -->
-    <view class="rec-card rec-card-prio-{{rec.priority >= 9 ? 'high' : (rec.priority >= 6 ? 'mid' : 'low')}}"
-          wx:for="{{recommendations}}" wx:key="ruleId" wx:for-item="rec">
-      <view class="rec-priority-tag">P{{rec.priority}}</view>
+    <view class="rec-card" wx:for="{{recommendations}}" wx:key="ruleId" wx:for-item="rec">
+      <view class="rec-priority">P{{rec.priority}}</view>
       <view class="rec-card-title">{{rec.title}}</view>
       <view class="rec-reason">{{rec.reason}}</view>
-      <view class="rec-target" wx:if="{{rec.targetDistance}}">目标 {{rec.targetDistance}} km</view>
-      <view class="rec-target" wx:elif="{{rec.targetVolume}}">目标 {{rec.targetVolume}} kg·次</view>
-      <view class="rec-target" wx:elif="{{rec.targetValue}}">目标 {{rec.targetValue}} {{rec.unit || ''}}</view>
+      <view class="rec-target" wx:if="{{rec.targetDistance}}">目标：{{rec.targetDistance}} km</view>
+      <view class="rec-target" wx:elif="{{rec.targetVolume}}">目标：{{rec.targetVolume}} kg·次</view>
+      <view class="rec-target" wx:elif="{{rec.targetValue}}">目标：{{rec.targetValue}} {{rec.unit || ''}}</view>
       <view class="rec-actions">
-        <view class="rec-btn rec-btn-{{rec.priority >= 9 ? 'high' : (rec.priority >= 6 ? 'mid' : 'low')}}"
-              data-rec="{{rec}}" bindtap="onTapAddRec">
-          {{rec.priority >= 9 ? '立即添加' : (rec.priority >= 6 ? '添加' : '了解 →')}}
-        </view>
+        <view class="rec-btn" data-rec="{{rec}}" bindtap="onTapAddRec">一键添加</view>
       </view>
     </view>
   </view>
 
-  <!-- 目标列表（保留所有功能 + 5-segment progress block 替换 linear bar） -->
+  <!-- 目标列表 -->
   <view class="goal-list" wx:if="{{goals.length > 0}}">
     <view class="goal-card" wx:for="{{goals}}" wx:key="id">
       <view class="goal-head">
         <text class="goal-icon">{{item.kindIcon}}</text>
         <text class="goal-title">{{item.title || item.kindLabel}}</text>
-        <view class="goal-status-row">
-          <text class="goal-status completed" wx:if="{{item.completed}}">完成</text>
-          <text class="goal-status expired" wx:if="{{item.expired}}">建议续期</text>
-        </view>
+        <text class="goal-status" wx:if="{{item.completed}}">✓ 已达成</text>
+        <text class="goal-status expired" wx:if="{{item.expired}}">⏰ 已过期</text>
       </view>
-      <!-- V0.3.24 hallmark: 5-segment progress block 替代 linear bar -->
       <view class="goal-progress">
-        <view class="seg-row">
-          <view class="seg {{item.percent >= 20 ? 'filled' : ''}}"></view>
-          <view class="seg {{item.percent >= 40 ? 'filled' : ''}}"></view>
-          <view class="seg {{item.percent >= 60 ? 'filled' : ''}}"></view>
-          <view class="seg {{item.percent >= 80 ? 'filled' : ''}}"></view>
-          <view class="seg {{item.percent >= 100 ? 'filled' : ''}}"></view>
+        <view class="goal-bar">
+          <view class="goal-bar-fill" style="width: {{item.percent}}%;"></view>
         </view>
         <view class="goal-numbers">
-          当前 <text class="num">{{item.currentValue != null ? item.currentValue : '—'}}</text> / 目标 {{item.targetValue}} {{item.unit}}
+          当前 {{item.currentValue != null ? item.currentValue : '?'}} / 目标 {{item.targetValue}} {{item.unit}}
         </view>
       </view>
+      <!-- V0.3.8 友好失败（清单 pages/goal #30）：过期未完成不惩罚，建议降难度续期 -->
       <view class="goal-friendly" wx:if="{{item.expired}}">
-        <text class="goal-friendly-tip">未完成没关系，建议调整目标到 {{item.suggestedTarget}} {{item.unit}} 继续努力</text>
+        <text class="goal-friendly-tip">💡 未完成没关系，建议调整目标到 {{item.suggestedTarget}} {{item.unit}} 继续努力</text>
       </view>
       <view class="goal-actions">
-        <view class="goal-btn" wx:if="{{item.kind === 'mood' || item.kind === 'sugar' || item.kind === 'dampness'}}" data-id="{{item.id}}" bindtap="onTapUpdate">更新</view>
+        <view class="goal-btn" wx:if="{{item.kind === 'mood' || item.kind === 'sugar' || item.kind === 'dampness'}}" data-id="{{item.id}}" bindtap="onTapUpdate">更新进度</view>
         <view class="goal-btn" wx:if="{{item.status === 'active' && !item.expired}}" data-id="{{item.id}}" bindtap="onTapPause">暂停</view>
         <view class="goal-btn" wx:if="{{item.status === 'paused'}}" data-id="{{item.id}}" bindtap="onTapResume">恢复</view>
       </view>
@@ -67,7 +48,7 @@
   </view>
 
   <view class="empty" wx:elif="{{!loading}}">
-    <text class="empty-icon">目标</text>
+    <text class="empty-icon">🎯</text>
     <text class="empty-text">还没有健康目标</text>
     <text class="empty-sub">点击右下角 + 添加第一个目标</text>
   </view>

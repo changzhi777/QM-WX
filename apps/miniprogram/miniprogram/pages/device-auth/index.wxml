@@ -1,70 +1,55 @@
-<!-- pages/device-auth/index.wxml
-/* Hallmark · macrostructure: Letter · genre: Editorial · theme: Lumen
- * redesign: 信头 + 散文 body + 2-col activities + 底部 Sign-off（去 mask close X）
- * preserves: brand 头部 + 授权/解绑 + 最近活动 + web-view 跳转授权
- */
+<!-- pages/device-auth/index.wxml -->
 <view class="page" wx:if="{{brand}}">
-  <!-- 信头（letter 信纸抬头） -->
-  <view class="letter-header">
-    <view class="letter-wordmark">{{brand.name}}</view>
-    <view class="letter-date">{{letterDate}}</view>
+  <!-- 品牌头部 -->
+  <view class="brand-header" style="background: {{brand.color}};">
+    <view class="brand-icon">{{brand.icon}}</view>
+    <view class="brand-name">{{brand.name}}</view>
+    <view class="brand-desc">{{brand.description}}</view>
   </view>
 
-  <!-- 致用户（salutation） -->
-  <view class="letter-salutation">亲爱的用户，</view>
-
-  <!-- 散文 body：status 散文化（去徽标/去 emoji） -->
-  <view class="letter-body">
-    <view class="letter-line">关于您与 <text class="brand-mention">{{brand.name}}</text> 的授权状态：</view>
-    <view class="letter-paragraph" wx:if="{{bound}}">
-      您的设备已绑定。最后一次同步是在 <text class="time">{{lastSyncAt}}</text>。
-      如需查看详细历史或更换账号，请前往授权页面。
+  <!-- 状态徽标 -->
+  <view class="status-card">
+    <view class="status-row">
+      <text class="status-label">授权状态</text>
+      <text class="status-value {{bound ? 'bound' : 'unbound'}}">
+        {{bound ? '✓ 已绑定' : (configured ? '○ 未绑定' : '✗ 未配置')}}
+      </text>
     </view>
-    <view class="letter-paragraph" wx:elif="{{configured}}">
-      您尚未绑定该品牌的设备。如需开启同步，请点击下方按钮前往授权页面。
+    <view class="status-row" wx:if="{{lastSyncAt}}">
+      <text class="status-label">最近同步</text>
+      <text class="status-value-time">{{lastSyncAt}}</text>
     </view>
-    <view class="letter-paragraph" wx:else">
-      该品牌的开发者凭据尚未配置。请联系沐禾运营团队申请开通。
+    <view class="status-row" wx:if="{{!lastSyncAt && bound}}">
+      <text class="status-label">最近同步</text>
+      <text class="status-value-time">暂无记录</text>
     </view>
+    <button class="auth-btn" bindtap="onTapAuthorize">
+      {{bound ? '重新授权' : '授权'}}
+    </button>
   </view>
 
-  <!-- 授权 CTA（信中行动号召） -->
-  <view class="letter-cta">
-    <view class="auth-btn-primary" bindtap="onTapAuthorize">
-      {{bound ? '前往重新授权' : '前往授权'}}
-    </view>
-  </view>
-
-  <!-- 最近活动（letter 数据段落 + 2-col 排版） -->
-  <view class="letter-section" wx:if="{{activities.length > 0}}">
-    <view class="letter-section-head">最近 5 条活动</view>
-    <view class="letter-activities">
-      <view class="letter-act-row {{index === 0 ? 'first' : ''}}"
-            wx:for="{{activities}}" wx:key="vendorActivityId" wx:for-item="act" wx:for-index="index">
-        <view class="letter-act-type">{{act.type || '未知'}}</view>
-        <view class="letter-act-meta">
-          <text class="letter-act-distance" wx:if="{{act.distanceKm}}">{{act.distanceKm}} km</text>
-          <text class="letter-act-distance" wx:elif="{{act.durationSec}}">{{act.durationSec}} s</text>
-          <text class="letter-act-time">{{act.startTime}}</text>
-        </view>
+  <!-- 最近活动 -->
+  <view class="section" wx:if="{{activities.length > 0}}">
+    <view class="section-title">最近 5 条活动</view>
+    <view class="activity-row" wx:for="{{activities}}" wx:key="vendorActivityId" wx:for-item="act">
+      <view class="act-type">{{act.type || '未知'}}</view>
+      <view class="act-meta">
+        <text class="act-distance" wx:if="{{act.distanceKm}}">{{act.distanceKm}} km</text>
+        <text class="act-distance" wx:elif="{{act.durationSec}}">{{act.durationSec}} s</text>
+        <text class="act-time">{{act.startTime}}</text>
       </view>
     </view>
   </view>
 
-  <view class="letter-section" wx:elif="{{bound}}">
-    <view class="empty-line">暂无最近活动记录。</view>
+  <view class="empty" wx:elif="{{bound}}">
+    <text class="empty-text">暂无最近活动</text>
   </view>
 
-  <!-- Sign-off（letter 结尾） -->
-  <view class="letter-signoff">
-    <view class="signoff-line">沐禾健康 · 2026</view>
-  </view>
-
-  <!-- web-view 授权跳转（保留全屏 mask + 关闭按钮改文字 bottom bar） -->
+  <!-- web-view 授权跳转 -->
   <view class="mask" wx:if="{{showWebView}}" bindtap="onCloseWebView">
     <view class="webview-wrap" catchtap="">
-      <web-view src="{{authUrl}}"></web-view>
-      <view class="webview-bottombar" catchtap="onCloseWebView">取消授权</view>
+      <web-view src="{{authUrl}}" bindload="onCloseWebView"></web-view>
+      <view class="webview-close">关闭</view>
     </view>
   </view>
 </view>

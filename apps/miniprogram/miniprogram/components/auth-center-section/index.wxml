@@ -1,31 +1,24 @@
-<!-- components/auth-center-section/index.wxml
-  Hallmark · macrostructure: Bento Grid · genre: Editorial · theme: Garden
-  redesign: 3 品牌不同 size（Garmin 大横排 / Huawei 中竖排 / COROS 小紧凑）
-  preserves: 3 brands + auth/unbind/detail actions + status tags
--->
+<!-- components/auth-center-section/index.wxml -->
 <view class="auth-section">
-  <view class="section-title">设备授权中心</view>
-  <view class="brand-card {{item.key === 'garmin' ? 'brand-card-large' : ''}} {{item.key === 'huawei' ? 'brand-card-medium' : ''}} {{item.key === 'coros' ? 'brand-card-small' : ''}}"
-        wx:for="{{brands}}" wx:key="key" wx:for-item="item">
-    <view class="brand-stripe" style="background: {{item.color}};"></view>
-    <view class="brand-card-head">
-      <view class="brand-card-name">{{item.name}}</view>
-      <view class="brand-status-tag {{item.bound ? 'bound' : 'unbound'}}">
-        {{item.bound ? '已绑定' : (item.configured ? '未绑定' : '未配置')}}
+  <view class="section-title">🎯 设备授权中心</view>
+  <view class="auth-card" wx:for="{{brands}}" wx:key="key" wx:for-item="brand">
+    <view class="auth-card-icon" style="background: {{brand.color}};">{{brand.icon}}</view>
+    <view class="auth-card-info">
+      <view class="auth-card-name">{{brand.name}}</view>
+      <view class="auth-card-status">
+        <text class="status-tag {{brand.bound ? 'bound' : 'unbound'}}">
+          {{brand.bound ? '✓ 已绑定' : (brand.configured ? '○ 未绑定' : '✗ 未配置')}}
+        </text>
+        <text class="status-time" wx:if="{{brand.lastSyncAt}}">{{brand.lastSyncAt}}</text>
       </view>
+      <view class="auth-card-meta" wx:if="{{brand.bound && brand.recentCount > 0}}">最近 {{brand.recentCount}} 条活动</view>
     </view>
-    <view class="brand-card-body">
-      <view class="brand-meta-line" wx:if="{{item.lastSyncAt}}">上次同步 {{item.lastSyncAt}}</view>
-      <view class="brand-meta-line" wx:elif="{{item.bound}}">暂无同步记录</view>
-      <view class="brand-meta-line" wx:elif="{{!item.configured}}">凭据未配置</view>
-      <view class="brand-meta-stats" wx:if="{{item.bound && item.recentCount > 0}}">最近 {{item.recentCount}} 条活动</view>
-    </view>
-    <view class="brand-card-actions">
-      <view class="auth-btn auth-btn-primary" data-brand-key="{{item.key}}" bindtap="onTapAuth">
-        {{item.bound ? '重新授权' : '授权'}}
+    <view class="auth-card-actions">
+      <view class="auth-btn auth-btn-primary" data-brand-key="{{brand.key}}" bindtap="onTapAuth">
+        {{brand.bound ? '重新授权' : '授权'}}
       </view>
-      <view class="auth-btn-text" data-vendor="{{item.vendorOAuthKey}}" wx:if="{{item.bound}}" bindtap="onTapUnbind">解绑</view>
-      <view class="auth-btn-text" data-brand-key="{{item.key}}" bindtap="onTapDetail">详情 →</view>
+      <view class="auth-btn auth-btn-ghost" data-vendor="{{brand.vendorOAuthKey}}" wx:if="{{brand.bound}}" bindtap="onTapUnbind">解绑</view>
     </view>
+    <view class="auth-card-detail" data-brand-key="{{brand.key}}" bindtap="onTapDetail">查看详情 ›</view>
   </view>
 </view>

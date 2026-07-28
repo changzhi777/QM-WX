@@ -1,48 +1,19 @@
-/* components/auth-center-section/index.wxss
-/* Hallmark · macrostructure: Bento Grid · genre: Editorial · theme: Garden
- * redesign: 3 品牌不同 size — Garmin 大横排 / Huawei 中竖排 / COROS 小紧凑
- */
-.auth-section { background: #fff; border-radius: 4rpx; padding: 24rpx; margin-bottom: 16rpx; }
-.section-title { font-size: 30rpx; font-weight: 700; color: #1a1a1a; margin-bottom: 20rpx; font-family: Georgia, serif; border-bottom: 1rpx solid #1a1a1a; padding-bottom: 12rpx; }
-
-/* === Bento: 3 种 size === */
-.brand-card { background: #faf8f3; border-radius: 0; padding: 20rpx 24rpx 20rpx 28rpx; margin-bottom: 12rpx; position: relative; display: flex; flex-direction: column; gap: 12rpx; border: 1rpx solid #e8e0d0; }
-.brand-card:last-child { margin-bottom: 0; }
-.brand-stripe { position: absolute; left: 0; top: 0; bottom: 0; width: 4rpx; }
-
-/* Garmin (蓝) — 大卡横排：name + status 同行 + meta + stats 全宽 */
-.brand-card-large { padding: 32rpx 32rpx 28rpx 36rpx; background: #f0f7f4; border-color: #1a8e6e; }
-.brand-card-large .brand-card-head { display: flex; flex-direction: row; align-items: baseline; justify-content: space-between; }
-.brand-card-large .brand-card-name { font-size: 36rpx; font-family: Georgia, serif; font-weight: 700; }
-.brand-card-large .brand-card-body { display: flex; flex-direction: column; gap: 6rpx; }
-.brand-card-large .brand-meta-stats { font-size: 28rpx; color: #1a8e6e; font-weight: 700; }
-
-/* Huawei (红) — 中卡竖排：name 单行 + status 独立行 */
-.brand-card-medium { padding: 24rpx 24rpx 20rpx 28rpx; background: #fef5f4; border-color: #c7000b; }
-.brand-card-medium .brand-card-head { display: flex; flex-direction: column; gap: 8rpx; }
-.brand-card-medium .brand-card-name { font-size: 30rpx; font-weight: 600; }
-.brand-card-medium .brand-card-body { padding-left: 0; }
-
-/* COROS (紫) — 小卡紧凑：极简一行 */
-.brand-card-small { padding: 16rpx 20rpx 16rpx 24rpx; background: #f5f3fb; border-color: #7c3aed; }
-.brand-card-small .brand-card-head { display: flex; flex-direction: row; align-items: center; justify-content: space-between; }
-.brand-card-small .brand-card-name { font-size: 26rpx; font-weight: 500; }
-.brand-card-small .brand-card-body { display: none; } /* COROS 极简：只显示 name + 状态 */
-
-/* === status tags（去 emoji） === */
-.brand-status-tag { font-size: 20rpx; padding: 2rpx 10rpx; border-radius: 2rpx; font-weight: 600; }
-.brand-status-tag.bound { background: #2D9D78; color: #fff; }
-.brand-status-tag.unbound { background: #d4a017; color: #fff; }
-
-.brand-card-name { color: #1a1a1a; }
-.brand-card-body { display: flex; flex-direction: column; gap: 4rpx; }
-.brand-meta-line { font-size: 22rpx; color: #666; }
-.brand-meta-stats { font-size: 24rpx; color: #2D9D78; font-weight: 600; }
-
-/* === CTA：Garmin/Huawei 实色 + COROS 仅文字 === */
-.brand-card-actions { display: flex; gap: 16rpx; align-items: center; }
-.auth-btn { font-size: 24rpx; padding: 10rpx 24rpx; border-radius: 4rpx; font-weight: 600; }
-.auth-btn-primary { background: #1a1a1a; color: #faf8f3; }
-.brand-card-small .auth-btn-primary { background: #7c3aed; color: #fff; padding: 6rpx 16rpx; font-size: 22rpx; }
-.auth-btn-text { font-size: 22rpx; color: #888; padding: 4rpx 0; text-decoration: underline; }
-.brand-card-large .auth-btn-text { font-size: 24rpx; }
+/* components/auth-center-section/index.wxss */
+.auth-section { background: #fff; border-radius: 16rpx; padding: 24rpx; margin-bottom: 16rpx; box-shadow: 0 2rpx 8rpx rgba(0,0,0,0.04); }
+.section-title { font-size: 30rpx; font-weight: 600; color: #333; margin-bottom: 20rpx; }
+.auth-card { display: flex; align-items: center; padding: 20rpx; margin-bottom: 16rpx; background: #fafafa; border-radius: 12rpx; position: relative; }
+.auth-card:last-child { margin-bottom: 0; }
+.auth-card-icon { width: 80rpx; height: 80rpx; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 40rpx; color: #fff; margin-right: 20rpx; flex-shrink: 0; }
+.auth-card-info { flex: 1; min-width: 0; }
+.auth-card-name { font-size: 30rpx; font-weight: 600; color: #333; margin-bottom: 6rpx; }
+.auth-card-status { display: flex; align-items: center; gap: 12rpx; margin-bottom: 6rpx; }
+.status-tag { font-size: 22rpx; padding: 4rpx 12rpx; border-radius: 8rpx; font-weight: 600; }
+.status-tag.bound { background: #d4f4dd; color: #2D9D78; }
+.status-tag.unbound { background: #fff3d6; color: #e67e22; }
+.status-time { font-size: 22rpx; color: #888; }
+.auth-card-meta { font-size: 22rpx; color: #888; }
+.auth-card-actions { display: flex; flex-direction: column; gap: 8rpx; margin-left: 12rpx; flex-shrink: 0; }
+.auth-btn { font-size: 24rpx; padding: 8rpx 20rpx; border-radius: 24rpx; text-align: center; min-width: 100rpx; }
+.auth-btn-primary { background: #2D9D78; color: #fff; }
+.auth-btn-ghost { background: transparent; color: #888; border: 1rpx solid #ccc; }
+.auth-card-detail { position: absolute; bottom: 12rpx; right: 24rpx; font-size: 22rpx; color: #2D9D78; }
