@@ -8,6 +8,12 @@
 
 ---
 
+## 📋 变更记录 (Changelog)
+
+- **2026-07-28 (V0.3.13 huawei vendor + V0.3.20 authCenterList/recentActivityByVendor)** — 🎯 **device module V0.3.x 多 vendor 扩展 + 设备授权中心**：① **V0.3.13 device-poll-pull huawei vendor**（代码注释 V0.3.13，非任务书 V0.3.15）：`DeviceVendor +'huawei'`（device-poll-pull.job.ts line 25）+ `fetchHuaweiData` 从 `Checkin where dataSource='huawei_export'` 按 date 聚合（distanceKm×1000→distanceM 米 + durationSec/60→activeMin 分钟）+ 写 `DeviceDailyActivity vendor='huawei'` + 多 vendor Promise.allSettled 失败隔离 + perVendorCount.huawei 独立统计（与 V0.3.1 wechat/garmin/terra 三 vendor 并行范式同源）；② **V0.3.20 设备授权中心**：新增 `authCenterList(userId)` action（聚合用户各品牌设备授权状态：bound/unbound/unconfigured + lastSyncAt + recentCount）+ `recentActivityByVendor(userId, vendor, limit)` action（按 vendor 查最近 N 条活动）；**ENDPOINTS 模式**：authCenterList/recentActivityByVendor 沿用 admin generic action 模式不单独登记（与 V0.2.37 listInterpret + V0.3.4/5 admin dashboard/globalSearch 同模式，避免 ENDPOINTS 膨胀）；**测试**：`device.authCenterList.test.ts` 3 测 + `device.recentActivityByVendor.test.ts` 4 测（V0.3.20）；**前端配合**：`pages/device-auth/` 新建 4 文件（V0.3.20 设备授权中心页：品牌头部 + 状态徽标卡 + 最近 5 条活动列表 + web-view OAuth 跳转 mask）+ `components/auth-center-section/` 新建 4 文件（章节组件：brands 列表渲染 + 操作按钮）；**版本号差订正**：代码注释 V0.3.13 vs 顶部 changelog V0.3.15，以代码注释 V0.3.13 为准（V0.3.15 是后续微调）
+
+---
+
 ## 🎯 模块职责
 
 **多协议设备数据接入**：服务端权威地接收并持久化各类设备数据，统一包装为「我的活动 / 我的睡眠 / 我的今日健康 / 我的健康历史 / 我的设备绑定」查询 API。

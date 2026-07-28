@@ -7,6 +7,12 @@
 
 ---
 
+## 📋 变更记录 (Changelog)
+
+- **2026-07-28 (V0.3.10 checkChatQuota 会员分层)** — 🎯 **ai-coach module V0.3.10 会员分层**：新增 `checkChatQuota(userId)` 函数 — 免费用户每日 3 次限额（DAILY_FREE_LIMIT=3），会员无限制；**逻辑**：`prisma.user.findUnique select memberExpireAt` 判断 isMember（会员 ExpireAt > now → `return { remaining: Infinity, isMember: true }`）/ 免费用户 `redis.incr key=aiCoach:daily:${userId}:${today}` + 当天 TTL（endOfDay - now 秒）+ count > 3 `throw Errors.forbidden('今日免费对话已用完（3/3），升级会员享无限对话')`；**集成**：`chat` / `chatStream` 入口都调 `await this.checkChatQuota(userId)`（line 84/98）；**关键范式**：**redis.incr+expire 当天 TTL** 是「每日免费次数计数」通用范式（未来其他限额场景可复用，如每日拍照识别次数 / 每日 AI 解读次数）；**架构图 v2.0 #1**（会员分层是架构图 v2.0 增量第 1 项）；**前端配合**：免费用户超限后前端展示升级会员引导（pages/membership）
+
+---
+
 ## 🎯 模块职责
 
 **AI 跑步私教**：基于跑者全量画像（跑量/目标/跑鞋/计划/心率/睡眠/体成分）的个性化对话 + 训练计划生成。
