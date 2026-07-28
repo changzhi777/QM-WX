@@ -13,6 +13,10 @@ const DEFAULT_FEATURE_FLAGS: Record<FeatureFlag, boolean> = {
   membershipPurchase: false,
   smartAgent: false,
   bindApp: false,
+  // V0.3.6 产品收敛：3 个隐藏页入口 flag（diet/shoes/runner）
+  diet: false,
+  shoes: false,
+  runner: false,
 };
 
 const DEFAULT_MEMBER_LEVELS = {
