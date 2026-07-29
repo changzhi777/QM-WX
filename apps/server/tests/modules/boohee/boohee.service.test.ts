@@ -88,7 +88,7 @@ describe('boohee.service', () => {
   it('categoryFoods: 调 booheeGet + Cache', async () => {
     _clientMock.booheeGet.mockResolvedValue({ foods: [] });
     await booheeService.categoryFoods('1', { page: 1, per_page: 10 });
-    expect(_clientMock.booheeGet).toHaveBeenCalledWith('/v1/food/category/foods', expect.objectContaining({ category_id: '1' }));
+    expect(_clientMock.booheeGet).toHaveBeenCalledWith('/v1/food/list', expect.objectContaining({ id: '1', kind: 'category' }));
   });
 
   it('foodUnits: 调 booheeGet + Cache', async () => {
@@ -100,7 +100,7 @@ describe('boohee.service', () => {
   it('batchNutrition: codes 排序后 join 做 cacheKey', async () => {
     _clientMock.booheeGet.mockResolvedValue({});
     await booheeService.batchNutrition(['c', 'a', 'b']);
-    expect(_clientMock.booheeGet).toHaveBeenCalledWith('/v1/food/batch_nutrition', { codes: 'a,b,c' });
+    expect(_clientMock.booheeGet).toHaveBeenCalledWith('/v1/food/ingredients', { codes: 'a,b,c' });
 
     // 不同顺序同内容命中缓存
     await booheeService.batchNutrition(['a', 'b', 'c']);
@@ -110,6 +110,6 @@ describe('boohee.service', () => {
   it('foodRanking: 调 booheeGet + Cache', async () => {
     _clientMock.booheeGet.mockResolvedValue([]);
     await booheeService.foodRanking({ type: 'hot', limit: 10 });
-    expect(_clientMock.booheeGet).toHaveBeenCalledWith('/v1/food/ranking', { type: 'hot', limit: 10 });
+    expect(_clientMock.booheeGet).toHaveBeenCalledWith('/v1/food/ranks', { type: 'hot', limit: 10 });
   });
 });

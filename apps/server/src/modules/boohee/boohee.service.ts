@@ -62,7 +62,7 @@ class BooheeService {
     return Cache.wrap(
       `boohee:categoryFoods:${categoryId}:${page}:${per_page}`,
       TTL_DETAIL,
-      () => booheeGet('/v1/food/category/foods', { category_id: categoryId, page, per_page }),
+      () => booheeGet('/v1/food/list', { id: categoryId, kind: 'category', page, per_page }),
     );
   }
 
@@ -77,7 +77,7 @@ class BooheeService {
   async batchNutrition(codes: string[]): Promise<unknown> {
     const key = codes.slice().sort().join(',');
     return Cache.wrap(`boohee:batch:${key}`, TTL_DETAIL, () =>
-      booheeGet('/v1/food/batch_nutrition', { codes: key }),
+      booheeGet('/v1/food/ingredients', { codes: key }),
     );
   }
 
@@ -85,7 +85,7 @@ class BooheeService {
   async foodRanking(opts: { type?: string; limit?: number } = {}): Promise<unknown> {
     const { type, limit = 10 } = opts;
     return Cache.wrap(`boohee:ranking:${type || 'all'}:${limit}`, TTL_RANKING, () =>
-      booheeGet('/v1/food/ranking', { type, limit }),
+      booheeGet('/v1/food/ranks', { type, limit }),
     );
   }
 }
