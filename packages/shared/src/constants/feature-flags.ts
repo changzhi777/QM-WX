@@ -14,6 +14,8 @@ export const FEATURE_FLAGS = [
   'diet',      // 饮食日记（pages/diet）+ 今日页饮食摘要卡
   'shoes',     // 我的跑鞋（pages/shoes）+ mine 页入口
   'runner',    // 跑者数据（pages/runner）+ mine 页"我的解读报告"入口
+  // V0.3.35 薄荷 API 对接：boohee module 食物数据（160 万食物库 + GI/GL/NRV）
+  'boohee',    // 薄荷食物搜索/详情（默认关，部署后远程开启）
 ] as const;
 
 export type FeatureFlag = (typeof FEATURE_FLAGS)[number];
@@ -29,4 +31,6 @@ export interface FeatureFlagsConfig {
   diet: boolean;
   shoes: boolean;
   runner: boolean;
+  /** V0.3.35 薄荷 API 食物数据（boohee module）*/
+  boohee: boolean;
 }

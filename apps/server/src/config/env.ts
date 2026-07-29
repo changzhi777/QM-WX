@@ -103,6 +103,9 @@ const EnvSchema = z.object({
   // V0.2.0 FatSecret 饮食 API（OAuth2 client credentials，食物搜索 + 营养）
   FATSECRET_KEY: z.string().optional(),
   FATSECRET_SECRET: z.string().optional(),
+  // V0.3.35 薄荷科学.AI API（X-Api-Key 认证，160 万食物库 + GI/GL/NRV）
+  BOOHEE_API_KEY: z.string().optional(),
+  BOOHEE_BASE_URL: z.string().default('https://api.boohee.com/open-apis'),
 });
 
 const parsed = EnvSchema.safeParse(process.env);

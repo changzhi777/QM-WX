@@ -17,6 +17,8 @@ const DEFAULT_FEATURE_FLAGS: Record<FeatureFlag, boolean> = {
   diet: false,
   shoes: false,
   runner: false,
+  // V0.3.35 薄荷 API 对接：boohee module 食物数据
+  boohee: false,
 };
 
 const DEFAULT_MEMBER_LEVELS = {

@@ -26,6 +26,7 @@ import { adminRoutes } from './modules/admin/admin.routes.js';
 import { authRoutes } from './modules/auth/auth.routes.js';
 import { uploadRoutes } from './modules/upload/upload.routes.js';
 import { foodRoutes } from './modules/food/food.routes.js';
+import { booheeRoutes } from './modules/boohee/boohee.routes.js';
 import { ocrRoutes } from './modules/ocr/ocr.routes.js';
 import { interpretRoutes } from './modules/interpret/routes.js';
 import { strengthRoutes } from './modules/strength/strength.routes.js';
@@ -165,6 +166,7 @@ export async function buildApp() {
   await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(uploadRoutes, { prefix: '/api/upload' });
   await app.register(foodRoutes, { prefix: '/api/food' }); // V0.2.0 FatSecret 饮食搜索
+  await app.register(booheeRoutes, { prefix: '/api/boohee' }); // V0.3.35 薄荷食物数据（160 万食物库 + GI/GL/NRV）
   await app.register(ocrRoutes, { prefix: '/api/ocr' }); // V0.2.1 腾讯云 OCR SDK（通用/高精度/身份证）
   await app.register(interpretRoutes, { prefix: '/api/interpret' }); // V0.2.33 资料解读（minimax M3）
   await app.register(strengthRoutes, { prefix: '/api/strength' }); // V0.2.42 力量训练记录（训记式）

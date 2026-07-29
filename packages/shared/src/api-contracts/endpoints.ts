@@ -106,6 +106,16 @@ export const ENDPOINTS = {
     removeMeal: '/api/food', // 删除一餐（鉴权仅本人）
     recognize: '/api/food', // ⑦拍照识别（vision=GLM-4.6V 识菜品 / ocr=OCR+FatSecret 匹配）
   },
+  boohee: {
+    // V0.3.35 薄荷科学.AI 食物数据（160 万食物库 + GI/GL/NRV/health_light，X-Api-Key 认证）
+    search: '/api/boohee', // 2.1 食物搜索（Cache 120s）
+    detail: '/api/boohee', // 2.2 食物详情（GI/GL/NRV，Cache 300s）
+    categories: '/api/boohee', // 2.3 食物分类（Cache 3600s）
+    categoryFoods: '/api/boohee', // 2.4 分类食物列表
+    foodUnits: '/api/boohee', // 2.5 食物单位
+    batchNutrition: '/api/boohee', // 2.6 批量营养信息
+    foodRanking: '/api/boohee', // 2.7 食物排行榜
+  },
   ocr: {
     // V0.2.1 腾讯云 OCR SDK（官方精简包，复用 COS key）
     generalBasic: '/api/ocr', // 通用印刷体（运动截图成绩）
