@@ -19,6 +19,10 @@ import { Cache } from '../../infra/cache.js';
 import { toCsvHeader, toCsvRow, UTF8_BOM } from '../../common/csv.js';
 import { assertTransition, type OrderStatus } from '../../domain/order-state.js';
 import { enqueueUploadParse } from '../../jobs/queue.js';
+import { foodService } from '../food/food.service.js';
+import { booheeService } from '../boohee/boohee.service.js';
+import type { z } from 'zod';
+import { NutritionBalanceInputSchema } from './admin.schema.js';
 import bcrypt from 'bcrypt';
 import type { FastifyInstance } from 'fastify';
 import type {
@@ -1815,5 +1819,187 @@ export async function exportOrdersExcel(input: ExportOrdersInput): Promise<{ fil
   return {
     filename: `orders-${new Date().toISOString().slice(0, 10)}.xlsx`,
     base64: Buffer.from(buffer).toString('base64'),
+  };
+}
+
+// ===== V0.3.35 boohee×运动 营养×运动平衡聚合（admin 验证 boohee API 落地场景）=====
+/**
+ * 用户某日「运动消耗 + 饮食摄入 + 营养平衡」一次拉全。
+ *
+ * 设计要点：
+ * - 4 段独立 try/catch（V0.3.4 dashboard 范式）：任一段失败不挂整接口
+ * - boohee 优雅降级（V0.3.35 新沉淀）：失败标 booheeEnriched: false，不影响主流程
+ * - Checkin 距离×60 kcal/km 估算（V0.3.35 简单系数，YAGNI 后续可接 MET 公式）
+ * - boohee.search → detail 链路（V0.3.35 范式复用）
+ */
+const CHECKIN_KCAL_PER_KM = 60; // V0.3.35 简单估算系数
+
+function todayCN(): string {
+  return new Date(new Date().getTime() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+}
+
+/** 工具：从 boohee detail 安全取字段（detail 字段结构固定为 {name, value, nrv}）*/
+function pickNutrient(
+  detail: { calories?: { value: number }; protein?: { value: number }; fat?: { value: number }; carbohydrate?: { value: number }; gi?: { value: number }; gl?: { value: number }; health_light?: number } | null | undefined,
+  key: 'calories' | 'protein' | 'fat' | 'carbohydrate' | 'gi' | 'gl' | 'health_light',
+): number | undefined {
+  if (!detail) return undefined;
+  const v = (detail as Record<string, unknown>)[key];
+  if (v && typeof v === 'object' && 'value' in (v as Record<string, unknown>)) {
+    return Number((v as { value: unknown }).value);
+  }
+  if (typeof v === 'number') return v;
+  return undefined;
+}
+
+export async function getNutritionBalance(input: z.infer<typeof NutritionBalanceInputSchema>) {
+  const date = input.date ?? todayCN();
+  const { userId } = input;
+
+  // ===== 1. 运动消耗（4 段独立 try/catch 范式）=====
+  let checkinCount = 0;
+  let totalDistanceKm = 0;
+  let deviceCalories = 0;
+  let deviceSteps = 0;
+  let hasCheckin = false;
+  let hasDevice = false;
+
+  // 1a. Checkin 距离 + count
+  try {
+    const [count, agg] = await Promise.all([
+      prisma.checkin.count({ where: { userId, date } }),
+      prisma.checkin.aggregate({ where: { userId, date }, _sum: { distance: true } }),
+    ]);
+    checkinCount = count;
+    totalDistanceKm = agg._sum.distance ? Math.round(Number(agg._sum.distance) * 10) / 10 : 0;
+    hasCheckin = count > 0;
+  } catch (e) {
+    console.error('[nutritionBalance] checkin 聚合失败', e);
+  }
+
+  // 1b. DeviceDailyActivity（按当日 vendor 聚合 caloriesKcal + steps）
+  try {
+    const deviceRows = await prisma.deviceDailyActivity.findMany({
+      where: { userId, date },
+    });
+    deviceCalories = deviceRows.reduce((s, r) => s + r.caloriesKcal, 0);
+    deviceSteps = deviceRows.reduce((s, r) => s + r.step, 0);
+    hasDevice = deviceRows.length > 0;
+  } catch (e) {
+    console.error('[nutritionBalance] device 聚合失败', e);
+  }
+
+  // 估算卡路里 = Checkin 距离×60 系数 + Device 实际消耗
+  const caloriesBurned = Math.round(totalDistanceKm * CHECKIN_KCAL_PER_KM + deviceCalories);
+  const steps = deviceSteps;
+  const source: 'checkin' | 'device' | 'both' | 'none' = hasCheckin && hasDevice
+    ? 'both'
+    : hasCheckin
+    ? 'checkin'
+    : hasDevice
+    ? 'device'
+    : 'none';
+
+  // ===== 2. 饮食摄入（food.myMeals 复用）=====
+  let mealsData: { date: string; meals: Array<{ id: string; mealType: string; items: unknown; totalCalorie: number; createdAt: string }>; summary: { calorie: number; protein: number; fat: number; carb: number } } = {
+    date,
+    meals: [],
+    summary: { calorie: 0, protein: 0, fat: 0, carb: 0 },
+  };
+  try {
+    mealsData = await foodService.myMeals(userId, date);
+  } catch (e) {
+    console.error('[nutritionBalance] food.myMeals 失败', e);
+  }
+
+  // ===== 3. boohee 营养回填（每餐 items 尝试 search → detail）=====
+  const enrichedMeals: Array<{
+    id: string;
+    mealType: string;
+    items: Array<{
+      name: string;
+      calorie: number;
+      protein?: number;
+      fat?: number;
+      carb?: number;
+      booheeEnriched?: boolean;
+      gi?: number;
+      gl?: number;
+      healthLight?: number;
+    }>;
+    totalCalorie: number;
+  }> = [];
+  for (const m of mealsData.meals) {
+    const rawItems = m.items as Array<{ name: string; calorie: number; protein?: number; fat?: number; carb?: number; foodId?: string }>;
+    const enrichedItems: typeof enrichedMeals[number]['items'] = [];
+    for (const it of rawItems) {
+      const baseItem = {
+        name: it.name,
+        calorie: it.calorie,
+        protein: it.protein,
+        fat: it.fat,
+        carb: it.carb,
+      };
+      try {
+        // 用菜名搜薄荷，命中第一个就调 detail
+        const searchResp = await booheeService.search(it.name, { per_page: 1 });
+        const first = searchResp.foods?.[0];
+        if (first) {
+          const detail = await booheeService.detail(first.code);
+          enrichedItems.push({
+            ...baseItem,
+            booheeEnriched: true,
+            gi: pickNutrient(detail, 'gi'),
+            gl: pickNutrient(detail, 'gl'),
+            healthLight: detail.health_light,
+          });
+          continue;
+        }
+      } catch (e) {
+        // boohee 失败/未开通 → 标 false，不挂主流程
+        console.warn(`[nutritionBalance] boohee 回填失败: ${it.name}`, (e as Error).message);
+      }
+      enrichedItems.push({ ...baseItem, booheeEnriched: false });
+    }
+    enrichedMeals.push({
+      id: m.id,
+      mealType: m.mealType,
+      items: enrichedItems,
+      totalCalorie: m.totalCalorie,
+    });
+  }
+
+  // ===== 4. 净平衡计算 =====
+  const netCalorie = mealsData.summary.calorie - caloriesBurned;
+  let recommendation: string;
+  if (netCalorie < -500) {
+    recommendation = `净消耗 ${Math.abs(netCalorie)} kcal，摄入明显不足，建议补充营养（增加一份主食或坚果类加餐）。`;
+  } else if (netCalorie > 500) {
+    recommendation = `净摄入 +${netCalorie} kcal，摄入大于消耗，建议增加有氧运动或调整下一餐份量。`;
+  } else {
+    recommendation = `净 ${netCalorie >= 0 ? '+' : ''}${netCalorie} kcal，能量平衡良好，${netCalorie > 0 ? '可保持当前节奏' : '注意补充水分和电解质'}。`;
+  }
+
+  return {
+    userId,
+    date,
+    sport: {
+      checkinCount,
+      totalDistanceKm,
+      caloriesBurned,
+      steps,
+      source,
+    },
+    meals: enrichedMeals,
+    totalIntake: {
+      calorie: mealsData.summary.calorie,
+      protein: mealsData.summary.protein,
+      fat: mealsData.summary.fat,
+      carb: mealsData.summary.carb,
+    },
+    netBalance: {
+      calorie: netCalorie,
+      recommendation,
+    },
   };
 }

@@ -61,6 +61,7 @@ import {
   AdminSubmitRaceResultSchema,
   AdminListEnrollmentsByContentSchema,
   ListReviewsSchema,
+  NutritionBalanceInputSchema,
 } from './admin.schema.js';
 
 export async function adminRoutes(app: FastifyInstance) {
@@ -338,6 +339,12 @@ export async function adminRoutes(app: FastifyInstance) {
         return {
           code: 0,
           data: await adminService.adminLoginLogs(ListAdminLoginLogsSchema.parse(payload ?? {})),
+        };
+      // V0.3.35 boohee×运动 营养×运动平衡聚合
+      case 'nutritionBalance':
+        return {
+          code: 0,
+          data: await adminService.getNutritionBalance(NutritionBalanceInputSchema.parse(payload ?? {})),
         };
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });

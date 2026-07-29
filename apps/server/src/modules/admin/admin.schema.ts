@@ -424,3 +424,49 @@ export const BatchOrderResultSchema = z.object({
   totalSuccess: z.number(),
   totalFailed: z.number(),
 });
+
+// ===== V0.3.35 boohee×运动 营养×运动平衡聚合（admin 验证 boohee API）=====
+export const NutritionBalanceInputSchema = z.object({
+  userId: z.string().min(1),
+  // YYYY-MM-DD（CN 时区），缺省 = 今日
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+
+export const NutritionBalanceResponseSchema = z.object({
+  userId: z.string(),
+  date: z.string(),
+  sport: z.object({
+    checkinCount: z.number().int().nonnegative(),
+    totalDistanceKm: z.number().nonnegative(),
+    // 估算卡路里：Checkin 距离×60 系数 + DeviceDailyActivity.caloriesKcal
+    caloriesBurned: z.number().nonnegative(),
+    steps: z.number().int().nonnegative(),
+    source: z.enum(['checkin', 'device', 'both', 'none']),
+  }),
+  meals: z.array(z.object({
+    id: z.string(),
+    mealType: z.string(),
+    items: z.array(z.object({
+      name: z.string(),
+      calorie: z.number(),
+      protein: z.number().optional(),
+      fat: z.number().optional(),
+      carb: z.number().optional(),
+      booheeEnriched: z.boolean().optional(),
+      gi: z.number().optional(),
+      gl: z.number().optional(),
+      healthLight: z.number().optional(),
+    })),
+    totalCalorie: z.number(),
+  })),
+  totalIntake: z.object({
+    calorie: z.number().nonnegative(),
+    protein: z.number().nonnegative(),
+    fat: z.number().nonnegative(),
+    carb: z.number().nonnegative(),
+  }),
+  netBalance: z.object({
+    calorie: z.number(),
+    recommendation: z.string(),
+  }),
+});
