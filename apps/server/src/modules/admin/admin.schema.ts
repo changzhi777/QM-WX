@@ -353,3 +353,49 @@ export const GlobalSearchResponseSchema = z.object({
   })),
 });
 
+
+// ===== V0.3.34 sprint A2：admin.users 详情页 =====
+export const GetUserDetailInputSchema = z.object({
+  userId: z.string().min(1),
+});
+
+export const UserDetailResponseSchema = z.object({
+  user: z.object({
+    id: z.string(),
+    openid: z.string(),
+    nickname: z.string().nullable(),
+    phone: z.string().nullable(),
+    points: z.number(),
+    isBanned: z.boolean(),
+    bannedReason: z.string().nullable(),
+    memberExpireAt: z.string().nullable(),
+    createdAt: z.string(),
+    lastLoginAt: z.string().nullable(),
+  }),
+  training: z.object({
+    checkinCount30d: z.number(),
+    distanceKm30d: z.number(),
+    strengthSessions30d: z.number(),
+  }),
+  orders: z.object({
+    total: z.number(),
+    paid: z.number(),
+    totalRevenueFen: z.number(),
+  }),
+  points: z.object({
+    current: z.number(),
+    recentTransactions: z.array(z.object({
+      id: z.string(),
+      change: z.number(),
+      type: z.string(),
+      reason: z.string().nullable(),
+      createdAt: z.string(),
+    })),
+  }),
+  auditLogs: z.array(z.object({
+    id: z.string(),
+    action: z.string(),
+    target: z.string(),
+    createdAt: z.string(),
+  })),
+});

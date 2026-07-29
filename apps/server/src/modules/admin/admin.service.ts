@@ -245,6 +245,147 @@ export async function refundOrder(input: RefundOrderInput, refundedBy: string, i
   return result;
 }
 
+// ===== V0.3.34 sprint A2：admin.users 详情页（5 维聚合查询）=====
+
+export interface UserDetailData {
+  user: {
+    id: string;
+    openid: string;
+    nickname: string | null;
+    phone: string | null;
+    points: number;
+    isBanned: boolean;
+    bannedReason: string | null;
+    memberExpireAt: string | null;
+    createdAt: string;
+  };
+  // 训练数据（30 天聚合）
+  training: {
+    checkinCount30d: number;
+    distanceKm30d: number;
+    strengthSessions30d: number;
+  };
+  // 订单数据
+  orders: {
+    total: number;
+    paid: number;
+    totalRevenueFen: number;
+  };
+  // 积分流水（最近 10 条）
+  points: {
+    current: number;
+    recentTransactions: Array<{
+      id: string;
+      change: number;
+      type: string;
+      reason: string | null;
+      createdAt: string;
+    }>;
+  };
+  // 审计记录（最近 10 条 — 涉及该用户的 admin 操作）
+  auditLogs: Array<{
+    id: string;
+    action: string;
+    target: string;
+    createdAt: string;
+  }>;
+}
+
+export async function getUserDetail(userId: string): Promise<UserDetailData> {
+  const now = new Date();
+  const last30d = new Date(now.getTime() - 30 * 86_400_000);
+
+  // 5 类聚合并行（Promise.allSettled 失败隔离 — V0.3.4 dashboard 范式）
+  const results = await Promise.allSettled([
+    // 1. 用户基本信息
+    prisma.user.findUnique({ where: { id: userId } }),
+    // 2. 训练数据（30 天）
+    prisma.checkin.count({ where: { userId, createdAt: { gte: last30d } } }),
+    prisma.checkin.aggregate({
+      where: { userId, createdAt: { gte: last30d } },
+      _sum: { distance: true },
+    }),
+    prisma.strengthSession.count({ where: { userId, createdAt: { gte: last30d } } }),
+    // 3. 订单数据
+    prisma.order.count({ where: { userId } }),
+    prisma.order.count({ where: { userId, status: 'paid' } }),
+    prisma.order.aggregate({ where: { userId, status: 'paid' }, _sum: { totalAmount: true } }),
+    // 4. 积分流水（最近 10 条）
+    prisma.pointsRecord.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    }),
+    // 5. 审计记录（最近 10 条涉及该 user）
+    prisma.auditLog.findMany({
+      where: { target: userId },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    }),
+  ]);
+
+  // 失败隔离：任一失败抛 notFound
+  const v = <T>(i: number): T => {
+    const r = results[i];
+    if (r.status === 'rejected') throw Errors.notFound('用户不存在');
+    return r.value as T;
+  };
+
+  const user = v<NonNullable<Awaited<ReturnType<typeof prisma.user.findUnique>>>>(0);
+  if (!user) throw Errors.notFound('用户不存在');
+
+  const distanceSum = v<{ _sum: { distance: unknown } }>(2);
+  const distanceNum = distanceSum._sum?.distance ? Number(distanceSum._sum.distance) : 0;
+
+  const orderAgg = v<{ _sum: { totalAmount: unknown } }>(6);
+  const orderTotal = orderAgg._sum?.totalAmount ? Number(orderAgg._sum.totalAmount) : 0;
+  // 元 → 分
+  const orderRevenueFen = Math.round(orderTotal * 100);
+
+  const pointsTx = v<Array<{ id: string; change: number; type: string; reason: string | null; createdAt: Date }>>(7);
+  const auditList = v<Array<{ id: string; action: string; target: string; createdAt: Date }>>(8);
+
+  return {
+    user: {
+      id: user.id,
+      openid: user.openid,
+      nickname: user.nickname,
+      phone: user.phone,
+      points: user.points,
+      isBanned: user.isBanned,
+      bannedReason: user.bannedReason,
+      memberExpireAt: user.memberExpireAt ? user.memberExpireAt.toISOString() : null,
+      createdAt: user.createdAt.toISOString(),
+    },
+    training: {
+      checkinCount30d: v<number>(1),
+      distanceKm30d: Math.round(distanceNum * 10) / 10,
+      strengthSessions30d: v<number>(3),
+    },
+    orders: {
+      total: v<number>(4),
+      paid: v<number>(5),
+      totalRevenueFen: orderRevenueFen,
+    },
+    points: {
+      current: user.points,
+      recentTransactions: pointsTx.map((p) => ({
+        id: p.id,
+        change: p.change,
+        type: p.type,
+        reason: p.reason,
+        createdAt: p.createdAt.toISOString(),
+      })),
+    },
+    auditLogs: auditList.map((a) => ({
+      id: a.id,
+      action: a.action,
+      target: a.target,
+      createdAt: a.createdAt.toISOString(),
+    })),
+  };
+}
+
 // ===== 新增：管理类 list（P1-2，admin 视角含 off 状态）=====
 export async function listUsers(input: ListUsersInput) {
   const where = input.keyword

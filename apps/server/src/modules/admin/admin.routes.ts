@@ -27,6 +27,7 @@ import {
   UpdateOrderStatusSchema,
   RefundOrderSchema,
   ListUsersSchema,
+  GetUserDetailInputSchema,
   ListContentsSchema,
   ListProductsSchema,
   ListInterpretSchema,
@@ -114,6 +115,14 @@ export async function adminRoutes(app: FastifyInstance) {
       // ===== 管理 list / 概览（P1-2 新增）=====
       case 'listUsers':
         return { code: 0, data: await adminService.listUsers(ListUsersSchema.parse(payload ?? {})) };
+      // ===== V0.3.34 sprint A2：admin.users 详情页 =====
+      case 'getUserDetail':
+        return {
+          code: 0,
+          data: await adminService.getUserDetail(
+            GetUserDetailInputSchema.parse(payload ?? {}).userId,
+          ),
+        };
       case 'listContents':
         return { code: 0, data: await adminService.listContents(ListContentsSchema.parse(payload ?? {})) };
       case 'listProducts':
