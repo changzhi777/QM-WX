@@ -175,8 +175,15 @@ export async function adminRoutes(app: FastifyInstance) {
         return { code: 0, data: await adminService.getAdminDashboard() };
       // ===== V0.3.5 admin.globalSearch 全局搜索（5 表 LIKE 跨表）=====
       case 'globalSearch': {
-        const { query, limit } = GlobalSearchInputSchema.parse(payload ?? { query: '' });
-        return { code: 0, data: await adminGlobalSearch.globalSearch(query, limit) };
+        const { query, limit, types, startDate, endDate } = GlobalSearchInputSchema.parse(payload ?? { query: '' });
+        return {
+          code: 0,
+          data: await adminGlobalSearch.globalSearch(query, limit, {
+            types,
+            startDate: startDate ? new Date(startDate) : undefined,
+            endDate: endDate ? new Date(endDate) : undefined,
+          }),
+        };
       }
       // ===== V0.2.65 小程序代码提审（super-admin 独占，SUPER_ONLY_ACTIONS）=====
       case 'getMpCategory':

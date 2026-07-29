@@ -318,6 +318,10 @@ export const AdminDashboardResponseSchema = z.object({
 export const GlobalSearchInputSchema = z.object({
   query: z.string().min(0).max(50),
   limit: z.coerce.number().int().min(1).max(20).default(5),
+  // V0.3.34 A4：type 过滤 + 时间范围
+  types: z.array(z.enum(['user', 'feed', 'comment', 'interpret', 'strength'])).optional(),
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
 });
 export const GlobalSearchResponseSchema = z.object({
   users: z.array(z.object({
