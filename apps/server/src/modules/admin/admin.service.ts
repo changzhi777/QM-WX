@@ -1741,3 +1741,68 @@ function mergeDailyTrend(
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, v]) => ({ date, ...v }));
 }
+
+// ===== V0.3.34 A6：admin.excel 导出（exceljs）=====
+import ExcelJS from 'exceljs';
+
+/**
+ * 导出订单 Excel（V0.3.34 A6）
+ * - 用 exceljs 生成 .xlsx 二进制
+ * - 返 base64 编码 + filename
+ * - 与 exportOrders（CSV）相同查询，但格式不同
+ */
+export async function exportOrdersExcel(input: ExportOrdersInput): Promise<{ filename: string; base64: string }> {
+  const where: Record<string, unknown> = {};
+  if (input.status) where.status = input.status;
+  if (input.startDate || input.endDate) {
+    where.createdAt = {
+      ...(input.startDate ? { gte: new Date(input.startDate) } : {}),
+      ...(input.endDate ? { lte: new Date(input.endDate) } : {}),
+    };
+  }
+
+  const orders = await prisma.order.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    take: 50_000, // Excel 50k 行限制
+    include: { user: { select: { openid: true, nickname: true, phone: true } }, items: true },
+  });
+
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'qm-admin';
+  workbook.created = new Date();
+  const sheet = workbook.addWorksheet('订单');
+  sheet.columns = [
+    { header: '订单ID', key: 'id', width: 25 },
+    { header: '用户openid', key: 'openid', width: 30 },
+    { header: '用户昵称', key: 'nickname', width: 20 },
+    { header: '用户手机', key: 'phone', width: 15 },
+    { header: '状态', key: 'status', width: 12 },
+    { header: '总金额(元)', key: 'totalAmount', width: 12 },
+    { header: '实付金额(元)', key: 'payAmount', width: 12 },
+    { header: '使用积分', key: 'pointsUsed', width: 10 },
+    { header: '商品数', key: 'itemCount', width: 8 },
+    { header: '创建时间', key: 'createdAt', width: 20 },
+    { header: '支付时间', key: 'paidAt', width: 20 },
+  ];
+  for (const o of orders) {
+    sheet.addRow({
+      id: o.id,
+      openid: o.user.openid,
+      nickname: o.user.nickname ?? '',
+      phone: o.user.phone ?? '',
+      status: o.status,
+      totalAmount: dec(o.totalAmount),
+      payAmount: dec(o.payAmount),
+      pointsUsed: o.pointsUsed,
+      itemCount: o.items.length,
+      createdAt: o.createdAt.toISOString(),
+      paidAt: o.paidAt?.toISOString() ?? '',
+    });
+  }
+  const buffer = await workbook.xlsx.writeBuffer();
+  return {
+    filename: `orders-${new Date().toISOString().slice(0, 10)}.xlsx`,
+    base64: Buffer.from(buffer).toString('base64'),
+  };
+}

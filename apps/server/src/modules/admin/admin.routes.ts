@@ -235,6 +235,13 @@ export async function adminRoutes(app: FastifyInstance) {
         reply.header('Content-Disposition', 'attachment; filename="orders.csv"');
         return reply.send(csv);
       }
+      // ===== V0.3.34 A6：admin.excel 导出 =====
+      case 'exportOrdersExcel': {
+        const { filename, base64 } = await adminService.exportOrdersExcel(
+          ExportOrdersSchema.parse(payload ?? {}),
+        );
+        return { code: 0, data: { filename, base64 } };
+      }
       case 'exportUsers': {
         const csv = await adminService.exportUsers(ExportUsersSchema.parse(payload ?? {}));
         reply.header('Content-Type', 'text/csv; charset=utf-8');
