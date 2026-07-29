@@ -28,6 +28,8 @@ import {
   RefundOrderSchema,
   ListUsersSchema,
   GetUserDetailInputSchema,
+  BatchUpdateOrderStatusInputSchema,
+  BatchRefundOrderInputSchema,
   ListContentsSchema,
   ListProductsSchema,
   ListInterpretSchema,
@@ -115,6 +117,27 @@ export async function adminRoutes(app: FastifyInstance) {
       // ===== 管理 list / 概览（P1-2 新增）=====
       case 'listUsers':
         return { code: 0, data: await adminService.listUsers(ListUsersSchema.parse(payload ?? {})) };
+      // ===== V0.3.34 sprint A3：admin.orders 批量操作 =====
+      case 'batchUpdateOrderStatus': {
+        const input = BatchUpdateOrderStatusInputSchema.parse(payload ?? {});
+        return {
+          code: 0,
+          data: await adminService.batchUpdateOrderStatus(input.orderIds, input.status),
+        };
+      }
+      case 'batchRefundOrder': {
+        const input = BatchRefundOrderInputSchema.parse(payload ?? {});
+        return {
+          code: 0,
+          data: await adminService.batchRefundOrder(
+            input.orderIds,
+            input.amountFen,
+            input.reason,
+            req.user?.openid ?? '',
+            req.ip,
+          ),
+        };
+      }
       // ===== V0.3.34 sprint A2：admin.users 详情页 =====
       case 'getUserDetail':
         return {

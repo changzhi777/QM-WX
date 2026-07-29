@@ -399,3 +399,22 @@ export const UserDetailResponseSchema = z.object({
     createdAt: z.string(),
   })),
 });
+
+// ===== V0.3.34 sprint A3：admin.orders 批量操作 =====
+export const BatchUpdateOrderStatusInputSchema = z.object({
+  orderIds: z.array(z.string().min(1)).min(1).max(100),
+  status: z.enum(['pending_pay', 'paid', 'shipped', 'done', 'cancelled']),
+});
+
+export const BatchRefundOrderInputSchema = z.object({
+  orderIds: z.array(z.string().min(1)).min(1).max(100),
+  amountFen: z.number().int().positive().max(10_000_000).optional(),
+  reason: z.string().max(80).optional(),
+});
+
+export const BatchOrderResultSchema = z.object({
+  success: z.array(z.object({ orderId: z.string(), refundedFen: z.number().optional() })),
+  failed: z.array(z.object({ orderId: z.string(), error: z.string() })),
+  totalSuccess: z.number(),
+  totalFailed: z.number(),
+});

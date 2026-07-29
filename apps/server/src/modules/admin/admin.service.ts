@@ -245,6 +245,79 @@ export async function refundOrder(input: RefundOrderInput, refundedBy: string, i
   return result;
 }
 
+// ===== V0.3.34 sprint A3：admin.orders 批量操作 =====
+
+export interface BatchOrderResult {
+  success: Array<{ orderId: string; refundedFen?: number }>;
+  failed: Array<{ orderId: string; error: string }>;
+  totalSuccess: number;
+  totalFailed: number;
+}
+
+/**
+ * 批量更新订单状态（V0.3.34 A3）
+ * - 每个订单独立处理（部分失败不影响其他）
+ * - 返 success/failed 列表 + 总计
+ */
+export async function batchUpdateOrderStatus(
+  orderIds: string[],
+  status: 'pending_pay' | 'paid' | 'shipped' | 'done' | 'cancelled',
+): Promise<BatchOrderResult> {
+  const results = await Promise.allSettled(
+    orderIds.map(async (orderId) => {
+      const order = await prisma.order.findUnique({ where: { id: orderId } });
+      if (!order) throw Errors.notFound('订单不存在');
+      assertTransition(order.status as OrderStatus, status as OrderStatus);
+      await prisma.order.update({ where: { id: orderId }, data: { status } });
+      return { orderId };
+    }),
+  );
+  return results.reduce<BatchOrderResult>(
+    (acc, r, i) => {
+      if (r.status === 'fulfilled') {
+        acc.success.push({ orderId: orderIds[i] });
+        acc.totalSuccess++;
+      } else {
+        acc.failed.push({ orderId: orderIds[i], error: r.reason?.message ?? '未知错误' });
+        acc.totalFailed++;
+      }
+      return acc;
+    },
+    { success: [], failed: [], totalSuccess: 0, totalFailed: 0 },
+  );
+}
+
+/**
+ * 批量退款（V0.3.34 A3）
+ * - 每个订单独立处理（部分失败不影响其他）
+ * - 单笔退款失败不影响其他单
+ */
+export async function batchRefundOrder(
+  orderIds: string[],
+  amountFen: number | undefined,
+  reason: string | undefined,
+  actorOpenid: string,
+  ip?: string,
+): Promise<BatchOrderResult> {
+  const results = await Promise.allSettled(
+    orderIds.map((orderId) => refundOrder({ orderId, amountFen, reason }, actorOpenid, ip)),
+  );
+  return results.reduce<BatchOrderResult>(
+    (acc, r, i) => {
+      if (r.status === 'fulfilled') {
+        const v = r.value as { refundYuan: number };
+        acc.success.push({ orderId: orderIds[i], refundedFen: Math.round(v.refundYuan * 100) });
+        acc.totalSuccess++;
+      } else {
+        acc.failed.push({ orderId: orderIds[i], error: r.reason?.message ?? '未知错误' });
+        acc.totalFailed++;
+      }
+      return acc;
+    },
+    { success: [], failed: [], totalSuccess: 0, totalFailed: 0 },
+  );
+}
+
 // ===== V0.3.34 sprint A2：admin.users 详情页（5 维聚合查询）=====
 
 export interface UserDetailData {
