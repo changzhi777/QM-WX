@@ -11,6 +11,7 @@ import { refundService } from '../mall/refund.service.js';
 import { invalidateProductsCache, invalidateProductDetail } from '../mall/mall.service.js';
 import { invalidateContentsCache, invalidateContentDetail } from '../content/content.service.js';
 import { invalidateFeatureFlagsCache } from '../../common/middleware/feature-gate.js';
+import { publishFeatureFlagsUpdated } from '../../infra/realtime.js';
 import { Errors } from '../../common/errors.js';
 import { walletRepo } from '../wallet/wallet.repo.js';
 import { userRepo } from '../user/user.repository.js';
@@ -171,7 +172,11 @@ export async function setConfig(input: SetConfigInput, actorOpenid: string, ip?:
     create: { id: input.id, value: input.value as never },
     update: { value: input.value as never },
   });
-  if (input.id === 'feature_flags') invalidateFeatureFlagsCache();
+  if (input.id === 'feature_flags') {
+    invalidateFeatureFlagsCache();
+    // V0.3.34 A8：发布 Redis pub/sub 通知所有 worker 实例清 cache
+    void publishFeatureFlagsUpdated();
+  }
   // admin_whitelist 通过 setConfig 修改时也要清 admin 缓存
   // @ts-expect-error narrowing for future expansion（当前 schema id enum 不含 admin_whitelist）
   if (input.id === 'admin_whitelist') invalidateAdminCache();

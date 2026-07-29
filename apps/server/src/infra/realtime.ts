@@ -34,3 +34,23 @@ export async function subscribeUser(userId: string, onMsg: (payload: string) => 
     sub.quit().catch(() => {});
   };
 }
+
+// ===== V0.3.34 A8：admin.config 远程热更新（feature_flags）=====
+
+/** 发布 feature_flags 更新事件（setConfig 改 feature_flags 时调）*/
+export async function publishFeatureFlagsUpdated(): Promise<void> {
+  try {
+    await redis.publish('system:feature_flags_updated', JSON.stringify({ ts: Date.now() }));
+  } catch (e) {
+    // publish 失败不应阻塞 setConfig（fallback 60s TTL 自动失效）
+  }
+}
+
+/** 订阅 feature_flags 更新事件（每个 worker 启动时调一次）*/
+export async function subscribeFeatureFlags(handler: () => void): Promise<void> {
+  const sub = redis.duplicate();
+  await sub.subscribe('system:feature_flags_updated');
+  sub.on('message', () => {
+    try { handler(); } catch { /* 容错 */ }
+  });
+}

@@ -8,6 +8,7 @@ import type { FastifyInstance } from 'fastify';
 import fp from 'fastify-plugin';
 import { Errors } from '../errors.js';
 import { configRepo } from '../../modules/app-config/app-config.repository.js';
+import { subscribeFeatureFlags } from '../../infra/realtime.js';
 import type { FeatureFlag } from '@qm-wx/shared';
 
 declare module 'fastify' {
@@ -35,6 +36,11 @@ export const featureGatePlugin = fp(async (app: FastifyInstance) => {
   app.addHook('onReady', async () => {
     _cache = await configRepo.getFeatureFlags();
     app.log.info({ flags: _cache }, 'feature_flags loaded from db');
+    // V0.3.34 A8：订阅 Redis pub/sub — 其他 worker 修改 feature_flags 时本地 cache 失效
+    void subscribeFeatureFlags(() => {
+      _cache = null;
+      app.log.info('feature_flags cache invalidated by remote pub/sub');
+    });
   });
 
   app.addHook('onRequest', async (req) => {
