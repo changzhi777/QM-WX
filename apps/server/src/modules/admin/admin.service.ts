@@ -1624,6 +1624,13 @@ export interface AdminDashboardData {
   // 异常告警
   failedAdminLogins30d: number;
   totalInterpret: number;
+  // V0.3.34 A5：30 天每日趋势（订单/用户/打卡）
+  dailyTrend: Array<{
+    date: string; // YYYY-MM-DD
+    orders: number;
+    newUsers: number;
+    checkins: number;
+  }>;
 }
 
 export async function getAdminDashboard(): Promise<AdminDashboardData> {
@@ -1658,6 +1665,24 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
     prisma.adminLoginLog.count({ where: { ok: false, createdAt: { gte: last30d } } }),
     // 8. interpret 总数
     prisma.interpretRecord.count(),
+    // 9. V0.3.34 A5：30 天每日订单数
+    prisma.$queryRaw<Array<{ date: string; count: bigint }>>`
+      SELECT to_char("createdAt", 'YYYY-MM-DD') as date, COUNT(*) as count
+      FROM "Order" WHERE "createdAt" >= ${last30d}
+      GROUP BY date ORDER BY date ASC
+    `,
+    // 10. V0.3.34 A5：30 天每日新用户
+    prisma.$queryRaw<Array<{ date: string; count: bigint }>>`
+      SELECT to_char("createdAt", 'YYYY-MM-DD') as date, COUNT(*) as count
+      FROM "User" WHERE "createdAt" >= ${last30d}
+      GROUP BY date ORDER BY date ASC
+    `,
+    // 11. V0.3.34 A5：30 天每日打卡数
+    prisma.$queryRaw<Array<{ date: string; count: bigint }>>`
+      SELECT to_char("createdAt", 'YYYY-MM-DD') as date, COUNT(*) as count
+      FROM "Checkin" WHERE "createdAt" >= ${last30d}
+      GROUP BY date ORDER BY date ASC
+    `,
   ]);
 
   // 失败隔离（任意失败返 0，dashboard 不整体崩）
@@ -1681,5 +1706,38 @@ export async function getAdminDashboard(): Promise<AdminDashboardData> {
     checkins30d: val(6, 0),
     failedAdminLogins30d: val(7, 0),
     totalInterpret: val(8, 0),
+    // V0.3.34 A5：30 天每日趋势（合并 3 个 queryRaw 结果）
+    dailyTrend: mergeDailyTrend(
+      val<Array<{ date: string; count: bigint }>>(9, []),
+      val<Array<{ date: string; count: bigint }>>(10, []),
+      val<Array<{ date: string; count: bigint }>>(11, []),
+    ),
   };
+}
+
+// ===== V0.3.34 A5 helper：合并 3 个每日聚合查询为 dailyTrend =====
+function mergeDailyTrend(
+  orders: Array<{ date: string; count: bigint }>,
+  users: Array<{ date: string; count: bigint }>,
+  checkins: Array<{ date: string; count: bigint }>,
+): Array<{ date: string; orders: number; newUsers: number; checkins: number }> {
+  const map = new Map<string, { orders: number; newUsers: number; checkins: number }>();
+  for (const { date, count } of orders) {
+    const e = map.get(date) ?? { orders: 0, newUsers: 0, checkins: 0 };
+    e.orders = Number(count);
+    map.set(date, e);
+  }
+  for (const { date, count } of users) {
+    const e = map.get(date) ?? { orders: 0, newUsers: 0, checkins: 0 };
+    e.newUsers = Number(count);
+    map.set(date, e);
+  }
+  for (const { date, count } of checkins) {
+    const e = map.get(date) ?? { orders: 0, newUsers: 0, checkins: 0 };
+    e.checkins = Number(count);
+    map.set(date, e);
+  }
+  return Array.from(map.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, v]) => ({ date, ...v }));
 }

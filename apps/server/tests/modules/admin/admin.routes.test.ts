@@ -18,6 +18,8 @@ const mockPrisma = vi.hoisted(() => ({
   order: { findMany: vi.fn(), count: vi.fn(), findUnique: vi.fn(), update: vi.fn(), aggregate: vi.fn() },
   user: { findMany: vi.fn(), count: vi.fn() },
   checkin: { count: vi.fn() },
+  // V0.3.34 A5：每日趋势 queryRaw
+  $queryRaw: vi.fn(),
   // V0.3.4 dashboard + V0.3.5 globalSearch 跨表搜 5 表
   feed: { findMany: vi.fn() },
   feedComment: { findMany: vi.fn() },
@@ -615,6 +617,10 @@ describe('V0.3.4 admin.dashboard 仪表盘', () => {
     mockPrisma.checkin.count.mockResolvedValueOnce(450);   // checkins30d
     mockPrisma.adminLoginLog.count.mockResolvedValueOnce(3);
     mockPrisma.interpretRecord.count.mockResolvedValueOnce(50);
+    // V0.3.34 A5：3 个 $queryRaw（每日订单/用户/打卡）
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]); // orders
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]); // users
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]); // checkins
 
     const app = await buildApp({ admin: { role: 'super-admin' } });
     const res = await app.inject({
@@ -645,6 +651,10 @@ describe('V0.3.4 admin.dashboard 仪表盘', () => {
     mockPrisma.checkin.count.mockResolvedValue(1);
     mockPrisma.adminLoginLog.count.mockResolvedValue(0);
     mockPrisma.interpretRecord.count.mockResolvedValue(1);
+    // V0.3.34 A5：3 个 $queryRaw
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
+    mockPrisma.$queryRaw.mockResolvedValueOnce([]);
 
     const app = await buildApp({ admin: { role: 'admin' } });
     const res = await app.inject({
