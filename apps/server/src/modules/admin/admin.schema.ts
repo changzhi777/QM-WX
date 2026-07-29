@@ -159,6 +159,8 @@ export const ListAuditLogsSchema = z.object({
   actorOpenid: z.string().max(64).optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
+  // V0.3.34 A7：target 类型过滤（user / order / content / admin / device 等）
+  targetType: z.string().max(32).optional(),
 });
 
 // ===== V0.1.19: 报表 + 导出 =====

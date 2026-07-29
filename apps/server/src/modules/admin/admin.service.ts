@@ -651,6 +651,12 @@ export async function listAuditLogs(input: ListAuditLogsInput) {
   const where: Record<string, unknown> = {};
   if (input.action) where.action = input.action;
   if (input.actorOpenid) where.actorOpenid = input.actorOpenid;
+  // V0.3.34 A7：target type 过滤（action 前缀如 'admin.banUser' → 'user'）
+  if (input.targetType) {
+    // target 字段是 free-form string，按前缀匹配 target type
+    // 例：'user:abc123' 或 'admin:xyz' 走 startsWith 过滤
+    where.target = { startsWith: `${input.targetType}:` };
+  }
   if (input.startDate || input.endDate) {
     where.createdAt = {
       ...(input.startDate ? { gte: new Date(input.startDate) } : {}),
