@@ -74,6 +74,25 @@
       <picker class="sheet-row" bindchange="onMealTypeChange" value="{{mealTypeIndex}}" range="{{mealTypes}}" range-key="label">
         <view class="picker-val">餐次：{{mealTypes[mealTypeIndex].label}} ▾</view>
       </picker>
+
+      <!-- V0.3.35 薄荷搜菜（boohee 模块）-->
+      <view class="boohee-search">
+        <view class="boohee-label">🍃 薄荷搜菜（自动填表 + 营养增强）</view>
+        <view class="boohee-input-row">
+          <input class="sheet-input flex-1" value="{{booheeKeyword}}" bindinput="onBooheeKeywordInput" placeholder="如 苹果 / 米饭 / 鸡胸肉" />
+          <button class="sheet-btn small" bindtap="onBooheeSearch" loading="{{booheeSearching}}">搜索</button>
+        </view>
+        <scroll-view scroll-y class="boohee-list" wx:if="{{booheeResults.length > 0}}">
+          <view class="boohee-row" wx:for="{{booheeResults}}" wx:key="code" data-code="{{item.code}}" bindtap="onBooheePick">
+            <view class="boohee-name">{{item.name}}</view>
+            <view class="boohee-meta">
+              <text class="meta-tag hl{{item.health_light}}">{{item.health_light === 1 ? '推荐' : item.health_light === 2 ? '适量' : item.health_light === 3 ? '少吃' : '-'}}</text>
+              <text class="meta-num">{{item.calories.toFixed(1)}} kcal/100g</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
+
       <input class="sheet-input" value="{{addForm.name}}" bindinput="onInputName" placeholder="食物名称" />
       <input class="sheet-input" value="{{addForm.calorie}}" type="digit" bindinput="onInputCalorie" placeholder="卡路里（千卡）" />
       <input class="sheet-input" value="{{addForm.qty}}" bindinput="onInputQty" placeholder="份量（如 1 碗，选填）" />
@@ -82,6 +101,32 @@
         <input class="sheet-input mini" value="{{addForm.fat}}" type="digit" bindinput="onInputFat" placeholder="脂肪g" />
         <input class="sheet-input mini" value="{{addForm.carb}}" type="digit" bindinput="onInputCarb" placeholder="碳水g" />
       </view>
+
+      <!-- V0.3.35 boohee 营养详情（薄荷独家 GI/GL/NRV）-->
+      <view class="boohee-detail" wx:if="{{booheeEnriched}}">
+        <view class="detail-title">📊 薄荷营养详情</view>
+        <view class="detail-grid">
+          <view class="detail-cell"><text class="cell-label">热量</text><text class="cell-val">{{booheeEnriched.calories}} kcal</text></view>
+          <view class="detail-cell"><text class="cell-label">蛋白</text><text class="cell-val">{{booheeEnriched.protein}} g</text></view>
+          <view class="detail-cell"><text class="cell-label">脂肪</text><text class="cell-val">{{booheeEnriched.fat}} g</text></view>
+          <view class="detail-cell"><text class="cell-label">碳水</text><text class="cell-val">{{booheeEnriched.carbohydrate}} g</text></view>
+          <view class="detail-cell" wx:if="{{booheeEnriched.gi != null}}">
+            <text class="cell-label">GI</text>
+            <text class="cell-val">
+              {{booheeEnriched.gi}}
+              <text class="meta-tag hl{{booheeEnriched.giLevel || 0}}">
+                {{booheeEnriched.giLevel === 0 ? '低' : booheeEnriched.giLevel === 1 ? '中' : '高'}}
+              </text>
+            </text>
+          </view>
+          <view class="detail-cell" wx:if="{{booheeEnriched.gl != null}}">
+            <text class="cell-label">GL</text>
+            <text class="cell-val">{{booheeEnriched.gl}}</text>
+          </view>
+        </view>
+        <view class="detail-hint">数据来自薄荷科学.AI（V0.3.35 boohee module）</view>
+      </view>
+
       <view class="sheet-actions">
         <button class="sheet-btn cancel" bindtap="onCancelAdd">取消</button>
         <button class="sheet-btn confirm" bindtap="onConfirmAdd">添加</button>

@@ -1,6 +1,12 @@
-// pages/diet/index.ts — V0.2.0 饮食日记（FatSecret 搜索 + 营养详情 + Meal 记录 + 宏量汇总）
+// pages/diet/index.ts — V0.2.0 饮食日记（FatSecret + 薄荷 V0.3.35 boohee 双源）
 import { api } from '../../services/api';
 import { ensureLogin } from '../../utils/auth';
+import {
+  searchBoohee,
+  getBooheeDetail,
+  type BooheeFoodItem,
+  type BooheeFoodDetail,
+} from '../../services/boohee';
 
 interface MealItem {
   name: string;
@@ -44,6 +50,23 @@ Page({
     searching: false,
     showAdd: false,
     addForm: { name: '', calorie: '', protein: '', fat: '', carb: '', qty: '', foodId: '' },
+    // ===== V0.3.35 boohee 搜索增强 =====
+    booheeKeyword: '',
+    booheeResults: [] as Array<BooheeFoodItem>,
+    booheeSearching: false,
+    booheeEnriched: null as null | {
+      code: string;
+      name: string;
+      calories: number;
+      protein: number;
+      fat: number;
+      carbohydrate: number;
+      health_light: number;
+      gi?: number;
+      giLevel?: number;
+      gl?: number;
+      glLevel?: number;
+    },
   },
 
   onShow() {
@@ -113,7 +136,82 @@ Page({
     this.setData({
       showAdd: true,
       addForm: { name: '', calorie: '', protein: '', fat: '', carb: '', qty: '', foodId: '' },
+      booheeKeyword: '',
+      booheeResults: [],
+      booheeEnriched: null,
     });
+  },
+
+  // ===== V0.3.35 薄荷搜菜 =====
+  onBooheeKeywordInput(e: { detail: { value: string } }) {
+    this.setData({ booheeKeyword: e.detail.value });
+  },
+
+  async onBooheeSearch() {
+    const kw = this.data.booheeKeyword.trim();
+    if (!kw) {
+      wx.showToast({ title: '请输入菜名', icon: 'none' });
+      return;
+    }
+    this.setData({ booheeSearching: true });
+    try {
+      const resp = await searchBoohee(kw, { perPage: 20 });
+      this.setData({ booheeResults: resp.list });
+      if (resp.list.length === 0) wx.showToast({ title: '薄荷无结果', icon: 'none' });
+    } catch (e) {
+      wx.showToast({ title: (e as Error).message || '薄荷搜索失败', icon: 'none' });
+    } finally {
+      this.setData({ booheeSearching: false });
+    }
+  },
+
+  /** 选薄荷食物 → 自动填 5 字段 + 展示 GI/GL/NRV 详情 */
+  async onBooheePick(e: { currentTarget: { dataset: { code: string } } }) {
+    const code = e.currentTarget.dataset.code;
+    const item = this.data.booheeResults.find((r) => r.code === code);
+    if (!item) return;
+
+    this.setData({
+      booheeResults: [],
+      addForm: {
+        name: item.name,
+        calorie: String(item.calories),
+        protein: String(item.protein),
+        fat: String(item.fat),
+        carb: String(item.carbohydrate),
+        qty: '100g',
+        foodId: '',
+      },
+      showAdd: true,
+    });
+
+    // 拉详情拿 GI/GL/NRV（服务端走 X-Api-Key + Cache 300s）
+    try {
+      const detail: BooheeFoodDetail = await getBooheeDetail(code);
+      this.setData({
+        booheeEnriched: {
+          code: detail.code,
+          name: detail.name,
+          calories: detail.calories.value,
+          protein: detail.protein.value,
+          fat: detail.fat.value,
+          carbohydrate: detail.carbohydrate.value,
+          health_light: detail.health_light,
+          gi: detail.gi?.value,
+          giLevel: detail.gi?.level,
+          gl: detail.gl?.value,
+          glLevel: detail.gl?.level,
+        },
+        'addForm.calorie': String(detail.calories.value),
+        'addForm.protein': String(detail.protein.value),
+        'addForm.fat': String(detail.fat.value),
+        'addForm.carb': String(detail.carbohydrate.value),
+      });
+      wx.showToast({ title: `已填 ${detail.name} · GI ${detail.gi?.value ?? '-'}`, icon: 'none' });
+    } catch (e) {
+      // 详情失败不影响主流程
+      console.warn('[boohee] detail 失败', (e as Error).message);
+    }
   },
 
   /** ⑦拍照识别：选图 → 选模式（菜品/包装）→ uploadFile COS → food.recognize → 填 addForm */

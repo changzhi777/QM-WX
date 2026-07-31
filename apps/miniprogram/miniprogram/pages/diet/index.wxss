@@ -224,3 +224,126 @@
   background: #2d9d78 !important;
   color: #fff !important;
 }
+
+/* ===== V0.3.35 薄荷搜菜 + 营养详情 ===== */
+.boohee-search {
+  margin: 8rpx 0 12rpx;
+  padding: 12rpx;
+  background: #f6fbf8;
+  border: 2rpx solid #cce8d9;
+  border-radius: 12rpx;
+}
+.boohee-label {
+  font-size: 24rpx;
+  color: #2d9d78;
+  margin-bottom: 8rpx;
+  font-weight: 500;
+}
+.boohee-input-row {
+  display: flex;
+  gap: 12rpx;
+  align-items: center;
+}
+.boohee-input-row .flex-1 {
+  flex: 1;
+}
+.boohee-list {
+  max-height: 320rpx;
+  margin-top: 12rpx;
+  background: #fff;
+  border-radius: 8rpx;
+}
+.boohee-row {
+  padding: 16rpx;
+  border-bottom: 1rpx solid #eef5f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.boohee-row:active {
+  background: #e8f6ee;
+}
+.boohee-name {
+  font-size: 28rpx;
+  color: #222;
+  font-weight: 500;
+}
+.boohee-meta {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+.meta-num {
+  font-size: 22rpx;
+  color: #888;
+}
+.meta-tag {
+  display: inline-block;
+  padding: 2rpx 12rpx;
+  border-radius: 20rpx;
+  font-size: 20rpx;
+  font-weight: 500;
+}
+.meta-tag.hl1 {
+  background: #e8f6ee;
+  color: #2d9d78;
+}
+.meta-tag.hl2 {
+  background: #fff4d6;
+  color: #d68f00;
+}
+.meta-tag.hl3 {
+  background: #ffe0e0;
+  color: #d4380d;
+}
+.meta-tag.hl0 {
+  background: #f0f0f0;
+  color: #999;
+}
+
+.boohee-detail {
+  margin-top: 12rpx;
+  padding: 16rpx;
+  background: #fffbf0;
+  border: 2rpx solid #ffd97a;
+  border-radius: 12rpx;
+}
+.detail-title {
+  font-size: 26rpx;
+  color: #b87b00;
+  font-weight: 600;
+  margin-bottom: 12rpx;
+}
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8rpx 16rpx;
+}
+.detail-cell {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 24rpx;
+  padding: 6rpx 0;
+}
+.cell-label {
+  color: #888;
+}
+.cell-val {
+  color: #222;
+  font-weight: 500;
+}
+.detail-hint {
+  margin-top: 8rpx;
+  font-size: 20rpx;
+  color: #b87b00;
+  text-align: right;
+}
+
+.sheet-btn.small {
+  font-size: 26rpx;
+  padding: 0 24rpx;
+  height: 60rpx;
+  line-height: 60rpx;
+  min-height: 60rpx;
+}
