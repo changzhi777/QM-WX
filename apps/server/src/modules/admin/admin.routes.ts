@@ -62,6 +62,8 @@ import {
   AdminListEnrollmentsByContentSchema,
   ListReviewsSchema,
   NutritionBalanceInputSchema,
+  AdminListCheckinsSchema,
+  AdminListDeviceSourcesSchema,
 } from './admin.schema.js';
 
 export async function adminRoutes(app: FastifyInstance) {
@@ -345,6 +347,18 @@ export async function adminRoutes(app: FastifyInstance) {
         return {
           code: 0,
           data: await adminService.getNutritionBalance(NutritionBalanceInputSchema.parse(payload ?? {})),
+        };
+      // V0.3.35 sprint B：admin.checkins 全站打卡列表
+      case 'listCheckins':
+        return {
+          code: 0,
+          data: await adminService.listCheckins(AdminListCheckinsSchema.parse(payload ?? {})),
+        };
+      // V0.3.35 sprint B：admin.deviceSources 设备数据源
+      case 'listDeviceSources':
+        return {
+          code: 0,
+          data: await adminService.listDeviceSources(AdminListDeviceSourcesSchema.parse(payload ?? {})),
         };
       default:
         return reply.status(400).send({ code: 400, msg: `unknown action: ${action}` });

@@ -425,6 +425,71 @@ export const BatchOrderResultSchema = z.object({
   totalFailed: z.number(),
 });
 
+// ===== V0.3.35 sprint B：admin.checkins 全站打卡列表 =====
+export const AdminListCheckinsSchema = z.object({
+  userId: z.string().optional(),
+  sportType: z.enum(['run', 'hike', 'ride', 'other']).optional(),
+  dataSource: z.enum(['manual', 'garmin', 'huawei_export', 'coros_fit', 'sport_screenshot']).optional(),
+  dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  minDistance: z.coerce.number().nonnegative().optional(),
+  maxDistance: z.coerce.number().nonnegative().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export const AdminCheckinListItemSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  userNickname: z.string().nullable(),
+  date: z.string(),
+  distance: z.number(),
+  durationSec: z.number().optional(),
+  pace: z.string().optional(),
+  heartRate: z.number().optional(),
+  sportType: z.string().nullable(),
+  dataSource: z.string(),
+  points: z.number(),
+  shoeId: z.string().optional(),
+  createdAt: z.string(),
+});
+
+export const AdminListCheckinsRespSchema = z.object({
+  list: z.array(AdminCheckinListItemSchema),
+  total: z.number(),
+});
+
+// ===== V0.3.35 sprint B：admin.deviceSources 设备数据源聚合 =====
+export const AdminListDeviceSourcesSchema = z.object({
+  vendor: z.enum(['garmin', 'huawei', 'coros', 'vivo', 'wechat', 'mi', 'ble']).optional(),
+  userId: z.string().optional(),
+  status: z.enum(['bound', 'unbound', 'all']).default('all'),
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+});
+
+export const AdminDeviceBindingItemSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  userNickname: z.string().nullable(),
+  vendor: z.string(),
+  deviceType: z.string(),
+  boundAt: z.string(),
+  lastDataAt: z.string().optional(),
+  // 最近 7 天的 DeviceDailyActivity 聚合（按日聚合失败时返空数组）
+  last7Days: z.array(z.object({
+    date: z.string(),
+    steps: z.number(),
+    distanceM: z.number(),
+    caloriesKcal: z.number(),
+  })).default([]),
+});
+
+export const AdminListDeviceSourcesRespSchema = z.object({
+  list: z.array(AdminDeviceBindingItemSchema),
+  total: z.number(),
+});
+
 // ===== V0.3.35 boohee×运动 营养×运动平衡聚合（admin 验证 boohee API）=====
 export const NutritionBalanceInputSchema = z.object({
   userId: z.string().min(1),

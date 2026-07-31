@@ -22,7 +22,11 @@ import { enqueueUploadParse } from '../../jobs/queue.js';
 import { foodService } from '../food/food.service.js';
 import { booheeService } from '../boohee/boohee.service.js';
 import type { z } from 'zod';
-import { NutritionBalanceInputSchema } from './admin.schema.js';
+import {
+  NutritionBalanceInputSchema,
+  AdminListCheckinsSchema,
+  AdminListDeviceSourcesSchema,
+} from './admin.schema.js';
 import bcrypt from 'bcrypt';
 import type { FastifyInstance } from 'fastify';
 import type {
@@ -2002,4 +2006,117 @@ export async function getNutritionBalance(input: z.infer<typeof NutritionBalance
       recommendation,
     },
   };
+}
+
+// ===== V0.3.35 sprint B：admin.checkins 全站打卡列表 =====
+export async function listCheckins(input: z.infer<typeof AdminListCheckinsSchema>) {
+  const where: Record<string, unknown> = {};
+  if (input.userId) where.userId = input.userId;
+  if (input.sportType) where.sportType = input.sportType;
+  if (input.dataSource) where.dataSource = input.dataSource;
+  if (input.dateFrom || input.dateTo) {
+    where.date = {
+      ...(input.dateFrom ? { gte: input.dateFrom } : {}),
+      ...(input.dateTo ? { lte: input.dateTo } : {}),
+    };
+  }
+  if (input.minDistance != null || input.maxDistance != null) {
+    where.distance = {
+      ...(input.minDistance != null ? { gte: input.minDistance } : {}),
+      ...(input.maxDistance != null ? { lte: input.maxDistance } : {}),
+    };
+  }
+
+  const [list, total] = await Promise.all([
+    prisma.checkin.findMany({
+      where,
+      orderBy: [{ date: 'desc' }, { createdAt: 'desc' }],
+      take: input.pageSize,
+      skip: (input.page - 1) * input.pageSize,
+      include: { user: { select: { nickname: true } } },
+    }),
+    prisma.checkin.count({ where }),
+  ]);
+
+  return {
+    list: list.map((c) => ({
+      id: c.id,
+      userId: c.userId,
+      userNickname: c.user.nickname ?? null,
+      date: c.date,
+      distance: c.distance,
+      durationSec: c.durationSec ?? 0,
+      pace: c.pace ?? '',
+      heartRate: c.heartRate ?? 0,
+      sportType: c.sportType ?? '',
+      dataSource: c.dataSource,
+      points: c.points,
+      shoeId: c.shoeId ?? '',
+      createdAt: c.createdAt.toISOString(),
+    })),
+    total,
+  };
+}
+
+// ===== V0.3.35 sprint B：admin.deviceSources 设备数据源聚合 =====
+export async function listDeviceSources(input: z.infer<typeof AdminListDeviceSourcesSchema>) {
+  const bindingWhere: Record<string, unknown> = {};
+  if (input.vendor) bindingWhere.vendor = input.vendor;
+  if (input.userId) bindingWhere.userId = input.userId;
+  if (input.status === 'bound') bindingWhere.status = 'active';
+  else if (input.status === 'unbound') bindingWhere.status = { not: 'active' };
+
+  const [bindings, total] = await Promise.all([
+    prisma.deviceBinding.findMany({
+      where: bindingWhere,
+      orderBy: { createdAt: 'desc' },
+      take: input.pageSize,
+      skip: (input.page - 1) * input.pageSize,
+    }),
+    prisma.deviceBinding.count({ where: bindingWhere }),
+  ]);
+
+  // 4 段独立 try/catch（V0.3.4 dashboard 范式）：deviceDaily 失败不影响主链路
+  const sinceDate = new Date(Date.now() - 7 * 86_400_000);
+  const sinceDateStr = new Date(sinceDate.getTime() + 8 * 3600 * 1000).toISOString().slice(0, 10);
+
+  const result = await Promise.all(
+    bindings.map(async (b) => {
+      // nickname 单独查（DeviceBinding 无 User relation，V0.1.33 BLE 时代保持精简）
+      let userNickname: string | null = null;
+      try {
+        const u = await prisma.user.findUnique({ where: { id: b.userId }, select: { nickname: true } });
+        userNickname = u?.nickname ?? null;
+      } catch {}
+
+      let last7Days: Array<{ date: string; steps: number; distanceM: number; caloriesKcal: number }> = [];
+      try {
+        const daily = await prisma.deviceDailyActivity.findMany({
+          where: { userId: b.userId, vendor: b.vendor, date: { gte: sinceDateStr } },
+          orderBy: { date: 'desc' },
+        });
+        last7Days = daily.map((d) => ({
+          date: d.date,
+          steps: d.step,
+          distanceM: d.distanceM,
+          caloriesKcal: d.caloriesKcal,
+        }));
+      } catch (e) {
+        console.error(`[deviceSources] daily 失败 userId=${b.userId} vendor=${b.vendor}`, e);
+      }
+
+      return {
+        id: b.id,
+        userId: b.userId,
+        userNickname,
+        vendor: b.vendor,
+        deviceType: b.vendor, // DeviceBinding 没有 deviceType 字段，vendor 即设备类型
+        boundAt: b.createdAt.toISOString(),
+        lastDataAt: b.lastSyncAt?.toISOString(),
+        last7Days,
+      };
+    }),
+  );
+
+  return { list: result, total };
 }
